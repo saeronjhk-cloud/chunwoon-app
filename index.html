@@ -3533,7 +3533,7 @@ async function handlePremiumPurchase(type){
   if(!confirm(`${msg} (₩4,900)를 구매하시겠습니까?\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.`))return;
 
   // 결제 성공 가정 후 프리미엄 콘텐츠 생성
-  const paywallEl=document.querySelector('[onclick*="handlePremiumPurchase"]')?.closest('[style*="position:relative"]');
+  const paywallEl=document.querySelector('[data-paywall="face"]');
   let loadTimer=null;
   if(paywallEl){
     paywallEl.innerHTML=`<div style="padding:30px;text-align:center">
