@@ -1,0 +1,37 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Radial gradient glow effect -->
+    <radialGradient id="glowGradient512" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#c9a54e;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#c9a54e;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#c9a54e;stop-opacity:0" />
+    </radialGradient>
+
+    <!-- Filter for text glow -->
+    <filter id="textGlow512" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background circle -->
+  <circle cx="256" cy="256" r="256" fill="#0a0a12"/>
+
+  <!-- Glow effect behind character -->
+  <circle cx="256" cy="256" r="160" fill="url(#glowGradient512)"/>
+
+  <!-- Gold Chinese character "天" with glow -->
+  <text
+    x="256"
+    y="320"
+    font-family="'STHeiti', 'SimHei', 'Microsoft YaHei', sans-serif"
+    font-size="280"
+    font-weight="bold"
+    fill="#c9a54e"
+    text-anchor="middle"
+    filter="url(#textGlow512)"
+  >天</text>
+</svg>

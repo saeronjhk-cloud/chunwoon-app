@@ -1,0 +1,14 @@
+{
+  "name": "chunwoon-app",
+  "version": "1.0.0",
+  "description": "天運 - 종합 운세 앱 (오늘의 운세, 타로, 사주, 궁합, 손금, 관상, 토정비결, 꿈해몽, 운세채팅, 운세매칭)",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve .",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["fortune", "tarot", "saju", "horoscope", "korean", "pwa"],
+  "author": "天運",
+  "license": "MIT"
+}
