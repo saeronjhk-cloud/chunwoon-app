@@ -2354,11 +2354,93 @@ function classifyFaceFromLandmarks(ai){
   const mouthSym = 1 - Math.min(1, Math.abs((ai[61].x+ai[291].x)/2 - faceCx)/(faceW||0.001)*8);
   const mouthScore = Math.min(95, Math.max(65, Math.round(64 + mouthSym*14 + (lipThicknessRatio>0.04?8:5))));
 
+  // ── 십이궁·오관 추가 측정 (프리미엄용) ──
+
+  // 명궁(命宮) — 미간 너비·평탄도 (LM 55=좌 눈썹 안쪽, 285=우 눈썹 안쪽)
+  const myungGungW = Math.abs(ai[285].x - ai[55].x);
+  const myungGungRatio = myungGungW / (faceW || 0.001);
+
+  // 관록궁(官祿宮) — 이마 중앙 너비 (LM 21=좌이마, 251=우이마)
+  const foreheadCenterW = Math.abs(ai[251].x - ai[21].x);
+  const foreheadWidthRatio = foreheadCenterW / (faceW || 0.001);
+
+  // 천이궁(遷移宮) — 이마 양측(관자놀이) 균형
+  const templeWL = Math.abs(ai[21].x - ai[234].x);
+  const templeWR = Math.abs(ai[454].x - ai[251].x);
+  const templeBalance = 1 - Math.min(1, Math.abs(templeWL - templeWR) / (faceW || 0.001) * 5);
+
+  // 부처궁(夫妻宮) — 눈꼬리 각도 (외안각 기울기)
+  const eyeTailAngleL = (ai[33].y - ai[133].y) / (Math.abs(ai[33].x - ai[133].x) || 0.001);
+  const eyeTailAngleR = (ai[263].y - ai[362].y) / (Math.abs(ai[362].x - ai[263].x) || 0.001);
+  const eyeTailAngle = ((Math.atan(eyeTailAngleL) + Math.atan(eyeTailAngleR)) / 2) * (180/Math.PI);
+
+  // 자녀궁(子女宮) — 와잠(눈 아래) 두께 (LM 145=하안검, 117=볼 상단)
+  const underEyeL = Math.abs(ai[117].y - ai[145].y);
+  const underEyeR = Math.abs(ai[346].y - ai[374].y);
+  const underEyeRatio = ((underEyeL + underEyeR) / 2) / (faceH || 0.001);
+
+  // 질액궁(疾厄宮) — 산근(코뿌리) 너비 (LM 188, 412)
+  const sanGeunW = Math.abs(ai[188].x - ai[412].x);
+  const sanGeunRatio = sanGeunW / (faceW || 0.001);
+
+  // 전택궁(田宅宮) — 눈썹-눈 거리 (LM 66=좌 눈썹 하단, 159=좌 상안검)
+  const browEyeL = Math.abs(ai[159].y - ai[66].y);
+  const browEyeR = Math.abs(ai[386].y - ai[296].y);
+  const jeonTaekRatio = ((browEyeL + browEyeR) / 2) / (faceH || 0.001);
+
+  // ── 오관 추가: 보수관(눈썹) ──
+  // 눈썹 길이 (LM 55→46→53 좌, 285→276→283 우)
+  const browLenL = Math.sqrt(Math.pow(ai[53].x-ai[55].x,2)+Math.pow(ai[53].y-ai[55].y,2));
+  const browLenR = Math.sqrt(Math.pow(ai[283].x-ai[285].x,2)+Math.pow(ai[283].y-ai[285].y,2));
+  const browLengthRatio = ((browLenL+browLenR)/2) / (faceW || 0.001);
+  // 눈썹 기울기
+  const browAngleL = Math.atan2(ai[53].y-ai[55].y, ai[53].x-ai[55].x)*(180/Math.PI);
+  const browAngleR = Math.atan2(ai[283].y-ai[285].y, ai[285].x-ai[283].x)*(180/Math.PI);
+  const browAngle = (browAngleL + browAngleR) / 2;
+  // 눈썹 간격 (= 명궁과 동일)
+  const browGapRatio = myungGungRatio;
+  // 눈썹 두께 (LM 63=좌 눈썹 상단, 66=좌 눈썹 하단)
+  const browThickL = Math.abs(ai[63].y - ai[66].y);
+  const browThickR = Math.abs(ai[293].y - ai[296].y);
+  const browThicknessRatio = ((browThickL+browThickR)/2) / (faceH || 0.001);
+
+  // ── 관골(觀骨) — 광대뼈 돌출도 ──
+  const cheekboneW = faceW; // 광대 너비 = 얼굴 최대폭
+  const gwanGolProminence = cheekboneW / (jawW || 0.001); // 광대/턱 비율 (높을수록 광대 돌출)
+
+  // ── 인중(人中) ──
+  const inJungLen = Math.abs(ai[0].y - ai[2].y); // 코 하단(2) → 윗입술 상단(0)
+  const inJungRatio = inJungLen / (faceH || 0.001);
+
+  // ── 턱(地閣) ──
+  const chinLen = Math.abs(ai[152].y - ai[17].y); // 턱끝(152) → 하입술 하단(17)
+  const chinRatio = chinLen / (faceH || 0.001);
+  const jawAngleL2 = Math.atan2(ai[152].y - ai[127].y, ai[127].x - ai[152].x)*(180/Math.PI);
+  const jawAngleR2 = Math.atan2(ai[152].y - ai[356].y, ai[152].x - ai[356].x)*(180/Math.PI);
+  const jawAngle = (jawAngleL2 + jawAngleR2) / 2;
+
+  // ── 삼정(三停) 개별 비율 ──
+  const upperThirdPct = (foreheadH / (totalThirds || 0.001)) * 100;
+  const middleThirdPct = (midFaceH / (totalThirds || 0.001)) * 100;
+  const lowerThirdPct = (lowerFaceH / (totalThirds || 0.001)) * 100;
+
   return {
     shapeOpt, eyeOpt, noseOpt, mouthOpt,
     overallScore,
     eyeScore, noseScore, mouthScore,
-    ratios: { whRatio, jawRatio, eyeRatio, eyeSizeRatio, noseWRatio, noseHRatio, mouthFaceRatio, lipThicknessRatio, symmetry, thirdsScore, goldenProximity }
+    ratios: {
+      whRatio, jawRatio, eyeRatio, eyeSizeRatio, noseWRatio, noseHRatio,
+      mouthFaceRatio, lipThicknessRatio, symmetry, thirdsScore, goldenProximity,
+      // 십이궁 추가 측정
+      myungGungRatio, foreheadWidthRatio, templeBalance, eyeTailAngle,
+      underEyeRatio, sanGeunRatio, jeonTaekRatio,
+      // 오관 추가: 눈썹
+      browLengthRatio, browAngle, browGapRatio, browThicknessRatio,
+      // 관골·인중·턱
+      gwanGolProminence, inJungRatio, chinRatio, jawAngle,
+      // 삼정 개별
+      upperThirdPct, middleThirdPct, lowerThirdPct
+    }
   };
 }
 
@@ -3413,9 +3495,12 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
         <div style="padding:0 18px 18px;background:rgba(20,20,30,0.8)">
           <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 프리미엄 리포트 구성</div>
           <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 10대~70대 평생 대운 그래프 (재물·애정·건강)</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#e85a4f;font-size:14px">⚠️</span> 파상(破相) 분석 + 개운 메이크업·스타일링 가이드</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fe8a4;font-size:14px">🔥</span> 절대 피해야 할 상극 관상 & 최고의 궁합 관상</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#c9a54e;font-size:14px">🏛️</span> 십이궁(十二宮) 8궁 정밀 분석 + 고전 원문 인용</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#a78bfa;font-size:14px">👤</span> 오관(五官) 상세 분석 — 눈썹·눈·코·입 각각</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fc3e8;font-size:14px">📐</span> 삼정(三停) 분석 — 초년·중년·말년 운세</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 면부백세유년도 기반 10대~70대 대운 그래프</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#e85a4f;font-size:14px">⚠️</span> 파상 분석 + 개운 메이크업·스타일링 가이드</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fe8a4;font-size:14px">🔥</span> 상극·상생 인연 분석 (피해야 할 / 좋은 관상)</div>
           </div>
           <div style="text-align:center">
             <button onclick="handlePremiumPurchase('face')" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 32px;border-radius:26px;font-weight:700;font-size:14px;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,0.45);cursor:pointer;transition:transform .2s,box-shadow .2s;width:100%;max-width:280px" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
@@ -3440,8 +3525,25 @@ async function handlePremiumPurchase(type){
 
   // 결제 성공 가정 후 프리미엄 콘텐츠 생성
   const paywallEl=document.querySelector('[onclick*="handlePremiumPurchase"]')?.closest('[style*="position:relative"]');
+  let loadTimer=null;
   if(paywallEl){
-    paywallEl.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:28px;margin-bottom:12px" class="spin-emoji">🔮</div><div style="color:var(--gold);font-size:13px;font-family:\'Noto Serif KR\',serif">프리미엄 리포트를 생성하고 있습니다...</div><div style="margin-top:10px;width:160px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;animation:premLoad 3s ease forwards"></div></div></div>';
+    paywallEl.innerHTML=`<div style="padding:30px;text-align:center">
+      <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">🔮</div>
+      <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="premLoadMsg">십이궁(十二宮) 분석 중...</div>
+      <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="premLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">고전 문헌 대조 + 종합 분석에 약 15~20초 소요</div>
+    </div>`;
+    // 단계별 로딩 메시지
+    const loadSteps=['십이궁(十二宮) 분석 중...','오관(五官) 측정값 대조 중...','삼정(三停) 비율 판정 중...','면부백세유년도 매핑 중...','고전 원문 인용 검증 중...','파상(破相) 진단 중...','개운법 생성 중...','종합 리포트 완성 중...'];
+    let loadStep=0;
+    loadTimer=setInterval(()=>{
+      loadStep++;
+      const msg=document.getElementById('premLoadMsg');
+      const bar=document.getElementById('premLoadBar');
+      if(msg&&loadStep<loadSteps.length)msg.textContent=loadSteps[loadStep];
+      if(bar)bar.style.width=Math.min(95,loadStep*12)+'%';
+      if(loadStep>=loadSteps.length)clearInterval(loadTimer);
+    },2000);
     // Add loading animation
     if(!document.getElementById('premLoadStyle')){
       const st=document.createElement('style');st.id='premLoadStyle';
@@ -3464,12 +3566,14 @@ async function handlePremiumPurchase(type){
       measurements:cls?.ratios||null
     };
     const result=await callFortuneAPI('face_premium',premFeatures);
+    if(loadTimer)clearInterval(loadTimer);
     if(result&&paywallEl){
       renderPremiumReport(paywallEl,result);
     }else if(paywallEl){
       paywallEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px">프리미엄 리포트 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</div>';
     }
   }catch(e){
+    if(loadTimer)clearInterval(loadTimer);
     console.error('Premium report error:',e);
     if(paywallEl) paywallEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px">오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>';
   }
@@ -3489,18 +3593,22 @@ function renderPremiumReport(container,data){
     </div>`;
   };
 
-  // ⓪ 분석 과정 상세 공개 (무료에는 없는 핵심 차별화)
+  // 섹션 헤더 헬퍼
+  const sectionHeader=(emoji,title,color)=>`<div style="font-size:15px;color:${color||'var(--gold)'};font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${emoji} ${title}</div>`;
+  const sectionSub=(text)=>`<div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:14px">${text}</div>`;
+
+  // ⓪ 분석 과정 상세 공개
   if(data.analysisProcess){
     const ap=data.analysisProcess;
-    html+=`<div style="margin-bottom:24px">
-      <div style="font-size:15px;color:var(--gold);font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">🔬 AI 분석 과정 상세 공개</div>
-      <div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:14px">MediaPipe 468점 랜드마크에서 추출한 수치를 고전 문헌의 기준에 대입한 판정 과정입니다.</div>`;
-    const partColors={얼굴형:'#c9a54e',눈:'#4fc3e8',코:'#e8a04f',입:'#e85a4f'};
+    html+=`<div style="margin-bottom:24px">`;
+    html+=sectionHeader('🔬','AI 분석 과정 상세 공개');
+    html+=sectionSub('MediaPipe 468점 랜드마크에서 추출한 수치를 고전 문헌의 기준에 대입한 판정 과정입니다.');
+    const partIcons=['🔸','✏️','👁️','👃','👄'];
+    const partColors2={'얼굴형':'#c9a54e','눈썹':'#a78bfa','눈':'#4fc3e8','코':'#e8a04f','입':'#e85a4f'};
     (ap.features||[]).forEach((f,i)=>{
-      const color=partColors[f.part]||'#c9a54e';
-      html+=`<div style="margin-bottom:16px;padding:12px 14px;background:rgba(0,0,0,.2);border-radius:10px;border:1px solid rgba(${color==='#c9a54e'?'201,165,78':color==='#4fc3e8'?'79,195,232':color==='#e8a04f'?'232,160,79':'232,90,79'},.2)">
-        <div style="font-size:13px;color:${color};font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">${['🔸','👁️','👃','👄'][i]||'●'} ${f.part}</div>
-
+      const color=partColors2[f.part]||'#c9a54e';
+      html+=`<div style="margin-bottom:16px;padding:12px 14px;background:rgba(0,0,0,.2);border-radius:10px;border:1px solid ${color}33">
+        <div style="font-size:13px;color:${color};font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">${partIcons[i]||'●'} ${f.part}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div style="font-size:9px;color:var(--text2);white-space:nowrap;min-width:50px">① 측정값</div>
           <div style="flex:1;font-size:11px;color:white;background:rgba(0,255,200,.08);padding:4px 8px;border-radius:4px;font-family:monospace">${f.measured||''}</div>
@@ -3524,13 +3632,98 @@ function renderPremiumReport(container,data){
     html+='</div>';
   }
 
-  // ① 평생 대운 그래프
+  // ① 십이궁(十二宮) 분석
+  if(data.twelvePalaces){
+    const tp=data.twelvePalaces;
+    html+=`<div style="margin-bottom:24px">`;
+    html+=sectionHeader('🏛️','십이궁(十二宮) 정밀 분석');
+    html+=sectionSub('얼굴의 12개 영역을 궁(宮)으로 나누어, 각 궁이 주관하는 운명 영역을 분석합니다. (측정 가능 8궁)');
+    const palaceColors=['#c9a54e','#f5b946','#e8a04f','#4fc3e8','#e85a9f','#a78bfa','#4fe8a4','#e85a4f'];
+    const gradeStyle=(g)=>{
+      if(g==='상')return'color:#4fe8a4;background:rgba(79,232,164,.15)';
+      if(g==='하')return'color:#e85a4f;background:rgba(232,90,79,.15)';
+      return'color:#f5b946;background:rgba(245,185,70,.15)';
+    };
+    (tp.palaces||[]).forEach((p,i)=>{
+      const color=palaceColors[i%palaceColors.length];
+      html+=`<div style="margin-bottom:14px;padding:12px 14px;background:rgba(0,0,0,.18);border-radius:10px;border-left:3px solid ${color}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:13px;color:${color};font-weight:700;font-family:'Noto Serif KR',serif">${p.name||''}</div>
+          <span style="font-size:10px;padding:2px 10px;border-radius:10px;font-weight:700;${gradeStyle(p.grade)}">${p.grade||'중'}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:4px">📍 ${p.area||''} ${p.measurement?`| 실측: <span style="color:white;font-family:monospace">${p.measurement}</span>`:''}</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.8;margin-bottom:4px">${p.interpretation||''}</div>
+        ${citationHTML(p.citation)}
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // ② 오관(五官) 분석
+  if(data.fiveOfficials){
+    const fo=data.fiveOfficials;
+    html+=`<div style="margin-bottom:24px">`;
+    html+=sectionHeader('👤','오관(五官) 상세 분석');
+    html+=sectionSub('오관은 얼굴의 5대 기관으로, 각각 인생의 특정 시기와 운명 영역을 주관합니다.');
+    const offIcons=['✏️','👁️','👃','👄'];
+    const offColors=['#a78bfa','#4fc3e8','#e8a04f','#e85a4f'];
+    (fo.officials||[]).forEach((o,i)=>{
+      html+=`<div style="margin-bottom:14px;padding:12px 14px;background:rgba(0,0,0,.18);border-radius:10px;border:1px solid ${offColors[i]||'#c9a54e'}33">
+        <div style="font-size:13px;color:${offColors[i]||'#c9a54e'};font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${offIcons[i]||'●'} ${o.name||''}</div>
+        ${o.agePeriod?`<div style="font-size:9px;color:var(--gold);opacity:.8;margin-bottom:6px">⏰ 주관 시기: ${o.agePeriod}</div>`:''}
+        ${o.measurement?`<div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:4px">실측: <span style="color:white;font-family:monospace">${o.measurement}</span></div>`:''}
+        <div style="font-size:11px;color:var(--text2);line-height:1.8;margin-bottom:4px">${o.interpretation||''}</div>
+        ${citationHTML(o.citation)}
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // ③ 삼정(三停) 분석
+  if(data.threeCourtAnalysis){
+    const tc=data.threeCourtAnalysis;
+    html+=`<div style="margin-bottom:24px">`;
+    html+=sectionHeader('📐','삼정(三停) 인생 시기별 운세');
+    html+=sectionSub('얼굴을 상·중·하 세 구간으로 나누어 초년·중년·말년 운을 판단합니다.');
+    const courts=[
+      {key:'upper',label:'상정(上停)',period:'초년운',color:'#4fc3e8',icon:'🌅'},
+      {key:'middle',label:'중정(中停)',period:'중년운',color:'#f5b946',icon:'☀️'},
+      {key:'lower',label:'하정(下停)',period:'말년운',color:'#a78bfa',icon:'🌙'}
+    ];
+    html+='<div style="display:flex;gap:6px;margin-bottom:14px">';
+    courts.forEach(ct=>{
+      const d=tc[ct.key];
+      if(!d)return;
+      const ratio=parseFloat(d.ratio)||33;
+      html+=`<div style="flex:1;background:rgba(0,0,0,.2);border-radius:10px;padding:10px 8px;text-align:center;border:1px solid ${ct.color}33">
+        <div style="font-size:18px;margin-bottom:4px">${ct.icon}</div>
+        <div style="font-size:11px;color:${ct.color};font-weight:700;font-family:'Noto Serif KR',serif">${ct.label}</div>
+        <div style="font-size:20px;color:white;font-weight:700;margin:6px 0">${d.ratio||'33%'}</div>
+        <div style="font-size:9px;color:var(--text2)">${d.period||ct.period}</div>
+      </div>`;
+    });
+    html+='</div>';
+    courts.forEach(ct=>{
+      const d=tc[ct.key];
+      if(!d||!d.interpretation)return;
+      html+=`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(0,0,0,.12);border-radius:8px;border-left:2px solid ${ct.color}">
+        <div style="font-size:11px;color:${ct.color};font-weight:600;margin-bottom:4px">${ct.icon} ${ct.label} (${d.period||ct.period})</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.8">${d.interpretation}</div>
+      </div>`;
+    });
+    if(tc.balance)html+=`<div style="font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px;margin-top:8px">⚖️ ${tc.balance}</div>`;
+    if(tc.citation)html+=citationHTML(tc.citation);
+    html+='</div>';
+  }
+
+  // ④ 평생 대운 그래프 (면부백세유년도 기반)
   if(data.fortuneGraph){
     const fg=data.fortuneGraph;
     const decades=fg.decades||[];
-    html+=`<div style="margin-bottom:24px">
-      <div style="font-size:15px;color:var(--gold);font-weight:700;margin-bottom:12px;font-family:'Noto Serif KR',serif">📊 평생 대운(大運) 그래프</div>
-      <canvas id="premiumFortuneChart" width="320" height="200" style="width:100%;max-width:320px;display:block;margin:0 auto;background:rgba(0,0,0,.2);border-radius:8px"></canvas>
+    html+=`<div style="margin-bottom:24px">`;
+    html+=sectionHeader('📊','면부백세유년도(面部百歲流年圖) 기반 대운 그래프');
+    html+=sectionSub('고전의 면부백세유년도에 따라, 얼굴 각 부위가 주관하는 연령대별 운세를 그래프로 시각화합니다.');
+    html+=`<canvas id="premiumFortuneChart" width="320" height="200" style="width:100%;max-width:320px;display:block;margin:0 auto;background:rgba(0,0,0,.2);border-radius:8px"></canvas>
       <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;font-size:9px">
         <span style="color:#f5b946">● 재물운</span>
         <span style="color:#e85a4f">● 애정운</span>
@@ -3541,16 +3734,17 @@ function renderPremiumReport(container,data){
       html+=`<span style="background:rgba(201,165,78,.1);border:1px solid rgba(201,165,78,.2);border-radius:12px;padding:3px 8px;font-size:9px;color:var(--text2)"><strong style="color:var(--gold)">${d.age}</strong> ${d.keyword||''}</span>`;
     });
     html+='</div>';
-    if(fg.analysis) html+=`<div style="margin-top:12px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${fg.analysis}</div>`;
-    if(fg.citation) html+=citationHTML(fg.citation);
+    if(fg.analysis)html+=`<div style="margin-top:12px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${fg.analysis}</div>`;
+    if(fg.citation)html+=citationHTML(fg.citation);
     html+='</div>';
   }
 
-  // ② 파상 분석 & 개운법
+  // ⑤ 파상 분석 & 개운법
   if(data.breakingPoint){
     const bp=data.breakingPoint;
-    html+=`<div style="margin-bottom:24px">
-      <div style="font-size:15px;color:#e85a4f;font-weight:700;margin-bottom:12px;font-family:'Noto Serif KR',serif">⚠️ 파상(破相) 분석 & 개운법</div>`;
+    html+=`<div style="margin-bottom:24px">`;
+    html+=sectionHeader('⚠️','파상(破相) 분석 & 개운법','#e85a4f');
+    html+=sectionSub('고전 기준에 미달하는 부위를 진단하고, 메이크업·스타일링·행동 습관으로 보완하는 방법을 제시합니다.');
     (bp.weaknesses||[]).forEach((w,i)=>{
       html+=`<div style="margin-bottom:14px;padding:12px 14px;background:rgba(232,90,79,.04);border-left:3px solid #e85a4f;border-radius:0 8px 8px 0">
         <div style="font-size:12px;color:#e85a4f;font-weight:600;margin-bottom:6px">${i+1}. ${w.part} ${w.measurement?'<span style="opacity:.7;font-size:10px">['+w.measurement+']</span>':''}</div>
@@ -3559,15 +3753,16 @@ function renderPremiumReport(container,data){
         <div style="font-size:11px;color:#4fe8a4;line-height:1.7;margin-top:6px;padding:8px 10px;background:rgba(79,232,164,.06);border-radius:6px">✅ <strong>개운법:</strong> ${w.solution}</div>
       </div>`;
     });
-    if(bp.summary) html+=`<div style="font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(79,232,164,.04);border-radius:8px">💡 ${bp.summary}</div>`;
+    if(bp.summary)html+=`<div style="font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(79,232,164,.04);border-radius:8px">💡 ${bp.summary}</div>`;
     html+='</div>';
   }
 
-  // ③ 상극·상생 인연 분석
+  // ⑥ 상극·상생 인연 분석
   if(data.enemyFace){
     const ef=data.enemyFace;
-    html+=`<div style="margin-bottom:20px">
-      <div style="font-size:15px;color:#c9a54e;font-weight:700;margin-bottom:12px;font-family:'Noto Serif KR',serif">🔥 상극(相克) · 상생(相生) 인연 분석</div>`;
+    html+=`<div style="margin-bottom:20px">`;
+    html+=sectionHeader('🔥','상극(相克) · 상생(相生) 인연 분석');
+    html+=sectionSub('오행상법에 따라, 당신의 얼굴형과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.');
     html+='<div style="font-size:12px;color:#e85a4f;font-weight:600;margin-bottom:8px">🚫 피해야 할 관상</div>';
     (ef.enemies||[]).forEach(e=>{
       html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(232,90,79,.04);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
@@ -3581,11 +3776,11 @@ function renderPremiumReport(container,data){
         <strong style="color:#4fe8a4">${a.feature}</strong> — ${a.reason}<br><span style="opacity:.8">🌟 ${a.benefit}</span>
       </div>`;
     });
-    if(ef.summary) html+=`<div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${ef.summary}</div>`;
+    if(ef.summary)html+=`<div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${ef.summary}</div>`;
     html+='</div>';
   }
 
-  html+='<div style="text-align:center;margin-top:16px"><div style="font-size:10px;color:var(--text2);opacity:.5">※ 프리미엄 관상 리포트 — AI 468점 정밀 분석 + 고전 문헌 원문 인용 기반</div></div>';
+  html+='<div style="text-align:center;margin-top:16px"><div style="font-size:10px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 정밀 분석 + 십이궁·오관·삼정·면부백세유년도 + 고전 문헌 원문 인용 기반</div></div>';
   html+='</div>';
   container.style.border='1px solid rgba(201,165,78,.3)';
   container.style.borderRadius='14px';
