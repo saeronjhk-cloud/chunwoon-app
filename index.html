@@ -2773,25 +2773,47 @@ function drawAIMeshCanvas(destCanvas,featureType,landmarks,aiScores){
   const cw=destCanvas.width,ch=destCanvas.height;
   const img=new Image();
   img.onload=()=>{
-    // 1. Crop region
+    // 1. Crop region — separate width and height to preserve aspect ratio
     const fb=photoState.face.faceBounds||{x:0.2,y:0.15,w:0.6,h:0.7};
-    let x0=0,y0=0,sz=1;
-    if(featureType==='shape'){x0=fb.x-0.05;y0=fb.y-0.05;sz=Math.max(fb.w,fb.h)+0.1}
+    let x0=0,y0=0,szW=1,szH=1;
+    if(featureType==='shape'){x0=fb.x-0.05;y0=fb.y-0.05;szW=fb.w+0.10;szH=fb.h+0.10}
     else if(featureType==='eyes'){
       const eyl=landmarks.leftEye,eyr=landmarks.rightEye;
-      x0=Math.min(eyl.x,eyr.x)-0.14;y0=Math.min(eyl.y,eyr.y)-0.10;sz=0.40;
+      const eyeSpan=Math.abs(eyr.x-eyl.x);
+      x0=Math.min(eyl.x,eyr.x)-eyeSpan*0.4;y0=Math.min(eyl.y,eyr.y)-0.06;
+      szW=eyeSpan*1.8;szH=0.14;
     }else if(featureType==='nose'){
-      const n=landmarks.nose;x0=n.x-0.14;y0=n.y-0.15;sz=0.28;
+      const n=landmarks.nose;x0=n.x-0.12;y0=n.y-0.18;szW=0.24;szH=0.28;
     }else if(featureType==='mouth'){
-      const m=landmarks.mouth;x0=m.x-0.20;y0=m.y-0.12;sz=0.40;
+      const m=landmarks.mouth;x0=m.x-0.18;y0=m.y-0.08;szW=0.36;szH=0.16;
     }
-    // Draw darkened photo
-    ctx.drawImage(img,x0*img.width,y0*img.height,sz*img.width,sz*img.height,0,0,cw,ch);
-    ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(0,0,cw,ch);
 
-    // Helper: convert normalized coord to canvas coord
-    const tx=nx=>(nx-x0)/sz*cw;
-    const ty=ny=>(ny-y0)/sz*ch;
+    // Calculate source pixel region
+    const srcX=x0*img.width, srcY=y0*img.height;
+    const srcW=szW*img.width, srcH=szH*img.height;
+
+    // Fit into canvas maintaining aspect ratio (letterbox)
+    const srcAspect=srcW/srcH;
+    const cvAspect=cw/ch;
+    let drawX=0,drawY=0,drawW=cw,drawH=ch;
+    if(srcAspect>cvAspect){
+      // Source is wider — fit to width, letterbox top/bottom
+      drawW=cw;drawH=cw/srcAspect;
+      drawY=(ch-drawH)/2;
+    }else{
+      // Source is taller — fit to height, pillarbox left/right
+      drawH=ch;drawW=ch*srcAspect;
+      drawX=(cw-drawW)/2;
+    }
+
+    // Clear and draw with preserved aspect ratio
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,cw,ch);
+    ctx.drawImage(img,srcX,srcY,srcW,srcH,drawX,drawY,drawW,drawH);
+    ctx.fillStyle='rgba(0,0,0,0.30)';ctx.fillRect(drawX,drawY,drawW,drawH);
+
+    // Helper: convert normalized coord to canvas coord (aspect-ratio aware)
+    const tx=nx=>drawX+((nx-x0)/szW)*drawW;
+    const ty=ny=>drawY+((ny-y0)/szH)*drawH;
 
     // 2. Draw mesh wireframe (relevant subset)
     const meshColor='rgba(0,255,200,0.18)';
