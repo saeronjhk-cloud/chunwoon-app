@@ -3438,6 +3438,10 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
   const noseScore=aiScores?aiScores.noseScore:(70+((h.hash>>>8)%22));
   const mouthScore=aiScores?aiScores.mouthScore:(68+((h.hash>>>12)%24));
   const fiveElement=FACE_SOURCES.shape[shapeOpt.v];
+
+  // ── Paywall: 즉시 표시 (LLM 응답 대기 없이) ──
+  _showFacePaywall(fiveElement,aiScores);
+
   (async()=>{
     try{
       const llmFeatures={
@@ -3460,61 +3464,66 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
         });
         if(llm.summary)llmBox.innerHTML+=`<div style="font-size:11px;color:var(--text1);line-height:1.8;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(79,232,164,.2)">${llm.summary}</div>`;
         if(llm.advice)llmBox.innerHTML+=`<div style="margin-top:8px;font-size:11px;color:#4fe8a4;line-height:1.7"><strong>💫 AI 조언:</strong> ${llm.advice}</div>`;
-        const summary=document.getElementById('faceSummarySection');
-        if(summary)summary.parentElement.insertBefore(llmBox,summary);
+        // LLM 결과를 페이월 위에 삽입
+        const paywallEl=document.querySelector('[data-paywall="face"]');
+        if(paywallEl)paywallEl.parentElement.insertBefore(llmBox,paywallEl);
+        else{const summary=document.getElementById('faceSummarySection');if(summary)summary.parentElement.insertBefore(llmBox,summary)}
         setTimeout(()=>{llmBox.style.opacity='1';llmBox.style.transform='translateY(0)';llmBox.scrollIntoView({behavior:'smooth',block:'nearest'})},100);
       }
-    }catch(e){/* LLM optional */}
+    }catch(e){console.warn('Face LLM error:',e)}
+  })();
+}
 
-    // ── Paywall: 개인화된 감질나는 티저 ──
-    setTimeout(()=>{
-      const fiveEl=fiveElement?.el||'';
-      const ra=aiScores?aiScores.ratios:null;
-      // 개인화된 경고 메시지 (수치 기반)
-      let warningMsg='얼굴에서 재물이 새어나가는 특징';
-      let warningDetail='코와 눈의 비율을 분석한 결과, 40대 중반에 큰 금전적 위기가 올 수 있는 징후가...';
-      if(ra){
-        if(ra.noseWRatio<0.25) {warningMsg='코(재백궁)가 좁아 재물이 새어나가는 관상';warningDetail=`코 너비가 얼굴의 ${(ra.noseWRatio*100).toFixed(1)}%로, 재백궁이 좁은 편입니다. 중년 이후 재물 손실의 위험이...`}
-        else if(ra.symmetry<0.85) {warningMsg='좌우 비대칭으로 인한 운의 불균형';warningDetail=`안면 대칭도 ${(ra.symmetry*100).toFixed(0)}%로 약간의 불균형이 감지되었습니다. 이는 대인관계에서...`}
-        else if(ra.lipThicknessRatio<0.04) {warningMsg='얇은 입술로 인한 말년 인복 약화';warningDetail=`입술 두께 비율 ${(ra.lipThicknessRatio*100).toFixed(1)}%는 평균 이하입니다. 출납관이 약해 말년에...`}
-        else if(ra.thirdsScore<0.8) {warningMsg='삼정 불균형으로 인한 운세 편차';warningDetail=`삼정 균형도 ${(ra.thirdsScore*100).toFixed(0)}%로, 초년·중년·말년 운의 편차가 큰 편입니다...`}
-      }
+function _showFacePaywall(fiveElement,aiScores){
+  setTimeout(()=>{
+   try{
+    const fiveEl=fiveElement?.el||'';
+    const ra=aiScores?aiScores.ratios:null;
+    let warningMsg='얼굴에서 재물이 새어나가는 특징';
+    let warningDetail='코와 눈의 비율을 분석한 결과, 40대 중반에 큰 금전적 위기가 올 수 있는 징후가...';
+    if(ra){
+      if(ra.noseWRatio<0.25) {warningMsg='코(재백궁)가 좁아 재물이 새어나가는 관상';warningDetail=`코 너비가 얼굴의 ${(ra.noseWRatio*100).toFixed(1)}%로, 재백궁이 좁은 편입니다. 중년 이후 재물 손실의 위험이...`}
+      else if(ra.symmetry<0.85) {warningMsg='좌우 비대칭으로 인한 운의 불균형';warningDetail=`안면 대칭도 ${(ra.symmetry*100).toFixed(0)}%로 약간의 불균형이 감지되었습니다. 이는 대인관계에서...`}
+      else if(ra.lipThicknessRatio<0.04) {warningMsg='얇은 입술로 인한 말년 인복 약화';warningDetail=`입술 두께 비율 ${(ra.lipThicknessRatio*100).toFixed(1)}%는 평균 이하입니다. 출납관이 약해 말년에...`}
+      else if(ra.thirdsScore<0.8) {warningMsg='삼정 불균형으로 인한 운세 편차';warningDetail=`삼정 균형도 ${(ra.thirdsScore*100).toFixed(0)}%로, 초년·중년·말년 운의 편차가 큰 편입니다...`}
+    }
 
-      const paywallBox=document.createElement('div');
-      paywallBox.style.cssText='margin-top:20px;position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(232,90,79,.3);opacity:0;transform:translateY(12px);transition:all .8s ease';
-      paywallBox.innerHTML=`
-        <div style="padding:16px 18px;background:rgba(232,90,79,.06)">
-          <div style="font-size:13px;color:#e85a4f;font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">⚠️ AI가 당신의 얼굴에서 치명적인 특징을 발견했습니다</div>
-          <div style="position:relative;overflow:hidden;border-radius:8px;margin-bottom:12px">
-            <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(0,0,0,.3)">
-              <strong style="color:#e85a4f">${warningMsg}</strong><br>
-              <span style="filter:blur(3px);user-select:none">${warningDetail} 구체적인 시기와 보완법, 그리고 당신과 절대로 동업하면 안 되는 상극의 관상까지 프리미엄 리포트에서 확인하세요.</span>
-            </div>
+    const paywallBox=document.createElement('div');
+    paywallBox.setAttribute('data-paywall','face');
+    paywallBox.style.cssText='margin-top:20px;position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(232,90,79,.3);opacity:0;transform:translateY(12px);transition:all .8s ease';
+    paywallBox.innerHTML=`
+      <div style="padding:16px 18px;background:rgba(232,90,79,.06)">
+        <div style="font-size:13px;color:#e85a4f;font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">⚠️ AI가 당신의 얼굴에서 치명적인 특징을 발견했습니다</div>
+        <div style="position:relative;overflow:hidden;border-radius:8px;margin-bottom:12px">
+          <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(0,0,0,.3)">
+            <strong style="color:#e85a4f">${warningMsg}</strong><br>
+            <span style="filter:blur(3px);user-select:none">${warningDetail} 구체적인 시기와 보완법, 그리고 당신과 절대로 동업하면 안 되는 상극의 관상까지 프리미엄 리포트에서 확인하세요.</span>
           </div>
         </div>
-        <div style="padding:0 18px 18px;background:rgba(20,20,30,0.8)">
-          <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 프리미엄 리포트 구성</div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#c9a54e;font-size:14px">🏛️</span> 십이궁(十二宮) 8궁 정밀 분석 + 고전 원문 인용</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#a78bfa;font-size:14px">👤</span> 오관(五官) 상세 분석 — 눈썹·눈·코·입 각각</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fc3e8;font-size:14px">📐</span> 삼정(三停) 분석 — 초년·중년·말년 운세</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 면부백세유년도 기반 10대~70대 대운 그래프</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#e85a4f;font-size:14px">⚠️</span> 파상 분석 + 개운 메이크업·스타일링 가이드</div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fe8a4;font-size:14px">🔥</span> 상극·상생 인연 분석 (피해야 할 / 좋은 관상)</div>
-          </div>
-          <div style="text-align:center">
-            <button onclick="handlePremiumPurchase('face')" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 32px;border-radius:26px;font-weight:700;font-size:14px;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,0.45);cursor:pointer;transition:transform .2s,box-shadow .2s;width:100%;max-width:280px" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-              4,900원으로 내 운명의 비밀 풀기
-            </button>
-            <div style="font-size:9px;color:var(--text2);opacity:.4;margin-top:8px">AI 468점 정밀 분석 기반 · 결제 후 즉시 확인</div>
-          </div>
-        </div>`;
-      const summaryEl=document.getElementById('faceSummarySection');
-      if(summaryEl)summaryEl.parentElement.insertBefore(paywallBox,summaryEl.nextSibling);
-      else{const fr=document.getElementById('faceResult');if(fr)fr.querySelector('.card')?.appendChild(paywallBox)}
-      setTimeout(()=>{paywallBox.style.opacity='1';paywallBox.style.transform='translateY(0)'},100);
-    },500);
-  })();
+      </div>
+      <div style="padding:0 18px 18px;background:rgba(20,20,30,0.8)">
+        <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 프리미엄 리포트 구성</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#c9a54e;font-size:14px">🏛️</span> 십이궁(十二宮) 8궁 정밀 분석 + 고전 원문 인용</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#a78bfa;font-size:14px">👤</span> 오관(五官) 상세 분석 — 눈썹·눈·코·입 각각</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fc3e8;font-size:14px">📐</span> 삼정(三停) 분석 — 초년·중년·말년 운세</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 면부백세유년도 기반 10대~70대 대운 그래프</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#e85a4f;font-size:14px">⚠️</span> 파상 분석 + 개운 메이크업·스타일링 가이드</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fe8a4;font-size:14px">🔥</span> 상극·상생 인연 분석 (피해야 할 / 좋은 관상)</div>
+        </div>
+        <div style="text-align:center">
+          <button onclick="handlePremiumPurchase('face')" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 32px;border-radius:26px;font-weight:700;font-size:14px;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,0.45);cursor:pointer;transition:transform .2s,box-shadow .2s;width:100%;max-width:280px" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+            4,900원으로 내 운명의 비밀 풀기
+          </button>
+          <div style="font-size:9px;color:var(--text2);opacity:.4;margin-top:8px">AI 468점 정밀 분석 기반 · 결제 후 즉시 확인</div>
+        </div>
+      </div>`;
+    const summaryEl=document.getElementById('faceSummarySection');
+    if(summaryEl)summaryEl.parentElement.insertBefore(paywallBox,summaryEl.nextSibling);
+    else{const fr=document.getElementById('faceResult');if(fr)fr.querySelector('.card')?.appendChild(paywallBox)}
+    setTimeout(()=>{paywallBox.style.opacity='1';paywallBox.style.transform='translateY(0)'},100);
+   }catch(e){console.error('Paywall render error:',e)}
+  },500);
 }
 
 // ── 프리미엄 결제 핸들러 (결제 모듈 연동 시 교체) ──
