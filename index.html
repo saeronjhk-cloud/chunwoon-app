@@ -3579,13 +3579,34 @@ async function handlePremiumPurchase(type){
     const clientData=_generateClientPremium(ra, fiveEl?.el||'');
 
     // ② API는 서술형 콘텐츠만 호출 (analysisProcess, fortuneGraph, breakingPoint, enemyFace)
-    const apiResult=await callFortuneAPI('face_premium',premFeatures);
+    let apiResult=null;
+    let apiError=null;
+    try{
+      apiResult=await callFortuneAPI('face_premium',premFeatures);
+    }catch(apiE){
+      apiError=apiE.message||'Unknown API error';
+      console.error('Premium API call error:',apiE);
+    }
     if(loadTimer)clearInterval(loadTimer);
+
+    // API 결과 검증
+    const hasApiData=apiResult&&(apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace);
+    console.log('Premium API result:', hasApiData?'OK':'MISSING', apiResult?Object.keys(apiResult):'null');
 
     // ③ 클라이언트 데이터 + API 데이터 병합
     const merged=Object.assign({}, clientData, apiResult||{});
     if(paywallEl){
       renderPremiumReport(paywallEl,merged);
+      // API 실패 시 안내 메시지 추가
+      if(!hasApiData){
+        const notice=document.createElement('div');
+        notice.style.cssText='margin:12px 0;padding:14px;background:rgba(232,90,79,.08);border:1px solid rgba(232,90,79,.25);border-radius:10px;text-align:center';
+        notice.innerHTML=`<div style="font-size:12px;color:#e85a4f;margin-bottom:6px">⚠️ AI 심화 분석 섹션 로딩 실패</div>
+          <div style="font-size:10px;color:var(--text2);line-height:1.6">대운 그래프·파상 분석·상극상생 분석은 AI 서버 응답 지연으로 표시되지 않았습니다.<br>아래 버튼을 눌러 다시 시도해주세요.</div>
+          <div style="font-size:9px;color:var(--text2);opacity:.5;margin:6px 0">${apiError||'API 응답 없음'} ${apiResult&&apiResult.raw?'(raw응답있음)':''}</div>
+          <button onclick="retryPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 AI 분석 다시 시도</button>`;
+        paywallEl.appendChild(notice);
+      }
     }
   }catch(e){
     if(loadTimer)clearInterval(loadTimer);
@@ -3596,10 +3617,53 @@ async function handlePremiumPurchase(type){
       const cls2=(ai2&&ai2.length>=468)?classifyFaceFromLandmarks(ai2):null;
       const fiveEl2=cls2?FACE_SOURCES.shape[cls2.shapeOpt.v]:null;
       const clientOnly=_generateClientPremium(cls2?.ratios||null, fiveEl2?.el||'');
-      if(paywallEl)renderPremiumReport(paywallEl,clientOnly);
+      if(paywallEl){
+        renderPremiumReport(paywallEl,clientOnly);
+        const notice=document.createElement('div');
+        notice.style.cssText='margin:12px 0;padding:14px;background:rgba(232,90,79,.08);border:1px solid rgba(232,90,79,.25);border-radius:10px;text-align:center';
+        notice.innerHTML=`<div style="font-size:12px;color:#e85a4f;margin-bottom:6px">⚠️ AI 심화 분석 서버 오류</div>
+          <div style="font-size:10px;color:var(--text2);line-height:1.6">${e.message||'Unknown error'}</div>
+          <button onclick="retryPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 AI 분석 다시 시도</button>`;
+        paywallEl.appendChild(notice);
+      }
     }catch(e2){
       if(paywallEl)paywallEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px">오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>';
     }
+  }
+}
+
+// ── 프리미엄 AI 분석 재시도 ──
+async function retryPremiumAPI(){
+  const paywallEl=document.querySelector('[data-paywall="face"]');
+  if(!paywallEl)return;
+  // 기존 에러 안내 제거
+  const oldNotice=paywallEl.querySelector('[style*="rgba(232,90,79"]');
+  if(oldNotice)oldNotice.innerHTML='<div style="text-align:center;padding:10px"><div class="spin-emoji" style="font-size:24px">🔮</div><div style="font-size:11px;color:var(--gold);margin-top:8px">AI 심화 분석 재시도 중...</div></div>';
+
+  try{
+    const ai=photoState.face.aiLandmarks;
+    const cls=(ai&&ai.length>=468)?classifyFaceFromLandmarks(ai):null;
+    const fiveEl=cls?FACE_SOURCES.shape[cls.shapeOpt.v]:null;
+    const ra=cls?.ratios||null;
+    const premFeatures={
+      shape:{label:FACE_R.shape[cls?.shapeOpt?.v||'round']?.t||'',fiveElement:fiveEl?.el||'',score:FACE_R.shape[cls?.shapeOpt?.v||'round']?.s||80},
+      eyes:{label:FACE_R.eyes[cls?.eyeOpt?.v||'big']?.t||'',score:cls?.eyeScore||80},
+      nose:{label:FACE_R.nose[cls?.noseOpt?.v||'high']?.t||'',score:cls?.noseScore||80},
+      mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
+      overallScore:cls?.overallScore||80,
+      measurements:ra
+    };
+    const apiResult=await callFortuneAPI('face_premium',premFeatures);
+    const hasApiData=apiResult&&(apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace);
+    if(hasApiData){
+      const clientData=_generateClientPremium(ra, fiveEl?.el||'');
+      const merged=Object.assign({}, clientData, apiResult);
+      renderPremiumReport(paywallEl,merged);
+    }else{
+      if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">재시도 실패 — ${apiResult?'응답 형식 오류 (keys: '+Object.keys(apiResult).join(',')+')':'응답 없음'}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
+    }
+  }catch(e){
+    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">오류: ${e.message}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }
 }
 
