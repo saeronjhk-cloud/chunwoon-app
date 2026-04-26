@@ -2752,29 +2752,177 @@ function generatePalmReferenceSVG(lineKey,features){
 }
 
 function generateFaceReferenceSVG(featureType,label){
+  // Legacy fallback — only used when AI landmarks not available
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('viewBox','0 0 140 140');
-  svg.setAttribute('width','140');
-  svg.setAttribute('height','140');
-
-  // Simple face outline
+  svg.setAttribute('viewBox','0 0 140 140');svg.setAttribute('width','140');svg.setAttribute('height','140');
   svg.innerHTML=`<ellipse cx="70" cy="70" rx="40" ry="50" fill="#222" stroke="#555" stroke-width="1.5"/>`;
-
   const colorMap={shape:'#c9a54e',eyes:'#4fc3e8',nose:'#e8a04f',mouth:'#e85a4f'};
   const color=colorMap[featureType]||'#c9a54e';
-
-  if(featureType==='shape'){
-    svg.innerHTML+=`<ellipse cx="70" cy="65" rx="38" ry="48" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85"/>`;
-  }else if(featureType==='eyes'){
-    svg.innerHTML+=`<circle cx="55" cy="55" r="6" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>
-    <circle cx="85" cy="55" r="6" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>`;
-  }else if(featureType==='nose'){
-    svg.innerHTML+=`<path d="M 70 50 L 68 70 L 72 70" fill="none" stroke="${color}" stroke-width="2" opacity="0.85" stroke-linecap="round"/>`;
-  }else if(featureType==='mouth'){
-    svg.innerHTML+=`<path d="M 55 90 Q 70 100 85 90" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>`;
-  }
-
+  if(featureType==='shape') svg.innerHTML+=`<ellipse cx="70" cy="65" rx="38" ry="48" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85"/>`;
+  else if(featureType==='eyes') svg.innerHTML+=`<circle cx="55" cy="55" r="6" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/><circle cx="85" cy="55" r="6" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>`;
+  else if(featureType==='nose') svg.innerHTML+=`<path d="M 70 50 L 68 70 L 72 70" fill="none" stroke="${color}" stroke-width="2" opacity="0.85" stroke-linecap="round"/>`;
+  else if(featureType==='mouth') svg.innerHTML+=`<path d="M 55 90 Q 70 100 85 90" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85" stroke-linecap="round"/>`;
   return svg;
+}
+
+// ── AI Mesh Overlay: 사용자 얼굴 위에 첨단 와이어프레임 + 치수선 렌더링 ──
+function drawAIMeshCanvas(destCanvas,featureType,landmarks,aiScores){
+  const ai=photoState.face.aiLandmarks;
+  if(!destCanvas||!photoState.face.img||!ai||ai.length<468)return;
+  const ctx=destCanvas.getContext('2d');
+  const cw=destCanvas.width,ch=destCanvas.height;
+  const img=new Image();
+  img.onload=()=>{
+    // 1. Crop region
+    const fb=photoState.face.faceBounds||{x:0.2,y:0.15,w:0.6,h:0.7};
+    let x0=0,y0=0,sz=1;
+    if(featureType==='shape'){x0=fb.x-0.05;y0=fb.y-0.05;sz=Math.max(fb.w,fb.h)+0.1}
+    else if(featureType==='eyes'){
+      const eyl=landmarks.leftEye,eyr=landmarks.rightEye;
+      x0=Math.min(eyl.x,eyr.x)-0.14;y0=Math.min(eyl.y,eyr.y)-0.10;sz=0.40;
+    }else if(featureType==='nose'){
+      const n=landmarks.nose;x0=n.x-0.14;y0=n.y-0.15;sz=0.28;
+    }else if(featureType==='mouth'){
+      const m=landmarks.mouth;x0=m.x-0.20;y0=m.y-0.12;sz=0.40;
+    }
+    // Draw darkened photo
+    ctx.drawImage(img,x0*img.width,y0*img.height,sz*img.width,sz*img.height,0,0,cw,ch);
+    ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(0,0,cw,ch);
+
+    // Helper: convert normalized coord to canvas coord
+    const tx=nx=>(nx-x0)/sz*cw;
+    const ty=ny=>(ny-y0)/sz*ch;
+
+    // 2. Draw mesh wireframe (relevant subset)
+    const meshColor='rgba(0,255,200,0.18)';
+    const dotColor='rgba(0,255,200,0.5)';
+    ctx.strokeStyle=meshColor;ctx.lineWidth=0.5;
+
+    // FaceMesh tessellation — key connectivity for each feature
+    const meshIndices={
+      shape:[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109,10],
+      eyes:[33,246,161,160,159,158,157,173,133,155,154,153,145,144,163,7,33, 263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466,263],
+      nose:[168,6,197,195,5,4,1,19,94,2,164,0,11,12,13,14,15,16,17,18,200,199,175,152].slice(0,15).concat([129,358,279,49,48,115,131,134,51,5,281,363,360,279]),
+      mouth:[61,146,91,181,84,17,314,405,321,375,291,409,270,269,267,0,37,39,40,185,61, 78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95,78]
+    };
+
+    // Draw mesh lines
+    const indices=meshIndices[featureType]||meshIndices.shape;
+    ctx.beginPath();
+    for(let k=0;k<indices.length;k++){
+      const p=ai[indices[k]];
+      if(!p)continue;
+      if(k===0)ctx.moveTo(tx(p.x),ty(p.y));
+      else ctx.lineTo(tx(p.x),ty(p.y));
+    }
+    ctx.stroke();
+
+    // Draw dots on key landmarks
+    ctx.fillStyle=dotColor;
+    const dotIndices=featureType==='shape'?[10,152,234,454,127,356,21,251]:
+      featureType==='eyes'?[33,133,159,145,362,263,386,374,159,386]:
+      featureType==='nose'?[1,2,168,129,358,6]:
+      [61,291,13,14,0,17,78,308];
+    dotIndices.forEach(idx=>{
+      const p=ai[idx];if(!p)return;
+      ctx.beginPath();ctx.arc(tx(p.x),ty(p.y),2.5,0,Math.PI*2);ctx.fill();
+    });
+
+    // 3. Draw dimension lines + measurements
+    const ra=aiScores?aiScores.ratios:null;
+    ctx.font='bold 9px "SF Mono",Consolas,monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+
+    if(featureType==='shape'&&ra){
+      // Face width line
+      const p234=ai[234],p454=ai[454];
+      _drawDimLine(ctx,tx(p234.x),ty(p234.y),tx(p454.x),ty(p454.y),'#00ffc8',`W/H ${ra.whRatio.toFixed(2)}`,-14);
+      // Face height line
+      const p10=ai[10],p152=ai[152];
+      _drawDimLine(ctx,tx(p10.x)+18,ty(p10.y),tx(p152.x)+18,ty(p152.y),'#c9a54e',`삼정 ${(ra.thirdsScore*100).toFixed(0)}%`,12);
+      // Symmetry indicator
+      ctx.fillStyle='rgba(0,255,200,0.9)';ctx.font='bold 10px sans-serif';
+      ctx.fillText(`대칭 ${(ra.symmetry*100).toFixed(0)}%`,cw/2,ch-12);
+    }
+    else if(featureType==='eyes'&&ra){
+      // Left eye width line
+      const p33=ai[33],p133=ai[133];
+      _drawDimLine(ctx,tx(p33.x),ty(p33.y),tx(p133.x),ty(p133.y),'#4fc3e8',`비율 ${ra.eyeRatio.toFixed(1)}`,-10);
+      // Right eye
+      const p362=ai[362],p263=ai[263];
+      _drawDimLine(ctx,tx(p362.x),ty(p362.y),tx(p263.x),ty(p263.y),'#4fc3e8','',-10);
+      // Eye size ratio
+      ctx.fillStyle='rgba(79,195,232,0.9)';ctx.font='bold 9px sans-serif';
+      ctx.fillText(`크기 ${(ra.eyeSizeRatio*100).toFixed(1)}%`,cw/2,ch-10);
+      // Droop angle indicator
+      const droopAngle=Math.atan2(ai[33].y-ai[133].y,ai[133].x-ai[33].x)*180/Math.PI;
+      _drawAngleArc(ctx,tx(p133.x),ty(p133.y),20,droopAngle,'#4fc3e8');
+    }
+    else if(featureType==='nose'&&ra){
+      // Nose width line
+      const p129=ai[129],p358=ai[358];
+      _drawDimLine(ctx,tx(p129.x),ty(p129.y),tx(p358.x),ty(p358.y),'#e8a04f',`너비 ${(ra.noseWRatio*100).toFixed(1)}%`,-10);
+      // Nose height line
+      const p168=ai[168],p1=ai[1];
+      _drawDimLine(ctx,tx(p168.x)-16,ty(p168.y),tx(p1.x)-16,ty(p1.y),'#e8a04f',`높이 ${(ra.noseHRatio*100).toFixed(1)}%`,0);
+    }
+    else if(featureType==='mouth'&&ra){
+      // Mouth width line
+      const p61=ai[61],p291=ai[291];
+      _drawDimLine(ctx,tx(p61.x),ty(p61.y),tx(p291.x),ty(p291.y),'#e85a4f',`입/동공 ${ra.mouthFaceRatio.toFixed(2)}`,-10);
+      // Lip thickness
+      ctx.fillStyle='rgba(232,90,79,0.9)';ctx.font='bold 9px sans-serif';
+      ctx.fillText(`입술두께 ${(ra.lipThicknessRatio*100).toFixed(1)}%`,cw/2,ch-10);
+    }
+
+    // 4. Scan line effect (top-right corner tech badge)
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillRect(cw-58,4,54,16);ctx.strokeStyle='rgba(0,255,200,0.4)';ctx.strokeRect(cw-58,4,54,16);
+    ctx.fillStyle='#00ffc8';ctx.font='bold 8px monospace';ctx.textAlign='right';
+    ctx.fillText('AI SCAN',cw-8,14);
+  };
+  img.src=photoState.face.img;
+}
+
+// 치수선(dimension line) 그리기 헬퍼
+function _drawDimLine(ctx,x1,y1,x2,y2,color,label,labelOffset){
+  ctx.save();
+  ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.globalAlpha=0.85;
+  ctx.setLineDash([3,2]);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.setLineDash([]);
+  // End ticks
+  const angle=Math.atan2(y2-y1,x2-x1);
+  const perpX=Math.cos(angle+Math.PI/2)*4;
+  const perpY=Math.sin(angle+Math.PI/2)*4;
+  ctx.beginPath();ctx.moveTo(x1-perpX,y1-perpY);ctx.lineTo(x1+perpX,y1+perpY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2-perpX,y2-perpY);ctx.lineTo(x2+perpX,y2+perpY);ctx.stroke();
+  // Label
+  if(label){
+    const mx=(x1+x2)/2,my=(y1+y2)/2+labelOffset;
+    ctx.fillStyle='rgba(0,0,0,0.65)';
+    const tw=ctx.measureText(label).width+8;
+    ctx.fillRect(mx-tw/2,my-7,tw,14);
+    ctx.fillStyle=color;ctx.font='bold 9px "SF Mono",Consolas,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(label,mx,my);
+  }
+  ctx.restore();
+}
+
+// 각도 표시 아크 헬퍼
+function _drawAngleArc(ctx,cx,cy,radius,angleDeg,color){
+  ctx.save();
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.globalAlpha=0.8;
+  const startRad=0;
+  const endRad=angleDeg*Math.PI/180;
+  ctx.beginPath();ctx.arc(cx,cy,radius,startRad,-Math.abs(endRad),angleDeg<0);ctx.stroke();
+  // Angle label
+  const labelRad=-Math.abs(endRad)/2;
+  const lx=cx+Math.cos(labelRad)*(radius+12);
+  const ly=cy+Math.sin(labelRad)*(radius+12);
+  ctx.fillStyle=color;ctx.font='bold 8px monospace';ctx.textAlign='center';
+  ctx.fillText(Math.abs(angleDeg).toFixed(1)+'°',lx,ly);
+  ctx.restore();
 }
 
 // Creates the result container with all traits HIDDEN — they reveal one-by-one as lines are drawn
@@ -3033,11 +3181,15 @@ async function analyzeFace(){
       block.classList.add('reveal');
       const fill=block.querySelector('.trait-meter-fill');
       if(fill)fill.style.width=fill.dataset.w+'%';
-      // Populate crop canvas (draws async directly into the canvas)
+      // Populate crop canvas — AI mesh overlay if landmarks available, else simple crop
       const cropCanvas=document.getElementById('faceCrop-'+idx);
       if(cropCanvas){
         const featureType=block.dataset.featureType;
-        cropFaceFeatureToCanvas(cropCanvas,featureType,lm);
+        if(aiScores&&photoState.face.aiLandmarks&&photoState.face.aiLandmarks.length>=468){
+          drawAIMeshCanvas(cropCanvas,featureType,lm,aiScores);
+        }else{
+          cropFaceFeatureToCanvas(cropCanvas,featureType,lm);
+        }
       }
       setTimeout(()=>block.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
     }
@@ -3156,22 +3308,14 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
     d.id='faceTrait-'+i;
     d.style.borderLeftColor=t.color;
 
-    // Build comparison panel HTML
     const featureTypeMap=['shape','eyes','nose','mouth'];
-    const refSvg=generateFaceReferenceSVG(featureTypeMap[i],t.label);
-    const refSvgHtml=refSvg.outerHTML;
+    const hasAI=!!(photoState.face.aiLandmarks&&photoState.face.aiLandmarks.length>=468);
 
     d.innerHTML=`<div class="trait-header"><span style="color:${t.color}">●</span> ${t.icon} ${t.name} <span class="badge">${t.label}</span></div>
     <div style="font-size:10px;color:var(--gold);opacity:.85;margin-bottom:6px;font-family:'Noto Serif KR',serif">典據 ${t.source}</div>
-    <div class="comparison-panel">
-      <div class="comp-side">
-        <canvas id="faceCrop-${i}" width="140" height="140" style="background:rgba(0,0,0,.2);border-radius:6px"></canvas>
-        <div class="comp-label">당신의 얼굴</div>
-      </div>
-      <div class="comp-side">
-        ${refSvgHtml}
-        <div class="comp-label">전형</div>
-      </div>
+    <div style="text-align:center;margin-bottom:10px">
+      <canvas id="faceCrop-${i}" width="${hasAI?280:140}" height="${hasAI?200:140}" style="background:rgba(0,0,0,.2);border-radius:8px;max-width:100%"></canvas>
+      <div style="font-size:9px;color:rgba(0,255,200,0.6);margin-top:4px;font-family:monospace">${hasAI?'AI 468-point Mesh Analysis':'당신의 얼굴'}</div>
     </div>
     <div class="trait-desc" style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic;border-left:2px solid rgba(201,165,78,.2);padding-left:8px">${t.basis}</div>
     <div class="trait-desc">→ ${t.desc}</div>
@@ -3218,28 +3362,45 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
       }
     }catch(e){/* LLM optional */}
 
-    // ── Paywall: 프리미엄 리포트 결제 유도 ──
+    // ── Paywall: 개인화된 감질나는 티저 ──
     setTimeout(()=>{
       const fiveEl=fiveElement?.el||'';
+      const ra=aiScores?aiScores.ratios:null;
+      // 개인화된 경고 메시지 (수치 기반)
+      let warningMsg='얼굴에서 재물이 새어나가는 특징';
+      let warningDetail='코와 눈의 비율을 분석한 결과, 40대 중반에 큰 금전적 위기가 올 수 있는 징후가...';
+      if(ra){
+        if(ra.noseWRatio<0.25) {warningMsg='코(재백궁)가 좁아 재물이 새어나가는 관상';warningDetail=`코 너비가 얼굴의 ${(ra.noseWRatio*100).toFixed(1)}%로, 재백궁이 좁은 편입니다. 중년 이후 재물 손실의 위험이...`}
+        else if(ra.symmetry<0.85) {warningMsg='좌우 비대칭으로 인한 운의 불균형';warningDetail=`안면 대칭도 ${(ra.symmetry*100).toFixed(0)}%로 약간의 불균형이 감지되었습니다. 이는 대인관계에서...`}
+        else if(ra.lipThicknessRatio<0.04) {warningMsg='얇은 입술로 인한 말년 인복 약화';warningDetail=`입술 두께 비율 ${(ra.lipThicknessRatio*100).toFixed(1)}%는 평균 이하입니다. 출납관이 약해 말년에...`}
+        else if(ra.thirdsScore<0.8) {warningMsg='삼정 불균형으로 인한 운세 편차';warningDetail=`삼정 균형도 ${(ra.thirdsScore*100).toFixed(0)}%로, 초년·중년·말년 운의 편차가 큰 편입니다...`}
+      }
+
       const paywallBox=document.createElement('div');
-      paywallBox.style.cssText='margin-top:20px;position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(201,165,78,.35);opacity:0;transform:translateY(12px);transition:all .8s ease';
+      paywallBox.style.cssText='margin-top:20px;position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(232,90,79,.3);opacity:0;transform:translateY(12px);transition:all .8s ease';
       paywallBox.innerHTML=`
-        <div style="padding:20px 18px;background:rgba(20,20,30,0.85);filter:blur(4px);user-select:none;pointer-events:none">
-          <div style="font-size:14px;color:var(--gold);font-weight:700;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 나의 40대 이후 재운 흐름도</div>
-          <div style="font-size:12px;color:var(--text2);line-height:1.8">당신의 재백궁(코) 비율과 안면 대칭성을 종합해 볼 때, 중년 이후의 재물운이 크게 요동치는 시기가 있습니다. 특히 ${fiveEl} 기운이 강한 해에 큰 전환점이 찾아오며, 이 시기를 잘 활용하면 재산이 크게 불어날 수 있습니다. 구체적인 시기와 대응법은...</div>
-          <div style="font-size:14px;color:var(--gold);font-weight:700;margin-top:16px;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 피해야 할 상극의 인연</div>
-          <div style="font-size:12px;color:var(--text2);line-height:1.8">당신의 관상학적 오행 기운은 특정 기운을 가진 사람과 만났을 때 에너지를 크게 빼앗깁니다. 절대로 동업하거나 깊은 관계를 맺으면 안 되는 상이 있으며, 특히 눈의 형태와 입의 비율로 볼 때...</div>
-          <div style="font-size:14px;color:var(--gold);font-weight:700;margin-top:16px;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 올해의 관상 운세 캘린더</div>
-          <div style="font-size:12px;color:var(--text2);line-height:1.8">삼정(三庭) 균형과 오행 분석을 바탕으로, 올해 12개월 동안의 운세 흐름을 월별로 상세하게 풀어드립니다. 특히 재물운이 가장 강한 달과 건강에 유의해야 할 시기를...</div>
+        <div style="padding:16px 18px;background:rgba(232,90,79,.06)">
+          <div style="font-size:13px;color:#e85a4f;font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">⚠️ AI가 당신의 얼굴에서 치명적인 특징을 발견했습니다</div>
+          <div style="position:relative;overflow:hidden;border-radius:8px;margin-bottom:12px">
+            <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(0,0,0,.3)">
+              <strong style="color:#e85a4f">${warningMsg}</strong><br>
+              <span style="filter:blur(3px);user-select:none">${warningDetail} 구체적인 시기와 보완법, 그리고 당신과 절대로 동업하면 안 되는 상극의 관상까지 프리미엄 리포트에서 확인하세요.</span>
+            </div>
+          </div>
         </div>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(to top,rgba(10,10,18,1) 15%,rgba(10,10,18,0.5) 100%)">
-          <div style="font-size:32px;margin-bottom:12px">🔮</div>
-          <div style="font-size:15px;color:white;font-weight:700;margin-bottom:6px;font-family:'Noto Serif KR',serif">더 깊은 운명의 비밀을 확인하세요</div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:18px;text-align:center;line-height:1.6;max-width:260px">40대 재운 흐름도 · 상극 인연 분석 · 월별 운세 캘린더<br>총 3가지 프리미엄 리포트</div>
-          <button onclick="handlePremiumPurchase('face')" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:13px 28px;border-radius:26px;font-weight:700;font-size:14px;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,0.45);cursor:pointer;transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 25px rgba(201,165,78,0.6)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 20px rgba(201,165,78,0.45)'">
-            프리미엄 관상 리포트 열기 &nbsp;₩4,900
-          </button>
-          <div style="font-size:10px;color:var(--text2);opacity:.5;margin-top:10px">결제 후 즉시 확인 가능</div>
+        <div style="padding:0 18px 18px;background:rgba(20,20,30,0.8)">
+          <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 프리미엄 리포트 구성</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 10대~70대 평생 대운 그래프 (재물·애정·건강)</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#e85a4f;font-size:14px">⚠️</span> 파상(破相) 분석 + 개운 메이크업·스타일링 가이드</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fe8a4;font-size:14px">🔥</span> 절대 피해야 할 상극 관상 & 최고의 궁합 관상</div>
+          </div>
+          <div style="text-align:center">
+            <button onclick="handlePremiumPurchase('face')" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 32px;border-radius:26px;font-weight:700;font-size:14px;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,0.45);cursor:pointer;transition:transform .2s,box-shadow .2s;width:100%;max-width:280px" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+              4,900원으로 내 운명의 비밀 풀기
+            </button>
+            <div style="font-size:9px;color:var(--text2);opacity:.4;margin-top:8px">AI 468점 정밀 분석 기반 · 결제 후 즉시 확인</div>
+          </div>
         </div>`;
       const summaryEl=document.getElementById('faceSummarySection');
       if(summaryEl)summaryEl.parentElement.insertBefore(paywallBox,summaryEl.nextSibling);
@@ -3250,12 +3411,171 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
 }
 
 // ── 프리미엄 결제 핸들러 (결제 모듈 연동 시 교체) ──
-function handlePremiumPurchase(type){
+async function handlePremiumPurchase(type){
   const msg=type==='face'?'프리미엄 관상 리포트':'프리미엄 리포트';
   // TODO: 실제 결제 모듈(카카오페이, 토스페이먼츠 등) 연동
-  if(confirm(`${msg} (₩4,900)를 구매하시겠습니까?\n\n※ 현재 결제 시스템 연동 준비 중입니다.\n    곧 카카오페이·토스페이로 간편 결제가 가능해집니다.`)){
-    alert('결제 시스템 연동 준비 중입니다. 곧 서비스됩니다!');
+  if(!confirm(`${msg} (₩4,900)를 구매하시겠습니까?\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.`))return;
+
+  // 결제 성공 가정 후 프리미엄 콘텐츠 생성
+  const paywallEl=document.querySelector('[onclick*="handlePremiumPurchase"]')?.closest('[style*="position:relative"]');
+  if(paywallEl){
+    paywallEl.innerHTML='<div style="padding:30px;text-align:center"><div style="font-size:28px;margin-bottom:12px" class="spin-emoji">🔮</div><div style="color:var(--gold);font-size:13px;font-family:\'Noto Serif KR\',serif">프리미엄 리포트를 생성하고 있습니다...</div><div style="margin-top:10px;width:160px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;animation:premLoad 3s ease forwards"></div></div></div>';
+    // Add loading animation
+    if(!document.getElementById('premLoadStyle')){
+      const st=document.createElement('style');st.id='premLoadStyle';
+      st.textContent='@keyframes premLoad{0%{width:0}50%{width:70%}100%{width:95%}} .spin-emoji{animation:spinE 1.5s linear infinite} @keyframes spinE{from{transform:rotate(0)}to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
   }
+
+  try{
+    // 저장된 분석 데이터로 프리미엄 API 호출
+    const ai=photoState.face.aiLandmarks;
+    const cls=(ai&&ai.length>=468)?classifyFaceFromLandmarks(ai):null;
+    const fiveEl=cls?FACE_SOURCES.shape[cls.shapeOpt.v]:null;
+    const premFeatures={
+      shape:{label:FACE_R.shape[cls?.shapeOpt?.v||'round']?.t||'',fiveElement:fiveEl?.el||'',score:FACE_R.shape[cls?.shapeOpt?.v||'round']?.s||80},
+      eyes:{label:FACE_R.eyes[cls?.eyeOpt?.v||'big']?.t||'',score:cls?.eyeScore||80},
+      nose:{label:FACE_R.nose[cls?.noseOpt?.v||'high']?.t||'',score:cls?.noseScore||80},
+      mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
+      overallScore:cls?.overallScore||80,
+      measurements:cls?.ratios||null
+    };
+    const result=await callFortuneAPI('face_premium',premFeatures);
+    if(result&&paywallEl){
+      renderPremiumReport(paywallEl,result);
+    }else if(paywallEl){
+      paywallEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px">프리미엄 리포트 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</div>';
+    }
+  }catch(e){
+    console.error('Premium report error:',e);
+    if(paywallEl) paywallEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px">오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>';
+  }
+}
+
+function renderPremiumReport(container,data){
+  let html='<div style="padding:4px">';
+
+  // ① 평생 대운 그래프
+  if(data.fortuneGraph){
+    const fg=data.fortuneGraph;
+    const decades=fg.decades||[];
+    html+=`<div style="margin-bottom:20px">
+      <div style="font-size:15px;color:var(--gold);font-weight:700;margin-bottom:12px;font-family:'Noto Serif KR',serif">📊 평생 대운(大運) 그래프</div>
+      <canvas id="premiumFortuneChart" width="320" height="200" style="width:100%;max-width:320px;display:block;margin:0 auto;background:rgba(0,0,0,.2);border-radius:8px"></canvas>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;font-size:9px">
+        <span style="color:#f5b946">● 재물운</span>
+        <span style="color:#e85a4f">● 애정운</span>
+        <span style="color:#4fc3e8">● 건강운</span>
+      </div>`;
+    // Decade keywords
+    html+='<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">';
+    decades.forEach(d=>{
+      html+=`<span style="background:rgba(201,165,78,.1);border:1px solid rgba(201,165,78,.2);border-radius:12px;padding:3px 8px;font-size:9px;color:var(--text2)"><strong style="color:var(--gold)">${d.age}</strong> ${d.keyword||''}</span>`;
+    });
+    html+='</div>';
+    if(fg.analysis) html+=`<div style="margin-top:12px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${fg.analysis}</div>`;
+    html+='</div>';
+  }
+
+  // ② 파상 분석 & 개운법
+  if(data.breakingPoint){
+    const bp=data.breakingPoint;
+    html+=`<div style="margin-bottom:20px">
+      <div style="font-size:15px;color:#e85a4f;font-weight:700;margin-bottom:12px;font-family:'Noto Serif KR',serif">⚠️ 파상(破相) 분석 & 개운법</div>`;
+    (bp.weaknesses||[]).forEach((w,i)=>{
+      html+=`<div style="margin-bottom:12px;padding:10px 12px;background:rgba(232,90,79,.06);border-left:3px solid #e85a4f;border-radius:0 8px 8px 0">
+        <div style="font-size:12px;color:#e85a4f;font-weight:600;margin-bottom:4px">${i+1}. ${w.part} ${w.measurement?'<span style="opacity:.7;font-size:10px">['+w.measurement+']</span>':''}</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:6px">❌ ${w.problem}</div>
+        <div style="font-size:11px;color:#4fe8a4;line-height:1.7">✅ ${w.solution}</div>
+      </div>`;
+    });
+    if(bp.summary) html+=`<div style="font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(79,232,164,.04);border-radius:8px">💡 ${bp.summary}</div>`;
+    html+='</div>';
+  }
+
+  // ③ 상극 인연 분석
+  if(data.enemyFace){
+    const ef=data.enemyFace;
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:15px;color:#c9a54e;font-weight:700;margin-bottom:12px;font-family:'Noto Serif KR',serif">🔥 상극(相克) · 상생(相生) 인연 분석</div>`;
+    // Enemies
+    html+='<div style="font-size:12px;color:#e85a4f;font-weight:600;margin-bottom:8px">🚫 피해야 할 관상</div>';
+    (ef.enemies||[]).forEach(e=>{
+      html+=`<div style="margin-bottom:8px;padding:8px 10px;background:rgba(232,90,79,.05);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
+        <strong style="color:#e85a4f">${e.feature}</strong> — ${e.reason}<br><span style="opacity:.8">⚡ ${e.risk}</span>
+      </div>`;
+    });
+    // Allies
+    html+='<div style="font-size:12px;color:#4fe8a4;font-weight:600;margin-top:12px;margin-bottom:8px">✨ 함께하면 좋은 관상</div>';
+    (ef.allies||[]).forEach(a=>{
+      html+=`<div style="margin-bottom:8px;padding:8px 10px;background:rgba(79,232,164,.05);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
+        <strong style="color:#4fe8a4">${a.feature}</strong> — ${a.reason}<br><span style="opacity:.8">🌟 ${a.benefit}</span>
+      </div>`;
+    });
+    if(ef.summary) html+=`<div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${ef.summary}</div>`;
+    html+='</div>';
+  }
+
+  html+='<div style="text-align:center;margin-top:12px"><div style="font-size:10px;color:var(--text2);opacity:.5">※ 프리미엄 관상 리포트 — AI 468점 정밀 분석 기반</div></div>';
+  html+='</div>';
+  container.style.border='1px solid rgba(201,165,78,.3)';
+  container.style.borderRadius='14px';
+  container.style.background='rgba(20,20,30,0.6)';
+  container.innerHTML=html;
+
+  // 대운 그래프 캔버스 렌더링
+  if(data.fortuneGraph?.decades){
+    setTimeout(()=>drawFortuneGraph(data.fortuneGraph.decades),200);
+  }
+}
+
+function drawFortuneGraph(decades){
+  const cv=document.getElementById('premiumFortuneChart');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  const pad={t:20,b:30,l:30,r:10};
+  const gW=W-pad.l-pad.r, gH=H-pad.t-pad.b;
+
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+gH*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='8px monospace';ctx.textAlign='right';
+    ctx.fillText((i*25)+'',pad.l-4,y+3);
+  }
+
+  // X labels
+  ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='8px sans-serif';
+  decades.forEach((d,i)=>{
+    const x=pad.l+(i/(decades.length-1))*gW;
+    ctx.fillText(d.age,x,H-pad.b+14);
+  });
+
+  // Draw lines
+  const colors={wealth:'#f5b946',love:'#e85a4f',health:'#4fc3e8'};
+  ['wealth','love','health'].forEach(key=>{
+    ctx.strokeStyle=colors[key];ctx.lineWidth=2;ctx.globalAlpha=0.9;
+    ctx.beginPath();
+    decades.forEach((d,i)=>{
+      const x=pad.l+(i/(decades.length-1))*gW;
+      const y=pad.t+gH*(1-(d[key]||50)/100);
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    // Dots
+    ctx.fillStyle=colors[key];
+    decades.forEach((d,i)=>{
+      const x=pad.l+(i/(decades.length-1))*gW;
+      const y=pad.t+gH*(1-(d[key]||50)/100);
+      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+  });
 }
 
 // ============================================================
