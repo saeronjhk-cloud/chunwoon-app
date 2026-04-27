@@ -3578,20 +3578,39 @@ async function handlePremiumPurchase(type){
     // ① 클라이언트에서 십이궁·오관·삼정 즉시 생성 (API 불필요)
     const clientData=_generateClientPremium(ra, fiveEl?.el||'');
 
-    // ② API는 서술형 콘텐츠만 호출 (analysisProcess, fortuneGraph, breakingPoint, enemyFace)
+    // ② API는 서술형 콘텐츠만 호출 (직접 fetch로 상세 에러 캡처)
     let apiResult=null;
     let apiError=null;
     try{
-      apiResult=await callFortuneAPI('face_premium',premFeatures);
+      const resp=await fetch('/api/fortune',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type:'face_premium',features:premFeatures})
+      });
+      const respText=await resp.text();
+      if(!resp.ok){
+        apiError=`HTTP ${resp.status}: ${respText.substring(0,200)}`;
+      }else{
+        try{
+          const data=JSON.parse(respText);
+          if(data.success&&data.result){
+            apiResult=data.result;
+          }else{
+            apiError=`API 응답 형식 오류: ${JSON.stringify(data).substring(0,200)}`;
+          }
+        }catch(pe){
+          apiError=`JSON 파싱 실패: ${respText.substring(0,200)}`;
+        }
+      }
     }catch(apiE){
-      apiError=apiE.message||'Unknown API error';
-      console.error('Premium API call error:',apiE);
+      apiError=`네트워크 오류: ${apiE.message}`;
     }
     if(loadTimer)clearInterval(loadTimer);
 
     // API 결과 검증
     const hasApiData=apiResult&&(apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace);
-    console.log('Premium API result:', hasApiData?'OK':'MISSING', apiResult?Object.keys(apiResult):'null');
+    if(!hasApiData&&apiResult)apiError=(apiError||'')+` keys:[${Object.keys(apiResult)}]`;
+    console.log('Premium API:', hasApiData?'OK':'FAIL', apiError||'', apiResult?Object.keys(apiResult):'null');
 
     // ③ 클라이언트 데이터 + API 데이터 병합
     const merged=Object.assign({}, clientData, apiResult||{});
@@ -3636,9 +3655,8 @@ async function handlePremiumPurchase(type){
 async function retryPremiumAPI(){
   const paywallEl=document.querySelector('[data-paywall="face"]');
   if(!paywallEl)return;
-  // 기존 에러 안내 제거
   const oldNotice=paywallEl.querySelector('[style*="rgba(232,90,79"]');
-  if(oldNotice)oldNotice.innerHTML='<div style="text-align:center;padding:10px"><div class="spin-emoji" style="font-size:24px">🔮</div><div style="font-size:11px;color:var(--gold);margin-top:8px">AI 심화 분석 재시도 중...</div></div>';
+  if(oldNotice)oldNotice.innerHTML='<div style="text-align:center;padding:10px"><div class="spin-emoji" style="font-size:24px">🔮</div><div style="font-size:11px;color:var(--gold);margin-top:8px">AI 심화 분석 재시도 중... (최대 30초)</div></div>';
 
   try{
     const ai=photoState.face.aiLandmarks;
@@ -3653,17 +3671,40 @@ async function retryPremiumAPI(){
       overallScore:cls?.overallScore||80,
       measurements:ra
     };
-    const apiResult=await callFortuneAPI('face_premium',premFeatures);
-    const hasApiData=apiResult&&(apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace);
-    if(hasApiData){
-      const clientData=_generateClientPremium(ra, fiveEl?.el||'');
-      const merged=Object.assign({}, clientData, apiResult);
-      renderPremiumReport(paywallEl,merged);
+    // 직접 fetch
+    const resp=await fetch('/api/fortune',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({type:'face_premium',features:premFeatures})
+    });
+    const respText=await resp.text();
+    let errMsg='';
+    if(!resp.ok){
+      errMsg=`HTTP ${resp.status}: ${respText.substring(0,300)}`;
     }else{
-      if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">재시도 실패 — ${apiResult?'응답 형식 오류 (keys: '+Object.keys(apiResult).join(',')+')':'응답 없음'}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
+      try{
+        const data=JSON.parse(respText);
+        if(data.success&&data.result){
+          const apiResult=data.result;
+          const hasApiData=apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace;
+          if(hasApiData){
+            const clientData=_generateClientPremium(ra, fiveEl?.el||'');
+            const merged=Object.assign({}, clientData, apiResult);
+            renderPremiumReport(paywallEl,merged);
+            return;
+          }else{
+            errMsg=`응답 키 불일치: [${Object.keys(apiResult)}]`;
+          }
+        }else{
+          errMsg=`API 실패: ${JSON.stringify(data).substring(0,300)}`;
+        }
+      }catch(pe){
+        errMsg=`JSON 파싱 실패: ${respText.substring(0,300)}`;
+      }
     }
+    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f;margin-bottom:4px">재시도 실패</div><div style="font-size:9px;color:var(--text2);word-break:break-all;max-height:80px;overflow:auto">${errMsg}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }catch(e){
-    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">오류: ${e.message}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
+    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">네트워크 오류: ${e.message}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }
 }
 
