@@ -2,6 +2,11 @@
   "version": 2,
   "name": "chunwoon-app",
   "public": true,
+  "functions": {
+    "api/fortune.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
