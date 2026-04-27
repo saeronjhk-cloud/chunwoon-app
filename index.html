@@ -3389,7 +3389,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   </div>
   <div id="faceTraits"></div>
   <div id="faceSummarySection" class="reading" style="margin-top:14px;opacity:0;transform:translateY(10px);transition:all .8s ease">종합적으로 <strong style="color:var(--gold)">${fiveElement.el}</strong>의 기반 위에 <strong style="color:var(--gold)">${sR.t}</strong>과 <strong style="color:var(--gold)">${eR.t}</strong>이 더해진 상입니다. 좋은 마음이 좋은 상을 만듭니다.</div>
-  <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:center;line-height:1.6">※ 본 결과는 『마의상법』·『유장상법』·『신상전편』 등 전통 관상서를 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
+  <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:left;line-height:1.6">※ 본 결과는 『마의상법』·『유장상법』·『신상전편』 등 전통 관상서를 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
   <div class="share-wrap"><button class="share-btn" onclick="shareResult('face')">📤 결과 공유하기</button></div></div>`;
   r.classList.add('show');
   // Create trait blocks (hidden) — revealed during animation
@@ -3793,16 +3793,16 @@ function renderPremiumReport(container,data){
   const citationHTML=(c)=>{
     if(!c||!c.original)return'';
     return`<div style="margin:8px 0;padding:10px 12px;background:linear-gradient(135deg,rgba(201,165,78,.08),rgba(139,105,20,.04));border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
-      <div style="font-size:9px;color:var(--gold);font-weight:600;margin-bottom:4px;font-family:'Noto Serif KR',serif">📜 출전: 『${c.book||''}』 ${c.chapter||''}</div>
-      <div style="font-size:13px;color:#f5d78e;font-family:'Noto Serif KR',serif;line-height:1.6;margin-bottom:4px;letter-spacing:1px">"${c.original}"</div>
-      ${c.pronunciation?`<div style="font-size:9px;color:var(--text2);opacity:.6;margin-bottom:4px">(${c.pronunciation})</div>`:''}
-      <div style="font-size:11px;color:var(--text2);line-height:1.6;font-style:italic">→ ${c.translation||''}</div>
+      <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:4px;font-family:'Noto Serif KR',serif">📜 출전: 『${c.book||''}』 ${c.chapter||''}</div>
+      <div style="font-size:15px;color:#f5d78e;font-family:'Noto Serif KR',serif;line-height:1.6;margin-bottom:4px;letter-spacing:1px">"${c.original}"</div>
+      ${c.pronunciation?`<div style="font-size:11px;color:var(--text2);opacity:.6;margin-bottom:4px">(${c.pronunciation})</div>`:''}
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">→ ${c.translation||''}</div>
     </div>`;
   };
 
   // 섹션 헤더 헬퍼
-  const sectionHeader=(emoji,title,color)=>`<div style="font-size:15px;color:${color||'var(--gold)'};font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${emoji} ${title}</div>`;
-  const sectionSub=(text)=>`<div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:14px">${text}</div>`;
+  const sectionHeader=(emoji,title,color)=>`<div style="font-size:17px;color:${color||'var(--gold)'};font-weight:700;margin-bottom:6px;font-family:'Noto Serif KR',serif">${emoji} ${title}</div>`;
+  const sectionSub=(text)=>`<div style="font-size:12px;color:var(--text2);opacity:.7;margin-bottom:14px">${text}</div>`;
 
   // ⓪ 분석 과정 상세 공개
   if(data.analysisProcess){
@@ -3815,24 +3815,24 @@ function renderPremiumReport(container,data){
     (ap.features||[]).forEach((f,i)=>{
       const color=partColors2[f.part]||'#c9a54e';
       html+=`<div style="margin-bottom:16px;padding:12px 14px;background:rgba(0,0,0,.2);border-radius:10px;border:1px solid ${color}33">
-        <div style="font-size:13px;color:${color};font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">${partIcons[i]||'●'} ${f.part}</div>
+        <div style="font-size:15px;color:${color};font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">${partIcons[i]||'●'} ${f.part}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div style="font-size:9px;color:var(--text2);white-space:nowrap;min-width:50px">① 측정값</div>
-          <div style="flex:1;font-size:11px;color:white;background:rgba(0,255,200,.08);padding:4px 8px;border-radius:4px;font-family:monospace">${f.measured||''}</div>
+          <div style="font-size:12px;color:var(--text2);white-space:nowrap;min-width:55px">① 측정값</div>
+          <div style="flex:1;font-size:13px;color:white;background:rgba(0,255,200,.08);padding:4px 8px;border-radius:4px;font-family:monospace">${f.measured||''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div style="font-size:9px;color:var(--text2);white-space:nowrap;min-width:50px">② 기준</div>
-          <div style="flex:1;font-size:11px;color:var(--text2);background:rgba(201,165,78,.06);padding:4px 8px;border-radius:4px">${f.standard||''}</div>
+          <div style="font-size:12px;color:var(--text2);white-space:nowrap;min-width:55px">② 기준</div>
+          <div style="flex:1;font-size:13px;color:var(--text2);background:rgba(201,165,78,.06);padding:4px 8px;border-radius:4px">${f.standard||''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div style="font-size:9px;color:var(--text2);white-space:nowrap;min-width:50px">③ 판정</div>
+          <div style="font-size:12px;color:var(--text2);white-space:nowrap;min-width:55px">③ 판정</div>
           <div style="flex:1;display:flex;align-items:center;gap:6px">
-            <span style="font-size:12px;color:${color};font-weight:700">${f.classification||''}</span>
-            ${f.confidence?`<span style="font-size:9px;color:var(--text2);opacity:.7">(확신도 ${f.confidence}%)</span>`:''}
+            <span style="font-size:14px;color:${color};font-weight:700">${f.classification||''}</span>
+            ${f.confidence?`<span style="font-size:11px;color:var(--text2);opacity:.7">(확신도 ${f.confidence}%)</span>`:''}
           </div>
         </div>
         ${f.confidence?`<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-bottom:8px;overflow:hidden"><div style="height:100%;width:${f.confidence}%;background:linear-gradient(90deg,${color},${color}88);border-radius:2px"></div></div>`:''}
-        <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:4px">${f.reasoning||''}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:4px">${f.reasoning||''}</div>
         ${citationHTML(f.citation)}
       </div>`;
     });
@@ -3858,8 +3858,8 @@ function renderPremiumReport(container,data){
           <div style="font-size:13px;color:${color};font-weight:700;font-family:'Noto Serif KR',serif">${p.name||''}</div>
           <span style="font-size:10px;padding:2px 10px;border-radius:10px;font-weight:700;${gradeStyle(p.grade)}">${p.grade||'중'}</span>
         </div>
-        <div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:4px">📍 ${p.area||''} ${p.measurement?`| 실측: <span style="color:white;font-family:monospace">${p.measurement}</span>`:''}</div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.8;margin-bottom:4px">${p.interpretation||''}</div>
+        <div style="font-size:12px;color:var(--text2);opacity:.7;margin-bottom:4px">📍 ${p.area||''} ${p.measurement?`| 실측: <span style="color:white;font-family:monospace">${p.measurement}</span>`:''}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:4px">${p.interpretation||''}</div>
         ${citationHTML(p.citation)}
       </div>`;
     });
@@ -3876,10 +3876,10 @@ function renderPremiumReport(container,data){
     const offColors=['#a78bfa','#4fc3e8','#e8a04f','#e85a4f'];
     (fo.officials||[]).forEach((o,i)=>{
       html+=`<div style="margin-bottom:14px;padding:12px 14px;background:rgba(0,0,0,.18);border-radius:10px;border:1px solid ${offColors[i]||'#c9a54e'}33">
-        <div style="font-size:13px;color:${offColors[i]||'#c9a54e'};font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${offIcons[i]||'●'} ${o.name||''}</div>
-        ${o.agePeriod?`<div style="font-size:9px;color:var(--gold);opacity:.8;margin-bottom:6px">⏰ 주관 시기: ${o.agePeriod}</div>`:''}
-        ${o.measurement?`<div style="font-size:10px;color:var(--text2);opacity:.7;margin-bottom:4px">실측: <span style="color:white;font-family:monospace">${o.measurement}</span></div>`:''}
-        <div style="font-size:11px;color:var(--text2);line-height:1.8;margin-bottom:4px">${o.interpretation||''}</div>
+        <div style="font-size:15px;color:${offColors[i]||'#c9a54e'};font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${offIcons[i]||'●'} ${o.name||''}</div>
+        ${o.agePeriod?`<div style="font-size:11px;color:var(--gold);opacity:.8;margin-bottom:6px">⏰ 주관 시기: ${o.agePeriod}</div>`:''}
+        ${o.measurement?`<div style="font-size:12px;color:var(--text2);opacity:.7;margin-bottom:4px">실측: <span style="color:white;font-family:monospace">${o.measurement}</span></div>`:''}
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:4px">${o.interpretation||''}</div>
         ${citationHTML(o.citation)}
       </div>`;
     });
@@ -3914,11 +3914,11 @@ function renderPremiumReport(container,data){
       const d=tc[ct.key];
       if(!d||!d.interpretation)return;
       html+=`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(0,0,0,.12);border-radius:8px;border-left:2px solid ${ct.color}">
-        <div style="font-size:11px;color:${ct.color};font-weight:600;margin-bottom:4px">${ct.icon} ${ct.label} (${d.period||ct.period})</div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.8">${d.interpretation}</div>
+        <div style="font-size:13px;color:${ct.color};font-weight:600;margin-bottom:4px">${ct.icon} ${ct.label} (${d.period||ct.period})</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8">${d.interpretation}</div>
       </div>`;
     });
-    if(tc.balance)html+=`<div style="font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px;margin-top:8px">⚖️ ${tc.balance}</div>`;
+    if(tc.balance)html+=`<div style="font-size:13px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px;margin-top:8px">⚖️ ${tc.balance}</div>`;
     if(tc.citation)html+=citationHTML(tc.citation);
     html+='</div>';
   }
@@ -3941,7 +3941,7 @@ function renderPremiumReport(container,data){
       html+=`<span style="background:rgba(201,165,78,.1);border:1px solid rgba(201,165,78,.2);border-radius:12px;padding:3px 8px;font-size:9px;color:var(--text2)"><strong style="color:var(--gold)">${d.age}</strong> ${d.keyword||''}</span>`;
     });
     html+='</div>';
-    if(fg.analysis)html+=`<div style="margin-top:12px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${fg.analysis}</div>`;
+    if(fg.analysis)html+=`<div style="margin-top:12px;font-size:13px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${fg.analysis}</div>`;
     if(fg.citation)html+=citationHTML(fg.citation);
     html+='</div>';
   }
@@ -3954,13 +3954,13 @@ function renderPremiumReport(container,data){
     html+=sectionSub('고전 기준에 미달하는 부위를 진단하고, 메이크업·스타일링·행동 습관으로 보완하는 방법을 제시합니다.');
     (bp.weaknesses||[]).forEach((w,i)=>{
       html+=`<div style="margin-bottom:14px;padding:12px 14px;background:rgba(232,90,79,.04);border-left:3px solid #e85a4f;border-radius:0 8px 8px 0">
-        <div style="font-size:12px;color:#e85a4f;font-weight:600;margin-bottom:6px">${i+1}. ${w.part} ${w.measurement?'<span style="opacity:.7;font-size:10px">['+w.measurement+']</span>':''}</div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:6px">❌ ${w.problem}</div>
+        <div style="font-size:14px;color:#e85a4f;font-weight:600;margin-bottom:6px">${i+1}. ${w.part} ${w.measurement?'<span style="opacity:.7;font-size:12px">['+w.measurement+']</span>':''}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:6px">❌ ${w.problem}</div>
         ${citationHTML(w.citation)}
-        <div style="font-size:11px;color:#4fe8a4;line-height:1.7;margin-top:6px;padding:8px 10px;background:rgba(79,232,164,.06);border-radius:6px">✅ <strong>개운법:</strong> ${w.solution}</div>
+        <div style="font-size:13px;color:#4fe8a4;line-height:1.7;margin-top:6px;padding:8px 10px;background:rgba(79,232,164,.06);border-radius:6px">✅ <strong>개운법:</strong> ${w.solution}</div>
       </div>`;
     });
-    if(bp.summary)html+=`<div style="font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(79,232,164,.04);border-radius:8px">💡 ${bp.summary}</div>`;
+    if(bp.summary)html+=`<div style="font-size:13px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(79,232,164,.04);border-radius:8px">💡 ${bp.summary}</div>`;
     html+='</div>';
   }
 
@@ -3970,24 +3970,24 @@ function renderPremiumReport(container,data){
     html+=`<div style="margin-bottom:20px">`;
     html+=sectionHeader('🔥','상극(相克) · 상생(相生) 인연 분석');
     html+=sectionSub('오행상법에 따라, 당신의 얼굴형과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.');
-    html+='<div style="font-size:12px;color:#e85a4f;font-weight:600;margin-bottom:8px">🚫 피해야 할 관상</div>';
+    html+='<div style="font-size:14px;color:#e85a4f;font-weight:600;margin-bottom:8px">🚫 피해야 할 관상</div>';
     (ef.enemies||[]).forEach(e=>{
-      html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(232,90,79,.04);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
+      html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(232,90,79,.04);border-radius:8px;font-size:13px;color:var(--text2);line-height:1.7">
         <strong style="color:#e85a4f">${e.feature}</strong> — ${e.reason}<br><span style="opacity:.8">⚡ ${e.risk}</span>
         ${citationHTML(e.citation)}
       </div>`;
     });
-    html+='<div style="font-size:12px;color:#4fe8a4;font-weight:600;margin-top:14px;margin-bottom:8px">✨ 함께하면 좋은 관상</div>';
+    html+='<div style="font-size:14px;color:#4fe8a4;font-weight:600;margin-top:14px;margin-bottom:8px">✨ 함께하면 좋은 관상</div>';
     (ef.allies||[]).forEach(a=>{
-      html+=`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(79,232,164,.04);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
+      html+=`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(79,232,164,.04);border-radius:8px;font-size:13px;color:var(--text2);line-height:1.7">
         <strong style="color:#4fe8a4">${a.feature}</strong> — ${a.reason}<br><span style="opacity:.8">🌟 ${a.benefit}</span>
       </div>`;
     });
-    if(ef.summary)html+=`<div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${ef.summary}</div>`;
+    if(ef.summary)html+=`<div style="margin-top:10px;font-size:13px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(201,165,78,.04);border-radius:8px">${ef.summary}</div>`;
     html+='</div>';
   }
 
-  html+='<div style="text-align:center;margin-top:16px"><div style="font-size:10px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 정밀 분석 + 십이궁·오관·삼정·면부백세유년도 + 고전 문헌 원문 인용 기반</div></div>';
+  html+='<div style="text-align:left;margin-top:16px"><div style="font-size:11px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 정밀 분석 + 십이궁·오관·삼정·면부백세유년도 + 고전 문헌 원문 인용 기반</div></div>';
   html+='</div>';
   container.style.border='1px solid rgba(201,165,78,.3)';
   container.style.borderRadius='14px';
