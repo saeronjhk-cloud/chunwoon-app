@@ -3390,7 +3390,10 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   <div id="faceTraits"></div>
   <div id="faceSummarySection" class="reading" style="margin-top:14px;opacity:0;transform:translateY(10px);transition:all .8s ease">종합적으로 <strong style="color:var(--gold)">${fiveElement.el}</strong>의 기반 위에 <strong style="color:var(--gold)">${sR.t}</strong>과 <strong style="color:var(--gold)">${eR.t}</strong>이 더해진 상입니다. 좋은 마음이 좋은 상을 만듭니다.</div>
   <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:left;line-height:1.6">※ 본 결과는 『마의상법』·『유장상법』·『신상전편』 등 전통 관상서를 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
-  <div class="share-wrap"><button class="share-btn" onclick="shareResult('face')">📤 결과 공유하기</button></div></div>`;
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+    <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px">💾 결과 저장하기</button>
+    <button class="share-btn" onclick="showShareMenu('face')" style="flex:1;max-width:180px">📤 결과 공유하기</button>
+  </div></div>`;
   r.classList.add('show');
   // Create trait blocks (hidden) — revealed during animation
   const cont=document.getElementById('faceTraits');
@@ -4303,13 +4306,47 @@ function nativeShare(title, desc) {
   }
 }
 
-// Override shareResult to include Kakao + native share
+// 결과 저장하기 — 브랜드 이미지 다운로드
+function saveResult(type) {
+  // 기존 shareResult 로직 (캔버스 이미지 생성 + 다운로드)
+  const canvas=document.getElementById('shareCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=600;canvas.height=400;
+  const grad=ctx.createLinearGradient(0,0,0,400);
+  grad.addColorStop(0,'#0a0a12');grad.addColorStop(1,'#12121e');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,600,400);
+  ctx.strokeStyle='#c9a54e';ctx.lineWidth=2;ctx.strokeRect(20,20,560,360);
+  ctx.strokeStyle='rgba(201,165,78,0.3)';ctx.lineWidth=1;ctx.strokeRect(30,30,540,340);
+  ctx.fillStyle='#c9a54e';ctx.font='bold 28px "Noto Serif KR", serif';ctx.textAlign='center';
+  ctx.fillText('天 運',300,75);
+  ctx.fillStyle='#9a9890';ctx.font='12px "Noto Sans KR", sans-serif';
+  ctx.fillText('Fortune & Destiny',300,98);
+  ctx.strokeStyle='rgba(201,165,78,0.3)';ctx.beginPath();ctx.moveTo(100,115);ctx.lineTo(500,115);ctx.stroke();
+  const titles={daily:'오늘의 운세',tarot:'타로 결과',saju:'사주 분석',compat:'궁합 결과',palm:'손금 해석',face:'관상 분석',dream:'꿈 해몽',talisman:'오늘의 부적',match:'운세 매칭'};
+  ctx.fillStyle='#c9a54e';ctx.font='20px "Noto Serif KR", serif';
+  ctx.fillText(titles[type]||'운세 결과',300,150);
+  ctx.fillStyle='#e8e6e0';ctx.font='14px "Noto Sans KR", sans-serif';
+  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  ctx.fillText(today,300,180);
+  ctx.fillStyle='rgba(201,165,78,0.7)';ctx.font='60px "Noto Serif KR", serif';
+  ctx.fillText('✦',300,260);
+  ctx.fillStyle='#9a9890';ctx.font='13px "Noto Sans KR", sans-serif';
+  ctx.fillText('천운에서 나의 운세를 확인해보세요',300,320);
+  ctx.fillText('chunwoon-app.vercel.app',300,345);
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`천운_${titles[type]||'결과'}_${today}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('이미지가 저장되었습니다!');
+  });
+}
+
+// 기존 shareResult도 분리된 동작으로 변경 (다른 섹션 호환)
 const _origShare = shareResult;
 shareResult = function(type) {
-  // Generate image first
-  _origShare(type);
-  // Also show share menu
-  setTimeout(() => showShareMenu(type), 500);
+  showShareMenu(type);
 };
 
 function showShareMenu(type) {
@@ -4326,18 +4363,22 @@ function showShareMenu(type) {
     <div style="width:100%;max-width:480px;background:#12121e;border-top-left-radius:20px;border-top-right-radius:20px;padding:24px 20px 36px;animation:slideUp .3s">
       <div style="width:40px;height:4px;background:rgba(201,165,78,.3);border-radius:2px;margin:0 auto 20px"></div>
       <div style="font-size:16px;color:#c9a54e;font-family:'Noto Serif KR',serif;text-align:center;margin-bottom:20px">결과 공유하기</div>
-      <div style="display:flex;justify-content:center;gap:20px">
+      <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
         <button onclick="shareKakao('天運 - ${t}','나의 ${t}를 확인해보세요!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
           <div style="width:52px;height:52px;border-radius:16px;background:#FEE500;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">💬</div>
-          <div style="font-size:10px">카카오톡</div>
+          <div style="font-size:11px">카카오톡</div>
         </button>
         <button onclick="nativeShare('天運 - ${t}','나의 ${t}를 확인해보세요!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
           <div style="width:52px;height:52px;border-radius:16px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">📤</div>
-          <div style="font-size:10px">기타 공유</div>
+          <div style="font-size:11px">다른 앱</div>
         </button>
-        <button onclick="navigator.clipboard.writeText(window.location.href);showToast('링크 복사됨!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
+        <button onclick="navigator.clipboard.writeText(window.location.href);showToast('링크가 복사되었습니다!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
           <div style="width:52px;height:52px;border-radius:16px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">🔗</div>
-          <div style="font-size:10px">링크 복사</div>
+          <div style="font-size:11px">링크 복사</div>
+        </button>
+        <button onclick="saveResult('${type}');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
+          <div style="width:52px;height:52px;border-radius:16px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">💾</div>
+          <div style="font-size:11px">이미지 저장</div>
         </button>
       </div>
     </div>`;
