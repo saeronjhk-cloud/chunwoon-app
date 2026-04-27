@@ -3578,39 +3578,35 @@ async function handlePremiumPurchase(type){
     // ① 클라이언트에서 십이궁·오관·삼정 즉시 생성 (API 불필요)
     const clientData=_generateClientPremium(ra, fiveEl?.el||'');
 
-    // ② API는 서술형 콘텐츠만 호출 (직접 fetch로 상세 에러 캡처)
-    let apiResult=null;
+    // ② API 2단계 분할 호출 (각각 10초 내 완료)
+    let apiResult={};
     let apiError=null;
+    const doFetch=async(apiType)=>{
+      const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,features:premFeatures})});
+      const txt=await resp.text();
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
+      const d=JSON.parse(txt);
+      if(d.success&&d.result)return d.result;
+      throw new Error('응답 형식 오류');
+    };
+    // 1단계: 분석과정 + 대운그래프
     try{
-      const resp=await fetch('/api/fortune',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'face_premium',features:premFeatures})
-      });
-      const respText=await resp.text();
-      if(!resp.ok){
-        apiError=`HTTP ${resp.status}: ${respText.substring(0,200)}`;
-      }else{
-        try{
-          const data=JSON.parse(respText);
-          if(data.success&&data.result){
-            apiResult=data.result;
-          }else{
-            apiError=`API 응답 형식 오류: ${JSON.stringify(data).substring(0,200)}`;
-          }
-        }catch(pe){
-          apiError=`JSON 파싱 실패: ${respText.substring(0,200)}`;
-        }
-      }
-    }catch(apiE){
-      apiError=`네트워크 오류: ${apiE.message}`;
-    }
+      const r1=await doFetch('face_premium_1');
+      Object.assign(apiResult,r1);
+      const msg=document.getElementById('premLoadMsg');
+      if(msg)msg.textContent='파상 분석 + 상극상생 생성 중...';
+      const bar=document.getElementById('premLoadBar');
+      if(bar)bar.style.width='55%';
+    }catch(e1){apiError='1단계: '+e1.message;console.error('Premium API 1:',e1)}
+    // 2단계: 파상 + 상극상생
+    try{
+      const r2=await doFetch('face_premium_2');
+      Object.assign(apiResult,r2);
+    }catch(e2){apiError=(apiError?apiError+' | ':'')+'2단계: '+e2.message;console.error('Premium API 2:',e2)}
     if(loadTimer)clearInterval(loadTimer);
 
-    // API 결과 검증
-    const hasApiData=apiResult&&(apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace);
-    if(!hasApiData&&apiResult)apiError=(apiError||'')+` keys:[${Object.keys(apiResult)}]`;
-    console.log('Premium API:', hasApiData?'OK':'FAIL', apiError||'', apiResult?Object.keys(apiResult):'null');
+    const hasApiData=!!(apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace);
+    console.log('Premium API:', hasApiData?'OK':'FAIL', Object.keys(apiResult));
 
     // ③ 클라이언트 데이터 + API 데이터 병합
     const merged=Object.assign({}, clientData, apiResult||{});
@@ -3672,38 +3668,28 @@ async function retryPremiumAPI(){
       overallScore:cls?.overallScore||80,
       measurements:ra
     };
-    // 직접 fetch
-    const resp=await fetch('/api/fortune',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({type:'face_premium',features:premFeatures})
-    });
-    const respText=await resp.text();
-    let errMsg='';
-    if(!resp.ok){
-      errMsg=`HTTP ${resp.status}: ${respText.substring(0,300)}`;
-    }else{
-      try{
-        const data=JSON.parse(respText);
-        if(data.success&&data.result){
-          const apiResult=data.result;
-          const hasApiData=apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace;
-          if(hasApiData){
-            const clientData=_generateClientPremium(ra, fiveEl?.el||'');
-            const merged=Object.assign({}, clientData, apiResult);
-            renderPremiumReport(paywallEl,merged);
-            return;
-          }else{
-            errMsg=`응답 키 불일치: [${Object.keys(apiResult)}]`;
-          }
-        }else{
-          errMsg=`API 실패: ${JSON.stringify(data).substring(0,300)}`;
-        }
-      }catch(pe){
-        errMsg=`JSON 파싱 실패: ${respText.substring(0,300)}`;
-      }
+    const doFetch=async(apiType)=>{
+      const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,features:premFeatures})});
+      const txt=await resp.text();
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
+      const d=JSON.parse(txt);
+      if(d.success&&d.result)return d.result;
+      throw new Error('응답 형식 오류');
+    };
+    let apiResult={};
+    const r1=await doFetch('face_premium_1');
+    Object.assign(apiResult,r1);
+    if(oldNotice)oldNotice.innerHTML='<div style="text-align:center;padding:10px"><div class="spin-emoji" style="font-size:24px">🔮</div><div style="font-size:11px;color:var(--gold);margin-top:8px">2단계 분석 중...</div></div>';
+    const r2=await doFetch('face_premium_2');
+    Object.assign(apiResult,r2);
+    const hasApiData=apiResult.analysisProcess||apiResult.fortuneGraph||apiResult.breakingPoint||apiResult.enemyFace;
+    if(hasApiData){
+      const clientData=_generateClientPremium(ra, fiveEl?.el||'');
+      const merged=Object.assign({}, clientData, apiResult);
+      renderPremiumReport(paywallEl,merged);
+      return;
     }
-    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f;margin-bottom:4px">재시도 실패</div><div style="font-size:9px;color:var(--text2);word-break:break-all;max-height:80px;overflow:auto">${errMsg}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
+    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">응답 키 불일치: [${Object.keys(apiResult)}]</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }catch(e){
     if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">네트워크 오류: ${e.message}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }
