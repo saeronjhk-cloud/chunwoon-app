@@ -3619,10 +3619,11 @@ async function handlePremiumPurchase(type){
       // API 실패 시 안내 메시지 추가
       if(!hasApiData){
         const notice=document.createElement('div');
+        notice.id='premiumRetryNotice';
         notice.style.cssText='margin:12px 0;padding:14px;background:rgba(232,90,79,.08);border:1px solid rgba(232,90,79,.25);border-radius:10px;text-align:center';
         notice.innerHTML=`<div style="font-size:12px;color:#e85a4f;margin-bottom:6px">⚠️ AI 심화 분석 섹션 로딩 실패</div>
-          <div style="font-size:10px;color:var(--text2);line-height:1.6">대운 그래프·파상 분석·상극상생 분석은 AI 서버 응답 지연으로 표시되지 않았습니다.<br>아래 버튼을 눌러 다시 시도해주세요.</div>
-          <div style="font-size:9px;color:var(--text2);opacity:.5;margin:6px 0">${apiError||'API 응답 없음'} ${apiResult&&apiResult.raw?'(raw응답있음)':''}</div>
+          <div style="font-size:10px;color:var(--text2);line-height:1.6">대운 그래프·파상 분석·상극상생 분석이 표시되지 않았습니다.</div>
+          <div style="font-size:9px;color:var(--text2);opacity:.5;margin:6px 0;word-break:break-all;max-height:60px;overflow:auto">${apiError||'API 응답 없음'}</div>
           <button onclick="retryPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 AI 분석 다시 시도</button>`;
         paywallEl.appendChild(notice);
       }
