@@ -44,6 +44,9 @@
 <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
 <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
 
+<!-- html2canvas for screenshot capture -->
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <!-- OpenCV.js for real palm line edge detection -->
 <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window._opencvReady=true;" type="text/javascript"></script>
 
@@ -3933,8 +3936,10 @@ function renderPremiumReport(container,data){
     html+=`<div style="margin-bottom:24px">`;
     html+=sectionHeader('📊','면부백세유년도(面部百歲流年圖) 기반 대운 그래프');
     html+=sectionSub('고전의 면부백세유년도에 따라, 얼굴 각 부위가 주관하는 연령대별 운세를 그래프로 시각화합니다.');
-    html+=`<canvas id="premiumFortuneChart" width="320" height="200" style="width:100%;max-width:320px;display:block;margin:0 auto;background:rgba(0,0,0,.2);border-radius:8px"></canvas>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;font-size:9px">
+    html+=`<div style="position:relative">
+      <canvas id="premiumFortuneChart" width="640" height="400" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;border-radius:8px"></canvas>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:10px">
         <span style="color:#f5b946">● 재물운</span>
         <span style="color:#e85a4f">● 애정운</span>
         <span style="color:#4fc3e8">● 건강운</span>
@@ -3991,64 +3996,102 @@ function renderPremiumReport(container,data){
   }
 
   html+='<div style="text-align:left;margin-top:16px"><div style="font-size:11px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 정밀 분석 + 십이궁·오관·삼정·면부백세유년도 + 고전 문헌 원문 인용 기반</div></div>';
+  html+=`<div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
+    <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px">💾 결과 저장하기</button>
+    <button class="share-btn" onclick="showShareMenu('face')" style="flex:1;max-width:180px">📤 결과 공유하기</button>
+  </div>`;
   html+='</div>';
   container.style.border='1px solid rgba(201,165,78,.3)';
   container.style.borderRadius='14px';
   container.style.background='rgba(20,20,30,0.6)';
   container.innerHTML=html;
 
-  // 대운 그래프 캔버스 렌더링
+  // 대운 그래프 캔버스 렌더링 — 여러 번 시도
   if(data.fortuneGraph?.decades){
-    setTimeout(()=>drawFortuneGraph(data.fortuneGraph.decades),200);
+    const tryDraw=(attempt)=>{
+      const cv=document.getElementById('premiumFortuneChart');
+      if(cv){
+        drawFortuneGraph(data.fortuneGraph.decades);
+      }else if(attempt<5){
+        setTimeout(()=>tryDraw(attempt+1),300);
+      }else{
+        console.warn('premiumFortuneChart canvas not found after 5 attempts');
+      }
+    };
+    setTimeout(()=>tryDraw(0),100);
   }
 }
 
 function drawFortuneGraph(decades){
   const cv=document.getElementById('premiumFortuneChart');
-  if(!cv)return;
+  if(!cv||!decades||decades.length<2){console.warn('drawFortuneGraph: missing canvas or data');return}
+  // 고해상도(Retina) 대응
+  const dpr=window.devicePixelRatio||1;
+  const displayW=cv.offsetWidth||320;
+  const displayH=cv.offsetHeight||200;
+  cv.width=displayW*dpr;
+  cv.height=displayH*dpr;
+  cv.style.width=displayW+'px';
+  cv.style.height=displayH+'px';
   const ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
-  const pad={t:20,b:30,l:30,r:10};
+  ctx.scale(dpr,dpr);
+  const W=displayW,H=displayH;
+  const pad={t:20,b:30,l:35,r:15};
   const gW=W-pad.l-pad.r, gH=H-pad.t-pad.b;
 
-  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,0,W,H);
+  // Background
+  ctx.fillStyle='rgba(10,10,18,0.8)';ctx.fillRect(0,0,W,H);
 
   // Grid lines
-  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=0.5;
+  ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=0.5;
   for(let i=0;i<=4;i++){
     const y=pad.t+gH*(1-i/4);
     ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='8px monospace';ctx.textAlign='right';
-    ctx.fillText((i*25)+'',pad.l-4,y+3);
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px sans-serif';ctx.textAlign='right';
+    ctx.fillText((i*25)+'',pad.l-6,y+3);
   }
 
+  const n=decades.length;
   // X labels
-  ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='8px sans-serif';
+  ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='9px sans-serif';
   decades.forEach((d,i)=>{
-    const x=pad.l+(i/(decades.length-1))*gW;
-    ctx.fillText(d.age,x,H-pad.b+14);
+    const x=pad.l+(i/(n-1))*gW;
+    ctx.fillText(d.age||'',x,H-pad.b+14);
   });
 
-  // Draw lines
+  // Draw lines with smooth curves
   const colors={wealth:'#f5b946',love:'#e85a4f',health:'#4fc3e8'};
   ['wealth','love','health'].forEach(key=>{
     ctx.strokeStyle=colors[key];ctx.lineWidth=2;ctx.globalAlpha=0.9;
     ctx.beginPath();
     decades.forEach((d,i)=>{
-      const x=pad.l+(i/(decades.length-1))*gW;
-      const y=pad.t+gH*(1-(d[key]||50)/100);
+      const val=Number(d[key])||50;
+      const x=pad.l+(i/(n-1))*gW;
+      const y=pad.t+gH*(1-Math.min(100,Math.max(0,val))/100);
       if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
     });
     ctx.stroke();
+    // Gradient fill under line
+    ctx.globalAlpha=0.08;
+    const lastX=pad.l+((n-1)/(n-1))*gW;
+    ctx.lineTo(lastX,pad.t+gH);ctx.lineTo(pad.l,pad.t+gH);ctx.closePath();
+    ctx.fillStyle=colors[key];ctx.fill();
+    ctx.globalAlpha=0.9;
     // Dots
     ctx.fillStyle=colors[key];
     decades.forEach((d,i)=>{
-      const x=pad.l+(i/(decades.length-1))*gW;
-      const y=pad.t+gH*(1-(d[key]||50)/100);
-      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+      const val=Number(d[key])||50;
+      const x=pad.l+(i/(n-1))*gW;
+      const y=pad.t+gH*(1-Math.min(100,Math.max(0,val))/100);
+      ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();
+      // 값 표시
+      ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='7px sans-serif';ctx.textAlign='center';
+      ctx.fillText(val,x,y-7);
+      ctx.fillStyle=colors[key];
     });
     ctx.globalAlpha=1;
   });
+  console.log('drawFortuneGraph: rendered',n,'decades');
 }
 
 // ============================================================
@@ -4306,83 +4349,122 @@ function nativeShare(title, desc) {
   }
 }
 
-// 결과 저장하기 — 브랜드 이미지 다운로드
+// ── 결과 저장하기 — html2canvas로 실제 결과 화면 캡처 ──
 function saveResult(type) {
-  // 기존 shareResult 로직 (캔버스 이미지 생성 + 다운로드)
-  const canvas=document.getElementById('shareCanvas');
-  const ctx=canvas.getContext('2d');
-  canvas.width=600;canvas.height=400;
-  const grad=ctx.createLinearGradient(0,0,0,400);
-  grad.addColorStop(0,'#0a0a12');grad.addColorStop(1,'#12121e');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,600,400);
-  ctx.strokeStyle='#c9a54e';ctx.lineWidth=2;ctx.strokeRect(20,20,560,360);
-  ctx.strokeStyle='rgba(201,165,78,0.3)';ctx.lineWidth=1;ctx.strokeRect(30,30,540,340);
-  ctx.fillStyle='#c9a54e';ctx.font='bold 28px "Noto Serif KR", serif';ctx.textAlign='center';
-  ctx.fillText('天 運',300,75);
-  ctx.fillStyle='#9a9890';ctx.font='12px "Noto Sans KR", sans-serif';
-  ctx.fillText('Fortune & Destiny',300,98);
-  ctx.strokeStyle='rgba(201,165,78,0.3)';ctx.beginPath();ctx.moveTo(100,115);ctx.lineTo(500,115);ctx.stroke();
-  const titles={daily:'오늘의 운세',tarot:'타로 결과',saju:'사주 분석',compat:'궁합 결과',palm:'손금 해석',face:'관상 분석',dream:'꿈 해몽',talisman:'오늘의 부적',match:'운세 매칭'};
-  ctx.fillStyle='#c9a54e';ctx.font='20px "Noto Serif KR", serif';
-  ctx.fillText(titles[type]||'운세 결과',300,150);
-  ctx.fillStyle='#e8e6e0';ctx.font='14px "Noto Sans KR", sans-serif';
-  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
-  ctx.fillText(today,300,180);
-  ctx.fillStyle='rgba(201,165,78,0.7)';ctx.font='60px "Noto Serif KR", serif';
-  ctx.fillText('✦',300,260);
-  ctx.fillStyle='#9a9890';ctx.font='13px "Noto Sans KR", sans-serif';
-  ctx.fillText('천운에서 나의 운세를 확인해보세요',300,320);
-  ctx.fillText('chunwoon-app.vercel.app',300,345);
-  canvas.toBlob(blob=>{
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=`천운_${titles[type]||'결과'}_${today}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('이미지가 저장되었습니다!');
-  });
+  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult' };
+  const target = document.getElementById(targetIds[type] || 'faceResult');
+  if (!target) { showToast('저장할 결과가 없습니다'); return; }
+
+  showToast('캡처 준비 중...');
+
+  if (typeof html2canvas === 'function') {
+    html2canvas(target, {
+      backgroundColor: '#0a0a12',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      scrollY: -window.scrollY,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight
+    }).then(canvas => {
+      canvas.toBlob(blob => {
+        // 모바일: share API로 이미지 공유/저장, PC: 다운로드
+        const today = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+        const fileName = `천운_${type}_${today}.png`;
+        if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          navigator.share({ files: [file] }).catch(() => downloadBlob(blob, fileName));
+        } else {
+          downloadBlob(blob, fileName);
+        }
+      }, 'image/png');
+    }).catch(() => {
+      showToast('캡처 실패 — 스크린샷을 이용해주세요');
+    });
+  } else {
+    // html2canvas 동적 로드 후 재시도
+    showToast('캡처 기능 로딩 중...');
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    sc.onload=()=>saveResult(type);
+    sc.onerror=()=>showToast('캡처 기능을 불러올 수 없습니다. 스크린샷을 이용해주세요.');
+    document.head.appendChild(sc);
+  }
 }
 
-// 기존 shareResult도 분리된 동작으로 변경 (다른 섹션 호환)
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+  showToast('이미지가 저장되었습니다!');
+}
+
+// ── 결과 공유하기 — 공유 메뉴 표시 ──
+// 기존 shareResult를 공유 메뉴로 변경 (다른 섹션 호환)
 const _origShare = shareResult;
 shareResult = function(type) {
   showShareMenu(type);
 };
 
-function showShareMenu(type) {
+function _getShareText(type) {
   const titles = {daily:'오늘의 운세',tarot:'타로 결과',saju:'사주 분석',compat:'궁합 결과',palm:'손금 해석',face:'관상 분석',dream:'꿈 해몽',talisman:'오늘의 부적',match:'운세 매칭'};
   const t = titles[type] || '운세 결과';
+  const today = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  return { title: `天運 — ${t}`, text: `${today} ${t} 결과를 확인해보세요! ✦\n\n천운에서 나도 무료로 관상·손금·사주를 볼 수 있어요.`, url: 'https://chunwoon-app.vercel.app' };
+}
 
-  // Create bottom sheet
+function showShareMenu(type) {
+  const s = _getShareText(type);
   const overlay = document.createElement('div');
   overlay.id = 'shareOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .3s';
   overlay.onclick = (e) => { if(e.target===overlay) overlay.remove() };
 
+  const btnStyle = 'background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0';
+  const iconStyle = (bg) => `width:52px;height:52px;border-radius:16px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px`;
+
   overlay.innerHTML = `
     <div style="width:100%;max-width:480px;background:#12121e;border-top-left-radius:20px;border-top-right-radius:20px;padding:24px 20px 36px;animation:slideUp .3s">
       <div style="width:40px;height:4px;background:rgba(201,165,78,.3);border-radius:2px;margin:0 auto 20px"></div>
-      <div style="font-size:16px;color:#c9a54e;font-family:'Noto Serif KR',serif;text-align:center;margin-bottom:20px">결과 공유하기</div>
+      <div style="font-size:16px;color:#c9a54e;font-family:'Noto Serif KR',serif;text-align:center;margin-bottom:20px">공유하기</div>
       <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
-        <button onclick="shareKakao('天運 - ${t}','나의 ${t}를 확인해보세요!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
-          <div style="width:52px;height:52px;border-radius:16px;background:#FEE500;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">💬</div>
-          <div style="font-size:11px">카카오톡</div>
+        <button id="shareNativeBtn" style="${btnStyle}">
+          <div style="${iconStyle('rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3)')}">📤</div>
+          <div style="font-size:11px">공유하기</div>
         </button>
-        <button onclick="nativeShare('天運 - ${t}','나의 ${t}를 확인해보세요!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
-          <div style="width:52px;height:52px;border-radius:16px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">📤</div>
-          <div style="font-size:11px">다른 앱</div>
-        </button>
-        <button onclick="navigator.clipboard.writeText(window.location.href);showToast('링크가 복사되었습니다!');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
-          <div style="width:52px;height:52px;border-radius:16px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">🔗</div>
+        <button id="shareCopyBtn" style="${btnStyle}">
+          <div style="${iconStyle('rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3)')}">🔗</div>
           <div style="font-size:11px">링크 복사</div>
         </button>
-        <button onclick="saveResult('${type}');document.getElementById('shareOverlay').remove()" style="background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0">
-          <div style="width:52px;height:52px;border-radius:16px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px">💾</div>
+        <button id="shareSaveBtn" style="${btnStyle}">
+          <div style="${iconStyle('rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3)')}">💾</div>
           <div style="font-size:11px">이미지 저장</div>
         </button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
+
+  // 공유 — Web Share API (모바일: 카카오톡·인스타·문자 등 선택 가능)
+  document.getElementById('shareNativeBtn').onclick = () => {
+    overlay.remove();
+    if (navigator.share) {
+      navigator.share({ title: s.title, text: s.text, url: s.url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(s.text + '\n' + s.url).then(() => showToast('공유 텍스트가 복사되었습니다!'));
+    }
+  };
+  // 링크 복사
+  document.getElementById('shareCopyBtn').onclick = () => {
+    overlay.remove();
+    navigator.clipboard.writeText(s.text + '\n' + s.url).then(() => showToast('링크가 복사되었습니다!'));
+  };
+  // 이미지 저장
+  document.getElementById('shareSaveBtn').onclick = () => {
+    overlay.remove();
+    saveResult(type);
+  };
 }
 
 // Toast notification
