@@ -26,10 +26,27 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET = 헬스 체크
+  // GET = 헬스 체크 + API 키 테스트
   if (req.method === 'GET') {
-    const hasKey = !!process.env.ANTHROPIC_API_KEY;
-    return res.status(200).json({ status: 'ok', runtime: 'serverless', hasApiKey: hasKey, timestamp: new Date().toISOString() });
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const hasKey = !!apiKey;
+    const keyPreview = apiKey ? apiKey.substring(0, 12) + '...' + apiKey.slice(-4) : 'none';
+    // ?test=1 파라미터로 실제 API 호출 테스트
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    if (url.searchParams.get('test') === '1' && apiKey) {
+      try {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 10, messages: [{ role: 'user', content: 'say ok' }] })
+        });
+        const body = await resp.text();
+        return res.status(200).json({ status: resp.ok ? 'API_OK' : 'API_FAIL', httpStatus: resp.status, keyPreview, response: body.substring(0, 300) });
+      } catch (e) {
+        return res.status(200).json({ status: 'API_ERROR', keyPreview, error: e.message });
+      }
+    }
+    return res.status(200).json({ status: 'ok', runtime: 'serverless', hasApiKey: hasKey, keyPreview, timestamp: new Date().toISOString() });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -91,18 +108,15 @@ weaknesses 2개, enemies 2개, allies 2개.` + JSON_FORCE;
       return res.status(400).json({ error: 'Invalid type' });
     }
 
-    const isPremium = type.startsWith('face_premium');
-    const model = isPremium ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
-
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2024-10-22'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model,
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
