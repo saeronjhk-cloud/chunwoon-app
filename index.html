@@ -4546,12 +4546,20 @@ body{background:#08080f;color:#e0ddd6;font-family:'Noto Sans KR',sans-serif;line
   <button onclick="window.print()" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 48px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 24px rgba(201,165,78,.5);letter-spacing:1px">📄 PDF로 저장하기</button>
   <div style="font-size:10px;color:#8a8678;margin-top:8px">인쇄 대상을 "PDF로 저장"으로 선택하세요</div>
 </div>
-<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),1000));</script>
 </body></html>`;
 
   const w=window.open('','_blank');
-  if(w){w.document.write(printHTML);w.document.close();}
-  else{const b=new Blob([printHTML],{type:'text/html'});const u=URL.createObjectURL(b);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);}
+  if(w){
+    w.document.write(printHTML);
+    w.document.close();
+    // 자동 인쇄 (template literal 안의 script 태그 파싱 충돌 방지를 위해 별도 주입)
+    w.addEventListener('load',()=>setTimeout(()=>w.print(),1000));
+  }else{
+    const b=new Blob([printHTML],{type:'text/html'});
+    const u=URL.createObjectURL(b);
+    window.open(u,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(u),60000);
+  }
 }
 
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
