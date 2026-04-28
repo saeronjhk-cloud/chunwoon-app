@@ -4620,15 +4620,9 @@ function saveResult(type) {
       windowHeight: target.scrollHeight
     }).then(canvas => {
       canvas.toBlob(blob => {
-        // 모바일: share API로 이미지 공유/저장, PC: 다운로드
         const today = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
         const fileName = `천운_${type}_${today}.png`;
-        if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-          const file = new File([blob], fileName, { type: 'image/png' });
-          navigator.share({ files: [file] }).catch(() => downloadBlob(blob, fileName));
-        } else {
-          downloadBlob(blob, fileName);
-        }
+        downloadBlob(blob, fileName);
       }, 'image/png');
     }).catch(() => {
       showToast('캡처 실패 — 스크린샷을 이용해주세요');
