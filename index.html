@@ -46,7 +46,7 @@
 
 <!-- html2canvas for screenshot capture -->
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<!-- jsPDF: 필요 시 동적 로드 -->
+<!-- PDF: 브라우저 내장 print-to-PDF 사용 -->
 
 <!-- OpenCV.js for real palm line edge detection -->
 <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window._opencvReady=true;" type="text/javascript"></script>
@@ -4269,138 +4269,87 @@ if ('serviceWorker' in navigator) {
 //  SHARE API (Web Share API 통합)
 // ============================================================
 
-// ── jsPDF 동적 로딩 ──
-function _loadJsPDF(){
-  return new Promise((resolve,reject)=>{
-    if(window.jspdf){resolve(window.jspdf);return}
-    const urls=[
-      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-      'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
-      'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
-    ];
-    let idx=0;
-    const tryNext=()=>{
-      if(idx>=urls.length){reject(new Error('jsPDF 로드 실패'));return}
-      const sc=document.createElement('script');
-      sc.src=urls[idx++];
-      sc.onload=()=>{
-        if(window.jspdf)resolve(window.jspdf);
-        else tryNext();
-      };
-      sc.onerror=()=>tryNext();
-      document.head.appendChild(sc);
-    };
-    tryNext();
-  });
-}
-
-// ── 프리미엄 PDF 리포트 저장 ──
-async function savePremiumPDF(){
+// ── 프리미엄 PDF 리포트 저장 (브라우저 내장 Print-to-PDF) ──
+function savePremiumPDF(){
   const target=document.querySelector('[data-paywall="face"]');
   if(!target){showToast('프리미엄 리포트가 없습니다');return}
 
-  showToast('PDF 리포트 생성 중...');
+  showToast('PDF 리포트를 준비하고 있습니다...');
 
-  // html2canvas 확인
-  if(typeof html2canvas!=='function'){
-    showToast('캡처 기능 로딩 중...');return;
+  // 프리미엄 리포트 내용을 새 창에 팬시하게 렌더링 → 브라우저 인쇄(PDF 저장)
+  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+
+  // 리포트 HTML 복사 (버튼 제거)
+  const clone=target.cloneNode(true);
+  // 버튼, share-btn 제거
+  clone.querySelectorAll('button,.share-btn').forEach(el=>el.remove());
+  // 버튼 래퍼 div 제거
+  clone.querySelectorAll('[onclick]').forEach(el=>el.remove());
+
+  const printHTML=`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>天運 프리미엄 관상 리포트 — ${today}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  @page{size:A4;margin:12mm 10mm}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a12;color:#e8e6e0;font-family:'Noto Sans KR',sans-serif;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pdf-wrap{max-width:700px;margin:0 auto;padding:20px}
+
+  /* 헤더 */
+  .pdf-header{text-align:center;border-bottom:2px solid #c9a54e;padding-bottom:16px;margin-bottom:24px}
+  .pdf-header h1{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:28px;letter-spacing:4px;margin-bottom:4px}
+  .pdf-header .sub{color:#9a9890;font-size:12px;letter-spacing:2px}
+  .pdf-header .date{color:#7a7a72;font-size:11px;margin-top:8px}
+
+  /* 리포트 본문 — 원본 스타일 유지 */
+  .pdf-content{line-height:1.8}
+  .pdf-content div{max-width:100%!important}
+  .pdf-content canvas{max-width:100%!important}
+
+  /* 푸터 */
+  .pdf-footer{text-align:center;border-top:1px solid rgba(201,165,78,.3);padding-top:14px;margin-top:30px;font-size:9px;color:#7a7a72}
+  .pdf-footer .gold{color:#c9a54e}
+
+  /* 인쇄 시 배경색 강제 */
+  @media print{
+    body{background:#0a0a12!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    .no-print{display:none!important}
   }
+</style></head><body>
+<div class="pdf-wrap">
+  <div class="pdf-header">
+    <h1>天 運</h1>
+    <div class="sub">PREMIUM FORTUNE REPORT</div>
+    <div class="date">${today} · AI 468점 정밀 분석 기반</div>
+  </div>
+  <div class="pdf-content">${clone.innerHTML}</div>
+  <div class="pdf-footer">
+    <div class="gold">✦ 天運 프리미엄 관상 종합 리포트 ✦</div>
+    <div style="margin-top:4px">chunwoon-app.vercel.app | 마의상법 · 유장상법 · 신상전편 기반</div>
+    <div style="margin-top:2px">본 리포트는 오락 콘텐츠이며 과학적 근거가 있는 판독이 아닙니다.</div>
+  </div>
+</div>
+<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);padding:14px;text-align:center;z-index:9999;border-top:1px solid rgba(201,165,78,.3)">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 40px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,.4)">📄 PDF로 저장하기</button>
+  <div style="font-size:10px;color:#9a9890;margin-top:8px">"PDF로 저장" 또는 "Save as PDF"를 선택하세요</div>
+</div>
+<script>
+  // 페이지 로드 완료 후 약간 대기 → 자동 인쇄 다이얼로그
+  window.addEventListener('load',()=>setTimeout(()=>window.print(),800));
+</script>
+</body></html>`;
 
-  // jsPDF 동적 로드
-  let jspdfLib;
-  try{
-    jspdfLib=await _loadJsPDF();
-  }catch(e){
-    console.error('jsPDF load error:',e);
-    showToast('PDF 라이브러리를 불러올 수 없습니다. 네트워크를 확인해주세요.');
-    return;
-  }
-
-  try{
-    const canvas=await html2canvas(target,{
-      backgroundColor:'#0a0a12',scale:2,useCORS:true,logging:false,allowTaint:true,
-      scrollY:-window.scrollY
-    });
-
-    const {jsPDF}=jspdfLib;
-    const imgW=canvas.width;
-    const imgH=canvas.height;
-
-    // A4 사이즈 PDF (mm)
-    const pdfW=210;
-    const pdfH=297;
-    const margin=10;
-    const contentW=pdfW-margin*2;
-
-    const doc=new jsPDF('p','mm','a4');
-    const ratio=contentW/imgW;
-    const scaledH=imgH*ratio;
-
-    // 헤더 — 골드 라인
-    doc.setDrawColor(201,165,78);
-    doc.setLineWidth(0.8);
-    doc.line(margin,8,pdfW-margin,8);
-
-    // 타이틀
-    doc.setFontSize(18);
-    doc.setTextColor(201,165,78);
-    doc.text('天運 Premium Report',pdfW/2,18,{align:'center'});
-
-    // 날짜
-    const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
-    doc.setFontSize(9);
-    doc.setTextColor(140,140,140);
-    doc.text(today,pdfW/2,24,{align:'center'});
-
-    // 구분선
-    doc.setDrawColor(201,165,78);
-    doc.setLineWidth(0.3);
-    doc.line(margin,27,pdfW-margin,27);
-
-    // 캡처 이미지를 여러 페이지에 나누어 삽입
-    const startY=30;
-    const pageContentH=pdfH-startY-margin;
-    let remainH=scaledH;
-    let srcY=0;
-    let page=0;
-
-    while(remainH>0){
-      if(page>0){
-        doc.addPage();
-        doc.setDrawColor(201,165,78);doc.setLineWidth(0.3);
-        doc.line(margin,8,pdfW-margin,8);
-      }
-      const drawH=Math.min(pageContentH,remainH);
-      const srcSliceH=drawH/ratio;
-
-      const sliceCanvas=document.createElement('canvas');
-      sliceCanvas.width=imgW;
-      sliceCanvas.height=Math.ceil(srcSliceH);
-      const sctx=sliceCanvas.getContext('2d');
-      sctx.drawImage(canvas,0,srcY,imgW,srcSliceH,0,0,imgW,srcSliceH);
-      const sliceData=sliceCanvas.toDataURL('image/jpeg',0.92);
-
-      const yPos=page===0?startY:12;
-      doc.addImage(sliceData,'JPEG',margin,yPos,contentW,drawH);
-
-      doc.setFontSize(7);doc.setTextColor(160,160,160);
-      doc.text('- '+(page+1)+' -',pdfW/2,pdfH-5,{align:'center'});
-
-      srcY+=srcSliceH;
-      remainH-=drawH;
-      page++;
-    }
-
-    // 푸터
-    doc.setFontSize(7);doc.setTextColor(130,130,130);
-    doc.text('chunwoon-app.vercel.app | AI 468-point Analysis',pdfW/2,pdfH-10,{align:'center'});
-
-    const fileName='天運_프리미엄리포트_'+today+'.pdf';
-    doc.save(fileName);
-    showToast('PDF 리포트가 저장되었습니다!');
-  }catch(e){
-    console.error('PDF generation error:',e);
-    showToast('PDF 생성 실패 — 스크린샷을 이용해주세요');
+  const printWin=window.open('','_blank');
+  if(printWin){
+    printWin.document.write(printHTML);
+    printWin.document.close();
+  }else{
+    // 팝업 차단 시: Blob URL로 시도
+    const blob=new Blob([printHTML],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    window.open(url,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
 }
 
