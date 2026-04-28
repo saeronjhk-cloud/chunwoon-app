@@ -3617,6 +3617,7 @@ async function handlePremiumPurchase(type){
 
     // ③ 클라이언트 데이터 + API 데이터 병합
     const merged=Object.assign({}, clientData, apiResult||{});
+    window._premiumReportData=merged; // PDF 리포트용 데이터 보관
     if(paywallEl){
       renderPremiumReport(paywallEl,merged);
       // API 실패 시 안내 메시지 추가
@@ -3693,6 +3694,7 @@ async function retryPremiumAPI(){
     if(hasApiData){
       const clientData=_generateClientPremium(ra, fiveEl?.el||'');
       const merged=Object.assign({}, clientData, apiResult);
+      window._premiumReportData=merged;
       renderPremiumReport(paywallEl,merged);
       return;
     }
@@ -4269,88 +4271,287 @@ if ('serviceWorker' in navigator) {
 //  SHARE API (Web Share API 통합)
 // ============================================================
 
-// ── 프리미엄 PDF 리포트 저장 (브라우저 내장 Print-to-PDF) ──
+// ── 프리미엄 PDF 리포트 저장 ──
 function savePremiumPDF(){
-  const target=document.querySelector('[data-paywall="face"]');
-  if(!target){showToast('프리미엄 리포트가 없습니다');return}
-
-  showToast('PDF 리포트를 준비하고 있습니다...');
-
-  // 프리미엄 리포트 내용을 새 창에 팬시하게 렌더링 → 브라우저 인쇄(PDF 저장)
+  const D=window._premiumReportData;
+  if(!D){showToast('프리미엄 리포트 데이터가 없습니다');return}
+  showToast('프리미엄 리포트를 준비하고 있습니다...');
   const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
 
-  // 리포트 HTML 복사 (버튼 제거)
-  const clone=target.cloneNode(true);
-  // 버튼, share-btn 제거
-  clone.querySelectorAll('button,.share-btn').forEach(el=>el.remove());
-  // 버튼 래퍼 div 제거
-  clone.querySelectorAll('[onclick]').forEach(el=>el.remove());
+  // ── 헬퍼 ──
+  const esc=(s)=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const citBlock=(c)=>{
+    if(!c||!c.original)return'';
+    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』 ${esc(c.chapter||'')}</div><div class="cite-orig">"${esc(c.original)}"</div>${c.pronunciation?'<div class="cite-pron">('+esc(c.pronunciation)+')</div>':''}<div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
+  };
+  const bar=(val,color)=>`<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,val||0)}%;background:${color}"></div><span class="bar-val">${val||0}</span></div>`;
+  const gradeColor=(g)=>g==='상'?'#4fe8a4':g==='하'?'#e85a4f':'#f5b946';
 
-  const printHTML=`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>天運 프리미엄 관상 리포트 — ${today}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<style>
-  @page{size:A4;margin:12mm 10mm}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#0a0a12;color:#e8e6e0;font-family:'Noto Sans KR',sans-serif;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pdf-wrap{max-width:700px;margin:0 auto;padding:20px}
+  // ── 섹션별 HTML 생성 ──
+  let body='';
 
-  /* 헤더 */
-  .pdf-header{text-align:center;border-bottom:2px solid #c9a54e;padding-bottom:16px;margin-bottom:24px}
-  .pdf-header h1{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:28px;letter-spacing:4px;margin-bottom:4px}
-  .pdf-header .sub{color:#9a9890;font-size:12px;letter-spacing:2px}
-  .pdf-header .date{color:#7a7a72;font-size:11px;margin-top:8px}
-
-  /* 리포트 본문 — 원본 스타일 유지 */
-  .pdf-content{line-height:1.8}
-  .pdf-content div{max-width:100%!important}
-  .pdf-content canvas{max-width:100%!important}
-
-  /* 푸터 */
-  .pdf-footer{text-align:center;border-top:1px solid rgba(201,165,78,.3);padding-top:14px;margin-top:30px;font-size:9px;color:#7a7a72}
-  .pdf-footer .gold{color:#c9a54e}
-
-  /* 인쇄 시 배경색 강제 */
-  @media print{
-    body{background:#0a0a12!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    .no-print{display:none!important}
+  // ⓪ AI 분석 과정
+  if(D.analysisProcess&&D.analysisProcess.features){
+    body+=`<div class="section"><h2>🔬 AI 분석 과정 상세 공개</h2><p class="section-desc">MediaPipe 468점 랜드마크에서 추출한 수치를 고전 문헌의 기준에 대입한 판정 과정입니다.</p>`;
+    const icons=['🔸','✏️','👁️','👃','👄'];
+    D.analysisProcess.features.forEach((f,i)=>{
+      body+=`<div class="analysis-card">
+        <div class="ac-title">${icons[i]||'●'} ${esc(f.part)}</div>
+        <table class="ac-table"><tr><td class="ac-label">측정값</td><td class="ac-val mono">${esc(f.measured)}</td></tr>
+        <tr><td class="ac-label">기준</td><td class="ac-val">${esc(f.standard)}</td></tr>
+        <tr><td class="ac-label">판정</td><td class="ac-val"><strong>${esc(f.classification)}</strong>${f.confidence?' <span class="dim">(확신도 '+f.confidence+'%)</span>':''}</td></tr></table>
+        ${f.confidence?'<div class="conf-bar"><div class="conf-fill" style="width:'+f.confidence+'%"></div></div>':''}
+        <p class="ac-reason">${esc(f.reasoning)}</p>
+        ${citBlock(f.citation)}
+      </div>`;
+    });
+    body+='</div>';
   }
+
+  // ① 십이궁
+  if(D.twelvePalaces&&D.twelvePalaces.palaces){
+    body+=`<div class="section page-break"><h2>🏛️ 십이궁(十二宮) 정밀 분석</h2><p class="section-desc">얼굴의 12개 영역을 궁(宮)으로 나누어, 각 궁이 주관하는 운명 영역을 분석합니다.</p>`;
+    body+='<div class="palace-grid">';
+    D.twelvePalaces.palaces.forEach(p=>{
+      const gc=gradeColor(p.grade);
+      body+=`<div class="palace-card">
+        <div class="pc-head"><span class="pc-name">${esc(p.name)}</span><span class="pc-grade" style="color:${gc};border-color:${gc}">${esc(p.grade)}</span></div>
+        <div class="pc-area">${esc(p.area)} · ${esc(p.measurement||'')}</div>
+        <p class="pc-interp">${esc(p.interpretation)}</p>
+        ${citBlock(p.citation)}
+      </div>`;
+    });
+    body+='</div></div>';
+  }
+
+  // ② 오관
+  if(D.fiveOfficials&&D.fiveOfficials.officials){
+    body+=`<div class="section page-break"><h2>👁️ 오관(五官) 분석</h2><p class="section-desc">눈·코·입·귀·눈썹 다섯 관(官)의 상을 판정합니다.</p>`;
+    D.fiveOfficials.officials.forEach(o=>{
+      const gc=gradeColor(o.grade);
+      body+=`<div class="official-card">
+        <div class="oc-head"><span class="oc-icon">${esc(o.icon||'●')}</span><span class="oc-name">${esc(o.name)}</span><span class="oc-label">${esc(o.label||'')}</span><span class="pc-grade" style="color:${gc};border-color:${gc}">${esc(o.grade)}</span></div>
+        <div class="oc-measure">${esc(o.measurement||'')}</div>
+        <p class="pc-interp">${esc(o.interpretation)}</p>
+        ${citBlock(o.citation)}
+      </div>`;
+    });
+    body+='</div>';
+  }
+
+  // ③ 삼정
+  if(D.threeCourtAnalysis){
+    const tc=D.threeCourtAnalysis;
+    body+=`<div class="section page-break"><h2>📐 삼정(三停) 분석</h2><p class="section-desc">이마(상정)·코(중정)·턱(하정) 비율로 초년·중년·말년운을 판정합니다.</p>`;
+    ['upper','middle','lower'].forEach(k=>{
+      const s=tc[k];if(!s)return;
+      body+=`<div class="thirds-card"><div class="tc-head">${esc(s.period)} <span class="tc-ratio">${esc(s.ratio)}</span></div><p class="pc-interp">${esc(s.interpretation)}</p></div>`;
+    });
+    if(tc.balance)body+=`<div class="thirds-balance"><strong>균형 판정:</strong> ${esc(tc.balance)}</div>`;
+    if(tc.citation)body+=citBlock(tc.citation);
+    body+='</div>';
+  }
+
+  // ④ 대운 그래프
+  if(D.fortuneGraph&&D.fortuneGraph.decades){
+    const fg=D.fortuneGraph;
+    body+=`<div class="section page-break"><h2>📊 면부백세유년도 기반 대운 그래프</h2><p class="section-desc">얼굴 각 부위가 주관하는 연령대별 운세를 분석합니다.</p>`;
+    // SVG 차트
+    const decades=fg.decades;const n=decades.length;
+    const svgW=600,svgH=280,pad={t:30,b:40,l:50,r:20};
+    const gW=svgW-pad.l-pad.r,gH=svgH-pad.t-pad.b;
+    let svg=`<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:600px;display:block;margin:16px auto">`;
+    svg+=`<rect width="${svgW}" height="${svgH}" rx="8" fill="#0d0d1a"/>`;
+    // 그리드
+    for(let i=0;i<=4;i++){const y=pad.t+gH*(1-i/4);svg+=`<line x1="${pad.l}" y1="${y}" x2="${svgW-pad.r}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/><text x="${pad.l-8}" y="${y+4}" fill="rgba(255,255,255,0.4)" font-size="10" text-anchor="end">${i*25}</text>`;}
+    // X축 라벨
+    decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;svg+=`<text x="${x}" y="${svgH-pad.b+18}" fill="rgba(255,255,255,0.6)" font-size="10" text-anchor="middle">${d.age||''}</text>`;});
+    // 데이터 라인
+    const colors={wealth:'#f5b946',love:'#e85a4f',health:'#4fc3e8'};
+    const labels={wealth:'재물운',love:'애정운',health:'건강운'};
+    ['wealth','love','health'].forEach(key=>{
+      let pts=[];decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;const v=Number(d[key])||50;const y=pad.t+gH*(1-Math.min(100,Math.max(0,v))/100);pts.push({x,y,v});});
+      // 영역 채우기
+      svg+=`<polygon points="${pts.map(p=>p.x+','+p.y).join(' ')} ${pts[pts.length-1].x},${pad.t+gH} ${pts[0].x},${pad.t+gH}" fill="${colors[key]}" opacity="0.06"/>`;
+      // 라인
+      svg+=`<polyline points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="${colors[key]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      // 점 + 값
+      pts.forEach(p=>{svg+=`<circle cx="${p.x}" cy="${p.y}" r="4" fill="${colors[key]}"/><text x="${p.x}" y="${p.y-10}" fill="rgba(255,255,255,0.5)" font-size="9" text-anchor="middle">${p.v}</text>`;});
+    });
+    // 범례
+    let lx=svgW/2-90;
+    ['wealth','love','health'].forEach(key=>{svg+=`<circle cx="${lx}" cy="${svgH-10}" r="4" fill="${colors[key]}"/><text x="${lx+8}" y="${svgH-6}" fill="rgba(255,255,255,0.6)" font-size="10">${labels[key]}</text>`;lx+=70;});
+    svg+=`</svg>`;
+    body+=svg;
+    // 연대별 키워드
+    body+='<div class="decade-tags">';
+    decades.forEach(d=>{body+=`<span class="decade-tag"><strong>${esc(d.age)}</strong> ${esc(d.keyword||'')}</span>`;});
+    body+='</div>';
+    if(fg.analysis)body+=`<div class="fortune-analysis">${esc(fg.analysis)}</div>`;
+    if(fg.citation)body+=citBlock(fg.citation);
+    if(fg.peakAge)body+=`<div class="peak-age">최고 운세 시기: <strong>${esc(fg.peakAge)}</strong></div>`;
+    body+='</div>';
+  }
+
+  // ⑤ 파상 & 개운법
+  if(D.breakingPoint){
+    const bp=D.breakingPoint;
+    body+=`<div class="section page-break"><h2>⚠️ 파상(破相) 분석 &amp; 개운법</h2><p class="section-desc">고전 기준에 미달하는 부위를 진단하고, 보완 방법을 제시합니다.</p>`;
+    (bp.weaknesses||[]).forEach((w,i)=>{
+      body+=`<div class="weakness-card">
+        <div class="wc-head">${i+1}. ${esc(w.part)} ${w.measurement?'<span class="dim">['+esc(w.measurement)+']</span>':''}</div>
+        <div class="wc-problem">❌ ${esc(w.problem)}</div>
+        ${citBlock(w.citation)}
+        <div class="wc-solution">✅ <strong>개운법:</strong> ${esc(w.solution)}</div>
+      </div>`;
+    });
+    if(bp.summary)body+=`<div class="bp-summary">💡 ${esc(bp.summary)}</div>`;
+    body+='</div>';
+  }
+
+  // ⑥ 상극·상생
+  if(D.enemyFace){
+    const ef=D.enemyFace;
+    body+=`<div class="section page-break"><h2>🔥 상극(相克) · 상생(相生) 인연 분석</h2><p class="section-desc">오행상법에 따라, 당신과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.</p>`;
+    if(ef.enemies&&ef.enemies.length){
+      body+='<h3 class="enemy-h">🚫 피해야 할 관상</h3>';
+      ef.enemies.forEach(e=>{
+        body+=`<div class="enemy-card"><strong style="color:#e85a4f">${esc(e.feature)}</strong> — ${esc(e.reason)}<div class="enemy-risk">⚡ ${esc(e.risk||'')}</div>${citBlock(e.citation)}</div>`;
+      });
+    }
+    if(ef.allies&&ef.allies.length){
+      body+='<h3 class="ally-h">✨ 함께하면 좋은 관상</h3>';
+      ef.allies.forEach(a=>{
+        body+=`<div class="ally-card"><strong style="color:#4fe8a4">${esc(a.feature)}</strong> — ${esc(a.reason)}<div class="ally-benefit">🌟 ${esc(a.benefit||'')}</div></div>`;
+      });
+    }
+    if(ef.summary)body+=`<div class="fortune-analysis">${esc(ef.summary)}</div>`;
+    body+='</div>';
+  }
+
+  // ── 최종 HTML ──
+  const printHTML=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>天運 프리미엄 관상 리포트 — ${today}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:14mm 12mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#08080f;color:#e0ddd6;font-family:'Noto Sans KR',sans-serif;line-height:1.85;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.wrap{max-width:680px;margin:0 auto;padding:30px 24px}
+
+/* ── 커버 헤더 ── */
+.cover{text-align:center;padding:50px 20px 40px;border:2px solid #c9a54e;border-radius:16px;background:linear-gradient(180deg,rgba(201,165,78,.06) 0%,transparent 100%);margin-bottom:36px;position:relative}
+.cover::before{content:'';position:absolute;inset:6px;border:1px solid rgba(201,165,78,.2);border-radius:12px;pointer-events:none}
+.cover h1{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:36px;font-weight:900;letter-spacing:6px;margin-bottom:2px}
+.cover .sub{color:#b8a472;font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:16px}
+.cover .divider{width:80px;height:1px;background:linear-gradient(90deg,transparent,#c9a54e,transparent);margin:0 auto 14px}
+.cover .date{color:#8a8678;font-size:12px}
+.cover .badge{display:inline-block;margin-top:14px;padding:6px 20px;border:1px solid rgba(201,165,78,.4);border-radius:20px;color:#c9a54e;font-size:10px;letter-spacing:1px}
+
+/* ── 섹션 ── */
+.section{margin-bottom:32px;padding:24px;background:rgba(255,255,255,.02);border:1px solid rgba(201,165,78,.12);border-radius:14px}
+.section h2{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:18px;font-weight:700;margin-bottom:4px;letter-spacing:1px}
+.section-desc{font-size:11px;color:#8a8678;margin-bottom:18px;line-height:1.6}
+.page-break{page-break-before:auto}
+
+/* ── 분석과정 카드 ── */
+.analysis-card{background:rgba(0,0,0,.25);border:1px solid rgba(201,165,78,.1);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.ac-title{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:15px;font-weight:700;margin-bottom:10px}
+.ac-table{width:100%;border-collapse:collapse;margin-bottom:10px}
+.ac-table td{padding:5px 0;font-size:12px;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.04)}
+.ac-label{color:#8a8678;width:60px;font-size:11px}
+.ac-val{color:#e0ddd6}.mono{font-family:monospace;color:#7af5c8}
+.conf-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:10px;overflow:hidden}
+.conf-fill{height:100%;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px}
+.ac-reason{font-size:12px;color:#b0ada5;line-height:1.8}
+.dim{opacity:.6;font-size:11px}
+
+/* ── 인용 블록 ── */
+.cite{margin:10px 0;padding:12px 14px;background:linear-gradient(135deg,rgba(201,165,78,.06),rgba(139,105,20,.02));border-left:3px solid #c9a54e;border-radius:0 8px 8px 0}
+.cite-src{font-size:10px;color:#c9a54e;font-weight:600;margin-bottom:4px;font-family:'Noto Serif KR',serif}
+.cite-orig{font-size:14px;color:#f5d78e;font-family:'Noto Serif KR',serif;line-height:1.7;letter-spacing:1px;margin-bottom:3px}
+.cite-pron{font-size:10px;color:#8a8678;margin-bottom:3px}
+.cite-tl{font-size:12px;color:#b0ada5;font-style:italic;line-height:1.7}
+
+/* ── 십이궁 그리드 ── */
+.palace-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.palace-card{background:rgba(0,0,0,.2);border:1px solid rgba(201,165,78,.08);border-radius:10px;padding:14px}
+.pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pc-name{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:13px;font-weight:600}
+.pc-grade{font-size:12px;font-weight:700;padding:2px 10px;border:1px solid;border-radius:10px}
+.pc-area{font-size:10px;color:#8a8678;margin-bottom:6px}
+.pc-interp{font-size:11.5px;color:#b8b5ad;line-height:1.8}
+
+/* ── 오관 ── */
+.official-card{background:rgba(0,0,0,.2);border:1px solid rgba(201,165,78,.08);border-radius:10px;padding:14px;margin-bottom:12px}
+.oc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.oc-icon{font-size:18px}.oc-name{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:14px;font-weight:600}
+.oc-label{font-size:11px;color:#b0ada5}.oc-measure{font-size:10px;color:#7af5c8;font-family:monospace;margin-bottom:6px}
+
+/* ── 삼정 ── */
+.thirds-card{background:rgba(0,0,0,.2);border-left:3px solid #c9a54e;border-radius:0 10px 10px 0;padding:14px;margin-bottom:10px}
+.tc-head{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:14px;font-weight:600;margin-bottom:6px}
+.tc-ratio{font-size:12px;color:#7af5c8;font-family:monospace;margin-left:8px}
+.thirds-balance{background:rgba(201,165,78,.04);padding:12px;border-radius:8px;font-size:12px;color:#b8b5ad;line-height:1.8;margin-top:12px}
+
+/* ── 대운 그래프 ── */
+.decade-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0}
+.decade-tag{background:rgba(201,165,78,.08);border:1px solid rgba(201,165,78,.15);border-radius:14px;padding:4px 10px;font-size:10px;color:#b0ada5}
+.decade-tag strong{color:#c9a54e}
+.fortune-analysis{font-size:12px;color:#b0ada5;line-height:1.8;padding:12px;background:rgba(201,165,78,.03);border-radius:8px;margin-top:10px}
+.peak-age{text-align:center;color:#c9a54e;font-size:13px;margin-top:10px;font-family:'Noto Serif KR',serif}
+
+/* ── 파상 ── */
+.weakness-card{background:rgba(232,90,79,.03);border-left:3px solid #e85a4f;border-radius:0 10px 10px 0;padding:14px;margin-bottom:14px}
+.wc-head{font-size:14px;color:#e85a4f;font-weight:600;margin-bottom:8px}
+.wc-problem{font-size:12px;color:#d09090;line-height:1.7;margin-bottom:6px}
+.wc-solution{font-size:12px;color:#4fe8a4;line-height:1.7;padding:10px;background:rgba(79,232,164,.04);border-radius:6px;margin-top:8px}
+.bp-summary{font-size:12px;color:#b0ada5;line-height:1.8;padding:12px;background:rgba(79,232,164,.03);border-radius:8px;margin-top:10px}
+
+/* ── 상극상생 ── */
+.enemy-h{color:#e85a4f;font-size:14px;font-weight:600;margin:14px 0 8px}
+.ally-h{color:#4fe8a4;font-size:14px;font-weight:600;margin:18px 0 8px}
+.enemy-card{background:rgba(232,90,79,.03);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;line-height:1.7;color:#b0ada5}
+.enemy-risk{font-size:11px;opacity:.8;margin-top:4px}
+.ally-card{background:rgba(79,232,164,.03);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;line-height:1.7;color:#b0ada5}
+.ally-benefit{font-size:11px;opacity:.8;margin-top:4px}
+
+/* ── 푸터 ── */
+.footer{text-align:center;margin-top:40px;padding-top:20px;border-top:2px solid #c9a54e}
+.footer .mark{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:16px;letter-spacing:3px;margin-bottom:6px}
+.footer .info{font-size:9px;color:#6a6860;line-height:1.8}
+
+/* 인쇄 */
+@media print{body{background:#08080f!important}.no-print{display:none!important}}
 </style></head><body>
-<div class="pdf-wrap">
-  <div class="pdf-header">
+<div class="wrap">
+  <div class="cover">
     <h1>天 運</h1>
-    <div class="sub">PREMIUM FORTUNE REPORT</div>
-    <div class="date">${today} · AI 468점 정밀 분석 기반</div>
+    <div class="sub">Premium Fortune Report</div>
+    <div class="divider"></div>
+    <div class="date">${today}</div>
+    <div class="badge">AI 468점 정밀 분석 · 고전 문헌 원문 인용</div>
   </div>
-  <div class="pdf-content">${clone.innerHTML}</div>
-  <div class="pdf-footer">
-    <div class="gold">✦ 天運 프리미엄 관상 종합 리포트 ✦</div>
-    <div style="margin-top:4px">chunwoon-app.vercel.app | 마의상법 · 유장상법 · 신상전편 기반</div>
-    <div style="margin-top:2px">본 리포트는 오락 콘텐츠이며 과학적 근거가 있는 판독이 아닙니다.</div>
+  ${body}
+  <div class="footer">
+    <div class="mark">✦ 天 運 ✦</div>
+    <div class="info">
+      마의상법(麻衣相法) · 유장상법(柳莊相法) · 신상전편(神相全篇) 기반<br>
+      chunwoon-app.vercel.app<br>
+      본 리포트는 전통 관상서를 참고한 오락 콘텐츠이며, 과학적 근거가 있는 판독이 아닙니다.
+    </div>
   </div>
 </div>
-<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);padding:14px;text-align:center;z-index:9999;border-top:1px solid rgba(201,165,78,.3)">
-  <button onclick="window.print()" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 40px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,.4)">📄 PDF로 저장하기</button>
-  <div style="font-size:10px;color:#9a9890;margin-top:8px">"PDF로 저장" 또는 "Save as PDF"를 선택하세요</div>
+<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(8,8,15,.97);padding:16px;text-align:center;z-index:9999;border-top:2px solid #c9a54e">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 48px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 24px rgba(201,165,78,.5);letter-spacing:1px">📄 PDF로 저장하기</button>
+  <div style="font-size:10px;color:#8a8678;margin-top:8px">인쇄 대상을 "PDF로 저장"으로 선택하세요</div>
 </div>
-<script>
-  // 페이지 로드 완료 후 약간 대기 → 자동 인쇄 다이얼로그
-  window.addEventListener('load',()=>setTimeout(()=>window.print(),800));
-</script>
+<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),1000));</script>
 </body></html>`;
 
-  const printWin=window.open('','_blank');
-  if(printWin){
-    printWin.document.write(printHTML);
-    printWin.document.close();
-  }else{
-    // 팝업 차단 시: Blob URL로 시도
-    const blob=new Blob([printHTML],{type:'text/html'});
-    const url=URL.createObjectURL(blob);
-    window.open(url,'_blank');
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-  }
+  const w=window.open('','_blank');
+  if(w){w.document.write(printHTML);w.document.close();}
+  else{const b=new Blob([printHTML],{type:'text/html'});const u=URL.createObjectURL(b);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);}
 }
 
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
