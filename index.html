@@ -46,8 +46,7 @@
 
 <!-- html2canvas for screenshot capture -->
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<!-- jsPDF for premium report PDF generation -->
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<!-- jsPDF: 필요 시 동적 로드 -->
 
 <!-- OpenCV.js for real palm line edge detection -->
 <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window._opencvReady=true;" type="text/javascript"></script>
@@ -4270,22 +4269,60 @@ if ('serviceWorker' in navigator) {
 //  SHARE API (Web Share API 통합)
 // ============================================================
 
+// ── jsPDF 동적 로딩 ──
+function _loadJsPDF(){
+  return new Promise((resolve,reject)=>{
+    if(window.jspdf){resolve(window.jspdf);return}
+    const urls=[
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+      'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+      'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
+    ];
+    let idx=0;
+    const tryNext=()=>{
+      if(idx>=urls.length){reject(new Error('jsPDF 로드 실패'));return}
+      const sc=document.createElement('script');
+      sc.src=urls[idx++];
+      sc.onload=()=>{
+        if(window.jspdf)resolve(window.jspdf);
+        else tryNext();
+      };
+      sc.onerror=()=>tryNext();
+      document.head.appendChild(sc);
+    };
+    tryNext();
+  });
+}
+
 // ── 프리미엄 PDF 리포트 저장 ──
-function savePremiumPDF(){
-  showToast('PDF 리포트 생성 중...');
+async function savePremiumPDF(){
   const target=document.querySelector('[data-paywall="face"]');
   if(!target){showToast('프리미엄 리포트가 없습니다');return}
 
-  // html2canvas로 프리미엄 리포트 전체를 고해상도 이미지로 캡처 → jsPDF에 삽입
-  if(typeof html2canvas!=='function'){showToast('잠시 후 다시 시도해주세요');return}
-  if(typeof window.jspdf==='undefined'&&typeof jspdf==='undefined'){showToast('PDF 기능 로딩 중... 잠시 후 다시 시도해주세요');return}
+  showToast('PDF 리포트 생성 중...');
 
-  html2canvas(target,{
-    backgroundColor:'#0a0a12',scale:2,useCORS:true,logging:false,allowTaint:true,
-    scrollY:-window.scrollY
-  }).then(canvas=>{
-    const {jsPDF}=window.jspdf||jspdf;
-    const imgData=canvas.toDataURL('image/jpeg',0.92);
+  // html2canvas 확인
+  if(typeof html2canvas!=='function'){
+    showToast('캡처 기능 로딩 중...');return;
+  }
+
+  // jsPDF 동적 로드
+  let jspdfLib;
+  try{
+    jspdfLib=await _loadJsPDF();
+  }catch(e){
+    console.error('jsPDF load error:',e);
+    showToast('PDF 라이브러리를 불러올 수 없습니다. 네트워크를 확인해주세요.');
+    return;
+  }
+
+  try{
+    const canvas=await html2canvas(target,{
+      backgroundColor:'#0a0a12',scale:2,useCORS:true,logging:false,allowTaint:true,
+      scrollY:-window.scrollY
+    });
+
+    const {jsPDF}=jspdfLib;
     const imgW=canvas.width;
     const imgH=canvas.height;
 
@@ -4330,14 +4367,12 @@ function savePremiumPDF(){
     while(remainH>0){
       if(page>0){
         doc.addPage();
-        // 페이지 상단 골드 라인
         doc.setDrawColor(201,165,78);doc.setLineWidth(0.3);
         doc.line(margin,8,pdfW-margin,8);
       }
       const drawH=Math.min(pageContentH,remainH);
       const srcSliceH=drawH/ratio;
 
-      // 이미지 슬라이스 추가
       const sliceCanvas=document.createElement('canvas');
       sliceCanvas.width=imgW;
       sliceCanvas.height=Math.ceil(srcSliceH);
@@ -4345,30 +4380,28 @@ function savePremiumPDF(){
       sctx.drawImage(canvas,0,srcY,imgW,srcSliceH,0,0,imgW,srcSliceH);
       const sliceData=sliceCanvas.toDataURL('image/jpeg',0.92);
 
-      const yPos=page===0?startY:10;
+      const yPos=page===0?startY:12;
       doc.addImage(sliceData,'JPEG',margin,yPos,contentW,drawH);
 
-      // 페이지 하단 — 페이지 번호
       doc.setFontSize(7);doc.setTextColor(160,160,160);
-      doc.text(`- ${page+1} -`,pdfW/2,pdfH-5,{align:'center'});
+      doc.text('- '+(page+1)+' -',pdfW/2,pdfH-5,{align:'center'});
 
       srcY+=srcSliceH;
       remainH-=drawH;
       page++;
     }
 
-    // 마지막 페이지 하단 — 푸터
+    // 푸터
     doc.setFontSize(7);doc.setTextColor(130,130,130);
-    doc.text('天運 chunwoon-app.vercel.app | AI 468-point Analysis + Classical Literature',pdfW/2,pdfH-10,{align:'center'});
+    doc.text('chunwoon-app.vercel.app | AI 468-point Analysis',pdfW/2,pdfH-10,{align:'center'});
 
-    // 저장
-    const fileName=`天運_프리미엄리포트_${today}.pdf`;
+    const fileName='天運_프리미엄리포트_'+today+'.pdf';
     doc.save(fileName);
     showToast('PDF 리포트가 저장되었습니다!');
-  }).catch(e=>{
+  }catch(e){
     console.error('PDF generation error:',e);
     showToast('PDF 생성 실패 — 스크린샷을 이용해주세요');
-  });
+  }
 }
 
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
