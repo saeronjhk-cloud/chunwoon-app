@@ -4363,9 +4363,9 @@ function savePremiumPDF(){
     let svg=`<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:600px;display:block;margin:16px auto">`;
     svg+=`<rect width="${svgW}" height="${svgH}" rx="8" fill="#fafaf8" stroke="#e0d9c8"/>`;
     // 그리드
-    for(let i=0;i<=4;i++){const y=pad.t+gH*(1-i/4);svg+=`<line x1="${pad.l}" y1="${y}" x2="${svgW-pad.r}" y2="${y}" stroke="#e8e0d0" stroke-width="0.5"/><text x="${pad.l-8}" y="${y+4}" fill="#888" font-size="10" text-anchor="end" font-family="sans-serif">${i*25}</text>`;}
+    for(let i=0;i<=4;i++){const y=pad.t+gH*(1-i/4);svg+=`<line x1="${pad.l}" y1="${y}" x2="${svgW-pad.r}" y2="${y}" stroke="#d5cbb5" stroke-width="0.5"/><text x="${pad.l-8}" y="${y+4}" fill="#555" font-size="11" font-weight="600" text-anchor="end" font-family="sans-serif">${i*25}</text>`;}
     // X축 라벨
-    decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;svg+=`<text x="${x}" y="${svgH-pad.b+18}" fill="#555" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif">${d.age||''}</text>`;});
+    decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;svg+=`<text x="${x}" y="${svgH-pad.b+18}" fill="#1a1a1a" font-size="12" font-weight="700" text-anchor="middle" font-family="sans-serif">${d.age||''}</text>`;});
     // 데이터 라인
     const colors={wealth:'#c9880a',love:'#c9443a',health:'#2a80aa'};
     const labels={wealth:'재물운',love:'애정운',health:'건강운'};
@@ -4376,11 +4376,11 @@ function savePremiumPDF(){
       // 라인
       svg+=`<polyline points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="${colors[key]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
       // 점 + 값
-      pts.forEach(p=>{svg+=`<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${colors[key]}" stroke="#fff" stroke-width="1.5"/><text x="${p.x}" y="${p.y-12}" fill="#333" font-size="10" font-weight="600" text-anchor="middle" font-family="sans-serif">${p.v}</text>`;});
+      pts.forEach(p=>{svg+=`<circle cx="${p.x}" cy="${p.y}" r="5" fill="${colors[key]}" stroke="#fff" stroke-width="2"/><text x="${p.x}" y="${p.y-12}" fill="#1a1a1a" font-size="11" font-weight="700" text-anchor="middle" font-family="sans-serif">${p.v}</text>`;});
     });
     // 범례
     let lx=svgW/2-100;
-    ['wealth','love','health'].forEach(key=>{svg+=`<circle cx="${lx}" cy="${svgH-10}" r="5" fill="${colors[key]}"/><text x="${lx+10}" y="${svgH-6}" fill="#444" font-size="11" font-weight="500" font-family="sans-serif">${labels[key]}</text>`;lx+=80;});
+    ['wealth','love','health'].forEach(key=>{svg+=`<circle cx="${lx}" cy="${svgH-10}" r="5" fill="${colors[key]}"/><text x="${lx+10}" y="${svgH-6}" fill="#1a1a1a" font-size="12" font-weight="700" font-family="sans-serif">${labels[key]}</text>`;lx+=80;});
     svg+=`</svg>`;
     body+=svg;
     // 연대별 키워드
@@ -4416,13 +4416,13 @@ function savePremiumPDF(){
     if(ef.enemies&&ef.enemies.length){
       body+='<h3 class="enemy-h">🚫 피해야 할 관상</h3>';
       ef.enemies.forEach(e=>{
-        body+=`<div class="enemy-card"><strong style="color:#e85a4f">${esc(e.feature)}</strong> — ${esc(e.reason)}<div class="enemy-risk">⚡ ${esc(e.risk||'')}</div>${citBlock(e.citation)}</div>`;
+        body+=`<div class="enemy-card"><strong style="color:#8a2218">${esc(e.feature)}</strong> — ${esc(e.reason)}<div class="enemy-risk">⚡ ${esc(e.risk||'')}</div>${citBlock(e.citation)}</div>`;
       });
     }
     if(ef.allies&&ef.allies.length){
       body+='<h3 class="ally-h">✨ 함께하면 좋은 관상</h3>';
       ef.allies.forEach(a=>{
-        body+=`<div class="ally-card"><strong style="color:#4fe8a4">${esc(a.feature)}</strong> — ${esc(a.reason)}<div class="ally-benefit">🌟 ${esc(a.benefit||'')}</div></div>`;
+        body+=`<div class="ally-card"><strong style="color:#0a5a30">${esc(a.feature)}</strong> — ${esc(a.reason)}<div class="ally-benefit">🌟 ${esc(a.benefit||'')}</div></div>`;
       });
     }
     if(ef.summary)body+=`<div class="fortune-analysis">${esc(ef.summary)}</div>`;
@@ -4436,7 +4436,7 @@ function savePremiumPDF(){
 <style>
 @page{size:A4;margin:16mm 14mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#fff;color:#2a2a2a;font-family:'Noto Sans KR',sans-serif;line-height:1.9;font-size:14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line-height:1.9;font-size:15px;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:400}
 .wrap{max-width:680px;margin:0 auto;padding:20px 16px}
 
 /* ── 커버 헤더 ── */
@@ -4449,77 +4449,77 @@ body{background:#fff;color:#2a2a2a;font-family:'Noto Sans KR',sans-serif;line-he
 .cover .badge{display:inline-block;margin-top:14px;padding:7px 22px;border:1.5px solid #8b6914;border-radius:20px;color:#7a5c10;font-size:11px;letter-spacing:1px;font-weight:500}
 
 /* ── 섹션 ── */
-.section{margin-bottom:28px;padding:22px 24px;background:#fafaf8;border:1px solid #e0d9c8;border-radius:10px}
-.section h2{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:19px;font-weight:700;margin-bottom:5px;letter-spacing:0.5px}
-.section-desc{font-size:12.5px;color:#777;margin-bottom:16px;line-height:1.7}
+.section{margin-bottom:28px;padding:22px 24px;background:#ffffff;border:1px solid #d5cbb5;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section h2{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:20px;font-weight:900;margin-bottom:5px;letter-spacing:0.5px}
+.section-desc{font-size:13px;color:#555;margin-bottom:16px;line-height:1.7;font-weight:400}
 .page-break{page-break-before:auto}
 
 /* ── 분석과정 카드 ── */
-.analysis-card{background:#fff;border:1px solid #e8e0d0;border-radius:8px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.ac-title{font-family:'Noto Serif KR',serif;color:#6b5220;font-size:16px;font-weight:700;margin-bottom:10px}
+.analysis-card{background:#ffffff;border:1px solid #d5cbb5;border-radius:8px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.ac-title{font-family:'Noto Serif KR',serif;color:#3a2500;font-size:17px;font-weight:900;margin-bottom:10px}
 .ac-table{width:100%;border-collapse:collapse;margin-bottom:10px}
-.ac-table td{padding:6px 0;font-size:13px;vertical-align:top;border-bottom:1px solid #f0ebe0}
-.ac-label{color:#888;width:65px;font-size:12px;font-weight:500}
-.ac-val{color:#333}.mono{font-family:monospace;color:#1a7a4a;font-weight:600}
-.conf-bar{height:5px;background:#ede8dc;border-radius:3px;margin-bottom:10px;overflow:hidden}
-.conf-fill{height:100%;background:linear-gradient(90deg,#8b6914,#c9a54e);border-radius:3px}
-.ac-reason{font-size:13px;color:#444;line-height:1.9}
-.dim{opacity:.6;font-size:12px}
+.ac-table td{padding:7px 0;font-size:14px;vertical-align:top;border-bottom:1px solid #e8e0d0;color:#1a1a1a}
+.ac-label{color:#666;width:65px;font-size:13px;font-weight:600}
+.ac-val{color:#1a1a1a;font-weight:500}.mono{font-family:monospace;color:#0d6938;font-weight:700}
+.conf-bar{height:6px;background:#e8e0d0;border-radius:3px;margin-bottom:10px;overflow:hidden}
+.conf-fill{height:100%;background:linear-gradient(90deg,#7a5c10,#b8930e);border-radius:3px}
+.ac-reason{font-size:14px;color:#222;line-height:1.9;font-weight:400}
+.dim{opacity:.7;font-size:12px}
 
 /* ── 인용 블록 ── */
-.cite{margin:12px 0;padding:14px 16px;background:#fdf8ee;border-left:4px solid #8b6914;border-radius:0 8px 8px 0}
-.cite-src{font-size:11px;color:#8b6914;font-weight:600;margin-bottom:5px;font-family:'Noto Serif KR',serif}
-.cite-orig{font-size:15px;color:#5a4510;font-family:'Noto Serif KR',serif;line-height:1.7;letter-spacing:0.5px;margin-bottom:4px;font-weight:600}
-.cite-pron{font-size:11px;color:#999;margin-bottom:4px}
-.cite-tl{font-size:13px;color:#555;font-style:italic;line-height:1.7}
+.cite{margin:12px 0;padding:14px 16px;background:#faf5e8;border-left:5px solid #8b6914;border-radius:0 8px 8px 0}
+.cite-src{font-size:12px;color:#6b4f0a;font-weight:700;margin-bottom:5px;font-family:'Noto Serif KR',serif}
+.cite-orig{font-size:16px;color:#2a1e00;font-family:'Noto Serif KR',serif;line-height:1.7;letter-spacing:0.5px;margin-bottom:4px;font-weight:700}
+.cite-pron{font-size:12px;color:#777;margin-bottom:4px}
+.cite-tl{font-size:14px;color:#333;font-style:italic;line-height:1.7;font-weight:400}
 
 /* ── 십이궁 그리드 ── */
 .palace-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.palace-card{background:#fff;border:1px solid #e8e0d0;border-radius:8px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.palace-card{background:#ffffff;border:1px solid #d5cbb5;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.pc-name{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:14px;font-weight:700}
-.pc-grade{font-size:12px;font-weight:700;padding:3px 12px;border:1.5px solid;border-radius:12px;background:#fff}
-.pc-area{font-size:11px;color:#888;margin-bottom:8px}
-.pc-interp{font-size:13px;color:#444;line-height:1.85}
+.pc-name{font-family:'Noto Serif KR',serif;color:#2a1e00;font-size:15px;font-weight:900}
+.pc-grade{font-size:13px;font-weight:800;padding:3px 12px;border:2px solid;border-radius:12px;background:#fff}
+.pc-area{font-size:12px;color:#666;margin-bottom:8px;font-weight:500}
+.pc-interp{font-size:14px;color:#1a1a1a;line-height:1.85;font-weight:400}
 
 /* ── 오관 ── */
-.official-card{background:#fff;border:1px solid #e8e0d0;border-radius:8px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.official-card{background:#ffffff;border:1px solid #d5cbb5;border-radius:8px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .oc-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.oc-icon{font-size:20px}.oc-name{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:15px;font-weight:700}
-.oc-label{font-size:12px;color:#777}.oc-measure{font-size:11px;color:#1a7a4a;font-family:monospace;font-weight:600;margin-bottom:8px}
+.oc-icon{font-size:22px}.oc-name{font-family:'Noto Serif KR',serif;color:#2a1e00;font-size:16px;font-weight:900}
+.oc-label{font-size:13px;color:#555;font-weight:500}.oc-measure{font-size:12px;color:#0d6938;font-family:monospace;font-weight:700;margin-bottom:8px}
 
 /* ── 삼정 ── */
-.thirds-card{background:#fff;border-left:4px solid #8b6914;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
-.tc-head{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:15px;font-weight:700;margin-bottom:8px}
-.tc-ratio{font-size:13px;color:#1a7a4a;font-family:monospace;font-weight:600;margin-left:8px}
-.thirds-balance{background:#fdf8ee;padding:14px;border-radius:8px;font-size:13px;color:#444;line-height:1.85;margin-top:14px;border:1px solid #e8e0d0}
+.thirds-card{background:#ffffff;border-left:5px solid #8b6914;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.tc-head{font-family:'Noto Serif KR',serif;color:#2a1e00;font-size:16px;font-weight:900;margin-bottom:8px}
+.tc-ratio{font-size:14px;color:#0d6938;font-family:monospace;font-weight:700;margin-left:8px}
+.thirds-balance{background:#faf5e8;padding:14px;border-radius:8px;font-size:14px;color:#1a1a1a;line-height:1.85;margin-top:14px;border:1px solid #d5cbb5;font-weight:400}
 
 /* ── 대운 그래프 ── */
 .decade-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0}
-.decade-tag{background:#fdf8ee;border:1px solid #e0d9c8;border-radius:14px;padding:5px 12px;font-size:11px;color:#555}
-.decade-tag strong{color:#7a5c10}
-.fortune-analysis{font-size:13px;color:#444;line-height:1.9;padding:14px;background:#fafaf8;border-radius:8px;margin-top:12px;border:1px solid #e8e0d0}
-.peak-age{text-align:center;color:#5a4510;font-size:14px;margin-top:12px;font-family:'Noto Serif KR',serif;font-weight:600}
+.decade-tag{background:#faf5e8;border:1px solid #d5cbb5;border-radius:14px;padding:6px 14px;font-size:12px;color:#333;font-weight:500}
+.decade-tag strong{color:#3a2a00;font-weight:800}
+.fortune-analysis{font-size:14px;color:#1a1a1a;line-height:1.9;padding:14px;background:#ffffff;border-radius:8px;margin-top:12px;border:1px solid #d5cbb5;font-weight:400}
+.peak-age{text-align:center;color:#2a1e00;font-size:15px;margin-top:12px;font-family:'Noto Serif KR',serif;font-weight:800}
 
 /* ── 파상 ── */
-.weakness-card{background:#fff;border-left:4px solid #c9443a;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
-.wc-head{font-size:15px;color:#b33a30;font-weight:700;margin-bottom:8px}
-.wc-problem{font-size:13px;color:#8a3a30;line-height:1.8;margin-bottom:8px}
-.wc-solution{font-size:13px;color:#1a7a4a;line-height:1.8;padding:12px 14px;background:#f0faf4;border-radius:6px;margin-top:8px;border:1px solid #c8e8d8}
-.bp-summary{font-size:13px;color:#444;line-height:1.9;padding:14px;background:#f0faf4;border-radius:8px;margin-top:12px;border:1px solid #c8e8d8}
+.weakness-card{background:#ffffff;border-left:5px solid #c9443a;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.wc-head{font-size:16px;color:#8a2218;font-weight:800;margin-bottom:8px}
+.wc-problem{font-size:14px;color:#6a2018;line-height:1.8;margin-bottom:8px;font-weight:500}
+.wc-solution{font-size:14px;color:#0a5a30;line-height:1.8;padding:12px 14px;background:#eef8f2;border-radius:6px;margin-top:8px;border:1px solid #b8dcc8;font-weight:500}
+.bp-summary{font-size:14px;color:#1a1a1a;line-height:1.9;padding:14px;background:#eef8f2;border-radius:8px;margin-top:12px;border:1px solid #b8dcc8;font-weight:400}
 
 /* ── 상극상생 ── */
-.enemy-h{color:#b33a30;font-size:16px;font-weight:700;margin:16px 0 10px}
-.ally-h{color:#1a7a4a;font-size:16px;font-weight:700;margin:20px 0 10px}
-.enemy-card{background:#fef5f4;border:1px solid #f0d0cc;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#444}
-.enemy-risk{font-size:12px;color:#b33a30;margin-top:5px;font-weight:500}
-.ally-card{background:#f0faf4;border:1px solid #c8e8d8;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#444}
-.ally-benefit{font-size:12px;color:#1a7a4a;margin-top:5px;font-weight:500}
+.enemy-h{color:#8a2218;font-size:17px;font-weight:900;margin:16px 0 10px}
+.ally-h{color:#0a5a30;font-size:17px;font-weight:900;margin:20px 0 10px}
+.enemy-card{background:#fff5f4;border:1px solid #e8c0bc;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:14px;line-height:1.8;color:#1a1a1a}
+.enemy-risk{font-size:13px;color:#8a2218;margin-top:5px;font-weight:600}
+.ally-card{background:#eef8f2;border:1px solid #b8dcc8;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:14px;line-height:1.8;color:#1a1a1a}
+.ally-benefit{font-size:13px;color:#0a5a30;margin-top:5px;font-weight:600}
 
 /* ── 푸터 ── */
-.footer{text-align:center;margin-top:36px;padding-top:20px;border-top:2px solid #8b6914}
-.footer .mark{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:18px;letter-spacing:4px;margin-bottom:6px}
-.footer .info{font-size:10px;color:#999;line-height:1.9}
+.footer{text-align:center;margin-top:36px;padding-top:20px;border-top:3px solid #8b6914}
+.footer .mark{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:20px;letter-spacing:4px;margin-bottom:6px;font-weight:900}
+.footer .info{font-size:11px;color:#666;line-height:1.9}
 
 /* 인쇄 */
 @media print{body{background:#fff!important}.no-print{display:none!important}}
