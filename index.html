@@ -4285,7 +4285,7 @@ function savePremiumPDF(){
     return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』 ${esc(c.chapter||'')}</div><div class="cite-orig">"${esc(c.original)}"</div>${c.pronunciation?'<div class="cite-pron">('+esc(c.pronunciation)+')</div>':''}<div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
   };
   const bar=(val,color)=>`<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,val||0)}%;background:${color}"></div><span class="bar-val">${val||0}</span></div>`;
-  const gradeColor=(g)=>g==='상'?'#4fe8a4':g==='하'?'#e85a4f':'#f5b946';
+  const gradeColor=(g)=>g==='상'?'#1a7a4a':g==='하'?'#c9443a':'#b8860b';
 
   // ── 섹션별 HTML 생성 ──
   let body='';
@@ -4361,26 +4361,26 @@ function savePremiumPDF(){
     const svgW=600,svgH=280,pad={t:30,b:40,l:50,r:20};
     const gW=svgW-pad.l-pad.r,gH=svgH-pad.t-pad.b;
     let svg=`<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:600px;display:block;margin:16px auto">`;
-    svg+=`<rect width="${svgW}" height="${svgH}" rx="8" fill="#0d0d1a"/>`;
+    svg+=`<rect width="${svgW}" height="${svgH}" rx="8" fill="#fafaf8" stroke="#e0d9c8"/>`;
     // 그리드
-    for(let i=0;i<=4;i++){const y=pad.t+gH*(1-i/4);svg+=`<line x1="${pad.l}" y1="${y}" x2="${svgW-pad.r}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/><text x="${pad.l-8}" y="${y+4}" fill="rgba(255,255,255,0.4)" font-size="10" text-anchor="end">${i*25}</text>`;}
+    for(let i=0;i<=4;i++){const y=pad.t+gH*(1-i/4);svg+=`<line x1="${pad.l}" y1="${y}" x2="${svgW-pad.r}" y2="${y}" stroke="#e8e0d0" stroke-width="0.5"/><text x="${pad.l-8}" y="${y+4}" fill="#888" font-size="10" text-anchor="end" font-family="sans-serif">${i*25}</text>`;}
     // X축 라벨
-    decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;svg+=`<text x="${x}" y="${svgH-pad.b+18}" fill="rgba(255,255,255,0.6)" font-size="10" text-anchor="middle">${d.age||''}</text>`;});
+    decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;svg+=`<text x="${x}" y="${svgH-pad.b+18}" fill="#555" font-size="11" font-weight="600" text-anchor="middle" font-family="sans-serif">${d.age||''}</text>`;});
     // 데이터 라인
-    const colors={wealth:'#f5b946',love:'#e85a4f',health:'#4fc3e8'};
+    const colors={wealth:'#c9880a',love:'#c9443a',health:'#2a80aa'};
     const labels={wealth:'재물운',love:'애정운',health:'건강운'};
     ['wealth','love','health'].forEach(key=>{
       let pts=[];decades.forEach((d,i)=>{const x=pad.l+(i/(n-1))*gW;const v=Number(d[key])||50;const y=pad.t+gH*(1-Math.min(100,Math.max(0,v))/100);pts.push({x,y,v});});
       // 영역 채우기
-      svg+=`<polygon points="${pts.map(p=>p.x+','+p.y).join(' ')} ${pts[pts.length-1].x},${pad.t+gH} ${pts[0].x},${pad.t+gH}" fill="${colors[key]}" opacity="0.06"/>`;
+      svg+=`<polygon points="${pts.map(p=>p.x+','+p.y).join(' ')} ${pts[pts.length-1].x},${pad.t+gH} ${pts[0].x},${pad.t+gH}" fill="${colors[key]}" opacity="0.08"/>`;
       // 라인
       svg+=`<polyline points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="${colors[key]}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
       // 점 + 값
-      pts.forEach(p=>{svg+=`<circle cx="${p.x}" cy="${p.y}" r="4" fill="${colors[key]}"/><text x="${p.x}" y="${p.y-10}" fill="rgba(255,255,255,0.5)" font-size="9" text-anchor="middle">${p.v}</text>`;});
+      pts.forEach(p=>{svg+=`<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${colors[key]}" stroke="#fff" stroke-width="1.5"/><text x="${p.x}" y="${p.y-12}" fill="#333" font-size="10" font-weight="600" text-anchor="middle" font-family="sans-serif">${p.v}</text>`;});
     });
     // 범례
-    let lx=svgW/2-90;
-    ['wealth','love','health'].forEach(key=>{svg+=`<circle cx="${lx}" cy="${svgH-10}" r="4" fill="${colors[key]}"/><text x="${lx+8}" y="${svgH-6}" fill="rgba(255,255,255,0.6)" font-size="10">${labels[key]}</text>`;lx+=70;});
+    let lx=svgW/2-100;
+    ['wealth','love','health'].forEach(key=>{svg+=`<circle cx="${lx}" cy="${svgH-10}" r="5" fill="${colors[key]}"/><text x="${lx+10}" y="${svgH-6}" fill="#444" font-size="11" font-weight="500" font-family="sans-serif">${labels[key]}</text>`;lx+=80;});
     svg+=`</svg>`;
     body+=svg;
     // 연대별 키워드
@@ -4434,95 +4434,95 @@ function savePremiumPDF(){
 <title>天運 프리미엄 관상 리포트 — ${today}</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-@page{size:A4;margin:14mm 12mm}
+@page{size:A4;margin:16mm 14mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#08080f;color:#e0ddd6;font-family:'Noto Sans KR',sans-serif;line-height:1.85;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.wrap{max-width:680px;margin:0 auto;padding:30px 24px}
+body{background:#fff;color:#2a2a2a;font-family:'Noto Sans KR',sans-serif;line-height:1.9;font-size:14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px}
 
 /* ── 커버 헤더 ── */
-.cover{text-align:center;padding:50px 20px 40px;border:2px solid #c9a54e;border-radius:16px;background:linear-gradient(180deg,rgba(201,165,78,.06) 0%,transparent 100%);margin-bottom:36px;position:relative}
-.cover::before{content:'';position:absolute;inset:6px;border:1px solid rgba(201,165,78,.2);border-radius:12px;pointer-events:none}
-.cover h1{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:36px;font-weight:900;letter-spacing:6px;margin-bottom:2px}
-.cover .sub{color:#b8a472;font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:16px}
-.cover .divider{width:80px;height:1px;background:linear-gradient(90deg,transparent,#c9a54e,transparent);margin:0 auto 14px}
-.cover .date{color:#8a8678;font-size:12px}
-.cover .badge{display:inline-block;margin-top:14px;padding:6px 20px;border:1px solid rgba(201,165,78,.4);border-radius:20px;color:#c9a54e;font-size:10px;letter-spacing:1px}
+.cover{text-align:center;padding:48px 20px 38px;border:2px solid #8b6914;border-radius:12px;background:linear-gradient(180deg,#faf6ec 0%,#fff 100%);margin-bottom:32px;position:relative}
+.cover::before{content:'';position:absolute;inset:5px;border:1px solid rgba(139,105,20,.25);border-radius:9px;pointer-events:none}
+.cover h1{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:38px;font-weight:900;letter-spacing:8px;margin-bottom:2px}
+.cover .sub{color:#9a8550;font-size:12px;letter-spacing:5px;text-transform:uppercase;margin-bottom:14px}
+.cover .divider{width:100px;height:2px;background:linear-gradient(90deg,transparent,#8b6914,transparent);margin:0 auto 14px}
+.cover .date{color:#555;font-size:13px}
+.cover .badge{display:inline-block;margin-top:14px;padding:7px 22px;border:1.5px solid #8b6914;border-radius:20px;color:#7a5c10;font-size:11px;letter-spacing:1px;font-weight:500}
 
 /* ── 섹션 ── */
-.section{margin-bottom:32px;padding:24px;background:rgba(255,255,255,.02);border:1px solid rgba(201,165,78,.12);border-radius:14px}
-.section h2{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:18px;font-weight:700;margin-bottom:4px;letter-spacing:1px}
-.section-desc{font-size:11px;color:#8a8678;margin-bottom:18px;line-height:1.6}
+.section{margin-bottom:28px;padding:22px 24px;background:#fafaf8;border:1px solid #e0d9c8;border-radius:10px}
+.section h2{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:19px;font-weight:700;margin-bottom:5px;letter-spacing:0.5px}
+.section-desc{font-size:12.5px;color:#777;margin-bottom:16px;line-height:1.7}
 .page-break{page-break-before:auto}
 
 /* ── 분석과정 카드 ── */
-.analysis-card{background:rgba(0,0,0,.25);border:1px solid rgba(201,165,78,.1);border-radius:10px;padding:16px 18px;margin-bottom:14px}
-.ac-title{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:15px;font-weight:700;margin-bottom:10px}
+.analysis-card{background:#fff;border:1px solid #e8e0d0;border-radius:8px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ac-title{font-family:'Noto Serif KR',serif;color:#6b5220;font-size:16px;font-weight:700;margin-bottom:10px}
 .ac-table{width:100%;border-collapse:collapse;margin-bottom:10px}
-.ac-table td{padding:5px 0;font-size:12px;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.04)}
-.ac-label{color:#8a8678;width:60px;font-size:11px}
-.ac-val{color:#e0ddd6}.mono{font-family:monospace;color:#7af5c8}
-.conf-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:10px;overflow:hidden}
-.conf-fill{height:100%;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px}
-.ac-reason{font-size:12px;color:#b0ada5;line-height:1.8}
-.dim{opacity:.6;font-size:11px}
+.ac-table td{padding:6px 0;font-size:13px;vertical-align:top;border-bottom:1px solid #f0ebe0}
+.ac-label{color:#888;width:65px;font-size:12px;font-weight:500}
+.ac-val{color:#333}.mono{font-family:monospace;color:#1a7a4a;font-weight:600}
+.conf-bar{height:5px;background:#ede8dc;border-radius:3px;margin-bottom:10px;overflow:hidden}
+.conf-fill{height:100%;background:linear-gradient(90deg,#8b6914,#c9a54e);border-radius:3px}
+.ac-reason{font-size:13px;color:#444;line-height:1.9}
+.dim{opacity:.6;font-size:12px}
 
 /* ── 인용 블록 ── */
-.cite{margin:10px 0;padding:12px 14px;background:linear-gradient(135deg,rgba(201,165,78,.06),rgba(139,105,20,.02));border-left:3px solid #c9a54e;border-radius:0 8px 8px 0}
-.cite-src{font-size:10px;color:#c9a54e;font-weight:600;margin-bottom:4px;font-family:'Noto Serif KR',serif}
-.cite-orig{font-size:14px;color:#f5d78e;font-family:'Noto Serif KR',serif;line-height:1.7;letter-spacing:1px;margin-bottom:3px}
-.cite-pron{font-size:10px;color:#8a8678;margin-bottom:3px}
-.cite-tl{font-size:12px;color:#b0ada5;font-style:italic;line-height:1.7}
+.cite{margin:12px 0;padding:14px 16px;background:#fdf8ee;border-left:4px solid #8b6914;border-radius:0 8px 8px 0}
+.cite-src{font-size:11px;color:#8b6914;font-weight:600;margin-bottom:5px;font-family:'Noto Serif KR',serif}
+.cite-orig{font-size:15px;color:#5a4510;font-family:'Noto Serif KR',serif;line-height:1.7;letter-spacing:0.5px;margin-bottom:4px;font-weight:600}
+.cite-pron{font-size:11px;color:#999;margin-bottom:4px}
+.cite-tl{font-size:13px;color:#555;font-style:italic;line-height:1.7}
 
 /* ── 십이궁 그리드 ── */
-.palace-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.palace-card{background:rgba(0,0,0,.2);border:1px solid rgba(201,165,78,.08);border-radius:10px;padding:14px}
-.pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.pc-name{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:13px;font-weight:600}
-.pc-grade{font-size:12px;font-weight:700;padding:2px 10px;border:1px solid;border-radius:10px}
-.pc-area{font-size:10px;color:#8a8678;margin-bottom:6px}
-.pc-interp{font-size:11.5px;color:#b8b5ad;line-height:1.8}
+.palace-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.palace-card{background:#fff;border:1px solid #e8e0d0;border-radius:8px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pc-name{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:14px;font-weight:700}
+.pc-grade{font-size:12px;font-weight:700;padding:3px 12px;border:1.5px solid;border-radius:12px;background:#fff}
+.pc-area{font-size:11px;color:#888;margin-bottom:8px}
+.pc-interp{font-size:13px;color:#444;line-height:1.85}
 
 /* ── 오관 ── */
-.official-card{background:rgba(0,0,0,.2);border:1px solid rgba(201,165,78,.08);border-radius:10px;padding:14px;margin-bottom:12px}
-.oc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.oc-icon{font-size:18px}.oc-name{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:14px;font-weight:600}
-.oc-label{font-size:11px;color:#b0ada5}.oc-measure{font-size:10px;color:#7af5c8;font-family:monospace;margin-bottom:6px}
+.official-card{background:#fff;border:1px solid #e8e0d0;border-radius:8px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.oc-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.oc-icon{font-size:20px}.oc-name{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:15px;font-weight:700}
+.oc-label{font-size:12px;color:#777}.oc-measure{font-size:11px;color:#1a7a4a;font-family:monospace;font-weight:600;margin-bottom:8px}
 
 /* ── 삼정 ── */
-.thirds-card{background:rgba(0,0,0,.2);border-left:3px solid #c9a54e;border-radius:0 10px 10px 0;padding:14px;margin-bottom:10px}
-.tc-head{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:14px;font-weight:600;margin-bottom:6px}
-.tc-ratio{font-size:12px;color:#7af5c8;font-family:monospace;margin-left:8px}
-.thirds-balance{background:rgba(201,165,78,.04);padding:12px;border-radius:8px;font-size:12px;color:#b8b5ad;line-height:1.8;margin-top:12px}
+.thirds-card{background:#fff;border-left:4px solid #8b6914;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.tc-head{font-family:'Noto Serif KR',serif;color:#5a4510;font-size:15px;font-weight:700;margin-bottom:8px}
+.tc-ratio{font-size:13px;color:#1a7a4a;font-family:monospace;font-weight:600;margin-left:8px}
+.thirds-balance{background:#fdf8ee;padding:14px;border-radius:8px;font-size:13px;color:#444;line-height:1.85;margin-top:14px;border:1px solid #e8e0d0}
 
 /* ── 대운 그래프 ── */
-.decade-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0}
-.decade-tag{background:rgba(201,165,78,.08);border:1px solid rgba(201,165,78,.15);border-radius:14px;padding:4px 10px;font-size:10px;color:#b0ada5}
-.decade-tag strong{color:#c9a54e}
-.fortune-analysis{font-size:12px;color:#b0ada5;line-height:1.8;padding:12px;background:rgba(201,165,78,.03);border-radius:8px;margin-top:10px}
-.peak-age{text-align:center;color:#c9a54e;font-size:13px;margin-top:10px;font-family:'Noto Serif KR',serif}
+.decade-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0}
+.decade-tag{background:#fdf8ee;border:1px solid #e0d9c8;border-radius:14px;padding:5px 12px;font-size:11px;color:#555}
+.decade-tag strong{color:#7a5c10}
+.fortune-analysis{font-size:13px;color:#444;line-height:1.9;padding:14px;background:#fafaf8;border-radius:8px;margin-top:12px;border:1px solid #e8e0d0}
+.peak-age{text-align:center;color:#5a4510;font-size:14px;margin-top:12px;font-family:'Noto Serif KR',serif;font-weight:600}
 
 /* ── 파상 ── */
-.weakness-card{background:rgba(232,90,79,.03);border-left:3px solid #e85a4f;border-radius:0 10px 10px 0;padding:14px;margin-bottom:14px}
-.wc-head{font-size:14px;color:#e85a4f;font-weight:600;margin-bottom:8px}
-.wc-problem{font-size:12px;color:#d09090;line-height:1.7;margin-bottom:6px}
-.wc-solution{font-size:12px;color:#4fe8a4;line-height:1.7;padding:10px;background:rgba(79,232,164,.04);border-radius:6px;margin-top:8px}
-.bp-summary{font-size:12px;color:#b0ada5;line-height:1.8;padding:12px;background:rgba(79,232,164,.03);border-radius:8px;margin-top:10px}
+.weakness-card{background:#fff;border-left:4px solid #c9443a;border-radius:0 8px 8px 0;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+.wc-head{font-size:15px;color:#b33a30;font-weight:700;margin-bottom:8px}
+.wc-problem{font-size:13px;color:#8a3a30;line-height:1.8;margin-bottom:8px}
+.wc-solution{font-size:13px;color:#1a7a4a;line-height:1.8;padding:12px 14px;background:#f0faf4;border-radius:6px;margin-top:8px;border:1px solid #c8e8d8}
+.bp-summary{font-size:13px;color:#444;line-height:1.9;padding:14px;background:#f0faf4;border-radius:8px;margin-top:12px;border:1px solid #c8e8d8}
 
 /* ── 상극상생 ── */
-.enemy-h{color:#e85a4f;font-size:14px;font-weight:600;margin:14px 0 8px}
-.ally-h{color:#4fe8a4;font-size:14px;font-weight:600;margin:18px 0 8px}
-.enemy-card{background:rgba(232,90,79,.03);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;line-height:1.7;color:#b0ada5}
-.enemy-risk{font-size:11px;opacity:.8;margin-top:4px}
-.ally-card{background:rgba(79,232,164,.03);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;line-height:1.7;color:#b0ada5}
-.ally-benefit{font-size:11px;opacity:.8;margin-top:4px}
+.enemy-h{color:#b33a30;font-size:16px;font-weight:700;margin:16px 0 10px}
+.ally-h{color:#1a7a4a;font-size:16px;font-weight:700;margin:20px 0 10px}
+.enemy-card{background:#fef5f4;border:1px solid #f0d0cc;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#444}
+.enemy-risk{font-size:12px;color:#b33a30;margin-top:5px;font-weight:500}
+.ally-card{background:#f0faf4;border:1px solid #c8e8d8;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#444}
+.ally-benefit{font-size:12px;color:#1a7a4a;margin-top:5px;font-weight:500}
 
 /* ── 푸터 ── */
-.footer{text-align:center;margin-top:40px;padding-top:20px;border-top:2px solid #c9a54e}
-.footer .mark{font-family:'Noto Serif KR',serif;color:#c9a54e;font-size:16px;letter-spacing:3px;margin-bottom:6px}
-.footer .info{font-size:9px;color:#6a6860;line-height:1.8}
+.footer{text-align:center;margin-top:36px;padding-top:20px;border-top:2px solid #8b6914}
+.footer .mark{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:18px;letter-spacing:4px;margin-bottom:6px}
+.footer .info{font-size:10px;color:#999;line-height:1.9}
 
 /* 인쇄 */
-@media print{body{background:#08080f!important}.no-print{display:none!important}}
+@media print{body{background:#fff!important}.no-print{display:none!important}}
 </style></head><body>
 <div class="wrap">
   <div class="cover">
@@ -4542,9 +4542,9 @@ body{background:#08080f;color:#e0ddd6;font-family:'Noto Sans KR',sans-serif;line
     </div>
   </div>
 </div>
-<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(8,8,15,.97);padding:16px;text-align:center;z-index:9999;border-top:2px solid #c9a54e">
-  <button onclick="window.print()" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 48px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 24px rgba(201,165,78,.5);letter-spacing:1px">📄 PDF로 저장하기</button>
-  <div style="font-size:10px;color:#8a8678;margin-top:8px">인쇄 대상을 "PDF로 저장"으로 선택하세요</div>
+<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);padding:16px;text-align:center;z-index:9999;border-top:2px solid #8b6914;box-shadow:0 -2px 12px rgba(0,0,0,.08)">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#8b6914,#6b4f0a);color:white;border:none;padding:14px 48px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 16px rgba(139,105,20,.3);letter-spacing:1px">📄 PDF로 저장하기</button>
+  <div style="font-size:11px;color:#888;margin-top:8px">인쇄 대상을 "PDF로 저장"으로 선택하세요</div>
 </div>
 </body></html>`;
 
