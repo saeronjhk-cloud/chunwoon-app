@@ -46,6 +46,8 @@
 
 <!-- html2canvas for screenshot capture -->
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- jsPDF for premium report PDF generation -->
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 
 <!-- OpenCV.js for real palm line edge detection -->
 <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window._opencvReady=true;" type="text/javascript"></script>
@@ -3393,9 +3395,9 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   <div id="faceTraits"></div>
   <div id="faceSummarySection" class="reading" style="margin-top:14px;opacity:0;transform:translateY(10px);transition:all .8s ease">종합적으로 <strong style="color:var(--gold)">${fiveElement.el}</strong>의 기반 위에 <strong style="color:var(--gold)">${sR.t}</strong>과 <strong style="color:var(--gold)">${eR.t}</strong>이 더해진 상입니다. 좋은 마음이 좋은 상을 만듭니다.</div>
   <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:left;line-height:1.6">※ 본 결과는 『마의상법』·『유장상법』·『신상전편』 등 전통 관상서를 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
-  <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
-    <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px">💾 결과 저장하기</button>
-    <button class="share-btn" onclick="showShareMenu('face')" style="flex:1;max-width:180px">📤 결과 공유하기</button>
+  <div id="faceBasicButtons" style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+    <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장하기</button>
+    <button class="share-btn" onclick="showShareMenu('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유하기</button>
   </div></div>`;
   r.classList.add('show');
   // Create trait blocks (hidden) — revealed during animation
@@ -3997,14 +3999,17 @@ function renderPremiumReport(container,data){
 
   html+='<div style="text-align:left;margin-top:16px"><div style="font-size:11px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 정밀 분석 + 십이궁·오관·삼정·면부백세유년도 + 고전 문헌 원문 인용 기반</div></div>';
   html+=`<div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
-    <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px">💾 결과 저장하기</button>
-    <button class="share-btn" onclick="showShareMenu('face')" style="flex:1;max-width:180px">📤 결과 공유하기</button>
+    <button class="share-btn" onclick="savePremiumPDF()" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📄 리포트 저장</button>
+    <button class="share-btn" onclick="shareResultImage('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
   </div>`;
   html+='</div>';
   container.style.border='1px solid rgba(201,165,78,.3)';
   container.style.borderRadius='14px';
   container.style.background='rgba(20,20,30,0.6)';
   container.innerHTML=html;
+  // 기본 결과 카드의 버튼 숨기기 (프리미엄 버튼으로 대체)
+  const basicBtns=document.getElementById('faceBasicButtons');
+  if(basicBtns)basicBtns.style.display='none';
 
   // 대운 그래프 캔버스 렌더링 — 여러 번 시도
   if(data.fortuneGraph?.decades){
@@ -4246,55 +4251,8 @@ function analyzeMatch(){
 //  SHARE (Canvas image generation)
 // ============================================================
 function shareResult(type){
-  const canvas=document.getElementById('shareCanvas');
-  const ctx=canvas.getContext('2d');
-  canvas.width=600;canvas.height=400;
-
-  // Background
-  const grad=ctx.createLinearGradient(0,0,0,400);
-  grad.addColorStop(0,'#0a0a12');grad.addColorStop(1,'#12121e');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,600,400);
-
-  // Gold border
-  ctx.strokeStyle='#c9a54e';ctx.lineWidth=2;
-  ctx.strokeRect(20,20,560,360);
-  ctx.strokeStyle='rgba(201,165,78,0.3)';ctx.lineWidth=1;
-  ctx.strokeRect(30,30,540,340);
-
-  // Title
-  ctx.fillStyle='#c9a54e';ctx.font='bold 28px "Noto Serif KR", serif';ctx.textAlign='center';
-  ctx.fillText('天 運',300,75);
-  ctx.fillStyle='#9a9890';ctx.font='12px "Noto Sans KR", sans-serif';
-  ctx.fillText('Fortune & Destiny',300,98);
-
-  // Divider
-  ctx.strokeStyle='rgba(201,165,78,0.3)';ctx.beginPath();ctx.moveTo(100,115);ctx.lineTo(500,115);ctx.stroke();
-
-  // Content based on type
-  ctx.fillStyle='#e8e6e0';ctx.font='16px "Noto Sans KR", sans-serif';
-  const titles={daily:'오늘의 운세',tarot:'타로 카드 결과',saju:'사주 분석',compat:'궁합 결과',palm:'손금 해석',face:'관상 분석',dream:'꿈 해몽',talisman:'오늘의 부적',match:'운세 매칭'};
-  ctx.fillStyle='#c9a54e';ctx.font='20px "Noto Serif KR", serif';
-  ctx.fillText(titles[type]||'운세 결과',300,150);
-
-  ctx.fillStyle='#e8e6e0';ctx.font='14px "Noto Sans KR", sans-serif';
-  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
-  ctx.fillText(today,300,180);
-
-  ctx.fillStyle='rgba(201,165,78,0.7)';ctx.font='60px "Noto Serif KR", serif';
-  ctx.fillText('✦',300,260);
-
-  ctx.fillStyle='#9a9890';ctx.font='13px "Noto Sans KR", sans-serif';
-  ctx.fillText('천운 앱에서 나의 운세를 확인해보세요',300,320);
-  ctx.fillText('fortune.天運.app',300,345);
-
-  // Download
-  canvas.toBlob(blob=>{
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=`천운_${titles[type]||'결과'}_${today}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+  // 결과 이미지 공유로 통합
+  shareResultImage(type);
 }
 
 // ============================================================
@@ -4309,47 +4267,149 @@ if ('serviceWorker' in navigator) {
 }
 
 // ============================================================
-//  KAKAO TALK SHARE + WEB SHARE API
+//  SHARE API (Web Share API 통합)
 // ============================================================
-// 카카오 초기화 (배포 시 본인의 JavaScript 키로 교체)
-try { if(window.Kakao && !Kakao.isInitialized()) Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY'); } catch(e){}
 
-function shareKakao(title, desc) {
-  if (window.Kakao && Kakao.isInitialized()) {
-    Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: title || '天運 - 나의 운세 결과',
-        description: desc || '오늘의 운세를 확인해보세요!',
-        imageUrl: window.location.origin + '/icons/icon-512.svg',
-        link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-      },
-      buttons: [{
-        title: '나도 운세 보기',
-        link: { mobileWebUrl: window.location.origin, webUrl: window.location.origin }
-      }]
-    });
-  } else {
-    nativeShare(title, desc);
-  }
+// ── 프리미엄 PDF 리포트 저장 ──
+function savePremiumPDF(){
+  showToast('PDF 리포트 생성 중...');
+  const target=document.querySelector('[data-paywall="face"]');
+  if(!target){showToast('프리미엄 리포트가 없습니다');return}
+
+  // html2canvas로 프리미엄 리포트 전체를 고해상도 이미지로 캡처 → jsPDF에 삽입
+  if(typeof html2canvas!=='function'){showToast('잠시 후 다시 시도해주세요');return}
+  if(typeof window.jspdf==='undefined'&&typeof jspdf==='undefined'){showToast('PDF 기능 로딩 중... 잠시 후 다시 시도해주세요');return}
+
+  html2canvas(target,{
+    backgroundColor:'#0a0a12',scale:2,useCORS:true,logging:false,allowTaint:true,
+    scrollY:-window.scrollY
+  }).then(canvas=>{
+    const {jsPDF}=window.jspdf||jspdf;
+    const imgData=canvas.toDataURL('image/jpeg',0.92);
+    const imgW=canvas.width;
+    const imgH=canvas.height;
+
+    // A4 사이즈 PDF (mm)
+    const pdfW=210;
+    const pdfH=297;
+    const margin=10;
+    const contentW=pdfW-margin*2;
+
+    const doc=new jsPDF('p','mm','a4');
+    const ratio=contentW/imgW;
+    const scaledH=imgH*ratio;
+
+    // 헤더 — 골드 라인
+    doc.setDrawColor(201,165,78);
+    doc.setLineWidth(0.8);
+    doc.line(margin,8,pdfW-margin,8);
+
+    // 타이틀
+    doc.setFontSize(18);
+    doc.setTextColor(201,165,78);
+    doc.text('天運 Premium Report',pdfW/2,18,{align:'center'});
+
+    // 날짜
+    const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+    doc.setFontSize(9);
+    doc.setTextColor(140,140,140);
+    doc.text(today,pdfW/2,24,{align:'center'});
+
+    // 구분선
+    doc.setDrawColor(201,165,78);
+    doc.setLineWidth(0.3);
+    doc.line(margin,27,pdfW-margin,27);
+
+    // 캡처 이미지를 여러 페이지에 나누어 삽입
+    const startY=30;
+    const pageContentH=pdfH-startY-margin;
+    let remainH=scaledH;
+    let srcY=0;
+    let page=0;
+
+    while(remainH>0){
+      if(page>0){
+        doc.addPage();
+        // 페이지 상단 골드 라인
+        doc.setDrawColor(201,165,78);doc.setLineWidth(0.3);
+        doc.line(margin,8,pdfW-margin,8);
+      }
+      const drawH=Math.min(pageContentH,remainH);
+      const srcSliceH=drawH/ratio;
+
+      // 이미지 슬라이스 추가
+      const sliceCanvas=document.createElement('canvas');
+      sliceCanvas.width=imgW;
+      sliceCanvas.height=Math.ceil(srcSliceH);
+      const sctx=sliceCanvas.getContext('2d');
+      sctx.drawImage(canvas,0,srcY,imgW,srcSliceH,0,0,imgW,srcSliceH);
+      const sliceData=sliceCanvas.toDataURL('image/jpeg',0.92);
+
+      const yPos=page===0?startY:10;
+      doc.addImage(sliceData,'JPEG',margin,yPos,contentW,drawH);
+
+      // 페이지 하단 — 페이지 번호
+      doc.setFontSize(7);doc.setTextColor(160,160,160);
+      doc.text(`- ${page+1} -`,pdfW/2,pdfH-5,{align:'center'});
+
+      srcY+=srcSliceH;
+      remainH-=drawH;
+      page++;
+    }
+
+    // 마지막 페이지 하단 — 푸터
+    doc.setFontSize(7);doc.setTextColor(130,130,130);
+    doc.text('天運 chunwoon-app.vercel.app | AI 468-point Analysis + Classical Literature',pdfW/2,pdfH-10,{align:'center'});
+
+    // 저장
+    const fileName=`天運_프리미엄리포트_${today}.pdf`;
+    doc.save(fileName);
+    showToast('PDF 리포트가 저장되었습니다!');
+  }).catch(e=>{
+    console.error('PDF generation error:',e);
+    showToast('PDF 생성 실패 — 스크린샷을 이용해주세요');
+  });
 }
 
-function nativeShare(title, desc) {
-  if (navigator.share) {
-    navigator.share({
-      title: title || '天運 - 나의 운세 결과',
-      text: desc || '오늘의 운세를 확인해보세요! ✦',
-      url: window.location.href
-    }).catch(() => {});
-  } else {
-    // Fallback: copy link
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      showToast('링크가 복사되었습니다!');
-    });
-  }
+// ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
+function shareResultImage(type){
+  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult'};
+  const target=document.getElementById(targetIds[type]||'faceResult');
+  if(!target){showToast('공유할 결과가 없습니다');return}
+
+  showToast('공유 이미지 준비 중...');
+  if(typeof html2canvas!=='function'){showToast('잠시 후 다시 시도해주세요');return}
+
+  html2canvas(target,{
+    backgroundColor:'#0a0a12',scale:2,useCORS:true,logging:false,allowTaint:true,
+    scrollY:-window.scrollY
+  }).then(canvas=>{
+    canvas.toBlob(blob=>{
+      const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+      const fileName=`천운_${type}_${today}.png`;
+      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',match:'운세 매칭'};
+      const t=titles[type]||'운세 결과';
+
+      if(navigator.share){
+        const file=new File([blob],fileName,{type:'image/png'});
+        navigator.share({
+          title:`天運 — ${t} 결과`,
+          text:`${today} ${t} 결과예요! 천운에서 나도 무료로 관상·손금·사주를 볼 수 있어요.\nchunwoon-app.vercel.app`,
+          files:[file]
+        }).catch(()=>{
+          // share 취소 시 링크 복사 fallback
+          navigator.clipboard.writeText(`${today} ${t} 결과를 확인해보세요!\nhttps://chunwoon-app.vercel.app`).then(()=>showToast('공유 텍스트가 복사되었습니다'));
+        });
+      }else{
+        // PC: 이미지 다운로드 + 링크 복사
+        downloadBlob(blob,fileName);
+        navigator.clipboard.writeText(`${today} ${t} 결과를 확인해보세요!\nhttps://chunwoon-app.vercel.app`);
+      }
+    },'image/png');
+  }).catch(()=>showToast('이미지 생성 실패'));
 }
 
-// ── 결과 저장하기 — html2canvas로 실제 결과 화면 캡처 ──
+// ── 결과 저장하기 — html2canvas로 실제 결과 화면 캡처 (비프리미엄용) ──
 function saveResult(type) {
   const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult' };
   const target = document.getElementById(targetIds[type] || 'faceResult');
@@ -4401,70 +4461,9 @@ function downloadBlob(blob, fileName) {
   showToast('이미지가 저장되었습니다!');
 }
 
-// ── 결과 공유하기 — 공유 메뉴 표시 ──
-// 기존 shareResult를 공유 메뉴로 변경 (다른 섹션 호환)
-const _origShare = shareResult;
-shareResult = function(type) {
-  showShareMenu(type);
-};
-
-function _getShareText(type) {
-  const titles = {daily:'오늘의 운세',tarot:'타로 결과',saju:'사주 분석',compat:'궁합 결과',palm:'손금 해석',face:'관상 분석',dream:'꿈 해몽',talisman:'오늘의 부적',match:'운세 매칭'};
-  const t = titles[type] || '운세 결과';
-  const today = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
-  return { title: `天運 — ${t}`, text: `${today} ${t} 결과를 확인해보세요! ✦\n\n천운에서 나도 무료로 관상·손금·사주를 볼 수 있어요.`, url: 'https://chunwoon-app.vercel.app' };
-}
-
+// ── 결과 공유하기 — shareResultImage로 통합 ──
 function showShareMenu(type) {
-  const s = _getShareText(type);
-  const overlay = document.createElement('div');
-  overlay.id = 'shareOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .3s';
-  overlay.onclick = (e) => { if(e.target===overlay) overlay.remove() };
-
-  const btnStyle = 'background:none;border:none;cursor:pointer;text-align:center;color:#e8e6e0';
-  const iconStyle = (bg) => `width:52px;height:52px;border-radius:16px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px`;
-
-  overlay.innerHTML = `
-    <div style="width:100%;max-width:480px;background:#12121e;border-top-left-radius:20px;border-top-right-radius:20px;padding:24px 20px 36px;animation:slideUp .3s">
-      <div style="width:40px;height:4px;background:rgba(201,165,78,.3);border-radius:2px;margin:0 auto 20px"></div>
-      <div style="font-size:16px;color:#c9a54e;font-family:'Noto Serif KR',serif;text-align:center;margin-bottom:20px">공유하기</div>
-      <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
-        <button id="shareNativeBtn" style="${btnStyle}">
-          <div style="${iconStyle('rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3)')}">📤</div>
-          <div style="font-size:11px">공유하기</div>
-        </button>
-        <button id="shareCopyBtn" style="${btnStyle}">
-          <div style="${iconStyle('rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3)')}">🔗</div>
-          <div style="font-size:11px">링크 복사</div>
-        </button>
-        <button id="shareSaveBtn" style="${btnStyle}">
-          <div style="${iconStyle('rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.3)')}">💾</div>
-          <div style="font-size:11px">이미지 저장</div>
-        </button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  // 공유 — Web Share API (모바일: 카카오톡·인스타·문자 등 선택 가능)
-  document.getElementById('shareNativeBtn').onclick = () => {
-    overlay.remove();
-    if (navigator.share) {
-      navigator.share({ title: s.title, text: s.text, url: s.url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(s.text + '\n' + s.url).then(() => showToast('공유 텍스트가 복사되었습니다!'));
-    }
-  };
-  // 링크 복사
-  document.getElementById('shareCopyBtn').onclick = () => {
-    overlay.remove();
-    navigator.clipboard.writeText(s.text + '\n' + s.url).then(() => showToast('링크가 복사되었습니다!'));
-  };
-  // 이미지 저장
-  document.getElementById('shareSaveBtn').onclick = () => {
-    overlay.remove();
-    saveResult(type);
-  };
+  shareResultImage(type);
 }
 
 // Toast notification
