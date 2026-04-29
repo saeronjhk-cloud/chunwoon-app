@@ -121,8 +121,7 @@ weaknesses 2개, enemies 2개, allies 2개.` + JSON_FORCE;
       userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 해석 요청
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
 음력 생년월일: ${c.lunarYear||''}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일
-띠: ${c.zodiac||''}
-천간지지: ${c.ganjiYear||''}
+띠: ${c.zodiac||''}, 천간지지: ${c.ganjiYear||''}
 상괘(태세괘): ${c.upperGua||''} (태세수 ${c.taeseNum||''})
 중괘(월건괘): ${c.middleGua||''} (월건수 ${c.wolNum||''})
 하괘(일진괘): ${c.lowerGua||''} (일진수 ${c.ilNum||''})

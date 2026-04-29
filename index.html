@@ -569,10 +569,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
       <input type="hidden" id="tjCalType" value="solar" />
       <div class="input-group"><label>생년월일</label><input type="date" id="tjBirth" /></div>
-      <div style="display:flex;gap:10px">
-        <div class="input-group" style="flex:1"><label>성별</label><select id="tjGender"><option value="male">남성</option><option value="female">여성</option></select></div>
-        <div class="input-group" style="flex:1"><label>생시 (선택)</label><select id="tjHour"><option value="-1">모름</option><option value="0">자시 (23~01시)</option><option value="1">축시 (01~03시)</option><option value="2">인시 (03~05시)</option><option value="3">묘시 (05~07시)</option><option value="4">진시 (07~09시)</option><option value="5">사시 (09~11시)</option><option value="6">오시 (11~13시)</option><option value="7">미시 (13~15시)</option><option value="8">신시 (15~17시)</option><option value="9">유시 (17~19시)</option><option value="10">술시 (19~21시)</option><option value="11">해시 (21~23시)</option></select></div>
-      </div>
+      <div class="input-group"><label>성별</label><select id="tjGender"><option value="male">남성</option><option value="female">여성</option></select></div>
       <div class="input-group"><label>운세 확인 연도</label><select id="tjTargetYear"></select></div>
       <button class="action-btn red" onclick="analyzeTojeong()">📜 토정비결 보기</button>
     </div>
