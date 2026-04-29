@@ -273,6 +273,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .month-score{font-size:10px;color:var(--text2);margin-top:3px}
 .month-detail{display:none;animation:fadeIn .4s}
 .month-detail.show{display:block}
+.loading-bar{height:4px;background:rgba(201,165,78,.15);border-radius:2px;overflow:hidden;margin:12px auto;max-width:200px}
+.loading-fill{height:100%;width:30%;background:var(--gold);border-radius:2px;animation:loadSlide 1.5s infinite ease-in-out}
+@keyframes loadSlide{0%{width:10%;margin-left:0}50%{width:40%;margin-left:30%}100%{width:10%;margin-left:90%}}
 
 /* ===== CHAT ===== */
 .chat-container{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px}
@@ -555,10 +558,23 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-tojeong">
     <div class="card">
       <div class="card-title">📜 토정비결</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">조선 중기 대학자 토정 이지함 선생의 토정비결에 기반한 AI 운세 해석</p>
       <div class="input-group"><label>이름</label><input id="tjName" placeholder="이름 입력" /></div>
+      <div class="input-group">
+        <label>달력 종류</label>
+        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <button id="tjCalSolar" onclick="setTjCal('solar')" style="flex:1;padding:8px;border:none;background:var(--gold);color:#000;font-size:13px;font-weight:600;cursor:pointer">양력(陽曆)</button>
+          <button id="tjCalLunar" onclick="setTjCal('lunar')" style="flex:1;padding:8px;border:none;background:var(--card);color:var(--text2);font-size:13px;cursor:pointer">음력(陰曆)</button>
+        </div>
+      </div>
+      <input type="hidden" id="tjCalType" value="solar" />
       <div class="input-group"><label>생년월일</label><input type="date" id="tjBirth" /></div>
-      <div class="input-group"><label>성별</label><select id="tjGender"><option value="male">남성</option><option value="female">여성</option></select></div>
-      <button class="action-btn red" onclick="analyzeTojeong()">토정비결 보기</button>
+      <div style="display:flex;gap:10px">
+        <div class="input-group" style="flex:1"><label>성별</label><select id="tjGender"><option value="male">남성</option><option value="female">여성</option></select></div>
+        <div class="input-group" style="flex:1"><label>생시 (선택)</label><select id="tjHour"><option value="-1">모름</option><option value="0">자시 (23~01시)</option><option value="1">축시 (01~03시)</option><option value="2">인시 (03~05시)</option><option value="3">묘시 (05~07시)</option><option value="4">진시 (07~09시)</option><option value="5">사시 (09~11시)</option><option value="6">오시 (11~13시)</option><option value="7">미시 (13~15시)</option><option value="8">신시 (15~17시)</option><option value="9">유시 (17~19시)</option><option value="10">술시 (19~21시)</option><option value="11">해시 (21~23시)</option></select></div>
+      </div>
+      <div class="input-group"><label>운세 확인 연도</label><select id="tjTargetYear"></select></div>
+      <button class="action-btn red" onclick="analyzeTojeong()">📜 토정비결 보기</button>
     </div>
     <div class="fortune-result" id="tojeongResult"></div>
   </div>
@@ -723,6 +739,84 @@ const TJ_MON=[
 ['한 해를 마무리하며 감사.','내년을 준비하세요.','가족과 함께하는 시간이 복.']
 ];
 
+// ── 음력 변환 데이터 (1900-2050) ──
+// 비트 레이아웃: bit16=윤달크기(1=30일), bits15-4=월별크기(1=30일,0=29일), bits3-0=윤달(0=없음)
+const LUNAR_INFO=[
+0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
+0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
+0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
+0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
+0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
+0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,
+0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
+0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
+0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
+0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x05ac0,0x0ab60,0x096d5,0x092e0,
+0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
+0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
+0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
+0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
+0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,
+0x14b63
+];
+
+function lunarLeapMonth(y){return LUNAR_INFO[y-1900]&0xf}
+function lunarLeapDays(y){return lunarLeapMonth(y)?((LUNAR_INFO[y-1900]&0x10000)?30:29):0}
+function lunarMonthDays(y,m){return(LUNAR_INFO[y-1900]&(0x10000>>m))?30:29}
+function lunarYearDays(y){let s=0;for(let m=1;m<=12;m++)s+=lunarMonthDays(y,m);return s+lunarLeapDays(y)}
+
+function solarToLunar(sY,sM,sD){
+  const base=new Date(1900,0,31);const target=new Date(sY,sM-1,sD);
+  let offset=Math.floor((target-base)/86400000);
+  if(offset<0)return null;
+  let ly=1900;
+  while(ly<2051){const yd=lunarYearDays(ly);if(offset<yd)break;offset-=yd;ly++}
+  let lm=1,isLeap=false,leapM=lunarLeapMonth(ly);
+  for(let m=1;m<=12;m++){
+    let days=lunarMonthDays(ly,m);
+    if(offset<days){lm=m;break}
+    offset-=days;
+    if(m===leapM){
+      let ld=lunarLeapDays(ly);
+      if(offset<ld){lm=m;isLeap=true;break}
+      offset-=ld;
+    }
+    lm=m+1;
+  }
+  return{year:ly,month:lm,day:offset+1,isLeap};
+}
+
+// ── 괘 계산 ──
+const CHEONGAN=['갑','을','병','정','무','기','경','신','임','계'];
+const JIJI_NAMES=['자','축','인','묘','진','사','오','미','신','유','술','해'];
+const CHEONGAN_NUM=[1,2,3,4,5,6,7,8,9,10];
+const JIJI_NUM=[1,2,3,4,5,6,7,8,9,10,11,12];
+const PALGUA=['건(乾)☰','태(兌)☱','리(離)☲','진(震)☳','손(巽)☴','감(坎)☵','간(艮)☶','곤(坤)☷'];
+const YUKGUA=['건(乾)☰','태(兌)☱','리(離)☲','진(震)☳','손(巽)☴','감(坎)☵'];
+const HAGUA=['상(上)','중(中)','하(下)'];
+const ZOD_ANIMALS=[
+  {n:'쥐',e:'🐭',h:'子'},{n:'소',e:'🐂',h:'丑'},{n:'호랑이',e:'🐅',h:'寅'},{n:'토끼',e:'🐇',h:'卯'},
+  {n:'용',e:'🐲',h:'辰'},{n:'뱀',e:'🐍',h:'巳'},{n:'말',e:'🐴',h:'午'},{n:'양',e:'🐑',h:'未'},
+  {n:'원숭이',e:'🐵',h:'申'},{n:'닭',e:'🐔',h:'酉'},{n:'개',e:'🐶',h:'戌'},{n:'돼지',e:'🐷',h:'亥'}
+];
+
+function getGanji(year){return CHEONGAN[(year-4)%10]+JIJI_NAMES[(year-4)%12]}
+function getZodiac(year){return ZOD_ANIMALS[(year-4)%12]}
+function calcUpperGua(targetYear){
+  const ci=(targetYear-4)%10,ji=(targetYear-4)%12;
+  const ts=CHEONGAN_NUM[ci]+JIJI_NUM[ji];
+  const gi=ts%8||8;
+  return{taeseNum:ts,guaIdx:gi,name:PALGUA[gi-1]};
+}
+function calcMiddleGua(lunarMonth){
+  const gi=lunarMonth%6||6;
+  return{wolNum:lunarMonth,guaIdx:gi,name:YUKGUA[gi-1]};
+}
+function calcLowerGua(lunarDay){
+  const gi=lunarDay%3||3;
+  return{ilNum:lunarDay,guaIdx:gi,name:HAGUA[gi-1]};
+}
+
 // DREAM data
 const DREAM_KEYS=[
 {k:'돼지',e:'🐷',good:true,msg:'돼지 꿈은 재물과 횡재운의 상징입니다! 복권을 사보는 것도 좋겠습니다. 뜻밖의 금전적 행운이 찾아올 징조입니다.',num:[3,7,24,38]},
@@ -792,6 +886,7 @@ function init(){
   renderDreamUI();
   renderTalisman();
   initChat();
+  initTjYearSelect();
   setupTabs();
   // Splash
   setTimeout(()=>{document.getElementById('splash').classList.add('hide');document.getElementById('app').style.opacity='1'},2600);
@@ -4103,28 +4198,353 @@ function drawFortuneGraph(decades){
 // ============================================================
 //  7. TOJEONG
 // ============================================================
-function analyzeTojeong(){
-  const bs=document.getElementById('tjBirth').value;if(!bs){alert('생년월일을 입력하세요.');return}
-  const b=new Date(bs),y=b.getFullYear(),g=document.getElementById('tjGender').value;
-  const name=document.getElementById('tjName').value.trim()||'당신';
+function setTjCal(type){
+  document.getElementById('tjCalType').value=type;
+  const sBtn=document.getElementById('tjCalSolar'),lBtn=document.getElementById('tjCalLunar');
+  if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
+  else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+}
+function initTjYearSelect(){
+  const sel=document.getElementById('tjTargetYear');if(!sel)return;
   const cy=new Date().getFullYear();
-  const seed=y*31+(b.getMonth()+1)*7+b.getDate()+nameHash(name);
-  const rng=sRng(seed+cy);
-  const yr=TJ_YEAR[Math.floor(rng()*TJ_YEAR.length)];
-  const scores={ov:Math.floor(rng()*20)+70,w:Math.floor(rng()*25)+65,h:Math.floor(rng()*20)+70,l:Math.floor(rng()*25)+65,c:Math.floor(rng()*20)+70};
-  const br=(y-4)%12,zod=ZOD[br];
+  for(let y=cy+1;y>=cy-2;y--){const o=document.createElement('option');o.value=y;o.textContent=y+'년';if(y===cy)o.selected=true;sel.appendChild(o)}
+}
 
-  let mhtml='';for(let i=0;i<12;i++){const mr=sRng(seed+cy*100+i);const ms=Math.floor(mr()*30)+65;mhtml+=`<div class="month-card" onclick="toggleMonth(${i})"><div class="month-num">${i+1}월</div><div class="month-score">${ms}점</div></div>`}
-  let mdhtml='';for(let i=0;i<12;i++){const mr=sRng(seed+cy*100+i);const msg=TJ_MON[i][Math.floor(mr()*TJ_MON[i].length)];mdhtml+=`<div class="month-detail" id="md-${i}"><div class="card" style="margin:10px 0"><div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:8px">${i+1}월의 운세</div><div style="font-size:13px;line-height:1.8">${msg}</div></div></div>`}
+async function analyzeTojeong(){
+  const bs=document.getElementById('tjBirth').value;
+  if(!bs){alert('생년월일을 입력하세요.');return}
+  const b=new Date(bs);
+  const name=document.getElementById('tjName').value.trim()||'당신';
+  const gender=document.getElementById('tjGender').value;
+  const calType=document.getElementById('tjCalType').value;
+  const targetYear=parseInt(document.getElementById('tjTargetYear').value)||new Date().getFullYear();
+
+  // 음력 변환
+  let lunar;
+  if(calType==='solar'){
+    lunar=solarToLunar(b.getFullYear(),b.getMonth()+1,b.getDate());
+    if(!lunar){alert('음력 변환에 실패했습니다. 1900~2050년 사이의 날짜를 입력하세요.');return}
+  } else {
+    lunar={year:b.getFullYear(),month:b.getMonth()+1,day:b.getDate(),isLeap:false};
+  }
+
+  // 괘 계산
+  const upper=calcUpperGua(targetYear);
+  const middle=calcMiddleGua(lunar.month);
+  const lower=calcLowerGua(lunar.day);
+  const zodiac=getZodiac(lunar.year);
+  const ganji=getGanji(targetYear);
+  const guaCombination=`${upper.name} · ${middle.name} · ${lower.name}`;
+
+  // 로딩 UI
+  const r=document.getElementById('tojeongResult');
+  r.innerHTML=`<div class="card pulse-card" style="text-align:center;padding:40px 20px">
+    <div style="font-size:40px;margin-bottom:12px">📜</div>
+    <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:16px">${name}님의 ${targetYear}년 토정비결을 펼치는 중...</div>
+    <div style="display:flex;justify-content:center;gap:16px;margin-bottom:12px">
+      <div style="text-align:center"><div style="font-size:20px">${upper.name.split('(')[0]}</div><div style="font-size:10px;color:var(--text2)">상괘</div></div>
+      <div style="text-align:center"><div style="font-size:20px">${middle.name.split('(')[0]}</div><div style="font-size:10px;color:var(--text2)">중괘</div></div>
+      <div style="text-align:center"><div style="font-size:20px">${lower.name}</div><div style="font-size:10px;color:var(--text2)">하괘</div></div>
+    </div>
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">음력 ${lunar.year}년 ${lunar.month}월 ${lunar.day}일 · ${zodiac.n}띠 ${zodiac.e}</div>
+  </div>`;
+  r.classList.add('show');
+  r.scrollIntoView({behavior:'smooth',block:'start'});
+
+  // API 호출
+  try{
+    const resp=await fetch('/api/fortune',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type:'tojeong',
+        context:{
+          name,gender,targetYear,
+          lunarYear:lunar.year,lunarMonth:lunar.month,lunarDay:lunar.day,
+          zodiac:`${zodiac.n}띠(${zodiac.h})`,
+          ganjiYear:`${ganji}년`,
+          upperGua:upper.name,taeseNum:upper.taeseNum,
+          middleGua:middle.name,wolNum:middle.wolNum,
+          lowerGua:lower.name,ilNum:lower.ilNum,
+          guaCombination
+        }
+      })
+    });
+    const data=await resp.json();
+    if(!data.success||!data.result){throw new Error(data.error||'API 응답 오류')}
+    renderTojeongResult(data.result,{name,gender,targetYear,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
+  }catch(err){
+    console.error('토정비결 API 오류:',err);
+    // 폴백: 기존 로컬 방식
+    renderTojeongFallback({name,gender,targetYear,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
+  }
+}
+
+function renderTojeongResult(result,info){
+  const r=document.getElementById('tojeongResult');
+  const sc=result.scores||{};
+  const tri=result.trigram||{};
+  const lucky=result.luckyInfo||{};
+
+  let monthCards='';
+  (result.monthlyBrief||[]).forEach((brief,i)=>{
+    monthCards+=`<div class="month-card" onclick="toggleMonth(${i})"><div class="month-num">${i+1}월</div></div>`;
+  });
+  let monthDetails='';
+  (result.monthlyBrief||[]).forEach((brief,i)=>{
+    monthDetails+=`<div class="month-detail" id="md-${i}"><div class="card" style="margin:10px 0"><div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:8px">${i+1}월의 운세</div><div style="font-size:13px;line-height:1.8">${brief}</div></div></div>`;
+  });
+
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">📜 ${info.name}님의 ${info.targetYear}년 토정비결</div>
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:40px">${info.zodiac.e}</div>
+      <div style="font-size:12px;color:var(--text2)">${info.zodiac.n}띠 · ${info.gender==='male'?'남성':'여성'} · ${info.ganji}년</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">음력 ${info.lunar.year}년 ${info.lunar.month}월 ${info.lunar.day}일</div>
+      <div style="font-size:52px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-top:12px">${sc.overall||75}<span style="font-size:18px">점</span></div>
+    </div>
+
+    <!-- 괘 정보 -->
+    <div style="display:flex;justify-content:center;gap:20px;margin-bottom:18px;padding:14px;background:rgba(201,165,78,.05);border-radius:10px">
+      <div style="text-align:center"><div style="font-size:22px">${info.upper.name.slice(-1)}</div><div style="font-size:11px;color:var(--gold);font-weight:600">${info.upper.name.replace(/[☰-☷]/g,'')}</div><div style="font-size:10px;color:var(--text2)">상괘</div></div>
+      <div style="text-align:center"><div style="font-size:22px">${info.middle.name.slice(-1)}</div><div style="font-size:11px;color:var(--gold);font-weight:600">${info.middle.name.replace(/[☰-☷]/g,'')}</div><div style="font-size:10px;color:var(--text2)">중괘</div></div>
+      <div style="text-align:center"><div style="font-size:14px;font-weight:700;color:var(--gold);line-height:30px">${info.lower.name}</div><div style="font-size:10px;color:var(--text2)">하괘</div></div>
+    </div>
+    ${tri.name?`<div style="text-align:center;margin-bottom:12px"><span style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600">${tri.name||''} ${tri.hanja||''}</span></div>`:''}
+    ${tri.meaning?`<div style="font-size:13px;line-height:1.8;color:var(--text2);margin-bottom:16px;padding:12px;background:rgba(201,165,78,.03);border-radius:8px;border:1px solid rgba(201,165,78,.1)">${tri.meaning}</div>`:''}
+
+    <!-- 카테고리 점수 -->
+    <div style="margin-bottom:16px">
+      <div class="score-row"><span class="score-label">💰 재물운</span><div class="score-bar"><div class="score-fill" data-width="${sc.wealth||70}"></div></div></div>
+      <div class="score-row"><span class="score-label">💼 직업운</span><div class="score-bar"><div class="score-fill" data-width="${sc.career||70}"></div></div></div>
+      <div class="score-row"><span class="score-label">❤️ 연애운</span><div class="score-bar"><div class="score-fill" data-width="${sc.love||70}"></div></div></div>
+      <div class="score-row"><span class="score-label">🏥 건강운</span><div class="score-bar"><div class="score-fill" data-width="${sc.health||70}"></div></div></div>
+    </div>
+
+    <!-- 총운 -->
+    <div class="reading">${result.yearReading||''}</div>
+
+    <!-- 행운 정보 -->
+    ${lucky.color||lucky.number||lucky.direction?`
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center">
+      ${lucky.color?`<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:16px;font-size:11px;color:var(--text1)">🎨 ${lucky.color}</span>`:''}
+      ${lucky.number?`<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:16px;font-size:11px;color:var(--text1)">🔢 ${lucky.number}</span>`:''}
+      ${lucky.direction?`<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:16px;font-size:11px;color:var(--text1)">🧭 ${lucky.direction}</span>`:''}
+    </div>`:''}
+
+    <!-- 주의사항 -->
+    ${result.caution?`<div style="margin-top:14px;padding:12px;background:rgba(200,60,50,.04);border:1px solid rgba(200,60,50,.1);border-radius:8px;font-size:12px;line-height:1.8;color:var(--text2)">⚠️ ${result.caution}</div>`:''}
+
+    <!-- 조언 -->
+    ${result.advice?`<div style="margin-top:14px;padding:14px;background:rgba(201,165,78,.06);border-radius:8px;font-size:13px;line-height:1.8;color:var(--text1);text-align:center;font-family:'Noto Serif KR',serif">💡 ${result.advice}</div>`:''}
+
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('tojeong')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('tojeong')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+
+  <!-- 월별 운세 -->
+  <div class="card"><div class="card-title">📅 월별 운세</div><div class="month-grid">${monthCards}</div>${monthDetails}</div>
+
+  <!-- 프리미엄 유도 -->
+  <div class="card" id="tojeongPaywall" style="position:relative;overflow:hidden">
+    <div style="filter:blur(5px);pointer-events:none;opacity:.5">
+      <div class="card-title">🔮 프리미엄 심층 분석</div>
+      <div style="font-size:13px;line-height:1.8">
+        <p>✦ 12개월 상세 운세 (재물·건강·연애·길일·흉일)</p>
+        <p>✦ 재물운·직업운·건강운·연애운 심층 분석</p>
+        <p>✦ 괘(卦) 조합 심층 해석 + 고전 원문 인용</p>
+        <p>✦ 맞춤형 개운법 처방</p>
+        <p>✦ 행운의 색·숫자·방위·월 상세 안내</p>
+      </div>
+    </div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);border-radius:12px">
+      <div style="font-size:22px;margin-bottom:8px">🔒</div>
+      <div style="font-size:15px;color:#fff;font-weight:600;margin-bottom:4px">프리미엄 심층 분석</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">토정비결 원문 기반 12개월 상세 운세</div>
+      <button onclick="unlockTojeongPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:12px 28px;border-radius:20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Noto Serif KR',serif">₩4,900 · 심층 분석 열기</button>
+    </div>
+  </div>`;
+
+  r.classList.add('show');burstConfetti();setTimeout(animateScores,200);
+  // 토정비결 결과도 저장/공유 대상에 추가
+  window._tojeongResultData={...info,result};
+}
+
+function renderTojeongFallback(info){
+  // API 실패 시 기존 로컬 방식 폴백
+  const seed=info.lunar.year*31+info.lunar.month*7+info.lunar.day+nameHash(info.name);
+  const rng=sRng(seed+info.targetYear);
+  const yr=TJ_YEAR[Math.floor(rng()*TJ_YEAR.length)];
+  const scores={overall:Math.floor(rng()*20)+70,wealth:Math.floor(rng()*25)+65,health:Math.floor(rng()*20)+70,love:Math.floor(rng()*25)+65,career:Math.floor(rng()*20)+70};
+
+  let monthCards='',monthDetails='';
+  for(let i=0;i<12;i++){
+    const mr=sRng(seed+info.targetYear*100+i);
+    const ms=Math.floor(mr()*30)+65;
+    const msg=TJ_MON[i][Math.floor(mr()*TJ_MON[i].length)];
+    monthCards+=`<div class="month-card" onclick="toggleMonth(${i})"><div class="month-num">${i+1}월</div><div class="month-score">${ms}점</div></div>`;
+    monthDetails+=`<div class="month-detail" id="md-${i}"><div class="card" style="margin:10px 0"><div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:8px">${i+1}월의 운세</div><div style="font-size:13px;line-height:1.8">${msg}</div></div></div>`;
+  }
 
   const r=document.getElementById('tojeongResult');
-  r.innerHTML=`<div class="card pulse-card"><div class="card-title">📜 ${name}님의 ${cy}년 토정비결</div>
-  <div style="text-align:center;margin-bottom:18px"><div style="font-size:34px">${zod.e}</div><div style="font-size:12px;color:var(--text2)">${zod.n}띠 · ${g==='male'?'남성':'여성'}</div><div style="font-size:52px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-top:10px">${scores.ov}<span style="font-size:18px">점</span></div></div>
-  <div style="margin-bottom:16px"><div class="score-row"><span class="score-label">재물운</span><div class="score-bar"><div class="score-fill" data-width="${scores.w}"></div></div></div><div class="score-row"><span class="score-label">건강운</span><div class="score-bar"><div class="score-fill" data-width="${scores.h}"></div></div></div><div class="score-row"><span class="score-label">연애운</span><div class="score-bar"><div class="score-fill" data-width="${scores.l}"></div></div></div><div class="score-row"><span class="score-label">직업운</span><div class="score-bar"><div class="score-fill" data-width="${scores.c}"></div></div></div></div>
-  <div class="reading">${name}님, ${yr}</div></div>
-  <div class="card"><div class="card-title">📅 월별 운세</div><div class="month-grid">${mhtml}</div>${mdhtml}</div>`;
-  r.classList.add('show');burstConfetti();setTimeout(animateScores,200);r.scrollIntoView({behavior:'smooth',block:'start'})
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">📜 ${info.name}님의 ${info.targetYear}년 토정비결</div>
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:40px">${info.zodiac.e}</div>
+      <div style="font-size:12px;color:var(--text2)">${info.zodiac.n}띠 · ${info.gender==='male'?'남성':'여성'} · ${info.ganji}년</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">음력 ${info.lunar.year}년 ${info.lunar.month}월 ${info.lunar.day}일</div>
+      <div style="font-size:52px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-top:12px">${scores.overall}<span style="font-size:18px">점</span></div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:20px;margin-bottom:18px;padding:14px;background:rgba(201,165,78,.05);border-radius:10px">
+      <div style="text-align:center"><div style="font-size:22px">${info.upper.name.slice(-1)}</div><div style="font-size:11px;color:var(--gold);font-weight:600">${info.upper.name.replace(/[☰-☷]/g,'')}</div><div style="font-size:10px;color:var(--text2)">상괘</div></div>
+      <div style="text-align:center"><div style="font-size:22px">${info.middle.name.slice(-1)}</div><div style="font-size:11px;color:var(--gold);font-weight:600">${info.middle.name.replace(/[☰-☷]/g,'')}</div><div style="font-size:10px;color:var(--text2)">중괘</div></div>
+      <div style="text-align:center"><div style="font-size:14px;font-weight:700;color:var(--gold);line-height:30px">${info.lower.name}</div><div style="font-size:10px;color:var(--text2)">하괘</div></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="score-row"><span class="score-label">💰 재물운</span><div class="score-bar"><div class="score-fill" data-width="${scores.wealth}"></div></div></div>
+      <div class="score-row"><span class="score-label">💼 직업운</span><div class="score-bar"><div class="score-fill" data-width="${scores.career}"></div></div></div>
+      <div class="score-row"><span class="score-label">❤️ 연애운</span><div class="score-bar"><div class="score-fill" data-width="${scores.love}"></div></div></div>
+      <div class="score-row"><span class="score-label">🏥 건강운</span><div class="score-bar"><div class="score-fill" data-width="${scores.health}"></div></div></div>
+    </div>
+    <div class="reading">${info.name}님, ${yr}</div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('tojeong')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('tojeong')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">📅 월별 운세</div><div class="month-grid">${monthCards}</div>${monthDetails}</div>`;
+  r.classList.add('show');burstConfetti();setTimeout(animateScores,200);
 }
+
+// 프리미엄 토정비결
+async function unlockTojeongPremium(){
+  const info=window._tojeongResultData;
+  if(!info){showToast('먼저 토정비결을 확인해주세요');return}
+  showToast('프리미엄 심층 분석을 불러오고 있습니다...');
+  try{
+    const resp=await fetch('/api/fortune',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type:'tojeong_premium',
+        context:{
+          name:info.name,gender:info.gender,targetYear:info.targetYear,
+          lunarYear:info.lunar.year,lunarMonth:info.lunar.month,lunarDay:info.lunar.day,
+          zodiac:`${info.zodiac.n}띠(${info.zodiac.h})`,
+          ganjiYear:`${info.ganji}년`,
+          upperGua:info.upper.name,taeseNum:info.upper.taeseNum,
+          middleGua:info.middle.name,wolNum:info.middle.wolNum,
+          lowerGua:info.lower.name,ilNum:info.lower.ilNum,
+          guaCombination:info.guaCombination
+        }
+      })
+    });
+    const data=await resp.json();
+    if(!data.success||!data.result){throw new Error(data.error||'API 응답 오류')}
+    renderTojeongPremium(data.result,info);
+  }catch(err){
+    console.error('프리미엄 토정비결 오류:',err);
+    showToast('프리미엄 분석을 불러오는데 실패했습니다. 다시 시도해주세요.');
+  }
+}
+
+function renderTojeongPremium(prem,info){
+  const pw=document.getElementById('tojeongPaywall');
+  if(!pw)return;
+  const gua=prem.guaAnalysis||{};
+  const lucky=prem.luckyInfo||{};
+  const cit=prem.citation||{};
+
+  let monthlyHTML='';
+  (prem.monthlyDetail||[]).forEach(md=>{
+    monthlyHTML+=`<div class="card" style="margin-bottom:8px;padding:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:15px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600">${md.month}월</span>
+        ${md.luckyDay?`<span style="font-size:10px;padding:2px 8px;background:rgba(26,122,74,.1);color:#1a7a4a;border-radius:8px">길일: ${md.luckyDay}</span>`:''}
+        ${md.cautionDay?`<span style="font-size:10px;padding:2px 8px;background:rgba(200,60,50,.1);color:#c83c32;border-radius:8px">주의: ${md.cautionDay}</span>`:''}
+      </div>
+      <div style="font-size:13px;line-height:1.8;margin-bottom:8px">${md.fortune||''}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px">
+        ${md.wealth?`<span style="padding:3px 8px;background:rgba(201,165,78,.08);border-radius:6px">💰 ${md.wealth}</span>`:''}
+        ${md.health?`<span style="padding:3px 8px;background:rgba(42,128,170,.08);border-radius:6px">🏥 ${md.health}</span>`:''}
+        ${md.love?`<span style="padding:3px 8px;background:rgba(200,68,58,.08);border-radius:6px">❤️ ${md.love}</span>`:''}
+      </div>
+      ${md.advice?`<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic">💡 ${md.advice}</div>`:''}
+    </div>`;
+  });
+
+  let remediesHTML='';
+  (prem.remedies||[]).forEach(rm=>{
+    remediesHTML+=`<div style="padding:12px;margin-bottom:8px;background:rgba(26,122,74,.04);border:1px solid rgba(26,122,74,.1);border-radius:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:4px">🔮 ${rm.area||''}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:4px">❌ ${rm.problem||''}</div>
+      <div style="font-size:13px;color:var(--text1);line-height:1.8">✅ ${rm.solution||''}</div>
+    </div>`;
+  });
+
+  pw.innerHTML=`
+    <div class="card-title">🔮 프리미엄 심층 분석</div>
+
+    <!-- 심층 총운 -->
+    <div style="font-size:13px;line-height:1.9;margin-bottom:16px">${prem.detailedYear||''}</div>
+
+    <!-- 괘 심층 분석 -->
+    ${gua.combination?`
+    <div style="margin-bottom:16px">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">☰ 괘(卦) 심층 해석</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        ${gua.upper?`<div style="padding:10px;background:rgba(201,165,78,.05);border-radius:8px;text-align:center"><div style="font-size:12px;font-weight:600;color:var(--gold)">${gua.upper.name||''}</div><div style="font-size:10px;color:var(--text2)">${gua.upper.element||''}</div><div style="font-size:11px;line-height:1.6;margin-top:4px;color:var(--text1)">${gua.upper.meaning||''}</div></div>`:''}
+        ${gua.middle?`<div style="padding:10px;background:rgba(201,165,78,.05);border-radius:8px;text-align:center"><div style="font-size:12px;font-weight:600;color:var(--gold)">${gua.middle.name||''}</div><div style="font-size:10px;color:var(--text2)">${gua.middle.element||''}</div><div style="font-size:11px;line-height:1.6;margin-top:4px;color:var(--text1)">${gua.middle.meaning||''}</div></div>`:''}
+        ${gua.lower?`<div style="padding:10px;background:rgba(201,165,78,.05);border-radius:8px;text-align:center"><div style="font-size:12px;font-weight:600;color:var(--gold)">${gua.lower.name||''}</div><div style="font-size:10px;color:var(--text2)">${gua.lower.element||''}</div><div style="font-size:11px;line-height:1.6;margin-top:4px;color:var(--text1)">${gua.lower.meaning||''}</div></div>`:''}
+      </div>
+      <div style="font-size:13px;line-height:1.8;padding:12px;background:rgba(201,165,78,.03);border-radius:8px;border:1px solid rgba(201,165,78,.1)">${gua.combination}</div>
+      ${gua.citation?`<div style="margin-top:8px;padding:10px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px"><div style="color:var(--gold);font-weight:600">📜 ${gua.citation.book||''}</div><div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px">"${gua.citation.original||''}"</div><div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${gua.citation.translation||''}</div></div>`:''}
+    </div>`:''}
+
+    <!-- 심층 분석 -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">📊 영역별 심층 분석</div>
+      ${prem.wealthAnalysis?`<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:rgba(201,165,78,.03);border:1px solid rgba(201,165,78,.08)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">💰 재물운</div><div style="font-size:12px;line-height:1.8;color:var(--text1)">${prem.wealthAnalysis}</div></div>`:''}
+      ${prem.careerAnalysis?`<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:rgba(201,165,78,.03);border:1px solid rgba(201,165,78,.08)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">💼 직업운</div><div style="font-size:12px;line-height:1.8;color:var(--text1)">${prem.careerAnalysis}</div></div>`:''}
+      ${prem.healthAnalysis?`<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:rgba(201,165,78,.03);border:1px solid rgba(201,165,78,.08)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">🏥 건강운</div><div style="font-size:12px;line-height:1.8;color:var(--text1)">${prem.healthAnalysis}</div></div>`:''}
+      ${prem.loveAnalysis?`<div style="margin-bottom:10px;padding:12px;border-radius:8px;background:rgba(201,165,78,.03);border:1px solid rgba(201,165,78,.08)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">❤️ 연애·인간관계</div><div style="font-size:12px;line-height:1.8;color:var(--text1)">${prem.loveAnalysis}</div></div>`:''}
+    </div>
+
+    <!-- 12개월 상세 -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">📅 12개월 상세 운세</div>
+      ${monthlyHTML}
+    </div>
+
+    <!-- 개운법 -->
+    ${remediesHTML?`<div style="margin-bottom:16px">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">✨ 맞춤 개운법</div>
+      ${remediesHTML}
+    </div>`:''}
+
+    <!-- 행운 정보 -->
+    ${lucky.colors||lucky.numbers?`<div style="padding:14px;background:rgba(201,165,78,.06);border-radius:10px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:8px;text-align:center">🍀 행운 안내</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font-size:12px">
+        ${(lucky.colors||[]).map(c=>`<span style="padding:4px 10px;background:rgba(255,255,255,.1);border-radius:12px">🎨 ${c}</span>`).join('')}
+        ${(lucky.numbers||[]).map(n=>`<span style="padding:4px 10px;background:rgba(255,255,255,.1);border-radius:12px">🔢 ${n}</span>`).join('')}
+        ${(lucky.directions||[]).map(d=>`<span style="padding:4px 10px;background:rgba(255,255,255,.1);border-radius:12px">🧭 ${d}</span>`).join('')}
+      </div>
+      ${lucky.bestMonths?`<div style="text-align:center;margin-top:8px;font-size:11px;color:var(--text2)">🌟 최고의 달: ${lucky.bestMonths}</div>`:''}
+      ${lucky.cautionMonths?`<div style="text-align:center;margin-top:4px;font-size:11px;color:var(--text2)">⚠️ 주의할 달: ${lucky.cautionMonths}</div>`:''}
+    </div>`:''}
+
+    <!-- 고전 인용 -->
+    ${cit.original?`<div style="padding:12px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px">
+      <div style="color:var(--gold);font-weight:600">📜 ${cit.book||'토정비결'}</div>
+      <div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px;font-size:13px">"${cit.original}"</div>
+      <div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${cit.translation||''}</div>
+    </div>`:''}
+  `;
+  pw.style.position='relative';pw.style.overflow='visible';
+}
+
 function toggleMonth(i){const el=document.getElementById('md-'+i);const s=el.classList.contains('show');document.querySelectorAll('.month-detail').forEach(d=>d.classList.remove('show'));document.querySelectorAll('.month-card').forEach(c=>c.classList.remove('active'));if(!s){el.classList.add('show');document.querySelectorAll('.month-card')[i].classList.add('active')}}
 
 // ============================================================
@@ -4564,7 +4984,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
 
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
 function shareResultImage(type){
-  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult'};
+  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult',tojeong:'tojeongResult'};
   const target=document.getElementById(targetIds[type]||'faceResult');
   if(!target){showToast('공유할 결과가 없습니다');return}
 
@@ -4578,7 +4998,7 @@ function shareResultImage(type){
     canvas.toBlob(blob=>{
       const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
       const fileName=`천운_${type}_${today}.png`;
-      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',match:'운세 매칭'};
+      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',match:'운세 매칭',tojeong:'토정비결'};
       const t=titles[type]||'운세 결과';
 
       if(navigator.share){
