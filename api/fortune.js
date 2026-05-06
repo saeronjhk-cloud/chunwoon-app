@@ -115,7 +115,8 @@ weaknesses 2개, enemies 2개, allies 2개.` + JSON_FORCE;
 - 띠와 괘 조합의 상호작용도 고려
 
 반드시 아래 JSON 구조로만 응답:
-{"yearReading":"올해 총운 요약 250자+","trigram":{"name":"괘 조합 이름","hanja":"한자 표기","meaning":"괘 해석 150자+"},"scores":{"overall":number(0-100),"wealth":number(0-100),"health":number(0-100),"love":number(0-100),"career":number(0-100)},"monthlyBrief":["1월 요약 40자+","2월 요약 40자+","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],"luckyInfo":{"color":"행운의 색","number":"행운의 숫자","direction":"행운의 방위"},"caution":"주의사항 100자+","advice":"종합 조언 150자+"}` + JSON_FORCE;
+{"yearReading":"올해 총운 요약 250자+","trigram":{"name":"괘 조합 이름","hanja":"한자 표기","meaning":"괘 해석 150자+"},"scores":{"overall":number(0-100),"wealth":number(0-100),"health":number(0-100),"love":number(0-100),"career":number(0-100)},"monthlyBrief":["1월 요약 40자+","2월 요약 40자+","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],"monthlyScores":[number,number,number,number,number,number,number,number,number,number,number,number],"luckyInfo":{"color":"행운의 색","number":"행운의 숫자","direction":"행운의 방위"},"caution":"주의사항 100자+","advice":"종합 조언 150자+"}
+monthlyScores는 1~12월 각 달의 종합 점수(0-100)로, 12개 정수 배열. monthlyBrief 분위기와 일관성 유지.` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 해석 요청
@@ -128,16 +129,16 @@ weaknesses 2개, enemies 2개, allies 2개.` + JSON_FORCE;
 괘 조합: ${c.guaCombination||''}
 이 괘 조합에 맞는 ${c.targetYear||new Date().getFullYear()}년 운세를 토정비결에 기반하여 해석해주세요.`;
 
-    } else if (type === 'tojeong_premium') {
+    } else if (type === 'tojeong_premium_1') {
+      // 1단계: 심층 총운 + 괘 분석 + 4영역 심층 + 인용
       systemPrompt = `당신은 토정비결(土亭秘訣) 대가입니다. 토정 이지함의 원문에 기반한 깊이 있는 해석을 제공합니다.
 한국어 해요체. 고전 한문 원문+번역 인용.
 
-반드시 아래 JSON 구조로만 응답:
-{"detailedYear":"올해 심층 총운 400자+","guaAnalysis":{"upper":{"name":"상괘명","element":"오행","meaning":"해석 100자+"},"middle":{"name":"중괘명","element":"오행","meaning":"해석 100자+"},"lower":{"name":"하괘명","element":"오행","meaning":"해석 100자+"},"combination":"괘 조합 심층 해석 200자+","citation":{"book":"출전","original":"한문 원문","translation":"번역"}},"monthlyDetail":[{"month":1,"fortune":"상세 운세 80자+","wealth":"재물","health":"건강","love":"연애","advice":"조언","luckyDay":"길일","cautionDay":"주의일"},{"month":2,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":3,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":4,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":5,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":6,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":7,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":8,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":9,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":10,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":11,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""},{"month":12,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":"","cautionDay":""}],"wealthAnalysis":"재물운 심층 분석 200자+","careerAnalysis":"직업운 심층 분석 200자+","healthAnalysis":"건강운 심층 분석 200자+","loveAnalysis":"연애·인간관계 심층 분석 200자+","remedies":[{"area":"영역","problem":"문제점","solution":"개운법 80자+"}],"luckyInfo":{"colors":["색1","색2"],"numbers":[0,0,0],"directions":["방위1","방위2"],"bestMonths":"가장 좋은 달","cautionMonths":"주의할 달"},"citation":{"book":"출전","original":"한문 원문","translation":"번역"}}
-monthlyDetail 배열에 반드시 12개월 모두 포함. remedies 2~3개.` + JSON_FORCE;
+반드시 아래 정확한 JSON 구조로만 응답:
+{"detailedYear":"올해 심층 총운 400자+","guaAnalysis":{"upper":{"name":"상괘명","element":"오행","meaning":"해석 100자+"},"middle":{"name":"중괘명","element":"오행","meaning":"해석 100자+"},"lower":{"name":"하괘명","element":"오행","meaning":"해석 100자+"},"combination":"괘 조합 심층 해석 200자+","citation":{"book":"출전","original":"한문 원문","translation":"번역"}},"wealthAnalysis":"재물운 심층 분석 200자+","careerAnalysis":"직업운 심층 분석 200자+","healthAnalysis":"건강운 심층 분석 200자+","loveAnalysis":"연애·인간관계 심층 분석 200자+","citation":{"book":"출전","original":"한문 원문","translation":"번역"}}` + JSON_FORCE;
 
       const c = context || {};
-      userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 해석
+      userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 1단계 (총운+괘+영역별)
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
 음력 생년월일: ${c.lunarYear||''}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일
 띠: ${c.zodiac||''}, 천간지지: ${c.ganjiYear||''}
@@ -145,7 +146,25 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies 2~3개.` + JS
 중괘: ${c.middleGua||''} (월건수 ${c.wolNum||''})
 하괘: ${c.lowerGua||''} (일진수 ${c.ilNum||''})
 괘 조합: ${c.guaCombination||''}
-토정비결 원문에 기반한 깊이 있는 해석을 해주세요. 각 월별 상세 운세, 재물·직업·건강·연애 심층 분석, 개운법을 포함해주세요.`;
+이 괘 조합을 기준으로 한 해 총운, 괘 심층 풀이, 재물·직업·건강·연애 4영역 심층 분석을 해주세요.`;
+
+    } else if (type === 'tojeong_premium_2') {
+      // 2단계: 12개월 상세 + 개운법 + 행운 정보
+      systemPrompt = `당신은 토정비결(土亭秘訣) 대가입니다. 토정 이지함의 원문에 기반합니다.
+한국어 해요체. 1단계 해석과 일관성 있게.
+간결하게: monthlyDetail의 fortune은 50자 내외, wealth/health/love/advice는 각 25자 이내 한 줄. 풀이를 늘리지 말고 핵심만.
+
+반드시 아래 정확한 JSON 구조로만 응답:
+{"monthlyDetail":[{"month":1,"fortune":"이번 달 흐름 50자 내외","wealth":"재물 한 줄","health":"건강 한 줄","love":"연애 한 줄","advice":"조언 한 줄","luckyDay":"길일 예: 5일·12일"},{"month":2,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":3,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":4,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":5,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":6,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":7,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":8,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":9,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":10,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":11,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":12,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}],"luckyInfo":{"colors":["색1","색2"],"numbers":[0,0,0],"directions":["방위1","방위2"],"bestMonths":"가장 좋은 달 예: 3월·9월","cautionMonths":"주의할 달 예: 7월"}}
+monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. 불필요한 수식어 없이 짧게.` + JSON_FORCE;
+
+      const c = context || {};
+      userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 2단계 (12개월+개운법+행운)
+이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
+음력 생년월일: ${c.lunarYear||''}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일
+띠: ${c.zodiac||''}, 천간지지: ${c.ganjiYear||''}
+괘 조합: ${c.guaCombination||''}
+1년 12개월 각 달의 흐름과 길일·주의일, 영역별 한 줄 풀이, 그리고 개운법 2~3개와 행운 정보를 알려주세요.`;
 
     } else {
       return res.status(400).json({ error: 'Invalid type' });
@@ -153,8 +172,9 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies 2~3개.` + JS
 
     // 타입별 max_tokens 조정
     let maxTokens = 1500;
-    if (type === 'tojeong') maxTokens = 2000;
-    else if (type === 'tojeong_premium') maxTokens = 3500;
+    if (type === 'tojeong') maxTokens = 2200;
+    else if (type === 'tojeong_premium_1') maxTokens = 2500;
+    else if (type === 'tojeong_premium_2') maxTokens = 4000;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

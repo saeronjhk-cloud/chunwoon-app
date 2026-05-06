@@ -426,7 +426,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="card">
       <div class="card-title">卦 사주풀이</div>
       <div class="input-group"><label>이름</label><input id="sajuName" placeholder="이름 입력" /></div>
-      <div class="input-group"><label>생년월일</label><input type="date" id="sajuBirth" /></div>
+      <div class="input-group"><label>생년월일</label><input type="date" id="sajuBirth" min="1900-01-01" max="2099-12-31" /></div>
       <div class="input-row">
         <div class="input-group"><label>태어난 시간</label><select id="sajuHour"><option value="-1">모름</option><option value="0">자시(23~01)</option><option value="1">축시(01~03)</option><option value="2">인시(03~05)</option><option value="3">묘시(05~07)</option><option value="4">진시(07~09)</option><option value="5">사시(09~11)</option><option value="6">오시(11~13)</option><option value="7">미시(13~15)</option><option value="8">신시(15~17)</option><option value="9">유시(17~19)</option><option value="10">술시(19~21)</option><option value="11">해시(21~23)</option></select></div>
         <div class="input-group"><label>성별</label><select id="sajuGender"><option value="male">남성</option><option value="female">여성</option></select></div>
@@ -436,9 +436,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div id="sajuResult"></div>
     <div class="card">
       <div class="card-title">☯ 궁합 보기</div>
-      <div class="input-row"><div class="input-group"><label>나의 이름</label><input id="cName1" placeholder="이름" /></div><div class="input-group"><label>생년월일</label><input type="date" id="cBirth1" /></div></div>
+      <div class="input-row"><div class="input-group"><label>나의 이름</label><input id="cName1" placeholder="이름" /></div><div class="input-group"><label>생년월일</label><input type="date" id="cBirth1" min="1900-01-01" max="2099-12-31" /></div></div>
       <div style="text-align:center;font-size:20px;color:var(--gold);opacity:.5;margin:6px 0">♡</div>
-      <div class="input-row"><div class="input-group"><label>상대 이름</label><input id="cName2" placeholder="이름" /></div><div class="input-group"><label>생년월일</label><input type="date" id="cBirth2" /></div></div>
+      <div class="input-row"><div class="input-group"><label>상대 이름</label><input id="cName2" placeholder="이름" /></div><div class="input-group"><label>생년월일</label><input type="date" id="cBirth2" min="1900-01-01" max="2099-12-31" /></div></div>
       <button class="action-btn red" onclick="analyzeCompat()">궁합 분석하기</button>
       <div id="compatResult" style="display:none"></div>
     </div>
@@ -568,7 +568,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
       </div>
       <input type="hidden" id="tjCalType" value="solar" />
-      <div class="input-group"><label>생년월일</label><input type="date" id="tjBirth" /></div>
+      <div class="input-group"><label>생년월일</label><input type="date" id="tjBirth" min="1900-01-01" max="2099-12-31" /></div>
       <div class="input-group"><label>성별</label><select id="tjGender"><option value="male">남성</option><option value="female">여성</option></select></div>
       <div class="input-group"><label>운세 확인 연도</label><select id="tjTargetYear"></select></div>
       <button class="action-btn red" onclick="analyzeTojeong()">📜 토정비결 보기</button>
@@ -941,6 +941,9 @@ function resetTarot(){renderTarot();document.getElementById('tarotBtn').style.di
 // ============================================================
 function analyzeSaju(){
   const bs=document.getElementById('sajuBirth').value;if(!bs){alert('생년월일을 입력하세요.');return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs)){alert('생년월일 형식이 올바르지 않습니다.\n1900~2099년 사이로 다시 입력해주세요.');return}
+  const yCheck=parseInt(bs.substring(0,4),10);
+  if(yCheck<1900||yCheck>2099){alert('1900년부터 2099년 사이의 생년월일을 입력해주세요.');return}
   const b=new Date(bs),y=b.getFullYear(),m=b.getMonth()+1,d=b.getDate();
   const hi=parseInt(document.getElementById('sajuHour').value),g=document.getElementById('sajuGender').value;
   const name=document.getElementById('sajuName').value.trim()||'당신';
@@ -969,6 +972,11 @@ function analyzeSaju(){
 function analyzeCompat(){
   const b1=document.getElementById('cBirth1').value,b2=document.getElementById('cBirth2').value;
   if(!b1||!b2){alert('생년월일을 모두 입력하세요.');return}
+  for(const bs of [b1,b2]){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(bs)){alert('생년월일 형식이 올바르지 않습니다.\n1900~2099년 사이로 다시 입력해주세요.');return}
+    const yCheck=parseInt(bs.substring(0,4),10);
+    if(yCheck<1900||yCheck>2099){alert('1900년부터 2099년 사이의 생년월일을 입력해주세요.');return}
+  }
   const n1=document.getElementById('cName1').value.trim()||'나',n2=document.getElementById('cName2').value.trim()||'상대';
   const d1=new Date(b1),d2=new Date(b2);
   const br1=(d1.getFullYear()-4)%12,br2=(d2.getFullYear()-4)%12;
@@ -4210,6 +4218,10 @@ function initTjYearSelect(){
 async function analyzeTojeong(){
   const bs=document.getElementById('tjBirth').value;
   if(!bs){alert('생년월일을 입력하세요.');return}
+  // 연도 6자리 등 비정상 입력 차단 (Chrome <input type=date>가 허용해버려서 JS에서 한 번 더)
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs)){alert('생년월일 형식이 올바르지 않습니다.\n1900~2099년 사이로 다시 입력해주세요.');return}
+  const yCheck=parseInt(bs.substring(0,4),10);
+  if(yCheck<1900||yCheck>2099){alert('1900년부터 2099년 사이의 생년월일을 입력해주세요.');return}
   const b=new Date(bs);
   const name=document.getElementById('tjName').value.trim()||'당신';
   const gender=document.getElementById('tjGender').value;
@@ -4283,9 +4295,11 @@ function renderTojeongResult(result,info){
   const tri=result.trigram||{};
   const lucky=result.luckyInfo||{};
 
+  const mScores=Array.isArray(result.monthlyScores)?result.monthlyScores:[];
   let monthCards='';
   (result.monthlyBrief||[]).forEach((brief,i)=>{
-    monthCards+=`<div class="month-card" onclick="toggleMonth(${i})"><div class="month-num">${i+1}월</div></div>`;
+    const ms=mScores[i];
+    monthCards+=`<div class="month-card" onclick="toggleMonth(${i})"><div class="month-num">${i+1}월</div>${ms?`<div class="month-score">${ms}점</div>`:''}</div>`;
   });
   let monthDetails='';
   (result.monthlyBrief||[]).forEach((brief,i)=>{
@@ -4411,38 +4425,188 @@ function renderTojeongFallback(info){
       <button class="share-btn" onclick="shareResult('tojeong')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
     </div>
   </div>
-  <div class="card"><div class="card-title">📅 월별 운세</div><div class="month-grid">${monthCards}</div>${monthDetails}</div>`;
+  <div class="card"><div class="card-title">📅 월별 운세</div><div class="month-grid">${monthCards}</div>${monthDetails}</div>
+
+  <!-- 프리미엄 유도 (폴백 경로에서도 동일하게 노출) -->
+  <div class="card" id="tojeongPaywall" style="position:relative;overflow:hidden">
+    <div style="filter:blur(5px);pointer-events:none;opacity:.5">
+      <div class="card-title">🔮 프리미엄 심층 분석</div>
+      <div style="font-size:13px;line-height:1.8">
+        <p>✦ 12개월 상세 운세 (재물·건강·연애·길일·흉일)</p>
+        <p>✦ 재물운·직업운·건강운·연애운 심층 분석</p>
+        <p>✦ 괘(卦) 조합 심층 해석 + 고전 원문 인용</p>
+        <p>✦ 맞춤형 개운법 처방</p>
+        <p>✦ 행운의 색·숫자·방위·월 상세 안내</p>
+      </div>
+    </div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);border-radius:12px">
+      <div style="font-size:22px;margin-bottom:8px">🔒</div>
+      <div style="font-size:15px;color:#fff;font-weight:600;margin-bottom:4px">프리미엄 심층 분석</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">토정비결 원문 기반 12개월 상세 운세</div>
+      <button onclick="unlockTojeongPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:12px 28px;border-radius:20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Noto Serif KR',serif">₩4,900 · 심층 분석 열기</button>
+    </div>
+  </div>`;
   r.classList.add('show');burstConfetti();setTimeout(animateScores,200);
+  // unlockTojeongPremium이 호출할 수 있게 데이터 보관 (LLM 결과 path와 동일한 키)
+  window._tojeongResultData={...info,result:{yearReading:`${info.name}님, ${yr}`,scores}};
 }
 
-// 프리미엄 토정비결
+// 프리미엄 토정비결 — 결제 게이트 + 단계별 로딩 + 재시도
 async function unlockTojeongPremium(){
   const info=window._tojeongResultData;
   if(!info){showToast('먼저 토정비결을 확인해주세요');return}
-  showToast('프리미엄 심층 분석을 불러오고 있습니다...');
+
+  // ── 결제 게이트 ──
+  // TODO: 실제 결제 모듈(카카오페이, 토스페이먼츠 등) 연동
+  if(!confirm('프리미엄 토정비결 리포트 (₩4,900)를 구매하시겠습니까?\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.'))return;
+
+  const pw=document.getElementById('tojeongPaywall');
+  let loadTimer=null;
+  if(pw){
+    pw.innerHTML=`<div style="padding:30px;text-align:center">
+      <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">📜</div>
+      <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="tjPremLoadMsg">상괘(上卦) 풀이 중...</div>
+      <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="tjPremLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">토정비결 원문 대조 + 12개월 분석에 약 15~25초 소요</div>
+    </div>`;
+    pw.style.position='relative';pw.style.overflow='visible';
+    const loadSteps=['상괘(上卦) 풀이 중...','중괘(中卦) 음양 대조 중...','하괘(下卦) 일진 매핑 중...','괘 조합 의미 추출 중...','12개월 상세 분석 중...','재물·건강·연애·직업 영역별 풀이 중...','개운법 처방 중...','고전 원문 인용 검증 중...','종합 리포트 완성 중...'];
+    let loadStep=0;
+    loadTimer=setInterval(()=>{
+      loadStep++;
+      const m=document.getElementById('tjPremLoadMsg');
+      const bar=document.getElementById('tjPremLoadBar');
+      if(m&&loadStep<loadSteps.length)m.textContent=loadSteps[loadStep];
+      if(bar)bar.style.width=Math.min(95,loadStep*11)+'%';
+      if(loadStep>=loadSteps.length)clearInterval(loadTimer);
+    },2200);
+    // spin-emoji 애니메이션은 _showFacePaywall 쪽에서 이미 등록됨
+    if(!document.getElementById('premLoadStyle')){
+      const st=document.createElement('style');st.id='premLoadStyle';
+      st.textContent='@keyframes premLoad{0%{width:0}50%{width:70%}100%{width:95%}} .spin-emoji{animation:spinE 1.5s linear infinite} @keyframes spinE{from{transform:rotate(0)}to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
+  }
+
   try{
-    const resp=await fetch('/api/fortune',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        type:'tojeong_premium',
-        context:{
-          name:info.name,gender:info.gender,targetYear:info.targetYear,
-          lunarYear:info.lunar.year,lunarMonth:info.lunar.month,lunarDay:info.lunar.day,
-          zodiac:`${info.zodiac.n}띠(${info.zodiac.h})`,
-          ganjiYear:`${info.ganji}년`,
-          upperGua:info.upper.name,taeseNum:info.upper.taeseNum,
-          middleGua:info.middle.name,wolNum:info.middle.wolNum,
-          lowerGua:info.lower.name,ilNum:info.lower.ilNum,
-          guaCombination:info.guaCombination
-        }
-      })
-    });
-    const data=await resp.json();
-    if(!data.success||!data.result){throw new Error(data.error||'API 응답 오류')}
-    renderTojeongPremium(data.result,info);
+    const ctx={
+      name:info.name,gender:info.gender,targetYear:info.targetYear,
+      lunarYear:info.lunar.year,lunarMonth:info.lunar.month,lunarDay:info.lunar.day,
+      zodiac:`${info.zodiac.n}띠(${info.zodiac.h})`,
+      ganjiYear:`${info.ganji}년`,
+      upperGua:info.upper.name,taeseNum:info.upper.taeseNum,
+      middleGua:info.middle.name,wolNum:info.middle.wolNum,
+      lowerGua:info.lower.name,ilNum:info.lower.ilNum,
+      guaCombination:info.guaCombination
+    };
+    const doFetch=async(apiType)=>{
+      const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
+      const txt=await resp.text();
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
+      const d=JSON.parse(txt);
+      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      // 파싱 실패하면 result에 raw만 있고 기대 필드 없음 → 명시적 실패 처리
+      if(d.result.raw&&!d.result.detailedYear&&!d.result.monthlyDetail)throw new Error('AI 응답 파싱 실패 (max_tokens 초과 추정)');
+      return d.result;
+    };
+
+    let merged={};
+    let apiError=null;
+
+    // 1단계: 총운 + 괘 + 영역별
+    try{
+      const r1=await doFetch('tojeong_premium_1');
+      Object.assign(merged,r1);
+      const m=document.getElementById('tjPremLoadMsg');
+      if(m)m.textContent='12개월 상세 + 개운법 생성 중...';
+      const bar=document.getElementById('tjPremLoadBar');
+      if(bar)bar.style.width='55%';
+    }catch(e1){apiError='1단계: '+e1.message;console.error('Premium API 1:',e1)}
+
+    // 2단계: 12개월 + 개운법 + 행운
+    try{
+      const r2=await doFetch('tojeong_premium_2');
+      Object.assign(merged,r2);
+    }catch(e2){apiError=(apiError?apiError+' | ':'')+'2단계: '+e2.message;console.error('Premium API 2:',e2)}
+
+    if(loadTimer)clearInterval(loadTimer);
+    const hasData=!!(merged.detailedYear||merged.guaAnalysis||merged.monthlyDetail||merged.wealthAnalysis);
+    console.log('Tojeong Premium API:', hasData?'OK':'FAIL', Object.keys(merged));
+    if(!hasData)throw new Error(apiError||'데이터 없음');
+
+    // PDF/공유용 데이터 보관
+    window._tojeongPremiumData={...info,prem:merged};
+    renderTojeongPremium(merged,info);
+
+    // 부분 실패(1단계만 또는 2단계만 성공) 안내
+    if(apiError&&pw){
+      const notice=document.createElement('div');
+      notice.style.cssText='margin:14px 0;padding:12px;background:rgba(232,90,79,.08);border:1px solid rgba(232,90,79,.25);border-radius:10px;text-align:center';
+      notice.innerHTML=`<div style="font-size:12px;color:#e85a4f;margin-bottom:6px">⚠️ 일부 분석 섹션 로딩 실패</div>
+        <div style="font-size:10px;color:var(--text2);line-height:1.6">${apiError}</div>
+        <button onclick="retryTojeongPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 누락 섹션 다시 시도</button>`;
+      pw.appendChild(notice);
+    }
   }catch(err){
-    console.error('프리미엄 토정비결 오류:',err);
-    showToast('프리미엄 분석을 불러오는데 실패했습니다. 다시 시도해주세요.');
+    if(loadTimer)clearInterval(loadTimer);
+    console.error('프리미엄 토정비결 전체 오류:',err);
+    if(pw){
+      pw.innerHTML=`<div style="padding:24px;text-align:center;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.25);border-radius:10px">
+        <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+        <div style="font-size:13px;color:#e85a4f;font-weight:600;margin-bottom:6px">프리미엄 분석을 불러오지 못했습니다</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px">서버가 잠시 응답하지 않거나 네트워크가 불안정합니다.</div>
+        <div style="font-size:9px;color:var(--text2);opacity:.5;margin:6px 0;word-break:break-all;max-height:60px;overflow:auto">${(err.message||'Unknown error').substring(0,200)}</div>
+        <button onclick="retryTojeongPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 AI 분석 다시 시도</button>
+      </div>`;
+    }
+  }
+}
+
+// ── 프리미엄 토정비결 재시도 (결제 게이트 건너뜀, 분석만 다시) ──
+async function retryTojeongPremiumAPI(){
+  const info=window._tojeongResultData;
+  if(!info){showToast('먼저 토정비결을 확인해주세요');return}
+  const pw=document.getElementById('tojeongPaywall');
+  if(pw){
+    pw.innerHTML=`<div style="padding:24px;text-align:center"><div class="spin-emoji" style="font-size:28px">📜</div><div style="font-size:12px;color:var(--gold);margin-top:10px">AI 심화 분석 재시도 중... (최대 60초)</div></div>`;
+  }
+  try{
+    const ctx={
+      name:info.name,gender:info.gender,targetYear:info.targetYear,
+      lunarYear:info.lunar.year,lunarMonth:info.lunar.month,lunarDay:info.lunar.day,
+      zodiac:`${info.zodiac.n}띠(${info.zodiac.h})`,
+      ganjiYear:`${info.ganji}년`,
+      upperGua:info.upper.name,taeseNum:info.upper.taeseNum,
+      middleGua:info.middle.name,wolNum:info.middle.wolNum,
+      lowerGua:info.lower.name,ilNum:info.lower.ilNum,
+      guaCombination:info.guaCombination
+    };
+    const doFetch=async(apiType)=>{
+      const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
+      const txt=await resp.text();
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
+      const d=JSON.parse(txt);
+      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(d.result.raw&&!d.result.detailedYear&&!d.result.monthlyDetail)throw new Error('AI 응답 파싱 실패');
+      return d.result;
+    };
+    let merged={};
+    let apiError=null;
+    try{Object.assign(merged,await doFetch('tojeong_premium_1'))}catch(e){apiError='1단계: '+e.message;console.error('Retry 1:',e)}
+    try{Object.assign(merged,await doFetch('tojeong_premium_2'))}catch(e){apiError=(apiError?apiError+' | ':'')+'2단계: '+e.message;console.error('Retry 2:',e)}
+    const hasData=!!(merged.detailedYear||merged.monthlyDetail||merged.wealthAnalysis);
+    if(!hasData)throw new Error(apiError||'데이터 없음');
+    window._tojeongPremiumData={...info,prem:merged};
+    renderTojeongPremium(merged,info);
+  }catch(err){
+    console.error('재시도 실패:',err);
+    if(pw){
+      pw.innerHTML=`<div style="padding:24px;text-align:center;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.25);border-radius:10px">
+        <div style="font-size:13px;color:#e85a4f;font-weight:600;margin-bottom:8px">재시도도 실패했습니다</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:6px">${(err.message||'Unknown error').substring(0,200)}</div>
+        <button onclick="retryTojeongPremiumAPI()" style="margin-top:10px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 한 번 더 시도</button>
+      </div>`;
+    }
   }
 }
 
@@ -4538,6 +4702,11 @@ function renderTojeongPremium(prem,info){
       <div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px;font-size:13px">"${cit.original}"</div>
       <div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${cit.translation||''}</div>
     </div>`:''}
+
+    <!-- PDF 저장 버튼 -->
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <button class="share-btn" onclick="savePremiumTojeongPDF()" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📄 리포트 저장</button>
+    </div>
   `;
   pw.style.position='relative';pw.style.overflow='visible';
 }
@@ -4979,6 +5148,216 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   }
 }
 
+// ── 프리미엄 토정비결 PDF 리포트 저장 ──
+function savePremiumTojeongPDF(){
+  const D=window._tojeongPremiumData;
+  if(!D||!D.prem){showToast('프리미엄 토정비결 데이터가 없습니다');return}
+  showToast('프리미엄 토정비결 리포트를 준비하고 있습니다...');
+  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  const prem=D.prem;
+  const info=D;
+
+  const esc=(s)=>(s||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const citBlock=(c)=>{
+    if(!c||!c.original)return'';
+    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』</div><div class="cite-orig">"${esc(c.original)}"</div><div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
+  };
+
+  let body='';
+  const gua=prem.guaAnalysis||{};
+  const lucky=prem.luckyInfo||{};
+  const cit=prem.citation||{};
+
+  // ⓪ 심층 총운
+  if(prem.detailedYear){
+    body+=`<div class="section"><h2>📜 ${esc(info.targetYear)}년 심층 총운</h2>
+      <div class="section-desc">${esc(info.zodiac?.n||'')}띠 · ${info.gender==='male'?'남성':'여성'} · ${esc(info.ganji||'')}년 · 음력 ${info.lunar?.year||''}년 ${info.lunar?.month||''}월 ${info.lunar?.day||''}일</div>
+      <p class="big-text">${esc(prem.detailedYear)}</p>
+    </div>`;
+  }
+
+  // ① 괘(卦) 심층 분석
+  if(gua.combination||gua.upper||gua.middle||gua.lower){
+    body+=`<div class="section page-break"><h2>☰ 괘(卦) 심층 해석</h2><p class="section-desc">상괘·중괘·하괘 세 괘의 조합으로 한 해의 흐름을 풀이합니다.</p>`;
+    body+='<div class="gua-grid">';
+    [['upper','상괘',gua.upper],['middle','중괘',gua.middle],['lower','하괘',gua.lower]].forEach(([_,label,g])=>{
+      if(!g)return;
+      body+=`<div class="gua-card"><div class="gua-label">${label}</div><div class="gua-name">${esc(g.name||'')}</div>${g.element?`<div class="gua-elem">${esc(g.element)}</div>`:''}<p class="gua-mean">${esc(g.meaning||'')}</p></div>`;
+    });
+    body+='</div>';
+    if(gua.combination)body+=`<div class="gua-combo"><strong>괘 조합 풀이:</strong> ${esc(gua.combination)}</div>`;
+    if(gua.citation)body+=citBlock(gua.citation);
+    body+='</div>';
+  }
+
+  // ② 영역별 심층
+  body+=`<div class="section page-break"><h2>📊 영역별 심층 분석</h2><p class="section-desc">재물·직업·건강·연애·인간관계를 중심으로 심층 풀이합니다.</p>`;
+  if(prem.wealthAnalysis)body+=`<div class="domain-card domain-wealth"><div class="dc-head">💰 재물운</div><p>${esc(prem.wealthAnalysis)}</p></div>`;
+  if(prem.careerAnalysis)body+=`<div class="domain-card domain-career"><div class="dc-head">💼 직업운</div><p>${esc(prem.careerAnalysis)}</p></div>`;
+  if(prem.healthAnalysis)body+=`<div class="domain-card domain-health"><div class="dc-head">🏥 건강운</div><p>${esc(prem.healthAnalysis)}</p></div>`;
+  if(prem.loveAnalysis)body+=`<div class="domain-card domain-love"><div class="dc-head">❤️ 연애·인간관계</div><p>${esc(prem.loveAnalysis)}</p></div>`;
+  body+='</div>';
+
+  // ③ 12개월 상세
+  if(prem.monthlyDetail&&prem.monthlyDetail.length){
+    body+=`<div class="section page-break"><h2>📅 12개월 상세 운세</h2><p class="section-desc">매달의 흐름과 길일·주의일, 영역별 풀이를 담았습니다.</p>`;
+    prem.monthlyDetail.forEach(md=>{
+      body+=`<div class="month-block">
+        <div class="mb-head">
+          <span class="mb-month">${esc(md.month||'')}월</span>
+          ${md.luckyDay?`<span class="mb-tag mb-lucky">길일: ${esc(md.luckyDay)}</span>`:''}
+          ${md.cautionDay?`<span class="mb-tag mb-caution">주의: ${esc(md.cautionDay)}</span>`:''}
+        </div>
+        <p class="mb-fortune">${esc(md.fortune||'')}</p>
+        <div class="mb-areas">
+          ${md.wealth?`<span class="mb-area area-wealth">💰 ${esc(md.wealth)}</span>`:''}
+          ${md.health?`<span class="mb-area area-health">🏥 ${esc(md.health)}</span>`:''}
+          ${md.love?`<span class="mb-area area-love">❤️ ${esc(md.love)}</span>`:''}
+        </div>
+        ${md.advice?`<div class="mb-advice">💡 ${esc(md.advice)}</div>`:''}
+      </div>`;
+    });
+    body+='</div>';
+  }
+
+  // ④ 개운법
+  if(prem.remedies&&prem.remedies.length){
+    body+=`<div class="section page-break"><h2>✨ 맞춤 개운법</h2><p class="section-desc">올해의 약한 영역을 보완하기 위한 실천 방안입니다.</p>`;
+    prem.remedies.forEach((r,i)=>{
+      body+=`<div class="remedy-card">
+        <div class="rc-head">${i+1}. ${esc(r.area||'')}</div>
+        <div class="rc-problem">❌ ${esc(r.problem||'')}</div>
+        <div class="rc-solution">✅ <strong>처방:</strong> ${esc(r.solution||'')}</div>
+      </div>`;
+    });
+    body+='</div>';
+  }
+
+  // ⑤ 행운 정보
+  const hasLucky=lucky.colors||lucky.numbers||lucky.directions||lucky.bestMonths||lucky.cautionMonths;
+  if(hasLucky){
+    body+=`<div class="section"><h2>🍀 행운 안내</h2><div class="lucky-grid">`;
+    if(lucky.colors&&lucky.colors.length)body+=`<div class="lucky-row"><span class="lucky-label">🎨 색상</span><span class="lucky-val">${lucky.colors.map(esc).join(' · ')}</span></div>`;
+    if(lucky.numbers&&lucky.numbers.length)body+=`<div class="lucky-row"><span class="lucky-label">🔢 숫자</span><span class="lucky-val">${lucky.numbers.map(esc).join(' · ')}</span></div>`;
+    if(lucky.directions&&lucky.directions.length)body+=`<div class="lucky-row"><span class="lucky-label">🧭 방위</span><span class="lucky-val">${lucky.directions.map(esc).join(' · ')}</span></div>`;
+    if(lucky.bestMonths)body+=`<div class="lucky-row"><span class="lucky-label">🌟 최고의 달</span><span class="lucky-val">${esc(lucky.bestMonths)}</span></div>`;
+    if(lucky.cautionMonths)body+=`<div class="lucky-row"><span class="lucky-label">⚠️ 주의할 달</span><span class="lucky-val">${esc(lucky.cautionMonths)}</span></div>`;
+    body+=`</div></div>`;
+  }
+
+  // ⑥ 고전 인용
+  if(cit.original){body+=`<div class="section">${citBlock(cit)}</div>`}
+
+  const printHTML=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>天運 프리미엄 토정비결 — ${esc(info.name||'')} ${esc(info.targetYear||'')}년</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:16mm 14mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line-height:1.9;font-size:15px;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-weight:400}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px}
+
+.cover{text-align:center;padding:48px 20px 38px;border:2px solid #8b6914;border-radius:12px;background:linear-gradient(180deg,#faf6ec 0%,#fff 100%);margin-bottom:32px;position:relative}
+.cover::before{content:'';position:absolute;inset:5px;border:1px solid rgba(139,105,20,.25);border-radius:9px;pointer-events:none}
+.cover h1{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:38px;font-weight:900;letter-spacing:8px;margin-bottom:2px}
+.cover .sub{color:#9a8550;font-size:12px;letter-spacing:5px;margin-bottom:14px;text-transform:uppercase}
+.cover .name-year{color:#3a2a00;font-size:18px;font-weight:700;margin:6px 0;font-family:'Noto Serif KR',serif}
+.cover .divider{width:100px;height:2px;background:linear-gradient(90deg,transparent,#8b6914,transparent);margin:0 auto 14px}
+.cover .date{color:#555;font-size:13px}
+.cover .gua-display{display:inline-flex;gap:14px;margin-top:14px;padding:10px 18px;border:1.5px solid #8b6914;border-radius:20px;color:#7a5c10;font-size:13px;font-weight:600;font-family:'Noto Serif KR',serif}
+
+.section{margin-bottom:28px;padding:22px 24px;background:#ffffff;border:1px solid #d5cbb5;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section h2{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:20px;font-weight:900;margin-bottom:5px;letter-spacing:0.5px}
+.section-desc{font-size:13px;color:#555;margin-bottom:16px;line-height:1.7;font-weight:400}
+.page-break{page-break-before:auto}
+.big-text{font-size:15px;color:#1a1a1a;line-height:1.95;font-weight:400}
+
+.gua-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.gua-card{background:#faf5e8;border:1px solid #d5cbb5;border-radius:8px;padding:14px;text-align:center}
+.gua-label{font-size:11px;color:#8b6914;font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.gua-name{font-family:'Noto Serif KR',serif;color:#2a1e00;font-size:17px;font-weight:900;margin-bottom:4px}
+.gua-elem{font-size:11px;color:#0d6938;font-family:monospace;font-weight:700;margin-bottom:8px}
+.gua-mean{font-size:13px;color:#1a1a1a;line-height:1.8;text-align:left}
+.gua-combo{padding:14px;background:#faf5e8;border-left:5px solid #8b6914;border-radius:0 8px 8px 0;font-size:14px;line-height:1.85;color:#1a1a1a;margin-bottom:12px}
+
+.cite{margin:12px 0;padding:14px 16px;background:#faf5e8;border-left:5px solid #8b6914;border-radius:0 8px 8px 0}
+.cite-src{font-size:12px;color:#6b4f0a;font-weight:700;margin-bottom:5px;font-family:'Noto Serif KR',serif}
+.cite-orig{font-size:16px;color:#2a1e00;font-family:'Noto Serif KR',serif;line-height:1.7;letter-spacing:0.5px;margin-bottom:4px;font-weight:700}
+.cite-tl{font-size:14px;color:#333;font-style:italic;line-height:1.7;font-weight:400}
+
+.domain-card{background:#ffffff;border-left:5px solid #8b6914;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.domain-card .dc-head{font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#2a1e00;margin-bottom:6px}
+.domain-card p{font-size:14px;color:#1a1a1a;line-height:1.85;font-weight:400}
+.domain-wealth{border-left-color:#c9880a}.domain-career{border-left-color:#8b6914}.domain-health{border-left-color:#2a80aa}.domain-love{border-left-color:#c9443a}
+
+.month-block{background:#ffffff;border:1px solid #d5cbb5;border-radius:8px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);page-break-inside:avoid}
+.mb-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.mb-month{font-family:'Noto Serif KR',serif;color:#2a1e00;font-size:17px;font-weight:900;min-width:50px}
+.mb-tag{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600}
+.mb-lucky{background:#eef8f2;color:#0a5a30;border:1px solid #b8dcc8}
+.mb-caution{background:#fff5f4;color:#8a2218;border:1px solid #e8c0bc}
+.mb-fortune{font-size:13.5px;color:#1a1a1a;line-height:1.85;margin-bottom:8px}
+.mb-areas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.mb-area{font-size:11.5px;padding:4px 10px;border-radius:6px;font-weight:500}
+.area-wealth{background:rgba(201,136,10,.08);color:#8a5a07}
+.area-health{background:rgba(42,128,170,.08);color:#1d5670}
+.area-love{background:rgba(201,68,58,.08);color:#8a2c25}
+.mb-advice{font-size:12.5px;color:#5a5040;font-style:italic;line-height:1.7;margin-top:6px;padding-top:6px;border-top:1px dashed #d5cbb5}
+
+.remedy-card{background:#eef8f2;border:1px solid #b8dcc8;border-radius:8px;padding:14px 18px;margin-bottom:12px}
+.rc-head{font-family:'Noto Serif KR',serif;font-size:15px;font-weight:800;color:#0a5a30;margin-bottom:6px}
+.rc-problem{font-size:13px;color:#6a4030;margin-bottom:6px;line-height:1.7}
+.rc-solution{font-size:14px;color:#0a4020;line-height:1.85;padding:10px 14px;background:#fff;border-radius:6px;border:1px solid #b8dcc8;font-weight:500}
+
+.lucky-grid{display:flex;flex-direction:column;gap:8px}
+.lucky-row{display:flex;align-items:center;gap:14px;padding:10px 14px;background:#faf5e8;border:1px solid #d5cbb5;border-radius:8px}
+.lucky-label{font-size:12px;color:#6b4f0a;font-weight:700;min-width:90px}
+.lucky-val{font-size:14px;color:#1a1a1a;font-weight:500}
+
+.footer{text-align:center;margin-top:36px;padding-top:20px;border-top:3px solid #8b6914}
+.footer .mark{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:20px;letter-spacing:4px;margin-bottom:6px;font-weight:900}
+.footer .info{font-size:11px;color:#666;line-height:1.9}
+
+@media print{body{background:#fff!important}.no-print{display:none!important}}
+</style></head><body>
+<div class="wrap">
+  <div class="cover">
+    <h1>天 運</h1>
+    <div class="sub">Premium Tojeong Report</div>
+    <div class="name-year">${esc(info.name||'')}님의 ${esc(info.targetYear||'')}년 토정비결</div>
+    <div class="divider"></div>
+    <div class="date">${today}</div>
+    <div class="gua-display">${esc(info.upper?.name||'')} · ${esc(info.middle?.name||'')} · ${esc(info.lower?.name||'')}</div>
+  </div>
+  ${body}
+  <div class="footer">
+    <div class="mark">✦ 天 運 ✦</div>
+    <div class="info">
+      토정비결(土亭秘訣) · 토정 이지함(李之菡) 선생의 원문에 기반<br>
+      chunwoon-app.vercel.app<br>
+      본 리포트는 전통 운세서를 참고한 오락 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
+    </div>
+  </div>
+</div>
+<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);padding:16px;text-align:center;z-index:9999;border-top:2px solid #8b6914;box-shadow:0 -2px 12px rgba(0,0,0,.08)">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#8b6914,#6b4f0a);color:white;border:none;padding:14px 48px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 16px rgba(139,105,20,.3);letter-spacing:1px">📄 PDF로 저장하기</button>
+  <div style="font-size:11px;color:#888;margin-top:8px">인쇄 대상을 "PDF로 저장"으로 선택하세요</div>
+</div>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  if(w){
+    w.document.write(printHTML);
+    w.document.close();
+    w.addEventListener('load',()=>setTimeout(()=>w.print(),1000));
+  }else{
+    const b=new Blob([printHTML],{type:'text/html'});
+    const u=URL.createObjectURL(b);
+    window.open(u,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(u),60000);
+  }
+}
+
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
 function shareResultImage(type){
   const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult',tojeong:'tojeongResult'};
@@ -5019,7 +5398,7 @@ function shareResultImage(type){
 
 // ── 결과 저장하기 — html2canvas로 실제 결과 화면 캡처 (비프리미엄용) ──
 function saveResult(type) {
-  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult' };
+  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult', tojeong: 'tojeongResult' };
   const target = document.getElementById(targetIds[type] || 'faceResult');
   if (!target) { showToast('저장할 결과가 없습니다'); return; }
 
