@@ -1,5 +1,5 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v2.9.0';
+const CACHE_NAME = 'chunwoon-v3.2.0';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
