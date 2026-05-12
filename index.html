@@ -318,12 +318,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .share-btn:hover{background:rgba(201,165,78,.15);box-shadow:0 0 15px rgba(201,165,78,.15)}
 #shareCanvas{display:none}
 
-/* ===== TALISMAN ===== */
-.talisman-card{position:relative;width:200px;height:280px;margin:20px auto;border:2px solid var(--gold);border-radius:16px;background:linear-gradient(180deg,#1a0a0a 0%,#0d0820 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(201,165,78,.15)}
-.talisman-border{position:absolute;inset:6px;border:1px solid rgba(201,165,78,.3);border-radius:12px;pointer-events:none}
-.talisman-symbol{font-size:48px;color:var(--gold);font-family:'Noto Serif KR',serif;text-shadow:0 0 20px rgba(201,165,78,.6);margin-bottom:12px}
-.talisman-text{font-size:13px;color:var(--gold-light);font-family:'Noto Serif KR',serif;text-align:center;line-height:1.8;padding:0 20px}
-.talisman-stamp{margin-top:16px;width:40px;height:40px;border:2px solid var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--red);font-size:18px;font-family:'Noto Serif KR',serif;transform:rotate(-15deg)}
 
 /* ===== DREAM ===== */
 .dream-tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
@@ -384,7 +378,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="tab-btn" data-tab="face">관상</button>
     <button class="tab-btn" data-tab="tojeong">토정비결</button>
     <button class="tab-btn" data-tab="dream">꿈해몽</button>
-    <button class="tab-btn" data-tab="talisman">오늘의 부적</button>
+    <button class="tab-btn" data-tab="naming">작명</button>
     <button class="tab-btn" data-tab="chat">운세채팅</button>
     <button class="tab-btn" data-tab="match">운세매칭</button>
   </div>
@@ -413,10 +407,48 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-tarot">
     <div class="card">
       <div class="card-title">✧ 타로 카드</div>
-      <div style="text-align:center;padding:16px;font-size:13px;color:var(--text2);line-height:1.8">마음을 가라앉히고<br>세 장의 카드를 뽑아보세요<br><span style="color:var(--gold);font-size:11px">과거 · 현재 · 미래</span></div>
+
+      <!-- 1. 카테고리 -->
+      <div class="input-group">
+        <label>1. 무엇을 묻고 싶나요?</label>
+        <div id="tarotCategoryChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+
+      <!-- 2. 자유 질문 -->
+      <div class="input-group">
+        <label>2. 구체적인 질문 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택)</span></label>
+        <input id="tarotQuestion" placeholder="예: 그 사람과 잘 될까요? / 이직해도 될까요?" maxlength="80" />
+      </div>
+
+      <!-- 3. 사주 연계 토글 -->
+      <div class="input-group" style="margin-bottom:8px">
+        <label style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span>3. 사주 연계 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택, 일간·오행 기반 깊은 해석)</span></span>
+          <button id="tarotSajuToggle" type="button" onclick="toggleTarotSaju()" style="background:var(--card);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">+ 사주 정보 입력</button>
+        </label>
+      </div>
+
+      <div id="tarotSajuFields" style="display:none;background:rgba(201,165,78,.04);border:1px solid rgba(201,165,78,.15);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div class="input-group" style="margin-bottom:8px">
+          <label>달력 종류</label>
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <button id="tarotCalSolar" type="button" onclick="setTarotCal('solar')" style="flex:1;padding:8px;border:none;background:var(--gold);color:#000;font-size:13px;font-weight:600;cursor:pointer">양력</button>
+            <button id="tarotCalLunar" type="button" onclick="setTarotCal('lunar')" style="flex:1;padding:8px;border:none;background:var(--card);color:var(--text2);font-size:13px;cursor:pointer">음력</button>
+          </div>
+        </div>
+        <input type="hidden" id="tarotCalType" value="solar" />
+        <div class="input-group" style="margin-bottom:8px"><label>생년월일</label><input type="date" id="tarotBirth" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-row">
+          <div class="input-group" style="margin-bottom:0"><label>성별</label><select id="tarotGender"><option value="male">남성</option><option value="female">여성</option></select></div>
+          <div class="input-group" style="margin-bottom:0"><label>시간</label><select id="tarotHour"><option value="-1">모름</option><option value="0">자시 (23:00~00:59)</option><option value="1">축시 (01:00~02:59)</option><option value="2">인시 (03:00~04:59)</option><option value="3">묘시 (05:00~06:59)</option><option value="4">진시 (07:00~08:59)</option><option value="5">사시 (09:00~10:59)</option><option value="6">오시 (11:00~12:59)</option><option value="7">미시 (13:00~14:59)</option><option value="8">신시 (15:00~16:59)</option><option value="9">유시 (17:00~18:59)</option><option value="10">술시 (19:00~20:59)</option><option value="11">해시 (21:00~22:59)</option></select></div>
+        </div>
+      </div>
+
+      <!-- 4. 카드 뽑기 -->
+      <div style="text-align:center;padding:8px 0;font-size:12px;color:var(--text2);line-height:1.8">마음을 비우고 세 장의 카드를 뽑아보세요<br><span style="color:var(--gold);font-size:11px">과거 · 현재 · 미래 (정/역방향 포함)</span></div>
       <div class="tarot-spread" id="tarotSpread"></div>
       <div id="tarotStatus" style="text-align:center;font-size:12px;color:var(--text2);margin:10px 0"></div>
-      <button class="action-btn" id="tarotBtn" onclick="startTarot()">카드 펼치기</button>
+      <button class="action-btn" id="tarotBtn" onclick="analyzeTarot()">✦ 카드 뽑기</button>
     </div>
     <div id="tarotReading" style="display:none"></div>
     <button class="reset-btn" id="tarotReset" style="display:none" onclick="resetTarot()">다시 뽑기</button>
@@ -673,14 +705,240 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="fortune-result" id="dreamResult"></div>
   </div>
 
-  <!-- ===== 오늘의 부적 ===== -->
-  <div class="section" id="sec-talisman">
+  <!-- ===== 작명 ===== -->
+  <div class="section" id="sec-naming">
     <div class="card">
-      <div class="card-title">🔮 오늘의 부적</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">오늘 당신을 지켜줄 부적과 주문입니다</p>
-      <div id="talismanContent"></div>
-      <div class="share-wrap" style="margin-top:20px"><button class="share-btn" onclick="shareResult('talisman')">📤 부적 공유하기</button></div>
+      <div class="card-title">名 AI 작명</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">사람·회사·제품·반려동물·닉네임 — 사주 기반 + 수리 + 발음 오행 통합 작명. 전통 작명소 깊이를 AI 속도로.</p>
+
+      <!-- 0) 작명 종류 (가장 위) -->
+      <div class="input-group">
+        <label>어떤 이름을 짓나요?</label>
+        <div id="namingTypeChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+
+      <!-- 사람 이름 입력 -->
+      <div class="naming-fields" data-for="person">
+        <div class="input-group">
+          <label>1. 성씨</label>
+          <div class="input-row">
+            <div class="input-group" style="flex:1;margin-bottom:0"><input id="namingSurname" placeholder="한글: 김 / 이 / 박" maxlength="2" oninput="updateSurnameHanjaOptions()" /></div>
+            <div class="input-group" style="flex:1;margin-bottom:0">
+              <input id="namingSurnameHanja" list="surnameHanjaList" placeholder="한자 (자동 또는 직접)" maxlength="2" autocomplete="off" />
+              <datalist id="surnameHanjaList"></datalist>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6">💡 한글 성씨 입력 시 한자 후보가 자동으로 떠요 (예: 이 → 李·異·伊 중 클릭). 한자 키보드가 있으면 직접 입력도 OK. 모르면 비워두면 가장 흔한 한자로 자동.</div>
+        </div>
+      </div>
+
+      <!-- 회사명 입력 -->
+      <div class="naming-fields" data-for="company" style="display:none">
+        <div class="input-group">
+          <label>1. 업종</label>
+          <div id="namingIndustryChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="input-group">
+          <label>2. 회사 형태 / 비즈니스 모델</label>
+          <input id="namingBizModel" placeholder="예: B2B SaaS / 온라인 쇼핑몰 / 카페·식당 / 1인 스튜디오 등" maxlength="40" />
+        </div>
+        <div class="input-group">
+          <label>3. 핵심 가치·키워드 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택)</span></label>
+          <input id="namingBizKeyword" placeholder="예: 신뢰·혁신·따뜻함·프리미엄·실용" maxlength="40" />
+        </div>
+        <div class="input-group">
+          <label>4. 타겟 시장</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="namingMarketChips">
+            <span class="dream-tag" data-kind="market" data-k="domestic">🇰🇷 국내 위주</span>
+            <span class="dream-tag" data-kind="market" data-k="global">🌐 글로벌 진출</span>
+            <span class="dream-tag" data-kind="market" data-k="both">🌏 둘 다</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>5. 회사 등록 예정 지역 <span style="color:var(--text2);font-weight:400;font-size:11px">(법인등기·상호 충돌 검토용)</span></label>
+          <select id="namingCompanyRegion" style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-size:13px">
+            <option value="">선택 안 함</option>
+            <option value="서울특별시">서울특별시</option>
+            <option value="부산광역시">부산광역시</option>
+            <option value="인천광역시">인천광역시</option>
+            <option value="대구광역시">대구광역시</option>
+            <option value="대전광역시">대전광역시</option>
+            <option value="광주광역시">광주광역시</option>
+            <option value="울산광역시">울산광역시</option>
+            <option value="세종특별자치시">세종특별자치시</option>
+            <option value="경기도">경기도</option>
+            <option value="강원특별자치도">강원특별자치도</option>
+            <option value="충청북도">충청북도</option>
+            <option value="충청남도">충청남도</option>
+            <option value="전북특별자치도">전북특별자치도</option>
+            <option value="전라남도">전라남도</option>
+            <option value="경상북도">경상북도</option>
+            <option value="경상남도">경상남도</option>
+            <option value="제주특별자치도">제주특별자치도</option>
+            <option value="해외">해외 (국가 자유 입력)</option>
+          </select>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6">💡 동일 지역 내 동종업종 같은 상호명이 이미 등록되어 있으면 법인 등기 거절될 수 있어요. AI가 추정 평가합니다 (실 등기 가능 여부는 <a href="https://www.iros.go.kr" target="_blank" style="color:var(--gold)">대법원 인터넷등기소</a>에서 최종 확인 권장).</div>
+        </div>
+      </div>
+
+      <!-- 제품명 입력 -->
+      <div class="naming-fields" data-for="product" style="display:none">
+        <div class="input-group">
+          <label>1. 제품·서비스 카테고리</label>
+          <input id="namingProductCat" placeholder="예: 모바일 앱 / 화장품 / 식품 / 강의 / 장비" maxlength="30" />
+        </div>
+        <div class="input-group">
+          <label>2. 제품 한 줄 설명</label>
+          <input id="namingProductDesc" placeholder="예: AI로 운세를 보는 앱 / 천연 성분 비타민 / 1:1 영어 회화" maxlength="50" />
+        </div>
+        <div class="input-group">
+          <label>3. 타겟 페르소나</label>
+          <input id="namingProductTarget" placeholder="예: 2030 직장인 여성 / 4050 자영업자 / 학부모" maxlength="40" />
+        </div>
+        <div class="input-group">
+          <label>4. 핵심 가치 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택)</span></label>
+          <input id="namingProductValue" placeholder="예: 신뢰·재미·간편·럭셔리·친환경" maxlength="40" />
+        </div>
+        <div class="input-group">
+          <label>5. 상표 등록 검토 범위 <span style="color:var(--text2);font-weight:400;font-size:11px">(KIPRIS·USPTO 충돌 가능성 평가)</span></label>
+          <select id="namingProductTrademarkScope" style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-size:13px">
+            <option value="">선택 안 함 (브랜딩만)</option>
+            <option value="domestic">국내(한국 KIPRIS)만</option>
+            <option value="domestic_us">국내 + 미국(USPTO)</option>
+            <option value="domestic_global">국내 + 글로벌(US·EU·중국·일본 등)</option>
+            <option value="global_only">해외 진출 위주(글로벌)</option>
+          </select>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6">💡 AI가 일반 지식 기준으로 충돌 가능성·등록 가능성을 평가합니다 (실 등록 가능 여부는 <a href="https://www.kipris.or.kr" target="_blank" style="color:var(--gold)">KIPRIS</a>·<a href="https://tmsearch.uspto.gov" target="_blank" style="color:var(--gold)">USPTO TESS</a> 검색 + 변리사 자문 필수).</div>
+        </div>
+      </div>
+
+      <!-- 반려동물 입력 -->
+      <div class="naming-fields" data-for="pet" style="display:none">
+        <div class="input-group">
+          <label>1. 반려동물 종류</label>
+          <div id="namingPetTypeChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="input-group">
+          <label>2. 외모·성격 특징</label>
+          <input id="namingPetTraits" placeholder="예: 흰색 푸들 / 까만 고양이·새침함 / 활발한 골든리트리버" maxlength="50" />
+        </div>
+        <div class="input-group">
+          <label>3. 분위기 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택)</span></label>
+          <input id="namingPetVibe" placeholder="예: 귀엽게 / 멋있게 / 한국적 / 외래어" maxlength="30" />
+        </div>
+      </div>
+
+      <!-- 닉네임 입력 -->
+      <div class="naming-fields" data-for="nickname" style="display:none">
+        <div class="input-group">
+          <label>1. 사용 플랫폼·용도</label>
+          <input id="namingNickPlatform" placeholder="예: 인스타·게임·블로그·작가명·유튜브" maxlength="40" />
+        </div>
+        <div class="input-group">
+          <label>2. 표현하고 싶은 이미지</label>
+          <input id="namingNickVibe" placeholder="예: 신비롭게 / 친근하게 / 지적으로 / 강렬하게 / 아련하게" maxlength="40" />
+        </div>
+        <div class="input-group">
+          <label>3. 한글/영문/혼합 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택)</span></label>
+          <input id="namingNickLang" placeholder="예: 한글만 / 영문만 / 혼합" maxlength="20" />
+        </div>
+      </div>
+
+      <!-- 사주 정보 (사람·닉네임에만) -->
+      <div class="naming-fields" data-for="person nickname" style="background:rgba(201,165,78,.04);border:1px solid rgba(201,165,78,.15);border-radius:8px;padding:12px;margin-bottom:14px">
+        <label style="margin-bottom:8px;font-size:13px;color:var(--gold);font-weight:600">사주 정보 (부족 오행 보완)</label>
+        <div id="namingSajuStatus" style="font-size:11px;color:var(--text2);margin-bottom:8px"></div>
+        <div class="input-group">
+          <label>달력 종류</label>
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <button id="namingCalSolar" onclick="setNamingCal('solar')" style="flex:1;padding:8px;border:none;background:var(--gold);color:#000;font-size:13px;font-weight:600;cursor:pointer">양력</button>
+            <button id="namingCalLunar" onclick="setNamingCal('lunar')" style="flex:1;padding:8px;border:none;background:var(--card);color:var(--text2);font-size:13px;cursor:pointer">음력</button>
+          </div>
+        </div>
+        <input type="hidden" id="namingCalType" value="solar" />
+        <div class="input-group" style="margin-bottom:8px"><label>생년월일 (아기/본인)</label><input type="date" id="namingBirth" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px">
+          <label>태어난 시간 <span style="color:var(--text2);font-weight:400;font-size:11px">(정확한 시간을 알면 직접 입력)</span></label>
+          <input type="time" id="namingHourPicker" oninput="_syncHourFromPicker('namingHourPicker','namingHour')" placeholder="예: 03:45" />
+          <div id="namingHourPickerNote" style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6">⌚ HH:MM 입력 → 12지 시(자시·축시…)로 자동 매핑. 모르시면 아래 '모름' 선택.</div>
+        </div>
+        <div class="input-row">
+          <div class="input-group" style="margin-bottom:0"><label>12지 시 (자동 또는 직접 선택)</label><select id="namingHour"><option value="-1">모름</option><option value="0">자시 (23:00~00:59)</option><option value="1">축시 (01:00~02:59)</option><option value="2">인시 (03:00~04:59)</option><option value="3">묘시 (05:00~06:59)</option><option value="4">진시 (07:00~08:59)</option><option value="5">사시 (09:00~10:59)</option><option value="6">오시 (11:00~12:59)</option><option value="7">미시 (13:00~14:59)</option><option value="8">신시 (15:00~16:59)</option><option value="9">유시 (17:00~18:59)</option><option value="10">술시 (19:00~20:59)</option><option value="11">해시 (21:00~22:59)</option></select></div>
+          <div class="input-group" style="margin-bottom:0"><label>성별</label><select id="namingGender"><option value="male">남성</option><option value="female">여성</option></select></div>
+        </div>
+      </div>
+
+      <!-- 회사 — 사장 사주 (선택, 회사명에만) -->
+      <div class="naming-fields" data-for="company" style="display:none;background:rgba(201,165,78,.04);border:1px solid rgba(201,165,78,.15);border-radius:8px;padding:12px;margin-bottom:14px">
+        <label style="margin-bottom:8px;font-size:13px;color:var(--gold);font-weight:600">사장(대표) 정보 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택, 입력 시 더 정밀)</span></label>
+        <div class="input-group" style="margin-bottom:8px">
+          <label>대표 이름</label>
+          <input id="namingCEOName" placeholder="예: 김민수 / John Kim" maxlength="20" />
+          <div style="font-size:10px;color:var(--text2);margin-top:3px">💡 대표 이름의 발음·한자가 회사명과 어울리는지(상생 음운/오행) 평가에 사용</div>
+        </div>
+        <div class="input-group" style="margin-bottom:8px"><label>대표 생년월일</label><input type="date" id="namingCEOBirth" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px">
+          <label>대표 출생 시간 <span style="color:var(--text2);font-weight:400;font-size:11px">(직접 입력)</span></label>
+          <input type="time" id="namingCEOHourPicker" oninput="_syncHourFromPicker('namingCEOHourPicker','namingCEOHour')" placeholder="예: 14:30" />
+          <div id="namingCEOHourPickerNote" style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6">⌚ HH:MM 입력 → 12지 시 자동 매핑. 모르시면 아래 '시간 모름' 선택.</div>
+        </div>
+        <div class="input-row">
+          <div class="input-group" style="margin-bottom:0"><label>12지 시</label><select id="namingCEOHour"><option value="-1">시간 모름</option><option value="0">자시 (23:00~00:59)</option><option value="1">축시 (01:00~02:59)</option><option value="2">인시 (03:00~04:59)</option><option value="3">묘시 (05:00~06:59)</option><option value="4">진시 (07:00~08:59)</option><option value="5">사시 (09:00~10:59)</option><option value="6">오시 (11:00~12:59)</option><option value="7">미시 (13:00~14:59)</option><option value="8">신시 (15:00~16:59)</option><option value="9">유시 (17:00~18:59)</option><option value="10">술시 (19:00~20:59)</option><option value="11">해시 (21:00~22:59)</option></select></div>
+          <div class="input-group" style="margin-bottom:0"><label>성별</label><select id="namingCEOGender"><option value="male">남성</option><option value="female">여성</option></select></div>
+        </div>
+      </div>
+
+      <!-- 사람 작명 — 작명 스타일 + 글자 수 + 항렬 -->
+      <div class="naming-fields" data-for="person">
+        <div class="input-group">
+          <label>작명 스타일</label>
+          <div id="namingStyleChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="input-group">
+          <label>이름 글자 수</label>
+          <div id="namingLengthChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="input-group">
+          <label>선호 한자 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택, 부모님 선호)</span></label>
+          <div class="input-row" style="margin-bottom:6px">
+            <div class="input-group" style="flex:1;margin-bottom:0">
+              <input id="preferredKoreanInput" placeholder="한글 1자 (예: 인)" maxlength="1" oninput="showPreferredHanjaPicker()" />
+            </div>
+            <div class="input-group" style="flex:2;margin-bottom:0">
+              <input id="namingPreferred" placeholder="선택된 한자 또는 직접 입력" maxlength="40" />
+            </div>
+          </div>
+          <div id="preferredHanjaPicker" style="display:none;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.2);border-radius:8px;padding:8px;margin-bottom:4px"></div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6">💡 한글 1자 입력 → 한자 후보 클릭으로 추가. 여러 개 선택 가능. 한자를 직접 붙여넣어도 OK.</div>
+          <button type="button" onclick="document.getElementById('namingPreferred').value='';document.getElementById('preferredKoreanInput').value='';document.getElementById('preferredHanjaPicker').style.display='none'" style="margin-top:4px;padding:4px 10px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:6px;font-size:10px;cursor:pointer">초기화</button>
+        </div>
+
+        <div class="input-group" style="background:rgba(232,90,79,.04);border:1px solid rgba(232,90,79,.15);border-radius:8px;padding:12px">
+          <label style="margin-bottom:8px;font-size:13px;color:#e85a4f;font-weight:600">⚠️ 항렬자 (行列字) <span style="color:var(--text2);font-weight:400;font-size:11px">(선택, 가문에 정해져 있는 경우만)</span></label>
+          <div class="input-row" style="margin-bottom:6px">
+            <div class="input-group" style="flex:1;margin-bottom:0">
+              <input id="hangryeolKoreanInput" placeholder="한글 1자 (예: 준)" maxlength="1" oninput="showHangryeolHanjaPicker()" />
+            </div>
+            <div class="input-group" style="flex:1;margin-bottom:0">
+              <input id="namingHangryeolHanja" placeholder="선택된 항렬 한자" maxlength="2" autocomplete="off" />
+            </div>
+            <div class="input-group" style="flex:1;margin-bottom:0">
+              <select id="namingHangryeolPos" style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-size:12px">
+                <option value="">위치 선택</option>
+                <option value="first">첫 글자</option>
+                <option value="last">끝 글자</option>
+              </select>
+            </div>
+          </div>
+          <div id="hangryeolHanjaPicker" style="display:none;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.2);border-radius:8px;padding:8px;margin-bottom:4px"></div>
+          <div style="font-size:10px;color:var(--text2);margin-top:6px;line-height:1.7">💡 <strong style="color:#e85a4f">항렬자는 가문마다 정해진 정확한 한자</strong>를 사용해야 합니다. 같은 "준"이어도 俊·浚·駿·埈... 가문마다 다르니 부모님께 확인하세요. 한글 1자 입력 → 후보 한자 클릭. 한자 키보드로 직접 입력해도 OK. 항렬을 안 쓰는 가문이면 비워두세요.</div>
+          <div id="hangryeolWarning" style="display:none;font-size:10px;color:#e85a4f;margin-top:4px;padding:6px 8px;background:rgba(232,90,79,.08);border-radius:6px"></div>
+        </div>
+      </div>
+
+      <button class="action-btn red" onclick="analyzeNaming()">名 작명 받기</button>
     </div>
+    <div class="fortune-result" id="namingResult"></div>
   </div>
 
   <!-- ===== 운세 채팅 ===== -->
@@ -730,8 +988,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <button class="bnav" data-tab="tarot"><span class="bi">✦</span><span class="bl">타로</span></button>
   <button class="bnav" data-tab="saju"><span class="bi">卦</span><span class="bl">사주</span></button>
   <button class="bnav" data-tab="dream"><span class="bi">🌙</span><span class="bl">꿈</span></button>
+  <button class="bnav new" data-tab="naming"><span class="bi">名</span><span class="bl">작명</span></button>
   <button class="bnav" data-tab="chat"><span class="bi">💬</span><span class="bl">채팅</span></button>
-  <button class="bnav new" data-tab="match"><span class="bi">💫</span><span class="bl">매칭</span></button>
 </div>
 
 <script>
@@ -758,30 +1016,81 @@ const MSGS=[
 const COLORS=['빨강','파랑','금색','초록','보라','흰색','분홍','주황','남색','은색','하늘색'];
 const DIRS=['동쪽','서쪽','남쪽','북쪽','동남쪽','서북쪽','동북쪽','남서쪽'];
 
-const TAROT=[
-{n:'바보',e:'🃏',m:'새로운 시작과 무한한 가능성이 열립니다. 두려움 없이 첫 걸음을 내딛으세요.'},
-{n:'마법사',e:'🧙',m:'원하는 것을 현실로 만들 힘이 있습니다. 집중과 의지로 목표를 이루세요.'},
-{n:'여사제',e:'🌙',m:'직관과 내면의 지혜를 믿으세요. 숨겨진 진실이 곧 드러납니다.'},
-{n:'여황제',e:'👑',m:'풍요와 성장의 시기. 사랑과 아름다움이 당신을 감쌉니다.'},
-{n:'황제',e:'🏛️',m:'리더십과 안정의 기운. 체계적인 계획이 성공을 가져옵니다.'},
-{n:'교황',e:'📿',m:'지혜로운 조언자가 나타납니다. 전통 속에서 해답을 찾으세요.'},
-{n:'연인',e:'💕',m:'중요한 선택의 순간. 마음이 이끄는 방향을 따르세요.'},
-{n:'전차',e:'⚡',m:'강한 의지와 결단력으로 승리의 기운이 함께합니다.'},
-{n:'힘',e:'🦁',m:'내면의 강인함이 시련을 극복합니다. 인내와 용기의 시기.'},
-{n:'은둔자',e:'🏔️',m:'멈추어 내면을 돌아보세요. 고요한 성찰이 깨달음을 줍니다.'},
-{n:'운명의 수레바퀴',e:'☸️',m:'운명의 전환점. 변화를 두려워하지 마세요.'},
-{n:'정의',e:'⚖️',m:'공정함과 균형이 중요합니다. 올바른 판단이 좋은 결과를 만듭니다.'},
-{n:'매달린 사람',e:'🔮',m:'새로운 관점이 필요합니다. 다른 각도에서 바라보세요.'},
-{n:'죽음',e:'🌑',m:'끝남은 곧 새로운 시작. 과거를 놓아주면 아름다운 것이 옵니다.'},
-{n:'절제',e:'🌊',m:'균형과 조화. 인내심을 갖고 천천히 나아가세요.'},
-{n:'악마',e:'🔥',m:'집착에서 벗어나세요. 진정한 자유는 내면의 두려움을 마주할 때 옵니다.'},
-{n:'탑',e:'💥',m:'예상 못한 변화가 더 단단한 기반을 만듭니다.'},
-{n:'별',e:'⭐',m:'희망과 영감의 빛. 꿈을 향해 나아가세요.'},
-{n:'달',e:'🌕',m:'불확실 속에서도 직감을 믿으세요. 보이지 않는 것이 드러납니다.'},
-{n:'태양',e:'☀️',m:'밝은 에너지와 성공의 기운이 가득합니다.'},
-{n:'심판',e:'🔔',m:'과거 노력이 결실을 맺습니다. 새로운 장이 열립니다.'},
-{n:'세계',e:'🌍',m:'완성과 성취. 더 넓은 세계가 기다리고 있습니다.'}
+// ── 타로 카테고리 (질문 유형) ──
+const TAROT_CATEGORIES = [
+  {k:'love',n:'사랑·연애',e:'💕'},
+  {k:'work',n:'일·커리어',e:'💼'},
+  {k:'money',n:'재물·돈',e:'💰'},
+  {k:'health',n:'건강',e:'⚕️'},
+  {k:'general',n:'전반적 운',e:'✨'},
+  {k:'free',n:'자유 질문',e:'🔮'}
 ];
+
+// ── 메이저 아르카나 22장 — 정·역방향 키워드 ──
+const TAROT_MAJOR = [
+  {n:'바보',e:'🃏',a:'The Fool',up:'시작·자유·순수·모험',rev:'무모함·경솔·미숙'},
+  {n:'마법사',e:'🧙',a:'The Magician',up:'의지·창조·재능·집중',rev:'사기·재능 낭비·과시'},
+  {n:'여사제',e:'🌙',a:'The High Priestess',up:'직관·신비·내면 지혜',rev:'비밀·직관 무시·혼란'},
+  {n:'여황제',e:'👑',a:'The Empress',up:'풍요·모성·창조·자연',rev:'의존·과보호·정체'},
+  {n:'황제',e:'🏛️',a:'The Emperor',up:'권위·구조·안정·리더십',rev:'독재·완고·통제 상실'},
+  {n:'교황',e:'📿',a:'The Hierophant',up:'전통·교육·신앙·관습',rev:'반항·고정관념 깨기'},
+  {n:'연인',e:'💕',a:'The Lovers',up:'사랑·조화·선택·결합',rev:'갈등·불균형·잘못된 선택'},
+  {n:'전차',e:'⚡',a:'The Chariot',up:'의지·승리·통제·전진',rev:'방향 상실·자제력 결여'},
+  {n:'힘',e:'🦁',a:'Strength',up:'용기·인내·내면의 힘',rev:'의심·약함·분노'},
+  {n:'은둔자',e:'🏔️',a:'The Hermit',up:'성찰·고독·지혜·탐구',rev:'고립·외로움·도피'},
+  {n:'운명의 수레바퀴',e:'☸️',a:'Wheel of Fortune',up:'변화·순환·운명·기회',rev:'불운·정체·악순환'},
+  {n:'정의',e:'⚖️',a:'Justice',up:'공정·진실·균형·인과',rev:'불공정·편견·책임 회피'},
+  {n:'매달린 사람',e:'🪢',a:'The Hanged Man',up:'희생·관점 전환·기다림',rev:'정체·저항·헛수고'},
+  {n:'죽음',e:'🌑',a:'Death',up:'변형·끝·재생·해방',rev:'변화 거부·정체'},
+  {n:'절제',e:'🌊',a:'Temperance',up:'균형·조화·중용·인내',rev:'극단·불균형·조급함'},
+  {n:'악마',e:'😈',a:'The Devil',up:'집착·유혹·속박·물질',rev:'해방·각성·집착 탈출'},
+  {n:'탑',e:'💥',a:'The Tower',up:'격변·붕괴·각성·진실',rev:'변화 회피·점진적 변화'},
+  {n:'별',e:'⭐',a:'The Star',up:'희망·영감·평화·치유',rev:'절망·신뢰 상실·환멸'},
+  {n:'달',e:'🌕',a:'The Moon',up:'직관·환상·무의식·두려움',rev:'진실 드러남·환상 탈출'},
+  {n:'태양',e:'☀️',a:'The Sun',up:'기쁨·성공·활력·명료',rev:'우울·일시 좌절·과신'},
+  {n:'심판',e:'🔔',a:'Judgement',up:'부활·각성·평가·새 출발',rev:'자기 의심·과거 집착'},
+  {n:'세계',e:'🌍',a:'The World',up:'완성·성취·통합·여행',rev:'미완성·정체·고난'}
+];
+
+// ── 마이너 아르카나 56장 — 4 수트 × (1-10 + 시종·기사·여왕·왕) ──
+const TAROT_SUITS = [
+  {k:'wands',n:'완드',e:'🔥',th:'열정·창조·행동·영감'},
+  {k:'cups',n:'컵',e:'💧',th:'감정·관계·직관·사랑'},
+  {k:'swords',n:'소드',e:'⚔️',th:'사고·갈등·의지·진리'},
+  {k:'pentacles',n:'펜타클',e:'💰',th:'물질·돈·일·풍요'}
+];
+const TAROT_COURT = ['시종','기사','여왕','왕'];
+const TAROT_MINOR = (()=>{
+  const arr=[];
+  TAROT_SUITS.forEach(s=>{
+    for(let i=1;i<=10;i++) arr.push({n:`${s.n} ${i===1?'에이스':i}`,e:s.e,suit:s.k,suitName:s.n,rank:i,theme:s.th,kind:'minor'});
+    TAROT_COURT.forEach((c,i)=>arr.push({n:`${s.n} ${c}`,e:s.e,suit:s.k,suitName:s.n,rank:11+i,theme:s.th,kind:'court',court:c}));
+  });
+  return arr;
+})();
+
+// 78장 풀덱 — 프리미엄 켈틱크로스용
+const TAROT_DECK = [
+  ...TAROT_MAJOR.map(c=>({...c,kind:'major'})),
+  ...TAROT_MINOR
+];
+
+// 켈틱 크로스 10장 스프레드 위치
+const CELTIC_POS = [
+  {k:1,n:'현재 상황',d:'질문자가 처한 핵심 상황'},
+  {k:2,n:'장애·교차',d:'도전·방해 요소 (양면적 역할)'},
+  {k:3,n:'기반·뿌리',d:'무의식·기반에 자리한 것'},
+  {k:4,n:'과거',d:'최근 지나간 영향'},
+  {k:5,n:'왕관·의식',d:'의식적 목표·이상'},
+  {k:6,n:'가까운 미래',d:'곧 다가올 흐름'},
+  {k:7,n:'자신',d:'질문자 자신의 태도·관점'},
+  {k:8,n:'환경',d:'주변 사람·환경의 영향'},
+  {k:9,n:'희망과 두려움',d:'내면의 기대와 두려움'},
+  {k:10,n:'최종 결과',d:'이대로 흘러간다면 이끄는 곳'}
+];
+
+// 기존 코드 호환 — TAROT 별칭 (startTarot 등 기존 함수가 사용)
+const TAROT = TAROT_MAJOR;
 
 const HS=['갑','을','병','정','무','기','경','신','임','계'];
 const EB=['자','축','인','묘','진','사','오','미','신','유','술','해'];
@@ -1058,6 +1367,190 @@ function calcSipsung(dayStem,otherStem){
   return '';
 }
 
+// ============================================================
+//  작명(姓名學) 도메인 — 수리 81수 + 발음오행 + 사격
+// ============================================================
+
+// 수리 81수 길흉 (대표 자료 통합 표준 — 각 1획~81획)
+// grade: 'great'(대길) / 'good'(길) / 'half'(반길반흉) / 'bad'(흉)
+const SUR_81 = {
+  1:{grade:'great',k:'태초(太初)',m:'시작과 대성의 수. 만물의 시작'},
+  2:{grade:'bad',k:'분리(分離)',m:'고립과 분산. 협조 어려움'},
+  3:{grade:'great',k:'천지(天地)',m:'천지 음양의 조화. 큰 성취'},
+  4:{grade:'bad',k:'파괴(破壞)',m:'파괴와 비애. 노력 결실 어려움'},
+  5:{grade:'great',k:'복덕(福德)',m:'음양 화합. 복록과 영달'},
+  6:{grade:'great',k:'천덕(天德)',m:'하늘의 덕. 만사형통'},
+  7:{grade:'good',k:'강건(剛健)',m:'독립과 굳건한 의지. 발전'},
+  8:{grade:'good',k:'건전(健全)',m:'노력으로 성공. 진취 발전'},
+  9:{grade:'bad',k:'궁박(窮迫)',m:'재주 있으나 운이 따르지 않음'},
+  10:{grade:'bad',k:'공허(空虛)',m:'허무 좌절. 시련'},
+  11:{grade:'great',k:'신생(新生)',m:'재기와 신생. 안정 성공'},
+  12:{grade:'bad',k:'박약(薄弱)',m:'박약과 좌절. 의지 약함'},
+  13:{grade:'great',k:'지모(智謀)',m:'지혜와 모략. 지도자 자질'},
+  14:{grade:'bad',k:'이산(離散)',m:'이별과 고독. 가족 인연 약함'},
+  15:{grade:'great',k:'복수(福壽)',m:'복록과 장수. 만인의 존경'},
+  16:{grade:'great',k:'덕망(德望)',m:'덕망 높음. 지도자운'},
+  17:{grade:'good',k:'건창(建暢)',m:'개척과 발전. 의지 강건'},
+  18:{grade:'good',k:'현영(顯榮)',m:'현달 영화. 권위 명예'},
+  19:{grade:'bad',k:'고난(苦難)',m:'재주는 있으나 풍파 많음'},
+  20:{grade:'bad',k:'공망(空亡)',m:'공허와 허무. 좌절'},
+  21:{grade:'great',k:'두령(頭領)',m:'우두머리 운. 지도자'},
+  22:{grade:'bad',k:'중절(中折)',m:'중도 좌절. 결실 어려움'},
+  23:{grade:'great',k:'장려(壯麗)',m:'대업 성취. 영광'},
+  24:{grade:'great',k:'입신(立身)',m:'자수성가. 부귀 영달'},
+  25:{grade:'good',k:'영민(英敏)',m:'영민 재능. 성공'},
+  26:{grade:'half',k:'영웅(英雄)',m:'반길반흉. 영웅과 풍파'},
+  27:{grade:'half',k:'대지(大志)',m:'반길반흉. 큰 뜻이나 좌절'},
+  28:{grade:'bad',k:'파란(波亂)',m:'파란만장. 풍파 많음'},
+  29:{grade:'good',k:'지모(智謀)',m:'지모 출중. 발전'},
+  30:{grade:'half',k:'부몽(浮夢)',m:'반길반흉. 부귀와 부침'},
+  31:{grade:'great',k:'지용(智勇)',m:'지혜와 용기. 큰 성취'},
+  32:{grade:'good',k:'요행(僥倖)',m:'행운과 도움. 발전'},
+  33:{grade:'great',k:'융창(隆昌)',m:'융성 창달. 큰 부귀'},
+  34:{grade:'bad',k:'파멸(破滅)',m:'파멸과 패망'},
+  35:{grade:'great',k:'태평(太平)',m:'평화와 안락. 학문 예술'},
+  36:{grade:'half',k:'영웅(英雄)',m:'반길반흉. 의기 있으나 풍파'},
+  37:{grade:'great',k:'출세(出世)',m:'출세와 명망'},
+  38:{grade:'good',k:'기예(技藝)',m:'예술 기예. 명망'},
+  39:{grade:'great',k:'부영(富榮)',m:'부귀 영화. 권위'},
+  40:{grade:'half',k:'근신(謹愼)',m:'반길반흉. 신중 필요'},
+  41:{grade:'great',k:'유덕(有德)',m:'덕망 명망. 대성'},
+  42:{grade:'half',k:'고행(苦行)',m:'반길반흉. 노력 필요'},
+  43:{grade:'half',k:'박약(薄弱)',m:'반길반흉. 의지 박약'},
+  44:{grade:'bad',k:'마장(魔障)',m:'마장 많음. 풍파'},
+  45:{grade:'great',k:'대지(大智)',m:'큰 지혜. 통달'},
+  46:{grade:'bad',k:'비애(悲哀)',m:'비애와 좌절'},
+  47:{grade:'great',k:'출세(出世)',m:'영달과 출세'},
+  48:{grade:'great',k:'유덕(有德)',m:'덕망과 명망'},
+  49:{grade:'half',k:'길흉(吉凶)',m:'반길반흉. 변화 많음'},
+  50:{grade:'half',k:'길흉(吉凶)',m:'반길반흉. 부침'},
+  51:{grade:'half',k:'성쇠(盛衰)',m:'반길반흉. 부침 반복'},
+  52:{grade:'great',k:'선견(先見)',m:'선견지명. 큰 발전'},
+  53:{grade:'half',k:'내우(內憂)',m:'반길반흉. 안팎 우환'},
+  54:{grade:'bad',k:'대패(大敗)',m:'대패와 좌절'},
+  55:{grade:'bad',k:'대진(大進)',m:'대진이나 안 풀림'},
+  56:{grade:'bad',k:'박약(薄弱)',m:'박약과 좌절'},
+  57:{grade:'good',k:'노력(努力)',m:'노력으로 성공'},
+  58:{grade:'half',k:'곤란(困難)',m:'반길반흉. 시련 후 성공'},
+  59:{grade:'bad',k:'실패(失敗)',m:'실패와 좌절'},
+  60:{grade:'bad',k:'동요(動搖)',m:'동요와 불안'},
+  61:{grade:'great',k:'영화(榮華)',m:'영화 부귀. 명망'},
+  62:{grade:'bad',k:'고독(孤獨)',m:'고독과 분리'},
+  63:{grade:'great',k:'길상(吉祥)',m:'길상 형통. 발전'},
+  64:{grade:'bad',k:'침체(沈滯)',m:'침체와 좌절'},
+  65:{grade:'great',k:'번영(繁榮)',m:'번영과 융창'},
+  66:{grade:'bad',k:'역난(逆難)',m:'역경과 곤란'},
+  67:{grade:'great',k:'형통(亨通)',m:'만사형통. 큰 발전'},
+  68:{grade:'good',k:'지략(智略)',m:'지략 출중. 대업'},
+  69:{grade:'bad',k:'정지(停止)',m:'정체와 침체'},
+  70:{grade:'bad',k:'황무(荒蕪)',m:'황폐와 좌절'},
+  71:{grade:'good',k:'모략(謀略)',m:'지략과 발전'},
+  72:{grade:'half',k:'비애(悲哀)',m:'반길반흉. 길흉 교차'},
+  73:{grade:'half',k:'지고(志高)',m:'반길반흉. 뜻은 높으나'},
+  74:{grade:'half',k:'비밀(秘密)',m:'반길반흉. 노출 주의'},
+  75:{grade:'half',k:'퇴수(退守)',m:'반길반흉. 수성이 길'},
+  76:{grade:'bad',k:'전동(轉動)',m:'전변 동요'},
+  77:{grade:'half',k:'반길(半吉)',m:'반길반흉. 길흉 교차'},
+  78:{grade:'half',k:'평길(平吉)',m:'반길반흉. 평이'},
+  79:{grade:'bad',k:'돈좌(頓挫)',m:'좌절과 침체'},
+  80:{grade:'bad',k:'은둔(隱遁)',m:'은둔과 침체'},
+  81:{grade:'great',k:'환원(還元)',m:'대성 환원. 1과 같이 시작'}
+};
+
+// 한글 초성 → 발음 오행 (소리오행·음령오행)
+// 木: ㄱㅋㄲ / 火: ㄴㄷㄹㅌㄸ / 土: ㅇㅎ / 金: ㅅㅈㅊㅆㅉ / 水: ㅁㅂㅍㅃ
+const SOUND_EL = {
+  'ㄱ':0,'ㅋ':0,'ㄲ':0,
+  'ㄴ':1,'ㄷ':1,'ㄹ':1,'ㅌ':1,'ㄸ':1,
+  'ㅇ':2,'ㅎ':2,
+  'ㅅ':3,'ㅈ':3,'ㅊ':3,'ㅆ':3,'ㅉ':3,
+  'ㅁ':4,'ㅂ':4,'ㅍ':4,'ㅃ':4
+};
+
+/**
+ * 한글 글자에서 초성 추출 → 발음 오행 인덱스 (0=목, 1=화, 2=토, 3=금, 4=수)
+ */
+function getSoundElement(char){
+  if(!char||typeof char!=='string')return -1;
+  const code=char.charCodeAt(0)-44032; // 한글 시작
+  if(code<0||code>=11172)return -1;
+  const choseong=Math.floor(code/588);
+  const consonants=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const c=consonants[choseong];
+  return SOUND_EL[c]!=null?SOUND_EL[c]:-1;
+}
+
+/**
+ * 한자 작명 사격(오격) 계산
+ * @param {Array<number>} surnameStrokes 성씨 획수 [획수, ...] (1자 또는 2자 복성)
+ * @param {Array<number>} firstNameStrokes 이름 획수 [획수, ...]
+ * @returns {Object} {cheon, in, ji, oe, chong} 5격
+ */
+function calcFiveGyeok(surnameStrokes, firstNameStrokes){
+  const sn=surnameStrokes||[];
+  const fn=firstNameStrokes||[];
+  const snSum=sn.reduce((a,b)=>a+b,0);
+  const fnSum=fn.reduce((a,b)=>a+b,0);
+
+  // 천격(天格) — 성씨 합 + 1 (외자성 보정)
+  const cheon = sn.length===1 ? snSum+1 : snSum;
+
+  // 인격(人格) — 성씨 끝 + 이름 첫
+  const inGyeok = (sn[sn.length-1]||0) + (fn[0]||0);
+
+  // 지격(地格) — 이름 합 (이름이 1자면 +1 보정)
+  const ji = fn.length===1 ? fnSum+1 : fnSum;
+
+  // 외격(外格) — 천격 + 이름 끝 - 인격 (또는 성씨 첫 + 이름 끝)
+  // 단순 공식: 총격 - 인격
+  const total = snSum + fnSum;
+  const oe = total - inGyeok + (fn.length===1?1:0);
+
+  // 총격(總格) — 전체 합
+  return {cheon, in:inGyeok, ji, oe:oe>0?oe:1, chong:total};
+}
+
+/**
+ * 사격을 81수에 매핑해 길흉 평가
+ */
+function evaluateFiveGyeok(gyeok){
+  const result={};
+  for(const [k,v] of Object.entries(gyeok)){
+    const idx=((v-1)%81)+1; // 81 초과 시 mod
+    const info=SUR_81[idx]||{grade:'half',k:'?',m:'?'};
+    result[k]={value:v,idx,grade:info.grade,keyword:info.k,meaning:info.m};
+  }
+  return result;
+}
+
+/**
+ * 발음 오행 배치 검증
+ * @param {string} fullName 성+이름 (예: "김재환")
+ * @returns {Object} {elements:[2,3,2], pattern:"토금토", valid:true, comment:"..."}
+ */
+function checkSoundElPattern(fullName){
+  const elements=[];
+  const elNames=['목','화','토','금','수'];
+  for(const ch of fullName){
+    const e=getSoundElement(ch);
+    if(e>=0)elements.push(e);
+  }
+  const pattern=elements.map(i=>elNames[i]).join('');
+  // 좋은 배치: 상생(목→화→토→금→수→목) 흐름
+  // 나쁜 배치: 상극(목→토, 토→수, 수→화, 화→금, 금→목)
+  let valid=true;
+  let conflictCount=0;
+  for(let i=0;i<elements.length-1;i++){
+    const a=elements[i],b=elements[i+1];
+    if((a+2)%5===b||(b+2)%5===a)conflictCount++; // 상극
+  }
+  if(conflictCount>=elements.length-1)valid=false;
+  return {elements,pattern,valid,conflictCount,
+    comment:conflictCount===0?'발음 오행이 모두 상생 — 매우 길함':
+            conflictCount===1?'발음 오행 1개 상극 — 무난':
+            '발음 오행 상극 많음 — 보완 필요'};
+}
+
 // DREAM data
 // 14대 분류 (주공해몽서 기반)
 const DREAM_CATEGORIES=[
@@ -1110,24 +1603,6 @@ const DREAM_KEYS=[
 {k:'바다',e:'🌊',good:true,msg:'바다 꿈은 무한한 가능성과 풍요의 상징. 잔잔한 바다는 평화를, 큰 파도는 도전과 성장을 의미합니다.',num:[6,21,30,37]}
 ];
 
-// TALISMAN data
-const TALISMAN_SYMBOLS=['福','壽','財','愛','運','吉','德','慧','安','樂'];
-const TALISMAN_BLESSINGS=[
-'천지신명이 당신의 앞길을 밝게 비추리라. 오늘 하루 모든 일이 순조롭게 풀리리니.',
-'사방에서 좋은 기운이 모여듭니다. 만나는 사람마다 복을 가져다 줄 것이니.',
-'재물의 기운이 동서남북에서 모여옵니다. 오늘은 금전적 행운이 따르는 날.',
-'사랑의 기운이 강하게 흐릅니다. 소중한 인연이 더욱 깊어지리니.',
-'하늘이 내린 운이 크게 열립니다. 원하는 바를 이루는 날이 되리니.',
-'모든 재앙이 물러가고 길한 기운만 남습니다. 평온한 하루가 되리라.',
-];
-const TALISMAN_MANTRAS=[
-'옴 마니 반메 훔 — 모든 장애를 물리치는 주문',
-'나무아미타불 — 무한한 빛과 수명의 축복',
-'수리수리 마하수리 — 만사형통의 주문',
-'천부경 귀신기도 — 하늘의 보호를 받는 주문',
-'관세음보살 — 자비와 평안의 축복',
-];
-
 // CHAT data
 const CHAT_GREET='안녕하세요, 저는 천운의 점술가 **선녀**입니다. 🔮\n\n당신의 운명과 미래에 대해 물어보세요. 생년월일, 고민, 궁금한 점 무엇이든 좋습니다.';
 const CHAT_SUGGEST=['오늘 운세가 궁금해요','연애운이 알고 싶어요','이직해도 될까요?','올해 재물운은 어때요?','건강 조심할 게 있나요?'];
@@ -1161,7 +1636,7 @@ function init(){
   renderPalmUI();
   renderFaceUI();
   renderDreamUI();
-  renderTalisman();
+  renderNamingUI();
   initChat();
   initTjYearSelect();
   setupTabs();
@@ -1209,8 +1684,45 @@ function resetDaily(){document.getElementById('dailyResult').classList.remove('s
 // ============================================================
 //  2. TAROT
 // ============================================================
-let tarotSt={rev:0,cards:[]};
-function renderTarot(){const s=document.getElementById('tarotSpread');s.innerHTML='';for(let i=0;i<3;i++){const c=document.createElement('div');c.className='tarot-card glow';c.id=`tc-${i}`;c.innerHTML=`<div class="tarot-card-face tarot-back"></div><div class="tarot-card-face tarot-front"><div class="t-emoji"></div><div class="t-name"></div></div>`;s.appendChild(c)}}
+let tarotSt={rev:0,cards:[],category:'general',question:''};
+
+// 카테고리 칩 초기화
+function _initTarotChips(){
+  const w=document.getElementById('tarotCategoryChips');
+  if(!w||w.dataset.rendered)return;
+  TAROT_CATEGORIES.forEach((c,i)=>{
+    const ch=document.createElement('span');
+    ch.className='dream-tag'+(i===4?' selected':'');
+    ch.dataset.kind='tcat';ch.dataset.k=c.k;
+    ch.textContent=`${c.e} ${c.n}`;
+    ch.onclick=()=>{w.querySelectorAll('.dream-tag').forEach(x=>x.classList.remove('selected'));ch.classList.add('selected');tarotSt.category=c.k};
+    w.appendChild(ch);
+  });
+  w.dataset.rendered='1';
+  tarotSt.category='general';
+}
+
+// 사주 정보 입력 토글
+function toggleTarotSaju(){
+  const f=document.getElementById('tarotSajuFields');
+  const btn=document.getElementById('tarotSajuToggle');
+  if(!f||!btn)return;
+  if(f.style.display==='none'){
+    f.style.display='block';btn.textContent='− 사주 정보 닫기';btn.style.color='var(--gold)';btn.style.borderColor='var(--gold)';
+  } else {
+    f.style.display='none';btn.textContent='+ 사주 정보 입력';btn.style.color='var(--text2)';btn.style.borderColor='var(--border)';
+  }
+}
+
+// 타로 달력 토글 (양/음력)
+function setTarotCal(type){
+  document.getElementById('tarotCalType').value=type;
+  const sBtn=document.getElementById('tarotCalSolar'),lBtn=document.getElementById('tarotCalLunar');
+  if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
+  else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+}
+
+function renderTarot(){_initTarotChips();const s=document.getElementById('tarotSpread');s.innerHTML='';for(let i=0;i<3;i++){const c=document.createElement('div');c.className='tarot-card glow';c.id=`tc-${i}`;c.innerHTML=`<div class="tarot-card-face tarot-back"></div><div class="tarot-card-face tarot-front"><div class="t-emoji"></div><div class="t-name"></div></div>`;s.appendChild(c)}}
 function startTarot(){const sh=[...TAROT].sort(()=>Math.random()-.5);tarotSt.cards=sh.slice(0,3);tarotSt.rev=0;tarotSt.cards.forEach((c,i)=>{const el=document.getElementById(`tc-${i}`);el.querySelector('.t-emoji').textContent=c.e;el.querySelector('.t-name').textContent=c.n;el.classList.remove('flipped','glow');el.onclick=()=>revealTarot(i)});document.getElementById('tarotBtn').style.display='none';document.getElementById('tarotStatus').textContent='카드를 터치하여 뒤집으세요';document.getElementById('tarotReading').style.display='none';document.getElementById('tarotReset').style.display='none'}
 function revealTarot(i){const el=document.getElementById(`tc-${i}`);if(el.classList.contains('flipped'))return;el.classList.add('flipped');el.classList.remove('glow');tarotSt.rev++;document.getElementById('tarotStatus').textContent=tarotSt.rev<3?`${tarotSt.rev}/3 오픈`:'모든 카드 오픈!';if(tarotSt.rev===3)setTimeout(showTarotReading,800)}
 function showTarotReading(){const pos=['과거','현재','미래'];const r=document.getElementById('tarotReading');let h='<div class="card pulse-card"><div class="card-title">✧ 타로 해석</div>';tarotSt.cards.forEach((c,i)=>{h+=`<div style="padding:14px;background:rgba(201,165,78,.05);border-radius:12px;margin-bottom:12px"><div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:6px">${pos[i]} — ${c.e} ${c.n}</div><div style="font-size:13px;line-height:1.7">${c.m}</div></div>`});h+=`<div class="reading" style="margin-top:14px">세 카드의 메시지: 과거의 경험이 현재의 지혜가 되고, 그 지혜가 미래의 문을 열 것입니다.</div><div class="share-wrap"><button class="share-btn" onclick="shareResult('tarot')">📤 결과 공유하기</button></div></div>`;r.innerHTML=h;r.style.display='block';document.getElementById('tarotReset').style.display='block';burstConfetti();r.scrollIntoView({behavior:'smooth',block:'start'})}
@@ -6559,16 +7071,1367 @@ function renderDreamPremium(prem,info){
 }
 
 // ============================================================
-//  9. TALISMAN
+//  9. NAMING (작명)
 // ============================================================
-function renderTalisman(){
-  const rng=sRng(todaySeed());
-  const sym=TALISMAN_SYMBOLS[Math.floor(rng()*TALISMAN_SYMBOLS.length)];
-  const blessing=TALISMAN_BLESSINGS[Math.floor(rng()*TALISMAN_BLESSINGS.length)];
-  const mantra=TALISMAN_MANTRAS[Math.floor(rng()*TALISMAN_MANTRAS.length)];
-  document.getElementById('talismanContent').innerHTML=`
-  <div class="talisman-card"><div class="talisman-border"></div><div class="talisman-symbol">${sym}</div><div class="talisman-text">${blessing}</div><div class="talisman-stamp">印</div></div>
-  <div style="text-align:center;margin-top:20px;padding:16px;background:rgba(201,165,78,.05);border-radius:12px"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">오늘의 주문</div><div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;line-height:1.8">${mantra}</div><div style="font-size:11px;color:var(--text2);margin-top:8px">마음속으로 세 번 반복하면 효과가 있습니다</div></div>`;
+// 자주 쓰이는 한국 항렬자 한자 (datalist 자동 후보 — 가문마다 다르니 사용자가 정확한 한자 직접 선택)
+// 한글 음절 → 한자 후보 (작명에서 자주 쓰이는 한자만 선별)
+// 사용자가 한글 키보드로 입력 시 클릭 가능한 한자 픽커를 띄우기 위한 사전
+const HANJA_BY_KOREAN = {
+  '가':'佳家加嘉歌可賈架','각':'珏覺刻角','간':'簡幹看','갑':'甲','강':'康強江剛綱姜岡崗',
+  '개':'介開凱愷','건':'建健乾鍵巾','걸':'傑杰','경':'京景慶敬炅暻璟瓊鏡經卿庚境',
+  '계':'桂啓季溪繼','고':'高古固考','곤':'坤崑昆鯤','공':'公功孔貢供','관':'寬冠官管觀',
+  '광':'光廣','교':'敎喬橋','구':'求究具九玖鳩','국':'國菊鞠','군':'君軍郡',
+  '권':'權勸','규':'圭奎珪揆規硅','균':'均鈞畇','근':'根勤近槿瑾謹芹','금':'金錦琴',
+  '기':'基奇紀起箕琪琦淇杞','길':'吉桔',
+  '나':'娜那奈','난':'蘭爛','남':'南楠男','내':'乃內奈','녀':'女','노':'魯蘆','녹':'祿綠',
+  '다':'多茶','단':'丹端壇旦檀','달':'達撻','담':'潭談淡澹','당':'堂塘','대':'大代垈坮對',
+  '덕':'德悳','도':'道度都導燾稻島桃陶','독':'篤獨','돈':'敦頓暾','동':'東動童棟銅桐冬',
+  '두':'斗杜豆','등':'登燈',
+  '란':'蘭瀾欄','람':'藍嵐','래':'來萊','량':'良亮樑梁','려':'呂麗','력':'力歷',
+  '련':'蓮連聯練憐璉','렬':'烈','령':'令鈴嶺玲怜伶','례':'禮','로':'路魯','록':'祿綠錄鹿',
+  '룡':'龍','루':'樓累','류':'柳流劉留琉','륜':'倫崙輪','률':'律栗','름':'凜','릉':'陵',
+  '리':'利理李履梨裡','림':'林霖琳臨','립':'立笠',
+  '마':'馬麻摩','만':'萬滿曼晩','매':'梅每','맹':'孟猛','면':'勉冕','명':'明命銘鳴茗',
+  '모':'模慕牟茅','목':'木牧穆睦','묘':'妙苗','무':'武茂無戊舞','문':'文門汶問聞',
+  '미':'美味未微薇彌','민':'敏旻珉玟旼閔民',
+  '박':'博朴拍','반':'班潘磻','발':'發拔','방':'方芳房邦昉','배':'培裵',
+  '백':'白百伯佰栢','범':'範凡犯帆','법':'法','벽':'璧碧壁辟','변':'卞邊辨','별':'別瞥',
+  '병':'丙秉炳柄昞昺','보':'寶保普甫輔報','복':'福伏腹','본':'本','봉':'奉峰鳳逢俸',
+  '부':'富府傅扶埠','분':'紛芬','불':'不弗','붕':'鵬朋','비':'妃飛備非',
+  '빈':'彬斌賓濱','빙':'氷聘',
+  '사':'思詞司史沙寺査','산':'山産','삼':'三森參','상':'尚常商上想相賞祥湘瑺翔尙',
+  '새':'璽塞','색':'色','생':'生','서':'瑞書西序徐舒緖','석':'錫奭釋石碩晳碩',
+  '선':'善宣璇仙鮮先繕琁璿','설':'雪薛說','섭':'燮涉攝','성':'成聖晟誠星城省盛',
+  '세':'世洗歲','소':'小素邵昭蘇','속':'續束','손':'孫巽','송':'松宋頌訟','쇄':'刷',
+  '수':'秀洙銖修守壽須水樹輸隋','숙':'淑潚熟宿','순':'淳順舜純珣詢','술':'述術',
+  '승':'承勝昇升丞乘','시':'時始示侍視','식':'植湜植識','신':'信愼申辛新申神臣',
+  '실':'實室','심':'沈深心審',
+  '아':'雅我兒亞阿娥','악':'樂岳','안':'安岸雁','암':'巖庵岩','애':'愛涯哀','앙':'仰昻',
+  '야':'野夜也耶','약':'若藥躍','양':'梁楊揚陽養洋亮','억':'億憶','언':'彦言焉','엄':'嚴',
+  '여':'呂余汝予','역':'易役亦','연':'蓮然延燕連軟緣妍硯','열':'悅烈','염':'廉炎艶',
+  '엽':'葉燁','영':'英榮永詠暎映瀛盈','예':'禮藝銳叡譽豫','오':'五吾梧悟午'
+,
+  '옥':'玉沃鈺','온':'溫穩','완':'完玩浣','요':'堯曜謠搖','용':'龍容用勇庸鎔鏞','우':'宇佑祐禹右雨于',
+  '욱':'旭昱煜郁稶','운':'雲運云','웅':'雄熊','원':'元原源圓遠願院垣','월':'月越鉞',
+  '위':'位偉魏威','유':'柳劉兪由唯維幼裕油','육':'六陸毓','윤':'尹潤胤閏鈗倫','율':'律栗',
+  '은':'恩銀垠隱殷誾','을':'乙','음':'音','의':'義宜儀意醫議','이':'李異伊二利理而',
+  '익':'益翊翼','인':'仁寅印因引隣燐認','일':'一日壹逸鎰','임':'林任壬',
+  '자':'子字紫慈滋姊','작':'作','장':'長章將張藏壯莊蔣','재':'在才材財載哉宰',
+  '적':'積績赤','전':'全田典展殿錢轉','절':'節絶','점':'點漸店','정':'正政禎貞鼎廷程靜晶庭丁鄭',
+  '제':'濟齊提帝','조':'趙曺朝祖兆造','종':'宗鍾終從','주':'宙周朱株主珠洲胄',
+  '준':'俊峻浚駿埈濬焌準遵雋','중':'中重仲衆','지':'智志知至池芝持紙地之',
+  '직':'直職織','진':'振晋珍鎭眞進晉','질':'質秩',
+  '차':'車次此','찬':'燦贊瓚澯璨','채':'蔡采采彩','책':'冊策','천':'千天川泉淺薦',
+  '철':'哲喆澈徹鐵','첨':'瞻','청':'淸晴聽請','체':'體','초':'初草樵礎','총':'總聰寵',
+  '최':'崔最','추':'秋抽追','축':'祝築','춘':'春椿','충':'忠衷沖','치':'致治稚癡',
+  '침':'枕沈',
+  '태':'泰太兌台','택':'澤擇宅','토':'土','통':'通統痛','퇴':'退',
+  '파':'波派','판':'判板','평':'平坪評','폐':'幣弊','포':'浦包抱','풍':'風楓豊',
+  '필':'必弼畢',
+  '하':'河夏賀荷霞','학':'學鶴','한':'漢韓寒翰閑','함':'咸涵','합':'合','항':'恒抗航姮',
+  '해':'海解亥','행':'幸行','향':'香鄕響嚮','허':'許虛','헌':'軒憲獻',
+  '혁':'赫爀','현':'賢炫鉉顯晛玄絃弦現絃','형':'亨炯瑩瀅泂','혜':'惠慧蕙',
+  '호':'昊浩晧皓澔鎬虎豪鎬好湖戶','홍':'洪弘鴻泓','화':'和華花化禾',
+  '확':'確','환':'煥桓奐丸','활':'活','황':'黃晃煌況','회':'會回懷檜',
+  '효':'孝曉','후':'厚后侯','훈':'勳焄薰燻訓','휘':'徽輝煇諱',
+  '흔':'欣昕','흠':'欽欠','흥':'興','희':'熙禧僖姬喜嬉羲'
+};
+
+const COMMON_HANGRYEOL_HANJA = [
+  // 남성 항렬에 자주 쓰이는 한자
+  '俊','峻','浚','駿','埈','濬','焌','準',  // 준
+  '賢','炫','鉉','顯','晛','晛',  // 현
+  '智','志','知','至','地','池',  // 지
+  '成','聖','晟','誠','星','城','省',  // 성
+  '宇','佑','祐','禹','右',  // 우
+  '軒','憲','鉉',  // 헌
+  '珉','旼','玟','旻','閔',  // 민
+  '熙','禧','僖','姬',  // 희
+  '秀','洙','銖',  // 수
+  '哲','喆','澈','徹',  // 철
+  '英','榮','永','永','詠',  // 영
+  '炳','秉','柄','昞',  // 병
+  '昊','浩','晧','皓','澔',  // 호
+  '勳','焄','薰','燻',  // 훈
+  '泰','太','兌',  // 태
+  '東','棟','銅',  // 동
+  '正','政','禎','貞','鼎',  // 정
+  '和','華','花','化',  // 화
+  '平','坪','評',  // 평
+  '南','男','楠',  // 남
+  '中','重','仲','衆',  // 중
+  '錫','奭','釋',  // 석
+  '基','基','奇',  // 기
+  '鎬','浩','晧',  // 호
+  '澤','擇',  // 택
+  '範','範',  // 범
+  '燮','涉','攝',  // 섭
+  '雄','熊',  // 웅
+  '宙','胄','冑',  // 주
+  '建','健','乾',  // 건
+  '源','元','原',  // 원
+  '振','晋','珍','鎭',  // 진
+  '尚','常','商',  // 상
+  '善','宣','璇',  // 선
+  '敏','旻','珉',  // 민
+  // 여성 항렬에 자주 쓰이는 한자
+  '美','嬉','姬','喜',
+  '貞','靜','晶',
+  '淑','潚',
+  '玉','沃','獄',
+  '蘭','瀾','欄',
+  '惠','慧','蕙',
+  '恩','銀','垠',
+  '珠','洲','周',
+  '蓮','連','璉',
+  '芬','汾'
+].filter((v,i,a)=>a.indexOf(v)===i); // 중복 제거
+
+// 한국 성씨 한자 매핑 — 한글 성씨 입력 시 자동 후보 표시 (사용자 한자 입력 불필요)
+const KOREAN_SURNAME_HANJA = {
+  '김':['金'],'이':['李','異','伊'],'박':['朴'],'최':['崔'],'정':['鄭','丁','程'],
+  '강':['姜','康','疆'],'조':['趙','曺'],'윤':['尹'],'장':['張','蔣'],'임':['林','任'],
+  '한':['韓'],'신':['申','辛','愼'],'서':['徐'],'권':['權'],'황':['黃'],
+  '안':['安'],'송':['宋'],'류':['柳'],'유':['劉','兪','柳'],'홍':['洪'],
+  '전':['全','田'],'고':['高'],'문':['文'],'양':['梁','楊'],'손':['孫'],
+  '배':['裵'],'백':['白'],'허':['許'],'노':['盧','魯'],'남':['南'],
+  '심':['沈'],'하':['河'],'곽':['郭'],'성':['成'],'차':['車'],
+  '주':['朱','周'],'우':['禹'],'구':['具'],'민':['閔'],'엄':['嚴'],
+  '원':['元','袁'],'천':['千','天'],'방':['方'],'공':['孔'],'현':['玄'],
+  '함':['咸'],'변':['卞','邊'],'염':['廉'],'여':['呂','余'],'추':['秋'],
+  '도':['都'],'소':['蘇','邵'],'석':['石'],'선':['宣'],'설':['薛'],
+  '마':['馬'],'길':['吉'],'연':['延','燕'],'위':['魏','韋'],'표':['表'],
+  '명':['明'],'기':['奇'],'반':['潘'],'왕':['王'],'금':['琴'],
+  '옥':['玉'],'육':['陸'],'인':['印'],'맹':['孟'],'제':['諸'],
+  '모':['牟'],'남궁':['南宮'],'사공':['司空'],'서문':['西門'],
+  '선우':['鮮于'],'독고':['獨孤'],'황보':['皇甫'],'제갈':['諸葛'],'동방':['東方'],
+  '진':['陳','秦'],'채':['蔡','采'],'탁':['卓'],'국':['鞠'],'어':['魚']
+};
+
+const NAMING_TYPES=[
+  {k:'person',n:'사람 이름',e:'👶',desc:'신생아·개명·본인',price:29900,priceLabel:'₩29,900'},
+  {k:'company',n:'회사명·브랜드',e:'🏢',desc:'창업·법인 작명',price:29900,priceLabel:'₩29,900'},
+  {k:'product',n:'제품명·서비스',e:'📦',desc:'신제품·앱·서비스',price:29900,priceLabel:'₩29,900'},
+  {k:'pet',n:'반려동물',e:'🐾',desc:'강아지·고양이·기타',price:29900,priceLabel:'₩29,900'},
+  {k:'nickname',n:'닉네임·필명',e:'💫',desc:'SNS·작가명',price:29900,priceLabel:'₩29,900'}
+];
+const NAMING_STYLES=[
+  {k:'traditional',n:'전통 한자',desc:'고전적 한자 의미 중심'},
+  {k:'modern',n:'현대 한자',desc:'트렌디한 한자 조합'},
+  {k:'hangul',n:'한글 전용',desc:'한자 미사용 순한글 이름'},
+  {k:'mixed',n:'다양하게',desc:'전통+현대+한글 혼합'}
+];
+const NAMING_LENGTHS=[
+  {k:'2',n:'2자 (성+이름1)'},
+  {k:'3',n:'3자 (성+이름2) — 가장 일반적'},
+  {k:'4',n:'4자 (드물게)'}
+];
+const COMPANY_INDUSTRIES=[
+  {k:'tech',n:'IT·테크',e:'💻'},{k:'food',n:'식품·F&B',e:'🍜'},{k:'fashion',n:'패션·뷰티',e:'👗'},
+  {k:'edu',n:'교육·콘텐츠',e:'📚'},{k:'health',n:'헬스케어·의료',e:'⚕️'},{k:'finance',n:'금융·투자',e:'💰'},
+  {k:'retail',n:'리테일·이커머스',e:'🛍️'},{k:'manufacturing',n:'제조·B2B',e:'🏭'},{k:'service',n:'서비스·플랫폼',e:'🌐'},
+  {k:'culture',n:'문화·예술',e:'🎨'},{k:'realty',n:'부동산·건설',e:'🏗️'},{k:'other',n:'기타',e:'✦'}
+];
+const PET_TYPES=[
+  {k:'dog',n:'강아지',e:'🐶'},{k:'cat',n:'고양이',e:'🐱'},{k:'rabbit',n:'토끼',e:'🐰'},
+  {k:'hamster',n:'햄스터',e:'🐹'},{k:'bird',n:'새',e:'🐦'},{k:'fish',n:'물고기',e:'🐠'},{k:'other',n:'기타',e:'✦'}
+];
+
+function setNamingCal(type){
+  document.getElementById('namingCalType').value=type;
+  const sBtn=document.getElementById('namingCalSolar'),lBtn=document.getElementById('namingCalLunar');
+  if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
+  else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+}
+
+// 한글 음절 → 한자 후보 픽커 (선호 한자용 — 여러 개 누적)
+function showPreferredHanjaPicker(){
+  const koInp=document.getElementById('preferredKoreanInput');
+  const target=document.getElementById('namingPreferred');
+  const picker=document.getElementById('preferredHanjaPicker');
+  if(!koInp||!target||!picker)return;
+  const k=koInp.value.trim();
+  if(!k){picker.style.display='none';return}
+  const hanjaStr=HANJA_BY_KOREAN[k]||'';
+  if(!hanjaStr){
+    picker.style.display='block';
+    picker.innerHTML=`<div style="font-size:11px;color:var(--text2);padding:4px">"${k}" 음절의 한자 데이터가 없어요. 한자 키보드로 직접 입력하거나, 음절을 다른 글자로 바꿔보세요.</div>`;
+    return;
+  }
+  picker.style.display='block';
+  picker.innerHTML=`<div style="font-size:10px;color:var(--text2);margin-bottom:6px">"${k}" 음절 한자 후보 — 클릭해서 추가</div><div style="display:flex;gap:4px;flex-wrap:wrap"></div>`;
+  const wrap=picker.querySelector('div:last-child');
+  for(const h of hanjaStr){
+    const btn=document.createElement('button');
+    btn.type='button';btn.textContent=h;
+    btn.style.cssText='padding:6px 10px;background:rgba(201,165,78,.15);border:1px solid rgba(201,165,78,.4);border-radius:6px;color:var(--gold);font-size:16px;font-weight:600;cursor:pointer;font-family:"Noto Serif KR",serif';
+    btn.addEventListener('mouseover',()=>btn.style.background='rgba(201,165,78,.3)');
+    btn.addEventListener('mouseout',()=>btn.style.background='rgba(201,165,78,.15)');
+    btn.addEventListener('click',()=>{
+      const cur=target.value.trim();
+      // 이미 들어있으면 중복 추가 안 함
+      if(!cur.includes(h)){
+        target.value=cur?`${cur}·${h}`:h;
+      }
+    });
+    wrap.appendChild(btn);
+  }
+}
+
+// 한글 음절 → 한자 후보 픽커 (항렬자용 — 1개만)
+function showHangryeolHanjaPicker(){
+  const koInp=document.getElementById('hangryeolKoreanInput');
+  const target=document.getElementById('namingHangryeolHanja');
+  const picker=document.getElementById('hangryeolHanjaPicker');
+  if(!koInp||!target||!picker)return;
+  const k=koInp.value.trim();
+  if(!k){picker.style.display='none';return}
+  const hanjaStr=HANJA_BY_KOREAN[k]||'';
+  if(!hanjaStr){
+    picker.style.display='block';
+    picker.innerHTML=`<div style="font-size:11px;color:var(--text2);padding:4px">"${k}" 음절의 한자 데이터가 없어요. 한자 키보드로 직접 입력해주세요.</div>`;
+    return;
+  }
+  picker.style.display='block';
+  picker.innerHTML=`<div style="font-size:10px;color:var(--text2);margin-bottom:6px">"${k}" 항렬자 후보 — 가문 정해진 한자를 클릭하세요</div><div style="display:flex;gap:4px;flex-wrap:wrap"></div>`;
+  const wrap=picker.querySelector('div:last-child');
+  for(const h of hanjaStr){
+    const btn=document.createElement('button');
+    btn.type='button';btn.textContent=h;
+    btn.style.cssText='padding:6px 10px;background:rgba(232,90,79,.15);border:1px solid rgba(232,90,79,.4);border-radius:6px;color:#e85a4f;font-size:16px;font-weight:600;cursor:pointer;font-family:"Noto Serif KR",serif';
+    btn.addEventListener('mouseover',()=>btn.style.background='rgba(232,90,79,.3)');
+    btn.addEventListener('mouseout',()=>btn.style.background='rgba(232,90,79,.15)');
+    btn.addEventListener('click',()=>{
+      target.value=h; // 항렬자는 1개만
+      // 한글 경고 클리어
+      const warn=document.getElementById('hangryeolWarning');
+      if(warn)warn.style.display='none';
+    });
+    wrap.appendChild(btn);
+  }
+}
+
+// HH:MM → 12지 시 인덱스 매핑 (자시 0 ~ 해시 11)
+function _hhmmToHourBranch(hhmm){
+  if(!hhmm)return -1;
+  const [h]=hhmm.split(':').map(Number);
+  if(isNaN(h))return -1;
+  return Math.floor((h+1)/2)%12;
+}
+// 시간 입력칸과 12지 select 동기화 (HH:MM 입력 → select 자동 변경)
+function _syncHourFromPicker(pickerId,selectId){
+  const p=document.getElementById(pickerId);
+  const s=document.getElementById(selectId);
+  if(!p||!s)return;
+  const idx=_hhmmToHourBranch(p.value);
+  if(idx<0)return;
+  s.value=String(idx);
+  // 시각 피드백 — 자동 매핑됨 표시
+  const note=document.getElementById(pickerId+'Note');
+  if(note){
+    const labels=['자시','축시','인시','묘시','진시','사시','오시','미시','신시','유시','술시','해시'];
+    const ranges=['23:00~00:59','01:00~02:59','03:00~04:59','05:00~06:59','07:00~08:59','09:00~10:59','11:00~12:59','13:00~14:59','15:00~16:59','17:00~18:59','19:00~20:59','21:00~22:59'];
+    note.style.color='#1a7a4a';
+    note.innerHTML=`✓ ${p.value} → <strong>${labels[idx]}</strong> (${ranges[idx]})로 자동 설정`;
+  }
+}
+
+// 호환성: 기존 호출 지점이 있어도 안전하도록 no-op으로 유지
+function _initHangryeolDatalist(){
+  // 픽커 방식으로 전환 — 별도 초기화 불필요
+  // 항렬자 input에 한글 직접 입력 시 경고만 유지
+  const inp=document.getElementById('namingHangryeolHanja');
+  const warn=document.getElementById('hangryeolWarning');
+  if(inp&&warn&&!inp.dataset.bound){
+    inp.addEventListener('input',()=>{
+      const v=inp.value.trim();
+      if(!v){warn.style.display='none';return}
+      const hasHangul=/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(v);
+      if(hasHangul){
+        warn.style.display='block';
+        warn.innerHTML=`⚠️ 한글이 감지됐어요. 위 "한글 1자" 칸에 입력하시면 한자 후보를 골라드려요. 직접 입력하시려면 한자로 적어주세요.`;
+      } else {
+        warn.style.display='none';
+      }
+    });
+    inp.dataset.bound='1';
+  }
+}
+
+// 성씨 한글 입력 → 한자 자동 매핑 (성씨가 바뀌면 자동매핑된 한자만 클리어)
+function updateSurnameHanjaOptions(){
+  const surnameEl=document.getElementById('namingSurname');
+  const hanjaEl=document.getElementById('namingSurnameHanja');
+  const dl=document.getElementById('surnameHanjaList');
+  if(!surnameEl||!hanjaEl||!dl)return;
+  const sn=surnameEl.value.trim();
+  const lastSn=hanjaEl.dataset.lastSurname||'';
+  const cur=hanjaEl.value.trim();
+
+  // 성씨가 바뀌었을 때 잔존 한자 처리
+  if(lastSn && lastSn!==sn){
+    const lastCands=KOREAN_SURNAME_HANJA[lastSn]||[];
+    // 이전 한자가 이전 성씨의 후보였거나(=자동매핑) 비어 있으면 클리어
+    if(!cur || lastCands.includes(cur)){
+      hanjaEl.value='';
+    }
+    // 사용자가 직접 입력한 다른 한자였으면 그대로 유지 (사용자 의도 존중)
+  }
+  hanjaEl.dataset.lastSurname=sn;
+
+  const candidates=KOREAN_SURNAME_HANJA[sn]||[];
+  // datalist 옵션 채움
+  dl.innerHTML='';
+  candidates.forEach(h=>{
+    const opt=document.createElement('option');
+    opt.value=h;opt.label=`${h} — ${sn}씨`;
+    dl.appendChild(opt);
+  });
+  // 후보가 있고 현재 비어 있으면 첫 후보 자동 채움
+  if(candidates.length>=1 && !hanjaEl.value.trim()){hanjaEl.value=candidates[0]}
+}
+
+// 이름 정규화 — LLM이 성씨를 포함해서 답해도 한 번만 보이도록
+function _stripSurname(value, surname){
+  if(!value)return '';
+  const v=value.trim();
+  if(!surname)return v;
+  return v.startsWith(surname)?v.slice(surname.length).trim():v;
+}
+function _fullName(givenName, surname){
+  if(!surname)return givenName||'';
+  if(!givenName)return surname;
+  return givenName.startsWith(surname)?givenName:surname+givenName;
+}
+
+function _showNamingFieldsFor(typeKey){
+  document.querySelectorAll('.naming-fields').forEach(el=>{
+    const forKeys=(el.dataset.for||'').split(/\s+/);
+    el.style.display=forKeys.includes(typeKey)?'':'none';
+  });
+}
+
+function renderNamingUI(){
+  // 0) 작명 종류 칩 (가장 위)
+  const tc=document.getElementById('namingTypeChips');
+  if(tc&&!tc.dataset.rendered){
+    NAMING_TYPES.forEach((t,i)=>{
+      const c=document.createElement('span');
+      c.className='dream-tag';c.dataset.kind='ntype';c.dataset.k=t.k;
+      c.innerHTML=`${t.e} ${t.n}`;c.title=t.desc;
+      c.onclick=()=>{
+        document.querySelectorAll('[data-kind="ntype"]').forEach(x=>x.classList.remove('selected'));
+        c.classList.add('selected');
+        _showNamingFieldsFor(t.k);
+      };
+      tc.appendChild(c);
+      if(i===0)setTimeout(()=>c.click(),0); // 사람 기본
+    });
+    tc.dataset.rendered='1';
+  }
+  // 회사 업종
+  const ic=document.getElementById('namingIndustryChips');
+  if(ic&&!ic.dataset.rendered){
+    COMPANY_INDUSTRIES.forEach((s)=>{
+      const c=document.createElement('span');
+      c.className='dream-tag';c.dataset.kind='nind';c.dataset.k=s.k;
+      c.innerHTML=`${s.e} ${s.n}`;
+      c.onclick=()=>{document.querySelectorAll('[data-kind="nind"]').forEach(x=>x.classList.remove('selected'));c.classList.add('selected')};
+      ic.appendChild(c);
+    });
+    ic.dataset.rendered='1';
+  }
+  // 시장 (회사) 칩 — 이미 HTML에 박혀있음. 클릭 핸들러만
+  document.querySelectorAll('[data-kind="market"]').forEach(c=>{
+    if(!c.dataset.bound){c.onclick=()=>{document.querySelectorAll('[data-kind="market"]').forEach(x=>x.classList.remove('selected'));c.classList.add('selected')};c.dataset.bound='1'}
+  });
+  setTimeout(()=>{const dft=document.querySelector('[data-kind="market"][data-k="domestic"]');if(dft&&!dft.classList.contains('selected'))dft.click()},0);
+  // 반려동물 종류
+  const pc=document.getElementById('namingPetTypeChips');
+  if(pc&&!pc.dataset.rendered){
+    PET_TYPES.forEach((s,i)=>{
+      const c=document.createElement('span');
+      c.className='dream-tag';c.dataset.kind='npet';c.dataset.k=s.k;
+      c.innerHTML=`${s.e} ${s.n}`;
+      c.onclick=()=>{document.querySelectorAll('[data-kind="npet"]').forEach(x=>x.classList.remove('selected'));c.classList.add('selected')};
+      pc.appendChild(c);
+      if(i===0)setTimeout(()=>c.click(),0);
+    });
+    pc.dataset.rendered='1';
+  }
+  _initHangryeolDatalist();
+  // 사람 작명 스타일·글자수 (기존)
+  const sc=document.getElementById('namingStyleChips');
+  if(sc&&!sc.dataset.rendered){
+    NAMING_STYLES.forEach((s,i)=>{
+      const c=document.createElement('span');
+      c.className='dream-tag';c.dataset.kind='nstyle';c.dataset.k=s.k;
+      c.textContent=s.n;c.title=s.desc;
+      c.onclick=()=>{document.querySelectorAll('[data-kind="nstyle"]').forEach(x=>x.classList.remove('selected'));c.classList.add('selected')};
+      sc.appendChild(c);
+      if(i===0)setTimeout(()=>c.click(),0);
+    });
+    sc.dataset.rendered='1';
+  }
+  const lc=document.getElementById('namingLengthChips');
+  if(lc&&!lc.dataset.rendered){
+    NAMING_LENGTHS.forEach((l,i)=>{
+      const c=document.createElement('span');
+      c.className='dream-tag';c.dataset.kind='nlen';c.dataset.k=l.k;
+      c.textContent=l.n;
+      c.onclick=()=>{document.querySelectorAll('[data-kind="nlen"]').forEach(x=>x.classList.remove('selected'));c.classList.add('selected')};
+      lc.appendChild(c);
+      if(i===1)setTimeout(()=>c.click(),0);
+    });
+    lc.dataset.rendered='1';
+  }
+  // 사주 자동 연계 상태
+  const st=document.getElementById('namingSajuStatus');
+  if(st){
+    if(window._sajuResultData){
+      const p=window._sajuResultData.pillars;
+      st.innerHTML=`✓ 사주 탭에서 분석한 데이터 자동 활용 — 일간 ${HS_CH[p.day.stem]}(${EL[HS_EL[p.day.stem]]})`;
+      st.style.color='#1a7a4a';
+    } else {
+      st.innerHTML='💡 사주 탭에서 분석을 먼저 하면 자동 연계, 또는 아래 직접 입력';
+      st.style.color='var(--text2)';
+    }
+  }
+}
+
+// 사주 정보 수집 (사람·닉네임용 본인 사주, 회사용 사장 사주)
+function _collectSajuFromUI(birthId, hourId, _genderId){
+  const bs=document.getElementById(birthId).value;
+  const hi=parseInt(document.getElementById(hourId).value);
+  if(!bs)return null;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs))return null;
+  const yCheck=parseInt(bs.substring(0,4),10);
+  if(yCheck<1900||yCheck>2099)return null;
+  const b=new Date(bs);
+  const pillars=calcSajuPillars(b.getFullYear(),b.getMonth()+1,b.getDate(),hi);
+  const els=calcElementDistribution(pillars);
+  const dStem=pillars.day.stem;
+  const max=Math.max(...els),min=Math.min(...els);
+  const dominant=EL[els.indexOf(max)];
+  const lackingArr=[];
+  for(let i=0;i<5;i++){if(els[i]===0)lackingArr.push(EL[i])}
+  if(lackingArr.length===0)lackingArr.push(EL[els.indexOf(min)]);
+  return {pillars,els,
+    ilgan:HS_CH[dStem],ilganElement:EL[HS_EL[dStem]],
+    dayPillar:HS[dStem]+EB[pillars.day.branch],
+    pillarStr:`${HS[pillars.year.stem]}${EB[pillars.year.branch]} ${HS[pillars.month.stem]}${EB[pillars.month.branch]} ${HS[pillars.day.stem]}${EB[pillars.day.branch]} ${pillars.hour?HS[pillars.hour.stem]+EB[pillars.hour.branch]:'(시간 모름)'}`,
+    dominant,lacking:lackingArr.join('·')};
+}
+
+async function analyzeNaming(){
+  const ntype=document.querySelector('[data-kind="ntype"].selected')?.dataset.k||'person';
+  const typeInfo=NAMING_TYPES.find(t=>t.k===ntype);
+  let info={ntype,typeName:typeInfo?.n||''}, ctx={}, apiType='', loadingTitle='';
+
+  if(ntype==='person'){
+    const surname=document.getElementById('namingSurname').value.trim();
+    if(!surname){alert('성씨를 입력해주세요.');return}
+    info.surname=surname;
+    info.surnameHanja=document.getElementById('namingSurnameHanja').value.trim();
+    info.gender=document.getElementById('namingGender').value;
+    info.style=document.querySelector('[data-kind="nstyle"].selected')?.dataset.k||'traditional';
+    info.length=document.querySelector('[data-kind="nlen"].selected')?.dataset.k||'3';
+    info.preferred=document.getElementById('namingPreferred').value.trim();
+    info.hangryeolHanja=document.getElementById('namingHangryeolHanja').value.trim();
+    info.hangryeolPos=document.getElementById('namingHangryeolPos').value;
+    info.calType=document.getElementById('namingCalType').value;
+    // 사주 정보 수집 (입력 우선, 없으면 _sajuResultData)
+    let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender');
+    if(!saju&&window._sajuResultData){
+      const s=window._sajuResultData;
+      saju={pillars:s.pillars,els:s.els,ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],dayPillar:HS[s.pillars.day.stem]+EB[s.pillars.day.branch],pillarStr:`${HS[s.pillars.year.stem]}${EB[s.pillars.year.branch]} ${HS[s.pillars.month.stem]}${EB[s.pillars.month.branch]} ${HS[s.pillars.day.stem]}${EB[s.pillars.day.branch]} ${s.pillars.hour?HS[s.pillars.hour.stem]+EB[s.pillars.hour.branch]:'(시간 모름)'}`,dominant:s.dominant||'',lacking:s.lacking||''};
+    }
+    if(!saju){
+      if(!confirm('사주 정보 없이 작명할까요?\n사주 정보가 있으면 부족한 오행을 보완하는 더 정확한 작명이 가능해요.'))return;
+    }
+    if(saju){Object.assign(info,saju);}
+    apiType='naming';
+    loadingTitle=`${surname}씨 가문에 어울리는 이름을 찾는 중...`;
+    const styleName=NAMING_STYLES.find(s=>s.k===info.style)?.n||'전통 한자';
+    const lengthName=NAMING_LENGTHS.find(l=>l.k===info.length)?.n||'3자';
+    const hangryeolStr=info.hangryeolHanja?`${info.hangryeolHanja} (${info.hangryeolPos==='first'?'이름 첫 글자':info.hangryeolPos==='last'?'이름 끝 글자':'위치 미지정'})`:'없음';
+    ctx={surname:info.surname,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',hangryeol:hangryeolStr,hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||''};
+  }
+  else if(ntype==='company'){
+    const industryK=document.querySelector('[data-kind="nind"].selected')?.dataset.k;
+    if(!industryK){alert('업종을 선택해주세요.');return}
+    const industry=COMPANY_INDUSTRIES.find(x=>x.k===industryK)?.n||'';
+    const bizModel=document.getElementById('namingBizModel').value.trim();
+    if(!bizModel){alert('비즈니스 모델을 입력해주세요.');return}
+    const bizKeyword=document.getElementById('namingBizKeyword').value.trim();
+    const market=document.querySelector('[data-kind="market"].selected')?.dataset.k||'domestic';
+    const marketName={domestic:'국내 위주',global:'글로벌',both:'국내+글로벌'}[market];
+    const companyRegion=document.getElementById('namingCompanyRegion').value.trim();
+    const ceoName=document.getElementById('namingCEOName').value.trim();
+    info.industry=industry;info.bizModel=bizModel;info.bizKeyword=bizKeyword;info.market=marketName;
+    info.companyRegion=companyRegion;info.ceoName=ceoName;
+    // 사장 사주 (옵션)
+    const ceo=_collectSajuFromUI('namingCEOBirth','namingCEOHour','namingCEOGender');
+    if(ceo){
+      info.ceoPillars=ceo.pillars;info.ceoEls=ceo.els;
+      info.ceoIlgan=ceo.ilgan;info.ceoIlganElement=ceo.ilganElement;info.ceoLacking=ceo.lacking;
+      ctx={industry,bizModel,bizKeyword:bizKeyword||'없음',market:marketName,companyRegion:companyRegion||'미선택',ceoName:ceoName||'미입력',ceoPillar:ceo.pillarStr,ceoIlgan:ceo.ilgan,ceoIlganElement:ceo.ilganElement,ceoLacking:ceo.lacking};
+    } else {
+      ctx={industry,bizModel,bizKeyword:bizKeyword||'없음',market:marketName,companyRegion:companyRegion||'미선택',ceoName:ceoName||'미입력',ceoPillar:'',ceoIlgan:'',ceoIlganElement:'',ceoLacking:''};
+    }
+    apiType='naming_company';
+    loadingTitle=`${industry} 업종에 어울리는 회사명을 찾는 중...`;
+  }
+  else if(ntype==='product'){
+    const productCat=document.getElementById('namingProductCat').value.trim();
+    if(!productCat){alert('제품 카테고리를 입력해주세요.');return}
+    const productDesc=document.getElementById('namingProductDesc').value.trim();
+    if(!productDesc){alert('제품 한 줄 설명을 입력해주세요.');return}
+    const productTarget=document.getElementById('namingProductTarget').value.trim();
+    const productValue=document.getElementById('namingProductValue').value.trim();
+    const trademarkScope=document.getElementById('namingProductTrademarkScope').value;
+    const tmScopeName={domestic:'국내(KIPRIS)만',domestic_us:'국내+미국(USPTO)',domestic_global:'국내+글로벌(US·EU·중국·일본)',global_only:'글로벌 위주'}[trademarkScope]||'';
+    info.productCat=productCat;info.productDesc=productDesc;info.productTarget=productTarget;info.productValue=productValue;
+    info.trademarkScope=trademarkScope;info.tmScopeName=tmScopeName;
+    ctx={productCat,productDesc,productTarget:productTarget||'(미입력)',productValue:productValue||'없음',trademarkScope:tmScopeName||'미선택'};
+    apiType='naming_product';
+    loadingTitle=`${productCat} 제품에 어울리는 이름을 찾는 중...`;
+  }
+  else if(ntype==='pet'){
+    const petK=document.querySelector('[data-kind="npet"].selected')?.dataset.k;
+    const petType=PET_TYPES.find(x=>x.k===petK)?.n||'';
+    const petTraits=document.getElementById('namingPetTraits').value.trim();
+    if(!petTraits){alert('반려동물의 외모·성격 특징을 입력해주세요.');return}
+    const petVibe=document.getElementById('namingPetVibe').value.trim();
+    info.petType=petType;info.petTraits=petTraits;info.petVibe=petVibe;
+    ctx={petType,petTraits,petVibe:petVibe||'자유롭게'};
+    apiType='naming_pet';
+    loadingTitle=`${petType}에게 어울리는 이름을 찾는 중...`;
+  }
+  else if(ntype==='nickname'){
+    const nickPlatform=document.getElementById('namingNickPlatform').value.trim();
+    if(!nickPlatform){alert('사용 플랫폼을 입력해주세요.');return}
+    const nickVibe=document.getElementById('namingNickVibe').value.trim();
+    if(!nickVibe){alert('표현하고 싶은 이미지를 입력해주세요.');return}
+    const nickLang=document.getElementById('namingNickLang').value.trim();
+    info.nickPlatform=nickPlatform;info.nickVibe=nickVibe;info.nickLang=nickLang;
+    // 본인 사주 (옵션)
+    let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender');
+    if(!saju&&window._sajuResultData){
+      const s=window._sajuResultData;
+      saju={ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],lacking:s.lacking||''};
+    }
+    if(saju){Object.assign(info,saju);}
+    ctx={nickPlatform,nickVibe,nickLang:nickLang||'자유',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',lacking:info.lacking||''};
+    apiType='naming_nickname';
+    loadingTitle=`${nickPlatform}에 어울리는 닉네임을 찾는 중...`;
+  }
+
+  window._namingResultData=info;
+
+  // 로딩 UI
+  const r=document.getElementById('namingResult');
+  r.innerHTML=`<div class="card pulse-card" style="text-align:center;padding:40px 20px">
+    <div style="font-size:40px;margin-bottom:12px">名</div>
+    <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:16px">${loadingTitle}</div>
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">${typeInfo?.n||''} 작명 진행 중...</div>
+  </div>`;
+  r.style.display='block';
+  r.scrollIntoView({behavior:'smooth',block:'start'});
+
+  try{
+    const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
+    const data=await resp.json();
+    if(!data.success||!data.result)throw new Error(data.error||'API 응답 오류');
+    if(data.result.raw&&!data.result.candidates)throw new Error('AI 응답 파싱 실패');
+    renderNamingResult(data.result,info);
+  }catch(err){
+    console.error('작명 LLM 오류:',err);
+    console.log('apiType:',apiType,'ctx:',ctx);
+    renderNamingFallback(info,err.message);
+  }
+}
+
+function renderNamingResult(result,info){
+  // 종류별 분기 — 각 타입 전용 렌더러
+  if(info.ntype==='company') return renderCompanyNaming(result,info);
+  if(info.ntype==='product') return renderProductNaming(result,info);
+  if(info.ntype==='pet') return renderPetNaming(result,info);
+  if(info.ntype==='nickname') return renderNicknameNaming(result,info);
+
+  // 사람 작명 (기본) — 사주·사격·획수·한자 풀이
+  const cands=result.candidates||[];
+
+  // 작명 과정 7단계
+  let processHTML='';
+  if(result.namingProcess&&result.namingProcess.length){
+    processHTML='<div style="margin-bottom:16px;padding:14px;background:rgba(201,165,78,.04);border-radius:10px;border:1px solid rgba(201,165,78,.1)">'
+      +'<div style="font-size:13px;color:var(--gold);font-family:\'Noto Serif KR\',serif;font-weight:600;margin-bottom:10px">📜 작명 과정 — 어떻게 이 이름들을 도출했나</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">';
+    result.namingProcess.forEach((s,i)=>{
+      processHTML+=`<div style="display:flex;gap:8px;padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px"><div style="font-size:11px;color:var(--gold);font-weight:700;min-width:24px">${i+1}</div><div style="flex:1"><div style="font-size:12px;color:var(--gold);font-weight:600">${s.step||''}</div><div style="font-size:11.5px;color:var(--text1);line-height:1.7;margin-top:2px">${s.detail||''}</div></div></div>`;
+    });
+    processHTML+='</div></div>';
+  }
+
+  // 각 후보의 사격 자동 계산 + 한자 글자별 정밀
+  let candHTML='';
+  cands.forEach((c,i)=>{
+    // 성씨 중복 방어 — LLM이 풀네임으로 답해도 처리
+    const givenHangul=_stripSurname(c.hangul,info.surname);
+    const givenHanja=_stripSurname(c.hanja,info.surnameHanja||info.surname);
+    const fullHangul=_fullName(givenHangul,info.surname);
+    const fullHanja=info.surnameHanja?(info.surnameHanja+givenHanja):(c.hanja||givenHangul);
+
+    const strokes=c.strokes||[];
+    const sn=[strokes[0]||0];
+    const fn=strokes.slice(1);
+    const gyeok=calcFiveGyeok(sn,fn);
+    const evals=evaluateFiveGyeok(gyeok);
+    const totalEval=evals.chong;
+    const gradeColor=totalEval.grade==='great'?'#1a7a4a':totalEval.grade==='good'?'#5a8b1a':totalEval.grade==='half'?'#b8860b':'#c9443a';
+    const llmGrade=c.gyeokGrade||'';
+    const gradeLabel=llmGrade||(totalEval.grade==='great'?'대길':totalEval.grade==='good'?'길':totalEval.grade==='half'?'반길반흉':'흉');
+
+    const soundCheck=checkSoundElPattern(fullHangul);
+
+    // 한자 글자별 정밀 풀이
+    let hanjaDetailHTML='';
+    if(c.hanjaDetail&&c.hanjaDetail.length){
+      hanjaDetailHTML='<div style="margin:10px 0;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:6px">한자 글자별 풀이</div>';
+      c.hanjaDetail.forEach(hd=>{
+        hanjaDetailHTML+=`<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed rgba(201,165,78,.1)"><div style="font-size:24px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;min-width:32px;text-align:center">${hd.char||''}</div><div style="flex:1;font-size:11.5px;line-height:1.7"><div style="color:var(--text1);margin-bottom:3px">${hd.meaning||''}</div>${hd.soundFeel?`<div style="color:var(--text2);font-style:italic">🎵 ${hd.soundFeel}</div>`:''}</div></div>`;
+      });
+      hanjaDetailHTML+='</div>';
+    }
+
+    candHTML+=`<div style="padding:16px;margin-bottom:14px;background:rgba(201,165,78,.04);border-radius:12px;border:1px solid rgba(201,165,78,.15)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div style="font-size:32px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;min-width:80px;text-align:center">${fullHanja||fullHangul}</div>
+        <div style="flex:1">
+          <div style="font-size:18px;color:var(--text1);font-family:'Noto Serif KR',serif;font-weight:700">${fullHangul}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">총 ${totalEval.value}획 · ${c.soundEl||soundCheck.pattern} · ${c.yinyang||''}</div>
+        </div>
+        <div style="display:inline-block;padding:5px 12px;border-radius:14px;border:1.5px solid ${gradeColor};color:${gradeColor};font-size:12px;font-weight:700;font-family:'Noto Serif KR',serif">${gradeLabel}</div>
+      </div>
+      ${c.summary?`<div style="font-size:12.5px;line-height:1.8;color:var(--text1);margin-bottom:8px;padding:8px 10px;background:rgba(201,165,78,.06);border-radius:6px"><strong style="color:var(--gold)">종합 의미:</strong> ${c.summary}</div>`:''}
+      ${hanjaDetailHTML}
+      ${c.sajuMatch?`<div style="font-size:11.5px;color:#1a7a4a;line-height:1.7;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;border-left:3px solid #1a7a4a;margin-top:8px"><strong>⚯ 사주 보완:</strong> ${c.sajuMatch}</div>`:''}
+    </div>`;
+  });
+
+  const r=document.getElementById('namingResult');
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">名 ${info.surname}씨 작명 추천</div>
+    ${info.pillars?`<div style="text-align:center;margin-bottom:14px;padding:10px;background:rgba(201,165,78,.05);border-radius:8px">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">사주 분석 적용</div>
+      <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif">일간 ${info.ilgan}(${info.ilganElement}) · 부족한 기운: <strong>${info.lacking||'없음'}</strong></div>
+    </div>`:''}
+
+    ${result.summary?`<div class="reading" style="margin-bottom:14px">${result.summary}</div>`:''}
+
+    ${result.sajuLack?`<div style="padding:12px;background:rgba(173,216,230,.05);border-radius:8px;border:1px solid rgba(173,216,230,.1);margin-bottom:14px;font-size:13px;line-height:1.8"><strong style="color:var(--gold)">📌 사주 보완 방향:</strong> ${result.sajuLack}</div>`:''}
+
+    ${processHTML}
+
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">⭐ 추천 이름 ${cands.length}개</div>
+    ${candHTML}
+
+    ${result.advice?`<div style="margin-top:14px;padding:14px;background:rgba(201,165,78,.06);border-radius:8px;font-size:13px;line-height:1.8;text-align:center;font-family:'Noto Serif KR',serif">💡 ${result.advice}</div>`:''}
+
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+
+  ${_renderNamingPaywall()}`;
+
+  document.getElementById('namingResult').classList.add('show');
+  burstConfetti();
+  window._namingResultData={...info,result};
+}
+
+// ───────── 회사명·브랜드 작명 렌더러 ─────────
+function renderCompanyNaming(result,info){
+  const cands=result.candidates||[];
+  let processHTML='';
+  if(result.namingProcess&&result.namingProcess.length){
+    processHTML='<div style="margin-bottom:16px;padding:14px;background:rgba(201,165,78,.04);border-radius:10px;border:1px solid rgba(201,165,78,.1)">'
+      +'<div style="font-size:13px;color:var(--gold);font-family:\'Noto Serif KR\',serif;font-weight:600;margin-bottom:10px">📜 네이밍 과정 — 어떻게 도출했나</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">';
+    result.namingProcess.forEach((s,i)=>{
+      processHTML+=`<div style="display:flex;gap:8px;padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px"><div style="font-size:11px;color:var(--gold);font-weight:700;min-width:24px">${i+1}</div><div style="flex:1"><div style="font-size:12px;color:var(--gold);font-weight:600">${s.step||''}</div><div style="font-size:11.5px;color:var(--text1);line-height:1.7;margin-top:2px">${s.detail||''}</div></div></div>`;
+    });
+    processHTML+='</div></div>';
+  }
+
+  let candHTML='';
+  cands.forEach((c,i)=>{
+    candHTML+=`<div style="padding:16px;margin-bottom:14px;background:rgba(201,165,78,.04);border-radius:12px;border:1px solid rgba(201,165,78,.15)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div style="font-size:24px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;flex:1">${c.name||''}</div>
+        ${c.english?`<div style="font-size:14px;color:var(--text2);font-family:'Inter',sans-serif">${c.english}</div>`:''}
+        ${c.style?`<div style="display:inline-block;padding:4px 10px;border-radius:12px;background:rgba(201,165,78,.1);color:var(--gold);font-size:10px">${c.style}</div>`:''}
+      </div>
+      ${c.meaning?`<div style="font-size:12.5px;line-height:1.8;color:var(--text1);margin-bottom:8px;padding:8px 10px;background:rgba(201,165,78,.06);border-radius:6px"><strong style="color:var(--gold)">의미·유래:</strong> ${c.meaning}</div>`:''}
+      ${c.brandImage?`<div style="font-size:11.5px;color:var(--text1);line-height:1.7;margin-bottom:6px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px"><strong style="color:#7ab8d4">🎨 브랜드 이미지:</strong> ${c.brandImage}</div>`:''}
+      ${c.industryFit?`<div style="font-size:11.5px;color:#1a7a4a;line-height:1.7;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;margin-bottom:6px"><strong>업종 적합:</strong> ${c.industryFit}</div>`:''}
+      ${c.registrability?`<div style="font-size:11px;color:#e85a4f;line-height:1.7;padding:6px 10px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.15);border-radius:6px;margin-bottom:6px"><strong>📋 상호 등록 가능성:</strong> ${c.registrability}</div>`:''}
+      ${c.domainCheck?`<div style="font-size:11px;color:var(--text2);line-height:1.7;padding:6px 10px;background:rgba(0,0,0,.1);border-radius:6px;margin-bottom:6px">🌐 ${c.domainCheck}</div>`:''}
+      ${c.strengths?`<div style="font-size:11.5px;color:var(--gold);line-height:1.7;padding:6px 10px;border-left:3px solid var(--gold);margin-top:6px">✦ ${c.strengths}</div>`:''}
+    </div>`;
+  });
+
+  const r=document.getElementById('namingResult');
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">🏢 ${info.industry||'회사명'} 추천</div>
+    <div style="text-align:center;margin-bottom:14px;padding:10px;background:rgba(201,165,78,.05);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--gold)">${info.bizModel||''}</strong>${info.bizKeyword?` · ${info.bizKeyword}`:''}<br>
+      <span style="font-size:11px">${info.market||''}${info.companyRegion?` · ${info.companyRegion}`:''}${info.ceoName?` · 대표 ${info.ceoName}`:''}${info.ceoIlgan?` · 일간 ${info.ceoIlgan}(${info.ceoIlganElement||''})`:''}</span>
+    </div>
+    ${result.summary?`<div class="reading" style="margin-bottom:14px">${result.summary}</div>`:''}
+    ${processHTML}
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">⭐ 추천 회사명 ${cands.length}개</div>
+    ${candHTML}
+    ${result.registrabilityDisclaimer?`<div style="margin-top:14px;padding:12px;background:rgba(232,90,79,.04);border:1px solid rgba(232,90,79,.15);border-radius:8px;font-size:11.5px;line-height:1.8"><strong style="color:#e85a4f">⚠ 등록 가능성 안내:</strong> ${result.registrabilityDisclaimer}<br><a href="https://www.iros.go.kr" target="_blank" style="color:var(--gold);font-size:11px">→ 대법원 인터넷등기소에서 상호 검색</a></div>`:''}
+    ${result.advice?`<div style="margin-top:14px;padding:14px;background:rgba(201,165,78,.06);border-radius:8px;font-size:13px;line-height:1.8;text-align:center;font-family:'Noto Serif KR',serif">💡 ${result.advice}</div>`:''}
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+  ${_renderNamingPaywall(info)}`;
+  document.getElementById('namingResult').classList.add('show');
+  burstConfetti();
+  window._namingResultData={...info,result};
+}
+
+// ───────── 제품명·서비스 작명 렌더러 ─────────
+function renderProductNaming(result,info){
+  const cands=result.candidates||[];
+  let processHTML='';
+  if(result.namingProcess&&result.namingProcess.length){
+    processHTML='<div style="margin-bottom:16px;padding:14px;background:rgba(201,165,78,.04);border-radius:10px;border:1px solid rgba(201,165,78,.1)">'
+      +'<div style="font-size:13px;color:var(--gold);font-family:\'Noto Serif KR\',serif;font-weight:600;margin-bottom:10px">📜 네이밍 과정</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">';
+    result.namingProcess.forEach((s,i)=>{
+      processHTML+=`<div style="display:flex;gap:8px;padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px"><div style="font-size:11px;color:var(--gold);font-weight:700;min-width:24px">${i+1}</div><div style="flex:1"><div style="font-size:12px;color:var(--gold);font-weight:600">${s.step||''}</div><div style="font-size:11.5px;color:var(--text1);line-height:1.7;margin-top:2px">${s.detail||''}</div></div></div>`;
+    });
+    processHTML+='</div></div>';
+  }
+
+  let candHTML='';
+  cands.forEach((c,i)=>{
+    candHTML+=`<div style="padding:16px;margin-bottom:14px;background:rgba(201,165,78,.04);border-radius:12px;border:1px solid rgba(201,165,78,.15)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div style="font-size:22px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;flex:1">${c.name||''}</div>
+        ${c.english?`<div style="font-size:13px;color:var(--text2);font-family:'Inter',sans-serif">${c.english}</div>`:''}
+        ${c.style?`<div style="display:inline-block;padding:4px 10px;border-radius:12px;background:rgba(201,165,78,.1);color:var(--gold);font-size:10px">${c.style}</div>`:''}
+      </div>
+      ${c.meaning?`<div style="font-size:12.5px;line-height:1.8;color:var(--text1);margin-bottom:8px;padding:8px 10px;background:rgba(201,165,78,.06);border-radius:6px"><strong style="color:var(--gold)">의미:</strong> ${c.meaning}</div>`:''}
+      ${c.targetAppeal?`<div style="font-size:11.5px;color:var(--text1);line-height:1.7;margin-bottom:6px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px"><strong style="color:#7ab8d4">🎯 타겟 어필:</strong> ${c.targetAppeal}</div>`:''}
+      ${c.categoryFit?`<div style="font-size:11.5px;color:#1a7a4a;line-height:1.7;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;margin-bottom:6px"><strong>카테고리 적합:</strong> ${c.categoryFit}</div>`:''}
+      ${c.trademarkability?`<div style="font-size:11px;color:#e85a4f;line-height:1.7;padding:6px 10px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.15);border-radius:6px;margin-bottom:6px"><strong>™ 상표 등록 가능성:</strong> ${c.trademarkability}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        ${c.memorability?`<div style="flex:1;min-width:100px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;font-size:10.5px;color:var(--text1)">🔁 ${c.memorability}</div>`:''}
+        ${c.seoNote?`<div style="flex:1;min-width:100px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;font-size:10.5px;color:var(--text1)">🔍 ${c.seoNote}</div>`:''}
+      </div>
+      ${c.strengths?`<div style="font-size:11.5px;color:var(--gold);line-height:1.7;padding:6px 10px;border-left:3px solid var(--gold);margin-top:6px">✦ ${c.strengths}</div>`:''}
+    </div>`;
+  });
+
+  const r=document.getElementById('namingResult');
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">📦 ${info.productCat||'제품명'} 추천</div>
+    <div style="text-align:center;margin-bottom:14px;padding:10px;background:rgba(201,165,78,.05);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--gold)">${info.productDesc||''}</strong><br>
+      <span style="font-size:11px">${info.productTarget?`타겟: ${info.productTarget}`:''}${info.productValue?` · 핵심: ${info.productValue}`:''}${info.tmScopeName?` · ™ ${info.tmScopeName}`:''}</span>
+    </div>
+    ${result.summary?`<div class="reading" style="margin-bottom:14px">${result.summary}</div>`:''}
+    ${processHTML}
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">⭐ 추천 제품명 ${cands.length}개</div>
+    ${candHTML}
+    ${result.trademarkDisclaimer?`<div style="margin-top:14px;padding:12px;background:rgba(232,90,79,.04);border:1px solid rgba(232,90,79,.15);border-radius:8px;font-size:11.5px;line-height:1.8"><strong style="color:#e85a4f">⚠ 상표 등록 안내:</strong> ${result.trademarkDisclaimer}<br><a href="https://www.kipris.or.kr" target="_blank" style="color:var(--gold);font-size:11px;margin-right:10px">→ KIPRIS 검색 (한국)</a><a href="https://tmsearch.uspto.gov" target="_blank" style="color:var(--gold);font-size:11px">→ USPTO TESS (미국)</a></div>`:''}
+    ${result.advice?`<div style="margin-top:14px;padding:14px;background:rgba(201,165,78,.06);border-radius:8px;font-size:13px;line-height:1.8;text-align:center;font-family:'Noto Serif KR',serif">💡 ${result.advice}</div>`:''}
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+  ${_renderNamingPaywall(info)}`;
+  document.getElementById('namingResult').classList.add('show');
+  burstConfetti();
+  window._namingResultData={...info,result};
+}
+
+// ───────── 반려동물 작명 렌더러 ─────────
+function renderPetNaming(result,info){
+  const cands=result.candidates||[];
+  let candHTML='';
+  cands.forEach((c,i)=>{
+    candHTML+=`<div style="padding:14px;margin-bottom:12px;background:rgba(201,165,78,.04);border-radius:12px;border:1px solid rgba(201,165,78,.15)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:22px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;flex:1">${c.name||''}</div>
+        ${c.style?`<div style="display:inline-block;padding:4px 10px;border-radius:12px;background:rgba(201,165,78,.1);color:var(--gold);font-size:10px">${c.style}</div>`:''}
+      </div>
+      ${c.meaning?`<div style="font-size:12px;line-height:1.8;color:var(--text1);margin-bottom:6px"><strong style="color:var(--gold)">의미:</strong> ${c.meaning}</div>`:''}
+      ${c.matchPoint?`<div style="font-size:11.5px;color:var(--text1);line-height:1.7;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;margin-bottom:6px"><strong style="color:#7ab8d4">💝 어울림:</strong> ${c.matchPoint}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${c.callability?`<div style="flex:1;min-width:120px;padding:6px 10px;background:rgba(26,122,74,.08);border-radius:6px;font-size:10.5px;color:#1a7a4a">📣 ${c.callability}</div>`:''}
+        ${c.cuteness?`<div style="flex:1;min-width:120px;padding:6px 10px;background:rgba(232,90,79,.08);border-radius:6px;font-size:10.5px;color:#e85a4f">🥰 ${c.cuteness}</div>`:''}
+      </div>
+    </div>`;
+  });
+
+  const r=document.getElementById('namingResult');
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">🐾 ${info.petType||'반려동물'} 이름 추천</div>
+    <div style="text-align:center;margin-bottom:14px;padding:10px;background:rgba(201,165,78,.05);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--gold)">${info.petTraits||''}</strong>${info.petVibe?`<br><span style="font-size:11px">분위기: ${info.petVibe}</span>`:''}
+    </div>
+    ${result.summary?`<div class="reading" style="margin-bottom:14px">${result.summary}</div>`:''}
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">⭐ 추천 이름 ${cands.length}개</div>
+    ${candHTML}
+    ${result.advice?`<div style="margin-top:14px;padding:14px;background:rgba(201,165,78,.06);border-radius:8px;font-size:13px;line-height:1.8;text-align:center;font-family:'Noto Serif KR',serif">💡 ${result.advice}</div>`:''}
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+  ${_renderNamingPaywall(info)}`;
+  document.getElementById('namingResult').classList.add('show');
+  burstConfetti();
+  window._namingResultData={...info,result};
+}
+
+// ───────── 닉네임·필명 작명 렌더러 ─────────
+function renderNicknameNaming(result,info){
+  const cands=result.candidates||[];
+  let candHTML='';
+  cands.forEach((c,i)=>{
+    candHTML+=`<div style="padding:14px;margin-bottom:12px;background:rgba(201,165,78,.04);border-radius:12px;border:1px solid rgba(201,165,78,.15)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:20px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;flex:1">${c.name||''}</div>
+        ${c.english?`<div style="font-size:13px;color:var(--text2);font-family:'Inter',sans-serif">${c.english}</div>`:''}
+        ${c.style?`<div style="display:inline-block;padding:4px 10px;border-radius:12px;background:rgba(201,165,78,.1);color:var(--gold);font-size:10px">${c.style}</div>`:''}
+      </div>
+      ${c.meaning?`<div style="font-size:12px;line-height:1.8;color:var(--text1);margin-bottom:6px;padding:6px 10px;background:rgba(201,165,78,.06);border-radius:6px"><strong style="color:var(--gold)">의미:</strong> ${c.meaning}</div>`:''}
+      ${c.vibeMatch?`<div style="font-size:11.5px;color:var(--text1);line-height:1.7;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;margin-bottom:6px"><strong style="color:#7ab8d4">✨ 이미지:</strong> ${c.vibeMatch}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${c.platformFit?`<div style="flex:1;min-width:120px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;font-size:10.5px;color:var(--text1)">📱 ${c.platformFit}</div>`:''}
+        ${c.memorability?`<div style="flex:1;min-width:120px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;font-size:10.5px;color:var(--text1)">🔁 ${c.memorability}</div>`:''}
+      </div>
+      ${c.sajuMatch?`<div style="font-size:11.5px;color:#1a7a4a;line-height:1.7;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;border-left:3px solid #1a7a4a;margin-top:6px"><strong>⚯ 사주 보완:</strong> ${c.sajuMatch}</div>`:''}
+    </div>`;
+  });
+
+  const r=document.getElementById('namingResult');
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">💫 ${info.nickPlatform||'닉네임'} 추천</div>
+    <div style="text-align:center;margin-bottom:14px;padding:10px;background:rgba(201,165,78,.05);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--gold)">${info.nickVibe||''}</strong>${info.nickLang?` · ${info.nickLang}`:''}
+      ${info.ilgan?`<br><span style="font-size:11px">사주 일간 ${info.ilgan}(${info.ilganElement||''})</span>`:''}
+    </div>
+    ${result.summary?`<div class="reading" style="margin-bottom:14px">${result.summary}</div>`:''}
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">⭐ 추천 닉네임 ${cands.length}개</div>
+    ${candHTML}
+    ${result.advice?`<div style="margin-top:14px;padding:14px;background:rgba(201,165,78,.06);border-radius:8px;font-size:13px;line-height:1.8;text-align:center;font-family:'Noto Serif KR',serif">💡 ${result.advice}</div>`:''}
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="share-btn" onclick="saveResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장</button>
+      <button class="share-btn" onclick="shareResult('naming')" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
+    </div>
+  </div>
+  ${_renderNamingPaywall(info)}`;
+  document.getElementById('namingResult').classList.add('show');
+  burstConfetti();
+  window._namingResultData={...info,result};
+}
+
+function renderNamingFallback(info,errMsg){
+  const r=document.getElementById('namingResult');
+  // 종류별 제목·이모지
+  const titleMap={
+    person:`名 ${info.surname||''}씨 작명`,
+    company:`🏢 ${info.industry||'회사명'} 추천`,
+    product:`📦 ${info.productCat||'제품명'} 추천`,
+    pet:`🐾 ${info.petType||'반려동물'} 이름`,
+    nickname:`💫 ${info.nickPlatform||'닉네임'} 추천`
+  };
+  const title=titleMap[info.ntype]||titleMap.person;
+  r.innerHTML=`<div class="card pulse-card">
+    <div class="card-title">${title}</div>
+    <div style="margin:14px 0;padding:14px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.2);border-radius:8px;text-align:center">
+      <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+      <div style="font-size:13px;color:#e85a4f;font-weight:600;margin-bottom:6px">AI 작명을 불러오지 못했습니다</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">서버가 잠시 응답하지 않습니다. 잠시 후 다시 시도해주세요.</div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin:6px 0">${(errMsg||'').substring(0,150)}</div>
+      <button class="share-btn" onclick="analyzeNaming()" style="margin-top:8px">🔄 다시 시도</button>
+    </div>
+  </div>
+  ${_renderNamingPaywall(info)}`;
+  document.getElementById('namingResult').classList.add('show');
+}
+
+function _renderNamingPaywall(info){
+  info=info||window._namingResultData||{ntype:'person'};
+  const ntype=info.ntype||'person';
+
+  // 반려동물·닉네임은 프리미엄 티어 미제공 — 페이월 표시 안 함
+  if(ntype==='pet'||ntype==='nickname'){
+    return `<div class="card" id="namingPaywall" style="text-align:center;padding:18px">
+      <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:6px">✓ ${ntype==='pet'?'반려동물':'닉네임'} 작명 — 무료 추천만 제공</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.7">간결한 이름 추천에 가장 적합한 형태입니다. 더 깊은 분석은 사람 이름·회사명·제품명에서 제공됩니다.</div>
+    </div>`;
+  }
+
+  // 종류별 페이월 컨텐츠 + 버튼
+  let bullets='', subtitle='', headline='프리미엄 작명 리포트';
+  if(ntype==='company'){
+    headline='프리미엄 회사명 리포트';
+    subtitle='네이밍 컨설팅사 100~500만원 깊이를';
+    bullets=`<p>✦ 업종 분석 + 사장 사주 + 네이밍 전략 (250자+)</p>
+      <p>✦ 추천 회사명 10개 — 한자·한글·외래어/합성어 다양</p>
+      <p>✦ 각 이름의 의미·발음·업종 적합성·브랜드 이미지</p>
+      <p>✦ 영문 표기·해외 발음·도메인 가용성 짐작</p>
+      <p>✦ 비슷한 기존 브랜드와 차별화 포인트</p>
+      <p>✦ 베스트 3 — 창업기·성장기·확장기·성숙기 4구간 흐름</p>
+      <p>✦ 어울리는 확장 분야 + 매출 시기 예측 (1·3·5·10년)</p>
+      <p>✦ 상표권·도메인·SNS 핸들 가용성 점검</p>
+      <p>✦ 슬로건·태그라인 후보 + 창업자 축원</p>`;
+  } else if(ntype==='product'){
+    headline='프리미엄 제품명 리포트';
+    subtitle='브랜드 컨설팅 50~200만원 깊이를';
+    bullets=`<p>✦ 제품·타겟 분석 + 네이밍 전략 (250자+)</p>
+      <p>✦ 추천 제품명 10개 — 한자·한글·외래어·합성어·조어</p>
+      <p>✦ 각 이름의 마케팅 적합성·SEO 점수·SNS 해시태그 친화성</p>
+      <p>✦ 타겟 페르소나에게 주는 어필 포인트</p>
+      <p>✦ 슬로건 후보 1~2개 함께</p>
+      <p>✦ 비슷한 기존 제품과 차별화</p>
+      <p>✦ 기억성·발음 점수 (1-10점)</p>`;
+  } else {
+    // person (default)
+    subtitle='전문 작명소가 5~30만원에 제공하는 깊이를';
+    bullets=`<p>✦ 사주 정밀 분석 + 작명 방향 (250자+)</p>
+      <p>✦ 추천 이름 10개 — 전통한자·현대한자·한글전용</p>
+      <p>✦ 각 이름의 한자 글자별 정밀 (부수·획수·의미·음운 어감)</p>
+      <p>✦ 같은 발음 다른 한자와 비교 — 왜 이 한자인지</p>
+      <p>✦ 사격(천·인·지·외·총) 5개 모두 81수 풀이</p>
+      <p>✦ 베스트 3 평생 운명 — 10대·30대·50대·70대 4구간 각 130자</p>
+      <p>✦ 어울리는 직업·진로 + 인연·배우자 상</p>
+      <p>✦ 평생 보완할 점·주의 시기 + 동명이인·역사 인물 비교</p>
+      <p>✦ 한국 전통 작명 의식의 의미 + 부모·본인 축원</p>
+      <p>✦ 영어 표기·해외 발음 환경 + 인장(印章)·서명 권장 한자</p>`;
+  }
+
+  return `<div class="card" id="namingPaywall" style="position:relative;overflow:hidden">
+    <div style="filter:blur(5px);pointer-events:none;opacity:.5">
+      <div class="card-title">🔮 ${headline}</div>
+      <div style="font-size:13px;line-height:1.85">${bullets}</div>
+    </div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(3px);border-radius:12px;padding:24px">
+      <div style="font-size:28px;margin-bottom:8px">🔒</div>
+      <div style="font-size:16px;color:#fff;font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${headline}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;text-align:center;line-height:1.7">${subtitle}<br>천운에선 <span style="color:#f5d78e;font-weight:600">1/10 가격</span>으로</div>
+      <button onclick="unlockNamingPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:14px 32px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 16px rgba(201,165,78,.4)">₩29,900 · ${ntype==='company'?'사업 흐름 작명':ntype==='product'?'마케팅 풀스택':'평생 운명 작명'} 리포트</button>
+      <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:10px;text-align:center;line-height:1.6">한 번의 결제, ${ntype==='company'?'창업 평생 사용':ntype==='product'?'런칭 후 영구 사용':'평생 사용하는 이름'}<br>A4 PDF 영구 보관</div>
+    </div>
+  </div>`;
+}
+
+// ── 작명 프리미엄 흐름 ──
+async function unlockNamingPremium(){
+  const info=window._namingResultData;
+  if(!info){showToast('먼저 작명을 받아주세요');return}
+  // 반려동물·닉네임은 프리미엄 미제공
+  if(info.ntype==='pet'||info.ntype==='nickname'){
+    showToast(`${info.ntype==='pet'?'반려동물':'닉네임'} 작명은 무료 추천만 제공됩니다`);
+    return;
+  }
+  // 종류별 프리미엄 안내·API 분기
+  const promptMap={
+    person:{
+      msg:'프리미엄 작명 리포트 (₩29,900)를 구매하시겠습니까?\n\n전문 작명소 5~30만원의 깊이를 천운만의 가격으로.\n베스트 3개 평생 운명 + 작명 의식 + 부모 축원까지.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
+      api1:'naming_premium_1', api2:'naming_premium_2'
+    },
+    company:{
+      msg:'프리미엄 회사명 리포트 (₩29,900)를 구매하시겠습니까?\n\n네이밍 컨설팅사 100~500만원의 깊이를 천운만의 가격으로.\n10개 후보 + 베스트 3 사업 흐름 + 슬로건 + 창업자 축원.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
+      api1:'naming_company_premium_1', api2:'naming_company_premium_2'
+    },
+    product:{
+      msg:'프리미엄 제품명 리포트 (₩29,900)를 구매하시겠습니까?\n\n브랜드 컨설팅 50~200만원의 깊이를 천운만의 가격으로.\n10개 후보 + 마케팅 풀스택 분석.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
+      api1:'naming_product_premium_1', api2:null  // product는 1단계만
+    }
+  };
+  const cfg=promptMap[info.ntype]||promptMap.person;
+  if(!confirm(cfg.msg))return;
+  window._namingPremiumApiTypes=cfg;
+
+  const pw=document.getElementById('namingPaywall');
+  let loadTimer=null;
+  if(pw){
+    pw.innerHTML=`<div style="padding:30px;text-align:center">
+      <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">名</div>
+      <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="namingPremLoadMsg">사주 8글자 분석 + 부족 오행 산출 중...</div>
+      <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="namingPremLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">10개 후보 + 베스트 3개 인생 풀이까지 약 30~40초</div>
+    </div>`;
+    pw.style.position='relative';pw.style.overflow='visible';
+    const loadSteps=['사주 8글자 분석 + 부족 오행 산출 중...','수리 81수 길수 매핑 중...','사격(천·인·지·외·총) 조합 검증 중...','발음 오행 상생 흐름 검증 중...','음양 배치 검증 중...','한자 의미 풀이 중...','10개 후보 정밀 평가 중...','베스트 3개 인생 흐름 매핑 중...','직업·동명이인·발음 환경 정리 중...'];
+    let loadStep=0;
+    loadTimer=setInterval(()=>{
+      loadStep++;
+      const m=document.getElementById('namingPremLoadMsg');
+      const bar=document.getElementById('namingPremLoadBar');
+      if(m&&loadStep<loadSteps.length)m.textContent=loadSteps[loadStep];
+      if(bar)bar.style.width=Math.min(95,loadStep*11)+'%';
+      if(loadStep>=loadSteps.length)clearInterval(loadTimer);
+    },2400);
+  }
+
+  try{
+    const ctx=_buildNamingContext(info);
+    const cfg=window._namingPremiumApiTypes||{api1:'naming_premium_1',api2:'naming_premium_2'};
+    const doFetch=async(apiType)=>{
+      const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
+      const txt=await resp.text();
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
+      const d=JSON.parse(txt);
+      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(d.result.raw&&!d.result.candidates&&!d.result.bestThree)throw new Error('AI 응답 파싱 실패');
+      return d.result;
+    };
+    let merged={};let apiError=null;
+    try{
+      const r1=await doFetch(cfg.api1);Object.assign(merged,r1);
+      const m=document.getElementById('namingPremLoadMsg');
+      if(m)m.textContent=cfg.api2?'베스트 3개 흐름 + 추가 분석 생성 중...':'마지막 검증 중...';
+      const bar=document.getElementById('namingPremLoadBar');if(bar)bar.style.width='55%';
+    }catch(e){apiError='1단계: '+e.message;console.error('Naming Premium 1:',e)}
+    if(cfg.api2){
+      try{Object.assign(merged,await doFetch(cfg.api2))}catch(e){apiError=(apiError?apiError+' | ':'')+'2단계: '+e.message;console.error('Naming Premium 2:',e)}
+    }
+
+    if(loadTimer)clearInterval(loadTimer);
+    const hasData=!!(merged.candidates||merged.bestThree);
+    console.log('Naming Premium API:',hasData?'OK':'FAIL',Object.keys(merged));
+    if(!hasData)throw new Error(apiError||'데이터 없음');
+
+    window._namingPremiumData={...info,prem:merged};
+    renderNamingPremium(merged,info);
+
+    if(apiError&&pw){
+      const notice=document.createElement('div');
+      notice.style.cssText='margin:14px 0;padding:12px;background:rgba(232,90,79,.08);border:1px solid rgba(232,90,79,.25);border-radius:10px;text-align:center';
+      notice.innerHTML=`<div style="font-size:12px;color:#e85a4f;margin-bottom:6px">⚠️ 일부 분석 섹션 로딩 실패</div>
+        <div style="font-size:10px;color:var(--text2);line-height:1.6">${apiError}</div>
+        <button onclick="retryNamingPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 누락 섹션 다시 시도</button>`;
+      pw.appendChild(notice);
+    }
+  }catch(err){
+    if(loadTimer)clearInterval(loadTimer);
+    console.error('프리미엄 작명 전체 오류:',err);
+    if(pw){
+      pw.innerHTML=`<div style="padding:24px;text-align:center;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.25);border-radius:10px">
+        <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+        <div style="font-size:13px;color:#e85a4f;font-weight:600;margin-bottom:6px">프리미엄 작명을 불러오지 못했습니다</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px">${(err.message||'').substring(0,200)}</div>
+        <button onclick="retryNamingPremiumAPI()" style="margin-top:8px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 AI 분석 다시 시도</button>
+      </div>`;
+    }
+  }
+}
+
+async function retryNamingPremiumAPI(){
+  const info=window._namingResultData;
+  if(!info){showToast('먼저 작명을 받아주세요');return}
+  const pw=document.getElementById('namingPaywall');
+  if(pw)pw.innerHTML=`<div style="padding:24px;text-align:center"><div class="spin-emoji" style="font-size:28px">名</div><div style="font-size:12px;color:var(--gold);margin-top:10px">AI 작명 재시도 중...</div></div>`;
+  try{
+    const ctx=_buildNamingContext(info);
+    const cfg=window._namingPremiumApiTypes||{api1:'naming_premium_1',api2:'naming_premium_2'};
+    const doFetch=async(apiType)=>{
+      const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
+      const txt=await resp.text();if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+      const d=JSON.parse(txt);if(!d.success||!d.result)throw new Error(d.error||'응답 오류');
+      if(d.result.raw&&!d.result.candidates&&!d.result.bestThree)throw new Error('파싱 실패');
+      return d.result;
+    };
+    let merged={};let apiError=null;
+    try{Object.assign(merged,await doFetch(cfg.api1))}catch(e){apiError='1단계: '+e.message}
+    if(cfg.api2){try{Object.assign(merged,await doFetch(cfg.api2))}catch(e){apiError=(apiError?apiError+' | ':'')+'2단계: '+e.message}}
+    const hasData=!!(merged.candidates||merged.bestThree);
+    if(!hasData)throw new Error(apiError||'데이터 없음');
+    window._namingPremiumData={...info,prem:merged};
+    renderNamingPremium(merged,info);
+  }catch(err){
+    if(pw)pw.innerHTML=`<div style="padding:24px;text-align:center;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.25);border-radius:10px"><div style="font-size:13px;color:#e85a4f;font-weight:600;margin-bottom:8px">재시도도 실패했습니다</div><button onclick="retryNamingPremiumAPI()" style="margin-top:10px;background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:10px 24px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer">🔄 한 번 더 시도</button></div>`;
+  }
+}
+
+function _buildNamingContext(info){
+  // 회사명: 사장 사주 + 업종 + 등록 지역 컨텍스트
+  if(info.ntype==='company'){
+    const ceoPillar=info.ceoPillars?`${HS[info.ceoPillars.year.stem]}${EB[info.ceoPillars.year.branch]} ${HS[info.ceoPillars.month.stem]}${EB[info.ceoPillars.month.branch]} ${HS[info.ceoPillars.day.stem]}${EB[info.ceoPillars.day.branch]} ${info.ceoPillars.hour?HS[info.ceoPillars.hour.stem]+EB[info.ceoPillars.hour.branch]:'(시간 모름)'}`:'';
+    return {
+      industry:info.industry||'',bizModel:info.bizModel||'',bizKeyword:info.bizKeyword||'없음',market:info.market||'',
+      companyRegion:info.companyRegion||'미선택',ceoName:info.ceoName||'미입력',
+      ceoPillar:ceoPillar,
+      ceoIlgan:info.ceoIlgan||'',ceoIlganElement:info.ceoIlganElement||'',ceoLacking:info.ceoLacking||''
+    };
+  }
+  // 제품명: 카테고리 + 상표 등록 검토 범위
+  if(info.ntype==='product'){
+    return {
+      productCat:info.productCat||'',productDesc:info.productDesc||'',
+      productTarget:info.productTarget||'(미입력)',productValue:info.productValue||'없음',
+      trademarkScope:info.tmScopeName||'미선택'
+    };
+  }
+  // 사람 (default)
+  const styleName=NAMING_STYLES.find(s=>s.k===info.style)?.n||'전통 한자';
+  const lengthName=NAMING_LENGTHS.find(l=>l.k===info.length)?.n||'3자';
+  return {
+    surname:info.surname,surnameHanja:info.surnameHanja||'',
+    pillar:info.pillars?`${HS[info.pillars.year.stem]}${EB[info.pillars.year.branch]} ${HS[info.pillars.month.stem]}${EB[info.pillars.month.branch]} ${HS[info.pillars.day.stem]}${EB[info.pillars.day.branch]} ${info.pillars.hour?HS[info.pillars.hour.stem]+EB[info.pillars.hour.branch]:'(시간 모름)'}`:'(미입력)',
+    ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',
+    dominant:info.dominant||'',lacking:info.lacking||'없음',
+    gender:info.gender==='male'?'남성':'여성',
+    style:styleName,length:lengthName,
+    preferred:info.preferred||'없음',
+    hangryeolHanja:info.hangryeolHanja||'',
+    hangryeolPos:info.hangryeolPos||''
+  };
+}
+
+function renderNamingPremium(prem,info){
+  // 종류별 분기
+  if(info.ntype==='company') return renderCompanyNamingPremium(prem,info);
+  if(info.ntype==='product') return renderProductNamingPremium(prem,info);
+
+  const pw=document.getElementById('namingPaywall');if(!pw)return;
+  // sajuMatchScore 내림차순 정렬 (LLM이 안 지켜도 방어)
+  const cands=(prem.candidates||[]).slice().sort((a,b)=>(b.sajuMatchScore||0)-(a.sajuMatchScore||0));
+  const best=prem.bestThree||[];
+
+  let candsHTML='';
+  cands.forEach((c,i)=>{
+    const givenHangul=_stripSurname(c.hangul,info.surname);
+    const givenHanja=_stripSurname(c.hanja,info.surnameHanja||info.surname);
+    const fullHangul=_fullName(givenHangul,info.surname);
+    const fullHanja=info.surnameHanja?(info.surnameHanja+givenHanja):(c.hanja||givenHangul);
+    const gradeColor=c.gyeokGrade==='대길'?'#1a7a4a':c.gyeokGrade==='길'?'#5a8b1a':c.gyeokGrade==='반길'?'#b8860b':c.gyeokGrade==='흉'?'#c9443a':'#8b6914';
+    // 한자 글자별 풀이
+    let detailHTML='';
+    if(c.hanjaDetail&&c.hanjaDetail.length){
+      detailHTML='<div style="margin-top:8px;padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px"><div style="font-size:10px;color:var(--gold);font-weight:600;margin-bottom:4px">한자 글자별 풀이</div>';
+      c.hanjaDetail.forEach(hd=>{
+        detailHTML+=`<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px dashed rgba(201,165,78,.1)"><div style="font-size:18px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;min-width:24px;text-align:center">${hd.char||''}</div><div style="flex:1;font-size:10.5px;line-height:1.6"><div style="color:var(--text1)">${hd.meaning||''}</div>${hd.soundFeel?`<div style="color:var(--text2);font-style:italic;margin-top:2px">🎵 ${hd.soundFeel}</div>`:''}</div></div>`;
+      });
+      detailHTML+='</div>';
+    }
+
+    // 사격 5개 풀이
+    let gyeokHTML='';
+    if(c.fiveGyeokDetail){
+      const fg=c.fiveGyeokDetail;
+      const labels={cheon:'천격',in:'인격',ji:'지격',oe:'외격',chong:'총격'};
+      gyeokHTML='<div style="margin-top:8px;padding:8px 10px;background:rgba(173,216,230,.05);border-radius:6px"><div style="font-size:10px;color:var(--gold);font-weight:600;margin-bottom:4px">사격(五格) 풀이</div>';
+      ['cheon','in','ji','oe','chong'].forEach(k=>{
+        if(fg[k])gyeokHTML+=`<div style="font-size:10.5px;line-height:1.6;margin-bottom:2px"><strong style="color:var(--gold)">${labels[k]}:</strong> ${fg[k]}</div>`;
+      });
+      gyeokHTML+='</div>';
+    }
+
+    candsHTML+=`<div style="padding:12px;margin-bottom:12px;background:rgba(201,165,78,.04);border-radius:10px;border-left:3px solid ${gradeColor}">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="font-size:28px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;min-width:64px;text-align:center">${fullHanja||fullHangul}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700">${fullHangul}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">${c.style||''} · ${c.gyeokGrade||''} · ${c.yinyangPattern||''} · ${c.soundElPattern||''}</div>
+        </div>
+        ${c.sajuMatchScore!=null?`<div style="font-size:18px;color:var(--gold);font-weight:700;font-family:'Noto Serif KR',serif">${c.sajuMatchScore}<span style="font-size:11px;color:var(--text2)">점</span></div>`:''}
+      </div>
+      ${detailHTML}
+      ${c.alternativeHanja?`<div style="font-size:11px;color:var(--text2);line-height:1.7;margin-top:6px;padding:6px 10px;background:rgba(0,0,0,.1);border-radius:6px"><strong style="color:var(--gold)">⚖ 한자 비교:</strong> ${c.alternativeHanja}</div>`:''}
+      ${gyeokHTML}
+      ${c.sajuMatchReason?`<div style="font-size:11px;color:#1a7a4a;line-height:1.7;margin-top:6px;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;border-left:3px solid #1a7a4a"><strong>⚯ 사주 매칭 이유:</strong> ${c.sajuMatchReason}</div>`:''}
+      ${c.strengths?`<div style="font-size:11px;color:#1a7a4a;line-height:1.7;margin-top:6px"><strong>✓</strong> ${c.strengths}</div>`:''}
+      ${c.concerns?`<div style="font-size:11px;color:#c9443a;line-height:1.7;margin-top:3px"><strong>⚠</strong> ${c.concerns}</div>`:''}
+    </div>`;
+  });
+
+  let bestHTML='';
+  best.forEach((b,i)=>{
+    const bGivenHangul=_stripSurname(b.hangul,info.surname);
+    const bGivenHanja=_stripSurname(b.hanja,info.surnameHanja||info.surname);
+    const bFullHangul=_fullName(bGivenHangul,info.surname);
+    const bFullHanja=info.surnameHanja?(info.surnameHanja+bGivenHanja):(b.hanja||bGivenHangul);
+    bestHTML+=`<div style="padding:18px;margin-bottom:18px;background:linear-gradient(180deg,rgba(201,165,78,.08) 0%,rgba(201,165,78,.03) 100%);border-radius:14px;border:1px solid rgba(201,165,78,.25);box-shadow:0 2px 12px rgba(201,165,78,.05)">
+      <div style="text-align:center;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid rgba(201,165,78,.2)">
+        <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:4px">★ BEST ${i+1}</div>
+        <div style="font-size:48px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;letter-spacing:6px;margin-bottom:6px">${bFullHanja||bFullHangul}</div>
+        <div style="font-size:16px;color:var(--text1);font-weight:700">${bFullHangul}</div>
+        ${b.whyBest?`<div style="font-size:11.5px;color:var(--text2);line-height:1.7;margin-top:8px;font-style:italic">"${b.whyBest}"</div>`:''}
+      </div>
+      ${b.lifeFlow?`<div style="margin-bottom:12px">
+        <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">🌊 평생 운명 — 4구간</div>
+        ${b.lifeFlow.teens?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">10~20대 · 학업과 적성</div><div style="font-size:12px;line-height:1.85">${b.lifeFlow.teens}</div></div>`:''}
+        ${b.lifeFlow.thirties?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">30~40대 · 직업과 결혼</div><div style="font-size:12px;line-height:1.85">${b.lifeFlow.thirties}</div></div>`:''}
+        ${b.lifeFlow.fifties?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">50~60대 · 사회와 가정</div><div style="font-size:12px;line-height:1.85">${b.lifeFlow.fifties}</div></div>`:''}
+        ${b.lifeFlow.seventies?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">70+ · 말년과 유산</div><div style="font-size:12px;line-height:1.85">${b.lifeFlow.seventies}</div></div>`:''}
+      </div>`:''}
+      ${b.careerFit?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(26,122,74,.06);border:1px solid rgba(26,122,74,.15);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#1a7a4a">💼 직업·진로:</strong> ${b.careerFit}</div>`:''}
+      ${b.relationFit?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.15);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#e85a4f">💕 인연·배우자 상:</strong> ${b.relationFit}</div>`:''}
+      ${b.cautionPoints?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(255,200,150,.06);border:1px solid rgba(255,200,150,.2);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#b8860b">⚠️ 평생 보완할 점:</strong> ${b.cautionPoints}</div>`:''}
+      ${b.nameComparison?`<div style="font-size:11px;line-height:1.7;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,165,78,.2)"><strong>👥 동명이인·역사 인물:</strong> ${b.nameComparison}</div>`:''}
+      ${b.soundEnvironment?`<div style="font-size:11px;line-height:1.7;color:var(--text2);margin-top:4px"><strong>🌐 발음·해외 환경:</strong> ${b.soundEnvironment}</div>`:''}
+    </div>`;
+  });
+
+  pw.innerHTML=`
+    <div class="card-title">🔮 프리미엄 작명 리포트</div>
+
+    ${prem.sajuAnalysis?`<div style="margin-bottom:14px;padding:14px;background:rgba(201,165,78,.05);border-radius:10px;border:1px solid rgba(201,165,78,.15)">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">📜 사주 분석 + 작명 방향</div>
+      <div style="font-size:13px;line-height:1.85">${prem.sajuAnalysis}</div>
+    </div>`:''}
+
+    ${candsHTML?`<div style="margin-bottom:18px">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">⭐ 추천 이름 ${cands.length}개</div>
+      ${candsHTML}
+    </div>`:''}
+
+    ${bestHTML?`<div style="margin-bottom:18px">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">🏆 베스트 3 — 인생 흐름 + 직업 + 비교</div>
+      ${bestHTML}
+    </div>`:''}
+
+    ${prem.namingRitual?`<div style="margin-bottom:14px;padding:14px;background:linear-gradient(180deg,rgba(167,139,250,.06) 0%,rgba(167,139,250,.02) 100%);border-radius:10px;border:1px solid rgba(167,139,250,.2)">
+      <div style="font-size:14px;color:#a78bfa;font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">🪷 한국 전통 작명 의식</div>
+      <div style="font-size:13px;line-height:1.9">${prem.namingRitual}</div>
+    </div>`:''}
+
+    ${prem.blessing?`<div style="margin-bottom:14px;padding:18px;background:linear-gradient(180deg,rgba(201,165,78,.08) 0%,rgba(201,165,78,.03) 100%);border-radius:12px;border:1.5px solid rgba(201,165,78,.3);text-align:center">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:10px">🙏 부모·본인에게 드리는 축원</div>
+      <div style="font-size:13.5px;line-height:1.95;font-family:'Noto Serif KR',serif;color:var(--text1);font-style:italic">${prem.blessing}</div>
+    </div>`:''}
+
+    ${prem.namingAdvice?`<div style="padding:14px;background:rgba(201,165,78,.06);border-radius:10px;font-size:13px;line-height:1.85;margin-bottom:14px">💡 ${prem.namingAdvice}</div>`:''}
+
+    ${prem.alternativeIdeas?`<div style="padding:12px;background:rgba(173,216,230,.05);border:1px solid rgba(173,216,230,.1);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:14px"><strong style="color:var(--gold)">💭 대안 아이디어:</strong> ${prem.alternativeIdeas}</div>`:''}
+
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <button class="share-btn" onclick="savePremiumNamingPDF()" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📄 리포트 저장</button>
+    </div>
+  `;
+  pw.style.position='relative';pw.style.overflow='visible';
+}
+
+// ───────── 회사명 프리미엄 렌더러 ─────────
+function renderCompanyNamingPremium(prem,info){
+  const pw=document.getElementById('namingPaywall');if(!pw)return;
+  const cands=prem.candidates||[];
+  const best=prem.bestThree||[];
+
+  let candsHTML='';
+  cands.forEach((c,i)=>{
+    candsHTML+=`<div style="padding:12px;margin-bottom:10px;background:rgba(201,165,78,.04);border-radius:10px;border-left:3px solid var(--gold)">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="font-size:22px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;flex:1">${c.name||''}${c.english?` <span style="font-size:13px;color:var(--text2);font-weight:400">(${c.english})</span>`:''}</div>
+        ${c.style?`<div style="display:inline-block;padding:3px 8px;border-radius:10px;background:rgba(201,165,78,.1);color:var(--gold);font-size:9.5px">${c.style}</div>`:''}
+      </div>
+      ${c.meaning?`<div style="font-size:12px;line-height:1.8;margin-bottom:6px"><strong style="color:var(--gold)">의미:</strong> ${c.meaning}</div>`:''}
+      ${c.brandImage?`<div style="font-size:11.5px;line-height:1.7;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;margin-bottom:6px"><strong style="color:#7ab8d4">🎨 브랜드 이미지:</strong> ${c.brandImage}</div>`:''}
+      ${c.industryFit?`<div style="font-size:11.5px;color:#1a7a4a;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;margin-bottom:6px"><strong>업종 적합:</strong> ${c.industryFit}</div>`:''}
+      ${c.sajuMatch?`<div style="font-size:11.5px;color:#a78bfa;padding:6px 10px;background:rgba(167,139,250,.06);border-radius:6px;margin-bottom:6px"><strong>⚯ 사주 매칭:</strong> ${c.sajuMatch}</div>`:''}
+      ${c.differentiation?`<div style="font-size:11px;line-height:1.7;margin-top:6px"><strong style="color:var(--gold)">차별화:</strong> ${c.differentiation}</div>`:''}
+      ${c.similar?`<div style="font-size:10.5px;line-height:1.7;color:var(--text2);margin-top:4px"><strong>유사 비교:</strong> ${c.similar}</div>`:''}
+      ${c.registrability?`<div style="font-size:11px;color:#e85a4f;line-height:1.7;padding:6px 10px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.15);border-radius:6px;margin-top:6px"><strong>📋 등록 가능성:</strong> ${c.registrability}</div>`:''}
+      ${c.domainCheck?`<div style="font-size:10.5px;color:var(--text2);margin-top:4px">🌐 ${c.domainCheck}</div>`:''}
+      ${c.strengths?`<div style="font-size:11px;color:#1a7a4a;margin-top:5px"><strong>✓</strong> ${c.strengths}</div>`:''}
+      ${c.concerns?`<div style="font-size:11px;color:#c9443a;margin-top:3px"><strong>⚠</strong> ${c.concerns}</div>`:''}
+    </div>`;
+  });
+
+  let bestHTML='';
+  best.forEach((b,i)=>{
+    bestHTML+=`<div style="padding:18px;margin-bottom:18px;background:linear-gradient(180deg,rgba(201,165,78,.08) 0%,rgba(201,165,78,.03) 100%);border-radius:14px;border:1px solid rgba(201,165,78,.25)">
+      <div style="text-align:center;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid rgba(201,165,78,.2)">
+        <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:4px">★ BEST ${i+1}</div>
+        <div style="font-size:36px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;letter-spacing:2px;margin-bottom:6px">${b.name||''}</div>
+        ${b.english?`<div style="font-size:14px;color:var(--text2);font-family:'Inter',sans-serif">${b.english}</div>`:''}
+        ${b.whyBest?`<div style="font-size:11.5px;color:var(--text2);line-height:1.7;margin-top:8px;font-style:italic">"${b.whyBest}"</div>`:''}
+      </div>
+      ${b.businessFlow?`<div style="margin-bottom:12px">
+        <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">📈 사업 흐름 — 4구간</div>
+        ${b.businessFlow.startup?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">창업기 0~3년</div><div style="font-size:12px;line-height:1.85">${b.businessFlow.startup}</div></div>`:''}
+        ${b.businessFlow.growth?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">성장기 3~7년</div><div style="font-size:12px;line-height:1.85">${b.businessFlow.growth}</div></div>`:''}
+        ${b.businessFlow.expansion?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">확장기 7~12년</div><div style="font-size:12px;line-height:1.85">${b.businessFlow.expansion}</div></div>`:''}
+        ${b.businessFlow.maturity?`<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,.15);border-radius:8px"><div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:3px">성숙기 12년+</div><div style="font-size:12px;line-height:1.85">${b.businessFlow.maturity}</div></div>`:''}
+      </div>`:''}
+      ${b.expansionAreas?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(26,122,74,.06);border:1px solid rgba(26,122,74,.15);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#1a7a4a">🌱 확장 분야:</strong> ${b.expansionAreas}</div>`:''}
+      ${b.revenueTimeline?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:var(--gold)">💰 매출 시기 예측:</strong> ${b.revenueTimeline}</div>`:''}
+      ${b.registrabilityDeep?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.2);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#e85a4f">📋 상호 등록 가능성:</strong> ${b.registrabilityDeep}</div>`:''}
+      ${b.trademarkCheck?`<div style="margin-bottom:8px;padding:10px 12px;background:rgba(173,216,230,.05);border:1px solid rgba(173,216,230,.15);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#7ab8d4">📋 상표·도메인·SNS:</strong> ${b.trademarkCheck}</div>`:''}
+      ${b.slogans&&b.slogans.length?`<div style="margin-top:8px;padding:10px 12px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.15);border-radius:8px;font-size:12px;line-height:1.8"><strong style="color:#e85a4f">📢 슬로건 후보:</strong><br>${b.slogans.map(s=>`• "${s}"`).join('<br>')}</div>`:''}
+    </div>`;
+  });
+
+  pw.innerHTML=`<div class="card-title" style="text-align:center;margin-bottom:14px">🔮 프리미엄 회사명 리포트</div>
+    ${prem.strategicAnalysis?`<div style="margin-bottom:14px;padding:12px;background:rgba(201,165,78,.05);border-radius:10px;font-size:13px;line-height:1.85"><strong style="color:var(--gold)">📊 전략 분석:</strong> ${prem.strategicAnalysis}</div>`:''}
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:10px">⭐ 후보 ${cands.length}개</div>
+    ${candsHTML}
+    ${prem.registrabilityNote?`<div style="margin:14px 0;padding:14px;background:rgba(232,90,79,.05);border:1px solid rgba(232,90,79,.2);border-radius:10px;font-size:12px;line-height:1.85"><strong style="color:#e85a4f">📋 상호 등록 가능성 종합:</strong> ${prem.registrabilityNote}<br><a href="https://www.iros.go.kr" target="_blank" style="color:var(--gold);font-size:11px;display:inline-block;margin-top:6px">→ 대법원 인터넷등기소에서 직접 검색</a></div>`:''}
+    ${best.length?`<div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin:18px 0 10px;text-align:center">★ 베스트 ${best.length} — 사업 흐름 풀이</div>${bestHTML}`:''}
+    ${prem.namingRitual?`<div style="margin-bottom:14px;padding:14px;background:linear-gradient(180deg,rgba(167,139,250,.06) 0%,rgba(167,139,250,.02) 100%);border-radius:10px;border:1px solid rgba(167,139,250,.2)"><div style="font-size:14px;color:#a78bfa;font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">🪷 한국 전통 작명 의식</div><div style="font-size:13px;line-height:1.9">${prem.namingRitual}</div></div>`:''}
+    ${prem.blessing?`<div style="margin-bottom:14px;padding:18px;background:linear-gradient(180deg,rgba(201,165,78,.08) 0%,rgba(201,165,78,.03) 100%);border-radius:12px;border:1.5px solid rgba(201,165,78,.3);text-align:center"><div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:10px">🙏 창업자에게 드리는 축원</div><div style="font-size:13.5px;line-height:1.95;font-family:'Noto Serif KR',serif;font-style:italic">${prem.blessing}</div></div>`:''}
+    ${prem.namingAdvice?`<div style="padding:14px;background:rgba(201,165,78,.06);border-radius:10px;font-size:13px;line-height:1.85;margin-bottom:14px">💡 ${prem.namingAdvice}</div>`:''}
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <button class="share-btn" onclick="savePremiumNamingPDF()" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📄 리포트 저장</button>
+    </div>`;
+  pw.style.position='relative';pw.style.overflow='visible';
+}
+
+// ───────── 제품명 프리미엄 렌더러 ─────────
+function renderProductNamingPremium(prem,info){
+  const pw=document.getElementById('namingPaywall');if(!pw)return;
+  const cands=(prem.candidates||[]).slice().sort((a,b)=>(b.seoScore||0)-(a.seoScore||0));
+
+  let candsHTML='';
+  cands.forEach((c,i)=>{
+    candsHTML+=`<div style="padding:14px;margin-bottom:12px;background:rgba(201,165,78,.04);border-radius:10px;border-left:3px solid var(--gold)">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--gold);font-weight:700;min-width:24px">${i+1}</div>
+        <div style="font-size:20px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;flex:1">${c.name||''}${c.english?` <span style="font-size:12px;color:var(--text2);font-weight:400">(${c.english})</span>`:''}</div>
+        ${c.style?`<div style="display:inline-block;padding:3px 8px;border-radius:10px;background:rgba(201,165,78,.1);color:var(--gold);font-size:9.5px">${c.style}</div>`:''}
+        ${c.seoScore!=null?`<div style="font-size:16px;color:var(--gold);font-weight:700">${c.seoScore}<span style="font-size:10px;color:var(--text2)">SEO</span></div>`:''}
+      </div>
+      ${c.meaning?`<div style="font-size:12px;line-height:1.8;margin-bottom:6px"><strong style="color:var(--gold)">의미:</strong> ${c.meaning}</div>`:''}
+      ${c.targetAppeal?`<div style="font-size:11.5px;line-height:1.7;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;margin-bottom:6px"><strong style="color:#7ab8d4">🎯 타겟 어필:</strong> ${c.targetAppeal}</div>`:''}
+      ${c.categoryFit?`<div style="font-size:11.5px;color:#1a7a4a;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;margin-bottom:6px"><strong>카테고리 적합:</strong> ${c.categoryFit}</div>`:''}
+      ${c.differentiation?`<div style="font-size:11px;line-height:1.7;margin-bottom:5px"><strong style="color:var(--gold)">차별화:</strong> ${c.differentiation}</div>`:''}
+      ${c.trademarkability?`<div style="font-size:11px;color:#e85a4f;line-height:1.7;padding:6px 10px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.15);border-radius:6px;margin:6px 0"><strong>™ 상표 등록 가능성${c.trademarkScore!=null?` (${c.trademarkScore}점)`:''}:</strong> ${c.trademarkability}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        ${c.memorability?`<div style="flex:1;min-width:120px;padding:5px 9px;background:rgba(0,0,0,.15);border-radius:6px;font-size:10.5px">🔁 ${c.memorability}</div>`:''}
+        ${c.hashtagFriendly?`<div style="flex:1;min-width:120px;padding:5px 9px;background:rgba(0,0,0,.15);border-radius:6px;font-size:10.5px">#️⃣ ${c.hashtagFriendly}</div>`:''}
+      </div>
+      ${c.slogan?`<div style="margin-top:6px;padding:8px 10px;background:rgba(232,90,79,.06);border-radius:6px;font-size:11.5px;font-style:italic;color:#e85a4f"><strong>📢</strong> "${c.slogan}"</div>`:''}
+      ${c.strengths?`<div style="font-size:11px;color:#1a7a4a;margin-top:5px"><strong>✓</strong> ${c.strengths}</div>`:''}
+      ${c.concerns?`<div style="font-size:11px;color:#c9443a;margin-top:3px"><strong>⚠</strong> ${c.concerns}</div>`:''}
+    </div>`;
+  });
+
+  pw.innerHTML=`<div class="card-title" style="text-align:center;margin-bottom:14px">🔮 프리미엄 제품명 리포트</div>
+    ${prem.strategicAnalysis?`<div style="margin-bottom:14px;padding:12px;background:rgba(201,165,78,.05);border-radius:10px;font-size:13px;line-height:1.85"><strong style="color:var(--gold)">📊 마케팅 전략:</strong> ${prem.strategicAnalysis}</div>`:''}
+    <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:10px">⭐ 후보 ${cands.length}개 (SEO 점수 내림차순)</div>
+    ${candsHTML}
+    ${prem.trademarkNote?`<div style="margin:14px 0;padding:14px;background:rgba(232,90,79,.05);border:1px solid rgba(232,90,79,.2);border-radius:10px;font-size:12px;line-height:1.85"><strong style="color:#e85a4f">™ 상표 등록 종합 안내:</strong> ${prem.trademarkNote}<br><a href="https://www.kipris.or.kr" target="_blank" style="color:var(--gold);font-size:11px;margin-right:10px">→ KIPRIS (한국)</a><a href="https://tmsearch.uspto.gov" target="_blank" style="color:var(--gold);font-size:11px;margin-right:10px">→ USPTO TESS (미국)</a><a href="https://www.tmview.europa.eu" target="_blank" style="color:var(--gold);font-size:11px">→ EU TMview</a></div>`:''}
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <button class="share-btn" onclick="savePremiumNamingPDF()" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📄 리포트 저장</button>
+    </div>`;
+  pw.style.position='relative';pw.style.overflow='visible';
 }
 
 // ============================================================
@@ -7782,9 +9645,314 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   }
 }
 
+// ── 프리미엄 작명 PDF 리포트 저장 ──
+// 회사·제품 등 — DOM 직접 인쇄 (html2canvas는 너무 큰 이미지에서 첫 페이지 빈공간 버그 발생)
+function _savePremiumNamingPDFGeneric(D){
+  showToast('리포트를 준비하고 있습니다...');
+  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  const titleMap={company:`${D.industry||'회사명'} 프리미엄 리포트`,product:`${D.productCat||'제품명'} 프리미엄 리포트`};
+  const title=titleMap[D.ntype]||'작명 프리미엄 리포트';
+  const target=document.getElementById('namingPaywall');
+  if(!target){showToast('리포트 영역을 찾지 못했습니다');return}
+
+  // CSS 변수는 새 창에서 정의 안 되므로 리터럴 색상으로 치환
+  let html=target.innerHTML
+    .replace(/var\(--gold\)/g,'#c9a54e')
+    .replace(/var\(--text1\)/g,'#222')
+    .replace(/var\(--text2\)/g,'#666')
+    .replace(/var\(--card\)/g,'#f8f8f8')
+    .replace(/var\(--border\)/g,'#ddd');
+  // 어두운 반투명 배경 → 인쇄용 밝은 색
+  html=html
+    .replace(/rgba\(201,165,78,\.0[1-9]\)/g,'#fdf8e8')
+    .replace(/rgba\(232,90,79,\.0[1-9]\)/g,'#fbe9e7')
+    .replace(/rgba\(26,122,74,\.0[1-9]\)/g,'#e8f5ed')
+    .replace(/rgba\(173,216,230,\.0[1-9]\)/g,'#e7f1f8')
+    .replace(/rgba\(167,139,250,\.0[1-9]\)/g,'#f0eaff')
+    .replace(/rgba\(0,0,0,\.[0-9]+\)/g,'#f5f5f5');
+
+  const w=window.open('','_blank');
+  if(!w){showToast('팝업이 차단되어 새 창을 열 수 없습니다');return}
+  w.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title} - ${today}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<style>
+@page{size:A4;margin:15mm}
+*{box-sizing:border-box}
+body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:#222;font-size:10.5pt;line-height:1.7;margin:0}
+.header{text-align:center;border-bottom:2px solid #c9a54e;padding-bottom:10px;margin-bottom:18px}
+.header h1{font-family:'Noto Serif KR',serif;font-size:20pt;color:#c9a54e;margin:0 0 6px;font-weight:700}
+.header .date{color:#666;font-size:10pt}
+/* 카드를 통째로 다음 페이지로 밀지 말고 자연스럽게 분기 */
+.content > div{break-inside:auto;page-break-inside:auto}
+/* 단, 작은 정보 블록(슬로건·점수·아이콘 박스 등)만 잘림 방지 */
+.content > div > div[style*="border-radius:6px"]:not([style*="padding:14px"]):not([style*="padding:18px"]){break-inside:avoid;page-break-inside:avoid}
+.content button{display:none !important}
+.content .card-title{font-family:'Noto Serif KR',serif;font-size:14pt;color:#c9a54e;font-weight:700;margin-bottom:10px}
+.foot{text-align:center;color:#999;font-size:8pt;margin-top:18px;padding-top:10px;border-top:1px solid #ddd}
+.no-print{position:fixed;top:10px;right:10px;background:#c9a54e;color:#000;border:none;padding:10px 18px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;z-index:9999;font-size:13px}
+@media print{.no-print{display:none}}
+</style>
+</head><body>
+<div class="header">
+  <h1>${title}</h1>
+  <div class="date">${today}</div>
+</div>
+<div class="content">${html}</div>
+<div class="foot">天運 (chunwoon.app) — 본 리포트는 오락 목적이며 과학적 근거를 보장하지 않습니다.</div>
+<button class="no-print" onclick="window.print()">📄 PDF 저장 / 인쇄</button>
+</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print&&w.print(),800);
+}
+
+function savePremiumNamingPDF(){
+  const D=window._namingPremiumData;
+  if(!D||!D.prem){showToast('프리미엄 작명 데이터가 없습니다');return}
+  // 회사명·제품명은 별도 PDF (간이 버전 — html2canvas로 화면 캡쳐)
+  if(D.ntype==='company'||D.ntype==='product'){
+    return _savePremiumNamingPDFGeneric(D);
+  }
+  showToast('프리미엄 작명 리포트를 준비하고 있습니다...');
+  const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  const prem=D.prem;
+  const info=D;
+
+  const esc=(s)=>(s||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  let body='';
+
+  // ① 사주 분석 + 작명 방향
+  if(prem.sajuAnalysis){
+    body+=`<div class="section"><h2>📜 사주 분석 + 작명 방향</h2>
+      <div class="domain-card domain-career">
+        ${info.ilgan?`<p style="margin-bottom:10px"><strong>일간:</strong> ${esc(info.ilgan)}(${esc(info.ilganElement||'')}) · <strong>부족 오행:</strong> ${esc(info.lacking||'없음')} · <strong>강한 오행:</strong> ${esc(info.dominant||'')}</p>`:''}
+        <p>${esc(prem.sajuAnalysis)}</p>
+      </div>
+    </div>`;
+  }
+
+  // ② 추천 이름 10개 (한자 글자별 + 사격 풀이) — 점수 내림차순 정렬
+  const sortedCands=(prem.candidates||[]).slice().sort((a,b)=>(b.sajuMatchScore||0)-(a.sajuMatchScore||0));
+  if(sortedCands.length){
+    body+=`<div class="section page-break"><h2>⭐ 추천 이름 ${sortedCands.length}개</h2><p class="section-desc">사주 매칭 점수 높은 순. 전통한자·현대한자·한글전용 다양하게. 각 이름의 한자 글자별 풀이 + 사격 5개 분석.</p>`;
+    sortedCands.forEach((c,i)=>{
+      const givenHangul=_stripSurname(c.hangul,info.surname);
+      const givenHanja=_stripSurname(c.hanja,info.surnameHanja||info.surname);
+      const fullHangul=_fullName(givenHangul,info.surname);
+      const fullHanja=info.surnameHanja?(info.surnameHanja+givenHanja):(c.hanja||givenHangul);
+      const gradeColor=c.gyeokGrade==='대길'?'#0a5a30':c.gyeokGrade==='길'?'#5a8b1a':c.gyeokGrade==='반길'?'#b8860b':'#8a2218';
+      // 한자 글자별
+      let hanjaDetailStr='';
+      if(c.hanjaDetail&&c.hanjaDetail.length){
+        hanjaDetailStr='<div class="hanja-detail-wrap">';
+        c.hanjaDetail.forEach(hd=>{
+          hanjaDetailStr+=`<div class="hanja-row"><span class="hanja-char">${esc(hd.char||'')}</span><div class="hanja-info"><div class="hanja-meaning">${esc(hd.meaning||'')}</div>${hd.soundFeel?`<div class="hanja-sound">🎵 ${esc(hd.soundFeel)}</div>`:''}</div></div>`;
+        });
+        hanjaDetailStr+='</div>';
+      }
+      // 사격 5개
+      let gyeokStr='';
+      if(c.fiveGyeokDetail){
+        const fg=c.fiveGyeokDetail;
+        const labels={cheon:'천격(天格)',in:'인격(人格)',ji:'지격(地格)',oe:'외격(外格)',chong:'총격(總格)'};
+        gyeokStr='<div class="gyeok-wrap"><div class="gyeok-title">사격(五格) 풀이</div>';
+        ['cheon','in','ji','oe','chong'].forEach(k=>{
+          if(fg[k])gyeokStr+=`<div class="gyeok-row"><strong>${labels[k]}</strong> ${esc(fg[k])}</div>`;
+        });
+        gyeokStr+='</div>';
+      }
+      body+=`<div class="naming-card" style="border-left-color:${gradeColor}">
+        <div class="nc-header">
+          <div class="nc-hanja">${esc(fullHanja||fullHangul)}</div>
+          <div class="nc-info">
+            <div class="nc-fullname">${esc(fullHangul)}</div>
+            <div class="nc-meta">${esc(c.style||'')} · ${esc(c.gyeokGrade||'')} · ${esc(c.yinyangPattern||'')} · ${esc(c.soundElPattern||'')}</div>
+          </div>
+          ${c.sajuMatchScore!=null?`<div class="nc-score">${c.sajuMatchScore}점</div>`:''}
+        </div>
+        ${hanjaDetailStr}
+        ${c.alternativeHanja?`<div class="nc-alt"><strong>⚖ 한자 비교:</strong> ${esc(c.alternativeHanja)}</div>`:''}
+        ${gyeokStr}
+        ${c.sajuMatchReason?`<div class="nc-saju"><strong>⚯ 사주 매칭:</strong> ${esc(c.sajuMatchReason)}</div>`:''}
+        ${c.strengths?`<div class="nc-good">✓ ${esc(c.strengths)}</div>`:''}
+        ${c.concerns?`<div class="nc-bad">⚠ ${esc(c.concerns)}</div>`:''}
+      </div>`;
+    });
+    body+='</div>';
+  }
+
+  // ③ 베스트 3 평생 운명 (4구간)
+  if(prem.bestThree&&prem.bestThree.length){
+    body+=`<div class="section page-break"><h2>🏆 베스트 3 — 평생 운명</h2><p class="section-desc">10개 후보 중 가장 어울리는 3개. 10대·30대·50대·70대 4구간 평생 흐름과 직업·인연·보완점.</p>`;
+    prem.bestThree.forEach((b,i)=>{
+      const bGivenHangul=_stripSurname(b.hangul,info.surname);
+      const bGivenHanja=_stripSurname(b.hanja,info.surnameHanja||info.surname);
+      const bFullHangul=_fullName(bGivenHangul,info.surname);
+      const bFullHanja=info.surnameHanja?(info.surnameHanja+bGivenHanja):(b.hanja||bGivenHangul);
+      body+=`<div class="best-card">
+        <div class="best-header">
+          <div class="best-rank">★ BEST ${i+1}</div>
+          <div class="best-hanja">${esc(bFullHanja||bFullHangul)}</div>
+          <div class="best-fullname">${esc(bFullHangul)}</div>
+        </div>
+        ${b.whyBest?`<div class="why-best"><em>"${esc(b.whyBest)}"</em></div>`:''}
+        ${b.lifeFlow?`<div class="life-flow">
+          <h3>🌊 평생 운명 4구간</h3>
+          ${b.lifeFlow.teens?`<div class="life-stage"><div class="ls-label">10~20대 · 학업과 적성</div><p>${esc(b.lifeFlow.teens)}</p></div>`:''}
+          ${b.lifeFlow.thirties?`<div class="life-stage"><div class="ls-label">30~40대 · 직업과 결혼</div><p>${esc(b.lifeFlow.thirties)}</p></div>`:''}
+          ${b.lifeFlow.fifties?`<div class="life-stage"><div class="ls-label">50~60대 · 사회와 가정</div><p>${esc(b.lifeFlow.fifties)}</p></div>`:''}
+          ${b.lifeFlow.seventies?`<div class="life-stage"><div class="ls-label">70+ · 말년과 유산</div><p>${esc(b.lifeFlow.seventies)}</p></div>`:''}
+        </div>`:''}
+        ${b.careerFit?`<div class="career-fit"><strong>💼 직업·진로:</strong> ${esc(b.careerFit)}</div>`:''}
+        ${b.relationFit?`<div class="relation-fit"><strong>💕 인연·배우자 상:</strong> ${esc(b.relationFit)}</div>`:''}
+        ${b.cautionPoints?`<div class="caution-points"><strong>⚠️ 평생 보완할 점:</strong> ${esc(b.cautionPoints)}</div>`:''}
+        ${b.nameComparison?`<div class="extra-info"><strong>👥 동명이인·역사 인물:</strong> ${esc(b.nameComparison)}</div>`:''}
+        ${b.soundEnvironment?`<div class="extra-info"><strong>🌐 발음·해외 환경:</strong> ${esc(b.soundEnvironment)}</div>`:''}
+      </div>`;
+    });
+    body+='</div>';
+  }
+
+  // ④ 작명 의식 + 축원
+  if(prem.namingRitual||prem.blessing){
+    body+=`<div class="section page-break"><h2>🪷 한국 전통 작명 의식</h2>`;
+    if(prem.namingRitual)body+=`<div class="ritual-box"><p>${esc(prem.namingRitual)}</p></div>`;
+    if(prem.blessing)body+=`<div class="blessing-box"><div class="bl-title">🙏 축원</div><p>${esc(prem.blessing)}</p></div>`;
+    body+='</div>';
+  }
+
+  // ⑤ 종합 조언 + 대안
+  if(prem.namingAdvice||prem.alternativeIdeas){
+    body+=`<div class="section"><h2>💡 종합 조언</h2>`;
+    if(prem.namingAdvice)body+=`<div class="domain-card domain-health"><p>${esc(prem.namingAdvice)}</p></div>`;
+    if(prem.alternativeIdeas)body+=`<div class="domain-card" style="border-left-color:#4fc3e8"><div class="dc-head">💭 대안 아이디어</div><p>${esc(prem.alternativeIdeas)}</p></div>`;
+    body+='</div>';
+  }
+
+  const printHTML=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>天運 프리미엄 작명 리포트 — ${esc(info.surname||'')}씨</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:16mm 14mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line-height:1.9;font-size:15px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px}
+
+.cover{text-align:center;padding:48px 20px 38px;border:2px solid #8b6914;border-radius:12px;background:linear-gradient(180deg,#faf6ec 0%,#fff 100%);margin-bottom:32px;position:relative}
+.cover::before{content:'';position:absolute;inset:5px;border:1px solid rgba(139,105,20,.25);border-radius:9px;pointer-events:none}
+.cover h1{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:38px;font-weight:900;letter-spacing:8px;margin-bottom:2px}
+.cover .sub{color:#9a8550;font-size:12px;letter-spacing:5px;margin-bottom:14px;text-transform:uppercase}
+.cover .name-big{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:48px;font-weight:900;margin:14px 0;letter-spacing:8px}
+.cover .divider{width:100px;height:2px;background:linear-gradient(90deg,transparent,#8b6914,transparent);margin:0 auto 14px}
+.cover .date{color:#555;font-size:13px}
+
+.section{margin-bottom:28px;padding:22px 24px;background:#ffffff;border:1px solid #d5cbb5;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section h2{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:20px;font-weight:900;margin-bottom:5px;letter-spacing:0.5px}
+.section h3{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:14px;font-weight:700;margin:8px 0 4px}
+.section-desc{font-size:13px;color:#555;margin-bottom:16px;line-height:1.7}
+.page-break{page-break-before:auto}
+
+.domain-card{background:#ffffff;border-left:5px solid #8b6914;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.domain-card .dc-head{font-family:'Noto Serif KR',serif;font-size:15px;font-weight:900;color:#2a1e00;margin-bottom:6px}
+.domain-card p{font-size:14px;color:#1a1a1a;line-height:1.85}
+.domain-career{border-left-color:#8b6914}.domain-health{border-left-color:#2a80aa}
+
+.naming-card{background:#ffffff;border-left:5px solid #8b6914;border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);page-break-inside:avoid}
+.hanja-detail-wrap{margin-top:8px;padding:10px;background:#faf5e8;border-radius:6px}
+.hanja-row{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed #e0d5b8}
+.hanja-row:last-child{border-bottom:none}
+.hanja-char{font-family:'Noto Serif KR',serif;font-size:24px;color:#7a5c10;font-weight:900;min-width:32px;text-align:center}
+.hanja-info{flex:1;font-size:12px;line-height:1.7}
+.hanja-meaning{color:#1a1a1a}
+.hanja-sound{color:#666;font-style:italic;margin-top:2px}
+.gyeok-wrap{margin-top:8px;padding:10px;background:#eff6f9;border-radius:6px;border:1px solid #cfe0e8}
+.gyeok-title{font-size:11px;color:#7a5c10;font-weight:700;margin-bottom:4px}
+.gyeok-row{font-size:11.5px;line-height:1.6;margin-bottom:2px;color:#1a1a1a}
+.gyeok-row strong{color:#7a5c10}
+.nc-alt{font-size:12px;color:#444;line-height:1.7;margin-top:8px;padding:8px 10px;background:#f5f0e0;border-radius:6px}
+.nc-alt strong{color:#7a5c10}
+.nc-saju{font-size:12px;color:#0a5a30;line-height:1.7;margin-top:6px;padding:8px 10px;background:#eef8f2;border-radius:6px;border-left:3px solid #1a7a4a}
+.why-best{margin:8px 0 14px;padding:10px;background:#faf5e8;border-radius:8px;font-size:13px;line-height:1.8;color:#444;text-align:center}
+.life-stage{margin-bottom:8px;padding:10px 12px;background:#faf5e8;border:1px solid #d5cbb5;border-radius:8px}
+.life-stage .ls-label{font-size:12px;color:#7a5c10;font-weight:700;margin-bottom:4px}
+.life-stage p{font-size:13px;line-height:1.85;color:#1a1a1a}
+.relation-fit{margin-top:8px;padding:10px 14px;background:#fff5f4;border:1px solid #e8c0bc;border-radius:8px;font-size:13px;line-height:1.85;color:#1a1a1a}
+.relation-fit strong{color:#8a2218}
+.caution-points{margin-top:8px;padding:10px 14px;background:#fff8e8;border:1px solid #e8d4a0;border-radius:8px;font-size:13px;line-height:1.85;color:#1a1a1a}
+.caution-points strong{color:#8a6a18}
+.ritual-box{padding:16px;background:linear-gradient(180deg,#f5f0ff 0%,#fff 100%);border:1px solid #d8c8f8;border-radius:10px;margin-bottom:12px}
+.ritual-box p{font-size:14px;line-height:1.95;color:#1a1a1a}
+.blessing-box{padding:18px;background:linear-gradient(180deg,#faf6ec 0%,#fff 100%);border:2px solid #8b6914;border-radius:12px;text-align:center}
+.bl-title{font-family:'Noto Serif KR',serif;font-size:15px;color:#7a5c10;font-weight:900;margin-bottom:10px}
+.blessing-box p{font-family:'Noto Serif KR',serif;font-size:14px;line-height:2;color:#1a1a1a;font-style:italic}
+.nc-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.nc-hanja{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:36px;font-weight:900;min-width:80px;text-align:center}
+.nc-info{flex:1}
+.nc-fullname{font-family:'Noto Serif KR',serif;color:#2a1e00;font-size:16px;font-weight:800}
+.nc-meta{font-size:11px;color:#666;margin-top:3px}
+.nc-score{font-size:18px;color:#7a5c10;font-weight:900;font-family:'Noto Serif KR',serif}
+.nc-meaning{font-size:13px;color:#1a1a1a;line-height:1.8;margin-bottom:6px;padding:8px 10px;background:#faf5e8;border-radius:6px}
+.nc-good{font-size:12px;color:#0a5a30;line-height:1.7;padding:6px 10px;background:#eef8f2;border-radius:6px;margin-bottom:4px}
+.nc-bad{font-size:12px;color:#8a2218;line-height:1.7;padding:6px 10px;background:#fff5f4;border-radius:6px}
+
+.best-card{background:#ffffff;border:2px solid #8b6914;border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:0 2px 8px rgba(139,105,20,.1);page-break-inside:avoid;background:linear-gradient(180deg,#faf6ec 0%,#fff 30%)}
+.best-header{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid #d5cbb5}
+.best-rank{width:32px;height:32px;border-radius:50%;background:#8b6914;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:16px}
+.best-hanja{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:48px;font-weight:900;letter-spacing:4px;flex:1;text-align:center}
+.best-fullname{font-family:'Noto Serif KR',serif;color:#7a5c10;font-size:16px;font-weight:700}
+.life-flow{margin-bottom:12px}
+.life-flow h3{color:#3a2a00;margin-bottom:6px}
+.life-flow p{font-size:13px;line-height:1.85;color:#1a1a1a;margin-bottom:4px}
+.career-fit{padding:10px 14px;background:#eef8f2;border:1px solid #b8dcc8;border-radius:8px;font-size:13px;line-height:1.85;margin:10px 0}
+.extra-info{font-size:12px;line-height:1.7;color:#444;padding:6px 0;border-top:1px dashed #d5cbb5;margin-top:6px}
+
+.footer{text-align:center;margin-top:36px;padding-top:20px;border-top:3px solid #8b6914}
+.footer .mark{font-family:'Noto Serif KR',serif;color:#3a2a00;font-size:20px;letter-spacing:4px;margin-bottom:6px;font-weight:900}
+.footer .info{font-size:11px;color:#666;line-height:1.9}
+
+@media print{body{background:#fff!important}.no-print{display:none!important}}
+</style></head><body>
+<div class="wrap">
+  <div class="cover">
+    <h1>天 運</h1>
+    <div class="sub">Premium Naming Report</div>
+    <div class="name-big">${esc(info.surname||'')}氏</div>
+    <div class="divider"></div>
+    <div class="date">${today}</div>
+  </div>
+  ${body}
+  <div class="footer">
+    <div class="mark">✦ 天 運 ✦</div>
+    <div class="info">
+      작명대전 · 만성통보 · 자평진전 기반 사주명리 작명<br>
+      chunwoon-app.vercel.app<br>
+      본 리포트는 전통 성명학을 참고한 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
+    </div>
+  </div>
+</div>
+<div class="no-print" style="position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);padding:16px;text-align:center;z-index:9999;border-top:2px solid #8b6914;box-shadow:0 -2px 12px rgba(0,0,0,.08)">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#8b6914,#6b4f0a);color:white;border:none;padding:14px 48px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 16px rgba(139,105,20,.3);letter-spacing:1px">📄 PDF로 저장하기</button>
+  <div style="font-size:11px;color:#888;margin-top:8px">인쇄 대상을 "PDF로 저장"으로 선택하세요</div>
+</div>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  if(w){
+    w.document.write(printHTML);
+    w.document.close();
+    w.addEventListener('load',()=>setTimeout(()=>w.print(),1000));
+  }else{
+    const b=new Blob([printHTML],{type:'text/html'});
+    const u=URL.createObjectURL(b);
+    window.open(u,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(u),60000);
+  }
+}
+
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
 function shareResultImage(type){
-  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult',tojeong:'tojeongResult',compat:'compatResult'};
+  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult',tojeong:'tojeongResult',compat:'compatResult',naming:'namingResult'};
   const target=document.getElementById(targetIds[type]||'faceResult');
   if(!target){showToast('공유할 결과가 없습니다');return}
 
@@ -7798,7 +9966,7 @@ function shareResultImage(type){
     canvas.toBlob(blob=>{
       const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
       const fileName=`천운_${type}_${today}.png`;
-      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',match:'운세 매칭',tojeong:'토정비결',compat:'궁합 분석'};
+      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',match:'운세 매칭',tojeong:'토정비결',compat:'궁합 분석',naming:'작명'};
       const t=titles[type]||'운세 결과';
 
       if(navigator.share){
@@ -7822,7 +9990,7 @@ function shareResultImage(type){
 
 // ── 결과 저장하기 — html2canvas로 실제 결과 화면 캡처 (비프리미엄용) ──
 function saveResult(type) {
-  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult', tojeong: 'tojeongResult', compat: 'compatResult' };
+  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult', tojeong: 'tojeongResult', compat: 'compatResult', naming: 'namingResult' };
   const target = document.getElementById(targetIds[type] || 'faceResult');
   if (!target) { showToast('저장할 결과가 없습니다'); return; }
 
@@ -7870,6 +10038,8 @@ function downloadBlob(blob, fileName) {
 function showShareMenu(type) {
   shareResultImage(type);
 }
+
+// Toast notification
 
 // Toast notification
 function showToast(msg) {

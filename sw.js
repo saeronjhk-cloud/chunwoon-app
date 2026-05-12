@@ -1,5 +1,5 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v3.2.0';
+const CACHE_NAME = 'chunwoon-v3.13.0';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -37,8 +37,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Clone and cache successful responses
-        if (response.ok) {
+        // Clone and cache successful responses (HTTP/HTTPS only, skip extensions)
+        if (response.ok && event.request.url.startsWith('http')) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseClone);
