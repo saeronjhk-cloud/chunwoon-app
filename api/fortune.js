@@ -627,6 +627,45 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. �
 괘 조합: ${c.guaCombination||''}
 1년 12개월 각 달의 흐름과 길일·주의일, 영역별 한 줄 풀이, 그리고 개운법 2~3개와 행운 정보를 알려주세요.`;
 
+    } else if (type === 'chat') {
+      const c = context || {};
+      const personaTone = c.personaTone || '한국 전통 무속 점술가. 따뜻하고 신비로운 해요체';
+      const personaName = c.personaName || '선녀';
+      systemPrompt = `당신은 "${personaName}"입니다. 캐릭터: ${personaTone}.
+사용자와 대화하는 운세 챗봇입니다. 한국어 해요체. 200~400자 내외 답변.
+- 사용자가 천운 앱에서 본 사주·관상·타로·꿈해몽·궁합·작명·토정비결 결과가 컨텍스트로 제공됩니다. 자연스럽게 인용 ("일간 ${c.ilgan?c.ilgan:'갑목'}이신데..." "지난 타로의 ○○ 카드가...")
+- 일반론 금지. 사용자의 사주·결과를 구체적으로 인용
+- 대화 히스토리가 있으면 흐름 이어가기 (앞에 한 말 기억)
+- 따뜻함 + 신비 + 실천 조언. 운명론보다 행동 권유
+- 사주 정보 없으면 자연스럽게 "생년월일을 알려주시면..." 권유
+- 답변은 자연스러운 대화체 문장. JSON 아닌 일반 텍스트로 응답.
+- "타로 한 번 봐줘" "카드 봐줘" 같은 요청 감지 시 명확하게 "타로 카드를 뽑아드릴게요"라고 답한 뒤, 답 끝에 ★TAROT_DRAW★ 라는 토큰을 넣어 신호.
+
+대화 히스토리(있을 시) → 사용자 질문 → 답변.`;
+
+      let ctxLines = [];
+      if(c.ilgan) ctxLines.push(`사주: 일간 ${c.ilgan}${c.ilganElement?`(${c.ilganElement})`:''}${c.dominant?` / 강한 오행 ${c.dominant}`:''}${c.lacking?` / 부족 오행 ${c.lacking}`:''}${c.dayPillar?` / 일주 ${c.dayPillar}`:''}`);
+      if(c.faceSummary) ctxLines.push(`관상 요약: ${c.faceSummary}`);
+      if(c.tarotSummary) ctxLines.push(`최근 타로: ${c.tarotSummary}`);
+      if(c.dreamSummary) ctxLines.push(`최근 꿈해몽: ${c.dreamSummary}`);
+      if(c.compatSummary) ctxLines.push(`궁합: ${c.compatSummary}`);
+      if(c.tojeongSummary) ctxLines.push(`토정비결: ${c.tojeongSummary}`);
+      const ctxBlock = ctxLines.length ? `## 사용자 운세 컨텍스트\n${ctxLines.join('\n')}\n` : '## 사용자 운세 컨텍스트\n(아직 사주 등 정보가 없음 — 자연스럽게 권유)\n';
+
+      let histBlock = '';
+      if(Array.isArray(c.history) && c.history.length){
+        histBlock = '## 대화 히스토리 (오래된 → 최신)\n' + c.history.map(h=>`${h.role==='user'?'사용자':personaName}: ${h.text}`).join('\n') + '\n';
+      }
+
+      userPrompt = `${ctxBlock}${histBlock}
+## 카테고리 분석
+사용자 질문 분야: ${c.category||'전반'}
+
+## 사용자 질문
+${c.question||''}
+
+위 컨텍스트를 자연스럽게 인용하면서 ${personaName} 톤으로 답해주세요. JSON 아닌 일반 한국어 텍스트로.`;
+
     } else if (type === 'tarot') {
       systemPrompt = `당신은 한국어 타로 마스터입니다. 라이더-웨이트 덱 기반 + 한국 정서 친근한 해요체.
 - 3장 카드의 위치(과거·현재·미래)와 정/역방향을 모두 반영
@@ -733,6 +772,7 @@ ${cardsDesc}
     else if (type === 'tarot') maxTokens = 2500;
     else if (type === 'tarot_premium_1') maxTokens = 4000;
     else if (type === 'tarot_premium_2') maxTokens = 4000;
+    else if (type === 'chat') maxTokens = 800;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -757,6 +797,10 @@ ${cardsDesc}
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
 
+    // chat은 자연어 응답 — JSON 파싱 안 함
+    if (type === 'chat') {
+      return res.status(200).json({ success: true, result: { text: text.trim() } });
+    }
     const parsed = extractJSON(text);
     if (parsed) {
       return res.status(200).json({ success: true, result: parsed });

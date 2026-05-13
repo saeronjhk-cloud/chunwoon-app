@@ -1,7 +1,7 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v3.14.0';
-// 타로 풀스택 (3~6단계) — js/tarot.js로 분리
-const EXTRA_ASSETS = ['/js/tarot.js'];
+const CACHE_NAME = 'chunwoon-v3.15.0';
+// 외부 모듈 — 타로·채팅 풀스택
+const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js'];
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
