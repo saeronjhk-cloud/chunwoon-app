@@ -57,9 +57,26 @@ function _gatherChatContext(){
     const s = window._sajuResultData;
     if(s.pillars){
       try {
-        ctx.ilgan = (typeof HS_CH !== 'undefined' && HS_CH) ? HS_CH[s.pillars.day.stem] : ((typeof HS !== 'undefined' && HS) ? HS[s.pillars.day.stem] : '');
+        const _hs = (typeof HS !== 'undefined' && HS) ? HS : null;
+        const _eb = (typeof EB !== 'undefined' && EB) ? EB : null;
+        ctx.ilgan = (typeof HS_CH !== 'undefined' && HS_CH) ? HS_CH[s.pillars.day.stem] : (_hs ? _hs[s.pillars.day.stem] : '');
         ctx.ilganElement = s.ilganElement || (s.pillars.day && (typeof EL !== 'undefined' && EL) && (typeof HS_EL !== 'undefined' && HS_EL) ? EL[HS_EL[s.pillars.day.stem]] : '');
-        ctx.dayPillar = (typeof HS !== 'undefined' && typeof EB !== 'undefined' && s.pillars.day) ? (HS[s.pillars.day.stem] + EB[s.pillars.day.branch]) : '';
+        // 4기둥 모두 — LLM이 시주까지 정확히 인용하도록
+        if(_hs && _eb){
+          ctx.yearPillar  = s.pillars.year  ? _hs[s.pillars.year.stem]  + _eb[s.pillars.year.branch]  : '';
+          ctx.monthPillar = s.pillars.month ? _hs[s.pillars.month.stem] + _eb[s.pillars.month.branch] : '';
+          ctx.dayPillar   = s.pillars.day   ? _hs[s.pillars.day.stem]   + _eb[s.pillars.day.branch]   : '';
+          ctx.hourPillar  = s.pillars.hour  ? _hs[s.pillars.hour.stem]  + _eb[s.pillars.hour.branch]  : '(시간 미입력)';
+        }
+        // 시지(時支) 한자·한글 — "오시·신시" 같은 형태로 인용 가능
+        if(s.pillars.hour && _eb){
+          const branch = _eb[s.pillars.hour.branch];
+          const hourLabels = {'자':'자시 (23:00~00:59)','축':'축시 (01:00~02:59)','인':'인시 (03:00~04:59)','묘':'묘시 (05:00~06:59)','진':'진시 (07:00~08:59)','사':'사시 (09:00~10:59)','오':'오시 (11:00~12:59)','미':'미시 (13:00~14:59)','신':'신시 (15:00~16:59)','유':'유시 (17:00~18:59)','술':'술시 (19:00~20:59)','해':'해시 (21:00~22:59)'};
+          ctx.hourBranch = hourLabels[branch] || branch;
+        }
+        // 사주 입력 원본 날짜 (LLM이 정확히 인용하도록)
+        ctx.birth = s.birth || (s.solarY ? `${s.solarY}년 ${s.solarM}월 ${s.solarD}일` : (s.inputYear ? `${s.inputYear}년 ${s.inputMonth}월 ${s.inputDay}일${s.calType==='lunar'?' (음력)':''}` : ''));
+        ctx.gender = s.gender || '';
       } catch(e) {}
     }
     ctx.dominant = s.dominant || '';
@@ -212,9 +229,9 @@ function _chatDrawTarot(){
   const c = TAROT_MAJOR[Math.floor(Math.random() * TAROT_MAJOR.length)];
   const reversed = Math.random() < 0.45;
   const meaning = reversed ? c.rev : c.up;
-  const msg = `🎴 **${c.e} ${c.n}** ${reversed ? '(역방향)' : '(정방향)'}\n\n키워드: ${meaning}\n\n이 카드의 메시지를 마음에 새겨두세요.`;
+  const msg = '🎴 **' + c.e + ' ' + c.n + '** ' + (reversed ? '(역방향)' : '(정방향)') + '\n\n키워드: ' + meaning + '\n\n이 카드의 메시지를 마음에 새겨두세요.';
   addBotMsg(msg);
-  chatHistory.push({role:'bot', text:`타로 카드: ${c.n}${reversed?'(역)':''} — ${meaning}`});
+  chatHistory.push({role:'bot', text:'타로 카드: ' + c.n + (reversed?'(역)':'') + ' — ' + meaning});
 }
 
 // ============================================================
@@ -224,9 +241,9 @@ function changeChatPersona(){
   const sel = document.getElementById('chatPersonaSelect');
   if(!sel) return;
   chatPersona = sel.value;
-  const persona = CHAT_PERSONAS.find(p => p.k === chatPersona) || CHAT_PERSONAS[0];
+  const persona = CHAT_PERSONAS.find(function(p){return p.k === chatPersona}) || CHAT_PERSONAS[0];
   const title = document.getElementById('chatTitle');
-  if(title) title.textContent = `${persona.e} ${persona.n}와의 대화`;
+  if(title) title.textContent = persona.e + ' ' + persona.n + '와의 대화';
   const msgs = document.getElementById('chatMessages');
   if(msgs) msgs.innerHTML = '';
   chatHistory.length = 0;
@@ -239,16 +256,16 @@ function _showStartSuggests(){
   const input = document.getElementById('chatInput');
   if(!sg) return;
   sg.innerHTML = '';
-  (CHAT_SUGGEST_MAP.start || []).forEach(s => {
+  (CHAT_SUGGEST_MAP.start || []).forEach(function(s){
     const ch = document.createElement('span');
     ch.className = 'chat-chip'; ch.textContent = s;
-    ch.onclick = () => { if(input){ input.value = s; sendChat(); } };
+    ch.onclick = function(){ if(input){ input.value = s; sendChat(); } };
     sg.appendChild(ch);
   });
 }
 
 function initChat(){
-  const persona = CHAT_PERSONAS.find(p => p.k === chatPersona) || CHAT_PERSONAS[0];
+  const persona = CHAT_PERSONAS.find(function(p){return p.k === chatPersona}) || CHAT_PERSONAS[0];
   addBotMsg(persona.greet);
   _showStartSuggests();
 }

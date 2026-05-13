@@ -634,6 +634,7 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. �
       systemPrompt = `당신은 "${personaName}"입니다. 캐릭터: ${personaTone}.
 사용자와 대화하는 운세 챗봇입니다. 한국어 해요체. 200~400자 내외 답변.
 - 사용자가 천운 앱에서 본 사주·관상·타로·꿈해몽·궁합·작명·토정비결 결과가 컨텍스트로 제공됩니다. 자연스럽게 인용 ("일간 ${c.ilgan?c.ilgan:'갑목'}이신데..." "지난 타로의 ○○ 카드가...")
+- ⚠️ 절대 규칙: 사주 4기둥·일간·태어난 시·생년월일은 컨텍스트에 명시된 정확한 값만 사용. 임의 추정·변경 금지. 시간이 미입력으로 표기되면 "시간 모르시니..." 라고 자연스럽게 인정하고 시주 언급 생략. 사용자 메시지에 시간 언급 있으면 그 값 우선.
 - 일반론 금지. 사용자의 사주·결과를 구체적으로 인용
 - 대화 히스토리가 있으면 흐름 이어가기 (앞에 한 말 기억)
 - 따뜻함 + 신비 + 실천 조언. 운명론보다 행동 권유
@@ -644,13 +645,25 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. �
 대화 히스토리(있을 시) → 사용자 질문 → 답변.`;
 
       let ctxLines = [];
-      if(c.ilgan) ctxLines.push(`사주: 일간 ${c.ilgan}${c.ilganElement?`(${c.ilganElement})`:''}${c.dominant?` / 강한 오행 ${c.dominant}`:''}${c.lacking?` / 부족 오행 ${c.lacking}`:''}${c.dayPillar?` / 일주 ${c.dayPillar}`:''}`);
+      if(c.ilgan){
+        const sajuParts = [];
+        if(c.birth) sajuParts.push(`생년월일: ${c.birth}`);
+        if(c.gender) sajuParts.push(`성별: ${c.gender==='male'?'남성':c.gender==='female'?'여성':c.gender}`);
+        if(c.yearPillar || c.monthPillar || c.dayPillar || c.hourPillar){
+          sajuParts.push(`4기둥: ${c.yearPillar||'?'} ${c.monthPillar||'?'} ${c.dayPillar||'?'} ${c.hourPillar||'(시간 미입력)'}`);
+        }
+        sajuParts.push(`일간: ${c.ilgan}${c.ilganElement?`(${c.ilganElement})`:''}`);
+        if(c.hourBranch) sajuParts.push(`태어난 시: ${c.hourBranch}`);
+        if(c.dominant) sajuParts.push(`강한 오행: ${c.dominant}`);
+        if(c.lacking) sajuParts.push(`부족 오행: ${c.lacking}`);
+        ctxLines.push('사주 정보 ▶ ' + sajuParts.join(' / '));
+      }
       if(c.faceSummary) ctxLines.push(`관상 요약: ${c.faceSummary}`);
       if(c.tarotSummary) ctxLines.push(`최근 타로: ${c.tarotSummary}`);
       if(c.dreamSummary) ctxLines.push(`최근 꿈해몽: ${c.dreamSummary}`);
       if(c.compatSummary) ctxLines.push(`궁합: ${c.compatSummary}`);
       if(c.tojeongSummary) ctxLines.push(`토정비결: ${c.tojeongSummary}`);
-      const ctxBlock = ctxLines.length ? `## 사용자 운세 컨텍스트\n${ctxLines.join('\n')}\n` : '## 사용자 운세 컨텍스트\n(아직 사주 등 정보가 없음 — 자연스럽게 권유)\n';
+      const ctxBlock = ctxLines.length ? `## 사용자 운세 컨텍스트 (이 정보를 정확히 인용 — 절대 임의 추정 금지)\n${ctxLines.join('\n')}\n` : '## 사용자 운세 컨텍스트\n(아직 사주 등 정보가 없음 — 자연스럽게 권유)\n';
 
       let histBlock = '';
       if(Array.isArray(c.history) && c.history.length){
