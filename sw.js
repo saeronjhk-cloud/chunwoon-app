@@ -1,5 +1,5 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v3.17.0';
+const CACHE_NAME = 'chunwoon-v3.18.0';
 // 외부 모듈 — 타로 + 데일리 한 마디 + 면책 안내
 const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js', '/js/disclaimer.js'];
 const ASSETS_TO_CACHE = [

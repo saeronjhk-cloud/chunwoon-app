@@ -371,7 +371,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 
   <div class="tab-bar" id="tabBar">
-    <button class="tab-btn active" data-tab="daily">오늘의 운세</button>
+    <button class="tab-btn active" data-tab="chat">💬 한 마디</button>
     <button class="tab-btn" data-tab="tarot">타로</button>
     <button class="tab-btn" data-tab="saju">사주</button>
     <button class="tab-btn" data-tab="compat">궁합</button>
@@ -380,12 +380,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="tab-btn" data-tab="tojeong">토정비결</button>
     <button class="tab-btn" data-tab="dream">꿈해몽</button>
     <button class="tab-btn" data-tab="naming">작명</button>
-    <button class="tab-btn" data-tab="chat">운세채팅</button>
     <button class="tab-btn" data-tab="match">운세매칭</button>
   </div>
 
   <!-- ===== 오늘의 운세 ===== -->
-  <div class="section active" id="sec-daily">
+  <div class="section" id="sec-daily">
     <div class="card">
       <div class="card-title">✦ 오늘의 운세</div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:14px">이름과 띠를 선택하면 맞춤 운세를 알려드립니다</p>
@@ -943,7 +942,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 
   <!-- ===== 운세 채팅 ===== -->
-  <div class="section" id="sec-chat">
+  <div class="section active" id="sec-chat">
     <div class="card" style="padding:14px">
       <div class="card-title" id="chatTitle" style="margin-bottom:8px">🔮 선녀의 데일리 한 마디</div>
       <div class="input-group" style="margin-bottom:8px">
@@ -997,12 +996,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- Bottom Nav -->
 <div class="bottom-nav">
-  <button class="bnav active" data-tab="daily"><span class="bi">☀</span><span class="bl">운세</span></button>
+  <button class="bnav active" data-tab="chat"><span class="bi">💬</span><span class="bl">한 마디</span></button>
   <button class="bnav" data-tab="tarot"><span class="bi">✦</span><span class="bl">타로</span></button>
   <button class="bnav" data-tab="saju"><span class="bi">卦</span><span class="bl">사주</span></button>
   <button class="bnav" data-tab="dream"><span class="bi">🌙</span><span class="bl">꿈</span></button>
   <button class="bnav new" data-tab="naming"><span class="bi">名</span><span class="bl">작명</span></button>
-  <button class="bnav" data-tab="chat"><span class="bi">💬</span><span class="bl">채팅</span></button>
+  <button class="bnav" data-tab="match"><span class="bi">💕</span><span class="bl">매칭</span></button>
 </div>
 
 <script>
