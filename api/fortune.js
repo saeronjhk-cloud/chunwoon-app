@@ -679,6 +679,44 @@ ${c.question||''}
 
 위 컨텍스트를 자연스럽게 인용하면서 ${personaName} 톤으로 답해주세요. JSON 아닌 일반 한국어 텍스트로.`;
 
+    } else if (type === 'daily_message') {
+      // 데일리 한 마디 — 카테고리·페르소나·사주 컨텍스트 + 행운 정보
+      const c = context || {};
+      const personaTone = c.personaTone || '한국 전통 무속 점술가. 따뜻하고 신비로운 해요체';
+      const personaName = c.personaName || '선녀';
+      systemPrompt = `당신은 "${personaName}"입니다. 캐릭터: ${personaTone}.
+사용자의 오늘 운세를 짧고 임팩트 있게 전합니다.
+
+⚠️ 절대 규칙:
+- 분량: 150~250자 (한 마디라서 짧고 묵직하게)
+- 사주 컨텍스트가 있으면 일간·시·생년월일을 정확히 인용 (임의 추정 금지)
+- 사주 없으면 따뜻한 일반 메시지 + "생년월일을 알려주시면 더 정확..." 권유 한 줄
+- 카테고리(사랑·일·돈·건강·전반)에 맞게 톤 조정
+- 답 마지막에 행운 정보 토큰 포함 (필수):
+  ★LUCK★색:[행운의 색]|숫자:[1~9]|방위:[동/서/남/북/중앙]|시간:[오전/오후 N시]★
+
+응답 형식: 자연어 + 행운 토큰. JSON 아님.`;
+
+      let ctxLines = [];
+      if(c.ilgan){
+        const sajuParts = [];
+        if(c.birth) sajuParts.push(`생년월일: ${c.birth}`);
+        if(c.gender) sajuParts.push(`성별: ${c.gender==='male'?'남성':'여성'}`);
+        if(c.dayPillar) sajuParts.push(`일주: ${c.dayPillar}`);
+        sajuParts.push(`일간: ${c.ilgan}${c.ilganElement?`(${c.ilganElement})`:''}`);
+        if(c.hourBranch) sajuParts.push(`태어난 시: ${c.hourBranch}`);
+        if(c.lacking) sajuParts.push(`부족 오행: ${c.lacking}`);
+        ctxLines.push('사주: ' + sajuParts.join(' / '));
+      }
+      if(c.tarotSummary) ctxLines.push(`최근 타로: ${c.tarotSummary}`);
+      if(c.faceSummary) ctxLines.push(`관상 요약: ${c.faceSummary}`);
+      const ctxBlock = ctxLines.length ? `사용자 정보:\n${ctxLines.join('\n')}\n\n` : '';
+
+      userPrompt = `${ctxBlock}오늘 날짜: ${new Date().toLocaleDateString('ko-KR')}
+분야: ${c.category||'전반'}
+
+${personaName} 톤으로 오늘의 한 마디를 전해주세요. 150~250자 + ★LUCK★ 행운 정보 토큰 필수.`;
+
     } else if (type === 'tarot') {
       systemPrompt = `당신은 한국어 타로 마스터입니다. 라이더-웨이트 덱 기반 + 한국 정서 친근한 해요체.
 - 3장 카드의 위치(과거·현재·미래)와 정/역방향을 모두 반영
@@ -785,6 +823,7 @@ ${cardsDesc}
     else if (type === 'tarot') maxTokens = 2500;
     else if (type === 'tarot_premium_1') maxTokens = 4000;
     else if (type === 'tarot_premium_2') maxTokens = 4000;
+    else if (type === 'daily_message') maxTokens = 400;
     else if (type === 'chat') maxTokens = 800;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -810,8 +849,8 @@ ${cardsDesc}
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
 
-    // chat은 자연어 응답 — JSON 파싱 안 함
-    if (type === 'chat') {
+    // chat·daily_message는 자연어 응답 — JSON 파싱 안 함
+    if (type === 'chat' || type === 'daily_message') {
       return res.status(200).json({ success: true, result: { text: text.trim() } });
     }
     const parsed = extractJSON(text);
