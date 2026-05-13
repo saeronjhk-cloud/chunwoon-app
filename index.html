@@ -1724,8 +1724,16 @@ function setTarotCal(type){
 
 function renderTarot(){_initTarotChips();const s=document.getElementById('tarotSpread');s.innerHTML='';for(let i=0;i<3;i++){const c=document.createElement('div');c.className='tarot-card glow';c.id=`tc-${i}`;c.innerHTML=`<div class="tarot-card-face tarot-back"></div><div class="tarot-card-face tarot-front"><div class="t-emoji"></div><div class="t-name"></div></div>`;s.appendChild(c)}}
 function startTarot(){const sh=[...TAROT].sort(()=>Math.random()-.5);tarotSt.cards=sh.slice(0,3);tarotSt.rev=0;tarotSt.cards.forEach((c,i)=>{const el=document.getElementById(`tc-${i}`);el.querySelector('.t-emoji').textContent=c.e;el.querySelector('.t-name').textContent=c.n;el.classList.remove('flipped','glow');el.onclick=()=>revealTarot(i)});document.getElementById('tarotBtn').style.display='none';document.getElementById('tarotStatus').textContent='카드를 터치하여 뒤집으세요';document.getElementById('tarotReading').style.display='none';document.getElementById('tarotReset').style.display='none'}
-function revealTarot(i){const el=document.getElementById(`tc-${i}`);if(el.classList.contains('flipped'))return;el.classList.add('flipped');el.classList.remove('glow');tarotSt.rev++;document.getElementById('tarotStatus').textContent=tarotSt.rev<3?`${tarotSt.rev}/3 오픈`:'모든 카드 오픈!';if(tarotSt.rev===3)setTimeout(showTarotReading,800)}
-function showTarotReading(){const pos=['과거','현재','미래'];const r=document.getElementById('tarotReading');let h='<div class="card pulse-card"><div class="card-title">✧ 타로 해석</div>';tarotSt.cards.forEach((c,i)=>{h+=`<div style="padding:14px;background:rgba(201,165,78,.05);border-radius:12px;margin-bottom:12px"><div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:6px">${pos[i]} — ${c.e} ${c.n}</div><div style="font-size:13px;line-height:1.7">${c.m}</div></div>`});h+=`<div class="reading" style="margin-top:14px">세 카드의 메시지: 과거의 경험이 현재의 지혜가 되고, 그 지혜가 미래의 문을 열 것입니다.</div><div class="share-wrap"><button class="share-btn" onclick="shareResult('tarot')">📤 결과 공유하기</button></div></div>`;r.innerHTML=h;r.style.display='block';document.getElementById('tarotReset').style.display='block';burstConfetti();r.scrollIntoView({behavior:'smooth',block:'start'})}
+// revealTarot은 인덱스 안에 유지 (정/역 표시 강화). analyzeTarot·showTarotReading·렌더링·프리미엄·PDF는 js/tarot.js
+function revealTarot(i){
+  const el=document.getElementById(`tc-${i}`);
+  if(el.classList.contains('flipped'))return;
+  el.classList.add('flipped');el.classList.remove('glow');
+  tarotSt.rev++;
+  const c=tarotSt.cards[i];const rev=c&&c.reversed;
+  document.getElementById('tarotStatus').textContent=tarotSt.rev<3?`${tarotSt.rev}/3 오픈${rev?' (역방향)':''}`:'모든 카드 오픈! 해석 중...';
+  if(tarotSt.rev===3)setTimeout(showTarotReading,800);
+}
 function resetTarot(){renderTarot();document.getElementById('tarotBtn').style.display='block';document.getElementById('tarotStatus').textContent='';document.getElementById('tarotReading').style.display='none';document.getElementById('tarotReset').style.display='none'}
 
 // ============================================================
@@ -10213,6 +10221,9 @@ init();
 handleHash();
 setTimeout(insertAdSlots, 3000);
 </script>
+
+<!-- 외부 모듈 — 타로 풀스택 (3~6단계) -->
+<script src="js/tarot.js"></script>
 
 <!-- Footer -->
 <div style="position:relative;z-index:1;max-width:480px;margin:0 auto;text-align:center;padding:20px 20px 100px;font-size:10px;color:rgba(154,152,144,.5)">

@@ -627,6 +627,81 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. �
 괘 조합: ${c.guaCombination||''}
 1년 12개월 각 달의 흐름과 길일·주의일, 영역별 한 줄 풀이, 그리고 개운법 2~3개와 행운 정보를 알려주세요.`;
 
+    } else if (type === 'tarot') {
+      systemPrompt = `당신은 한국어 타로 마스터입니다. 라이더-웨이트 덱 기반 + 한국 정서 친근한 해요체.
+- 3장 카드의 위치(과거·현재·미래)와 정/역방향을 모두 반영
+- 카드 의미를 사용자 질문·카테고리에 직접 연결하여 풀이 (일반 설명 X)
+- 사주 정보 있으면 일간·오행 관점 추가
+- 긍정·도전 균형, 운명론보다 실천 지향
+
+반드시 아래 JSON 구조로만 응답:
+{"summary":"3장 종합 메시지 200자 내외 (질문에 직접 답)","reading":[{"position":"과거","cardName":"카드 이름","reversed":boolean,"meaning":"이 위치+카드+정/역방향이 사용자 질문에 주는 의미 120자 내외","advice":"이 카드의 조언 60자 내외"},{"position":"현재","cardName":"","reversed":boolean,"meaning":"","advice":""},{"position":"미래","cardName":"","reversed":boolean,"meaning":"","advice":""}],"keyMessage":"핵심 메시지 80자 내외","actionTip":"실천 조언 80자 내외","sajuLink":"사주 연계 풀이 120자 내외 (사주 없으면 빈 문자열)","fortuneScore":number(0-100),"luckyKeyword":"행운 키워드 한 단어"}
+reading 배열에 반드시 3장 모두 포함. cardName과 reversed는 입력으로 제공된 카드와 정확히 일치.` + JSON_FORCE;
+      const c = context || {};
+      const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
+      const cardsDesc = (c.cards||[]).map((card,i)=>`[${['과거','현재','미래'][i]}] ${card.name}${card.reversed?'(역방향)':'(정방향)'} — 키워드: ${card.reversed?card.rev:card.up}`).join('\n');
+      userPrompt = `타로 의뢰
+카테고리: ${catName}
+${c.question?`구체 질문: "${c.question}"`:'구체 질문: (없음, 카테고리 전반)'}
+${c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''}) / 강한 오행: ${c.dominant||''} / 부족 오행: ${c.lacking||''}`:'사주: 미입력'}
+
+뽑힌 카드 3장:
+${cardsDesc}
+
+각 카드의 위치(과거·현재·미래)와 정/역방향을 반영하여 사용자 질문에 답해주세요.`;
+
+    } else if (type === 'tarot_premium_1') {
+      systemPrompt = `당신은 한국어 타로 대가입니다. 라이더-웨이트 덱 78장 통달 + 켈틱 크로스 스프레드 30년 경험.
+한국어 해요체. 위치 의미와 카드 의미를 정밀하게 교차 풀이.
+- 1~5번 카드: 현재 상황·장애/교차·기반/뿌리·과거·왕관/의식
+- 마이너 아르카나는 수트(완드·컵·소드·펜타클) 의미 명시
+- 코트 카드는 인물 상징 풀이
+- 정/역방향 반영
+- 사주 일간·오행 관점 통합
+
+반드시 아래 JSON 구조로만 응답:
+{"deepAnalysis":"5장 종합 + 전체 흐름 250자 내외","readings":[{"position":"현재 상황","positionDesc":"질문자가 처한 핵심 상황","cardName":"카드 이름","kind":"major/minor/court","suit":"완드/컵/소드/펜타클 (마이너만)","reversed":boolean,"meaning":"위치+카드+정역 통합 풀이 150자 내외","advice":"이 위치 기준 조언 80자 내외"}]}
+readings 배열에 5장 모두 포함 (1~5번 순서). cardName·reversed·kind는 입력 그대로.` + JSON_FORCE;
+      const c = context || {};
+      const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
+      const posNames = ['현재 상황','장애·교차','기반·뿌리','과거','왕관·의식'];
+      const cardsDesc = (c.cards||[]).slice(0,5).map((card,i)=>`[${posNames[i]}] ${card.name}${card.reversed?'(역방향)':'(정방향)'} — 유형: ${card.kind||'major'}${card.suit?` / 수트: ${card.suitName||card.suit}`:''}${card.court?` / 코트: ${card.court}`:''} — 키워드: ${card.reversed?(card.rev||card.theme):(card.up||card.theme)}`).join('\n');
+      userPrompt = `타로 프리미엄 1단계 (켈틱크로스 1~5번)
+카테고리: ${catName}
+${c.question?`질문: "${c.question}"`:'질문: 카테고리 전반'}
+${c.ilgan?`사주: 일간 ${c.ilgan}(${c.ilganElement||''}) / 강함 ${c.dominant||''} / 부족 ${c.lacking||''}`:'사주: 미입력'}
+
+뽑힌 카드 (1~5번):
+${cardsDesc}
+
+각 위치의 의미와 카드의 상징을 교차하여 풀이해주세요.`;
+
+    } else if (type === 'tarot_premium_2') {
+      systemPrompt = `당신은 한국어 타로 대가입니다. 1단계와 일관성 유지. 친근한 해요체.
+- 6~10번 카드: 가까운 미래·자신·환경·희망과 두려움·최종 결과
+- 사주 연계 풀이 (사주 있을 때만)
+- 시점별 조언: 1주·1개월·3개월 후 흐름
+- 실천 계획 (구체 행동)
+- 행운 정보 (색·숫자·방위·요일)
+- 격려 메시지
+
+반드시 아래 JSON 구조로만 응답:
+{"readings":[{"position":"가까운 미래","positionDesc":"곧 다가올 흐름","cardName":"","kind":"","suit":"","reversed":boolean,"meaning":"150자 내외","advice":"80자 내외"}],"sajuLink":"사주 일간·오행 연계 풀이 150자 내외 (사주 없으면 빈 문자열)","timeline":{"oneWeek":"1주 후 흐름 100자 내외","oneMonth":"1개월 후 100자 내외","threeMonths":"3개월 후 120자 내외"},"actionPlan":"실천 계획 150자 내외","luckyInfo":{"color":"행운의 색","number":number,"direction":"행운의 방위","day":"행운의 요일"},"blessing":"격려 메시지 100자 내외"}
+readings 배열에 6~10번 5장 모두 포함.` + JSON_FORCE;
+      const c = context || {};
+      const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
+      const posNames = ['가까운 미래','자신','환경','희망과 두려움','최종 결과'];
+      const cardsDesc = (c.cards||[]).slice(5,10).map((card,i)=>`[${posNames[i]}] ${card.name}${card.reversed?'(역방향)':'(정방향)'} — 유형: ${card.kind||'major'}${card.suit?` / 수트: ${card.suitName||card.suit}`:''}${card.court?` / 코트: ${card.court}`:''} — 키워드: ${card.reversed?(card.rev||card.theme):(card.up||card.theme)}`).join('\n');
+      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~10번 + 사주·시점·행운)
+카테고리: ${catName}
+${c.question?`질문: "${c.question}"`:''}
+${c.ilgan?`사주: 일간 ${c.ilgan}(${c.ilganElement||''}) / 강함 ${c.dominant||''} / 부족 ${c.lacking||''}`:'사주: 미입력'}
+
+뽑힌 카드 (6~10번):
+${cardsDesc}
+
+각 위치 풀이 + 사주 연계 + 시점별 조언 + 실천 계획 + 행운 정보를 알려주세요.`;
+
     } else {
       return res.status(400).json({ error: 'Invalid type' });
     }
@@ -655,6 +730,9 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. �
     else if (type === 'naming_product_premium_1') maxTokens = 6000;
     else if (type === 'naming_pet') maxTokens = 3000;
     else if (type === 'naming_nickname') maxTokens = 3000;
+    else if (type === 'tarot') maxTokens = 2500;
+    else if (type === 'tarot_premium_1') maxTokens = 4000;
+    else if (type === 'tarot_premium_2') maxTokens = 4000;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
