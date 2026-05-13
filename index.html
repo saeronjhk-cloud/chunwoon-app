@@ -962,7 +962,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div id="dailyStatus" style="font-size:10.5px;color:var(--text2);text-align:right;margin-bottom:8px"></div>
       <div class="chat-container">
         <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-suggest" id="chatSuggest" style="display:none"></div>
       </div>
+      <!-- 옛 코드 호환용 hidden 입력칸 (init() 안전 실행) -->
+      <input id="chatInput" type="hidden" />
     </div>
   </div>
 

@@ -257,15 +257,29 @@ function changeChatPersona(){
 }
 
 function initChat(){
+  // 옛 init이 남긴 인사·chip 지우고 새 UI 시작
+  const msgs = document.getElementById('chatMessages');
+  if(msgs) msgs.innerHTML = '';
+  const sg = document.getElementById('chatSuggest');
+  if(sg) sg.innerHTML = '';
   _renderCategoryChips();
   const persona = CHAT_PERSONAS.find(function(p){return p.k === chatPersona;}) || CHAT_PERSONAS[0];
   const title = document.getElementById('chatTitle');
   if(title) title.textContent = persona.e + ' ' + persona.n + '의 데일리 한 마디';
-  _addBotInfo(persona.greet);
+;
   _renderStatusBadge();
 }
 
 // 호환성 — 옛 채팅 함수 호출 시 안전
 function sendChat(){
   _addBotInfo('이제 자유 채팅은 데일리 한 마디로 바뀌었어요. 위 분야 중 하나를 골라주세요.');
+}
+
+// 외부 chat.js 로드 완료 후 새 initChat 자동 호출
+if(typeof window !== 'undefined'){
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(initChat, 100); });
+  } else {
+    setTimeout(initChat, 100);
+  }
 }
