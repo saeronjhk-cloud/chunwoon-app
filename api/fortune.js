@@ -61,16 +61,7 @@ export default async function handler(req, res) {
     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
     const JSON_FORCE = '\n\n중요: 반드시 순수 JSON만 출력하세요. 마크다운 코드블록(```)이나 설명 텍스트 없이 { 로 시작하여 } 로 끝나는 JSON만 응답하세요.';
 
-    if (type === 'palm') {
-      systemPrompt = `당신은 전통 수상학(手相學) 전문가입니다. 동서양 수상학의 전통에 기반하여 손금을 해석합니다.
-- 한국어, 해요체, 구체적이고 개인화된 해석, 긍정적이면서도 현실적인 조언
-- JSON 형식으로만 응답: {"lines":{"life":"생명선","head":"두뇌선","heart":"감정선","fate":"운명선"},"summary":"종합 해석 200자+","advice":"천운의 조언"}` + JSON_FORCE;
-
-      userPrompt = `손금 분석 대상: ${context?.gender === 'male' ? '남성' : '여성'}, ${context?.hand === 'left' ? '왼손' : '오른손'}
-손금 특징: ${JSON.stringify(features, null, 2)}
-각 손금선의 길이, 깊이, 곡률, 특이점을 고려하여 구체적으로 해석해주세요.`;
-
-    } else if (type === 'face') {
+    if (type === 'face') {
       systemPrompt = `당신은 전통 관상학(觀相學) 전문가입니다. 마의상법, 유장상법, 신상전편, 오행상법에 기반합니다.
 - 한국어, 해요체
 - 얼굴형(오행), 눈(감찰관), 코(재백궁), 입(출납관) 각각 해석
@@ -825,4 +816,86 @@ readings 배열에 6~10번 5장 모두 포함.` + JSON_FORCE;
       const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
       const posNames = ['가까운 미래','자신','환경','희망과 두려움','최종 결과'];
       const cardsDesc = (c.cards||[]).slice(5,10).map((card,i)=>`[${posNames[i]}] ${card.name}${card.reversed?'(역방향)':'(정방향)'} — 유형: ${card.kind||'major'}${card.suit?` / 수트: ${card.suitName||card.suit}`:''}${card.court?` / 코트: ${card.court}`:''} — 키워드: ${card.reversed?(card.rev||card.theme):(card.up||card.theme)}`).join('\n');
-      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~
+      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~10번 + 사주·시점·행운)
+카테고리: ${catName}
+${c.question?`질문: "${c.question}"`:''}
+${c.ilgan?`사주: 일간 ${c.ilgan}(${c.ilganElement||''}) / 강함 ${c.dominant||''} / 부족 ${c.lacking||''}`:'사주: 미입력'}
+
+뽑힌 카드 (6~10번):
+${cardsDesc}
+
+각 위치 풀이 + 사주 연계 + 시점별 조언 + 실천 계획 + 행운 정보를 알려주세요.`;
+
+    } else {
+      return res.status(400).json({ error: 'Invalid type' });
+    }
+
+    // 타입별 max_tokens 조정
+    let maxTokens = 1500;
+    if (type === 'tojeong') maxTokens = 2200;
+    else if (type === 'tojeong_premium_1') maxTokens = 2500;
+    else if (type === 'tojeong_premium_2') maxTokens = 4000;
+    else if (type === 'saju') maxTokens = 2500;
+    else if (type === 'saju_premium_1') maxTokens = 4500;
+    else if (type === 'saju_premium_2') maxTokens = 4000;
+    else if (type === 'compat') maxTokens = 2500;
+    else if (type === 'compat_premium_1') maxTokens = 4500;
+    else if (type === 'compat_premium_2') maxTokens = 4000;
+    else if (type === 'dream') maxTokens = 2500;
+    else if (type === 'dream_premium_1') maxTokens = 3500;
+    else if (type === 'dream_premium_2') maxTokens = 4000;
+    else if (type === 'naming') maxTokens = 5500;
+    else if (type === 'naming_premium_1') maxTokens = 7000;
+    else if (type === 'naming_premium_2') maxTokens = 5500;
+    else if (type === 'naming_company') maxTokens = 3500;
+    else if (type === 'naming_company_premium_1') maxTokens = 6000;
+    else if (type === 'naming_company_premium_2') maxTokens = 5500;
+    else if (type === 'naming_product') maxTokens = 3500;
+    else if (type === 'naming_product_premium_1') maxTokens = 6000;
+    else if (type === 'naming_pet') maxTokens = 3000;
+    else if (type === 'naming_nickname') maxTokens = 3000;
+    else if (type === 'tarot') maxTokens = 2500;
+    else if (type === 'tarot_premium_1') maxTokens = 4000;
+    else if (type === 'tarot_premium_2') maxTokens = 4000;
+    else if (type === 'daily_message') maxTokens = 400;
+    else if (type === 'chat') maxTokens = 800;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return res.status(502).json({ error: 'LLM API error', detail: response.status, message: errText.substring(0, 300) });
+    }
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    // chat·daily_message는 자연어 응답 — JSON 파싱 안 함
+    if (type === 'chat' || type === 'daily_message') {
+      return res.status(200).json({ success: true, result: { text: text.trim() } });
+    }
+    const parsed = extractJSON(text);
+    if (parsed) {
+      return res.status(200).json({ success: true, result: parsed });
+    } else {
+      // JSON 파싱 실패 — 디버그용으로 원본 텍스트 첫 500자 포함
+      return res.status(200).json({ success: true, result: { raw: text.substring(0, 500) } });
+    }
+
+  } catch (err) {
+    return res.status(500).json({ error: 'Internal server error', message: err.message });
+  }
+}
