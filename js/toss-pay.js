@@ -5,8 +5,9 @@
 // ============================================================
 //  설정 (실제 키는 빌드 시점 또는 환경에서 주입)
 // ============================================================
-// 클라이언트 키 — 발급 후 교체 필요. 'test_ck_xxx...' 형식
-const TOSS_CLIENT_KEY = window.__TOSS_CLIENT_KEY__ || 'test_ck_PLACEHOLDER_REPLACE_AFTER_SIGNUP';
+// 클라이언트 키 (Toss Payments 발급, 새론 비즈 MID: fihubscj0k)
+// 테스트 키 — 라이브 키 발급시 교체
+const TOSS_CLIENT_KEY = window.__TOSS_CLIENT_KEY__ || 'test_ck_DpexMgkW36wKXn24okn4VGbR5ozO';
 
 // 가격·상품명 매핑 (productKey → {amount, orderName, unlockFn})
 const TOSS_PRICING = {
