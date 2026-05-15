@@ -6,7 +6,7 @@
 <title>天運 - 종합 운세 | 오늘의 운세, 타로, 사주, 궁합, 손금, 관상, 꿈해몽</title>
 
 <!-- SEO Meta Tags -->
-<meta name="description" content="천운(天運) - 오늘의 운세, 타로 카드, 사주팔자, 궁합, 손금, 관상, 토정비결, 꿈해몽, AI 운세채팅, 운세매칭까지. 당신의 운명을 엽니다.">
+<meta name="description" content="천운(天運) - 오늘의 운세, 타로 카드, 사주팔자, 궁합, 손금, 관상, 토정비결, 꿈해몽, AI 운세채팅, 작명까지. 당신의 운명을 엽니다.">
 <meta name="keywords" content="운세,오늘의운세,타로,사주,궁합,손금,관상,토정비결,꿈해몽,무료운세,별자리운세,띠별운세">
 <meta name="author" content="天運">
 <meta name="robots" content="index, follow">
@@ -66,7 +66,7 @@
   "name": "天運 - 종합 운세",
   "alternateName": "천운",
   "url": "https://chunwoon.app",
-  "description": "오늘의 운세, 타로, 사주, 궁합, 손금, 관상, 토정비결, 꿈해몽, AI 운세채팅, 운세매칭",
+  "description": "오늘의 운세, 타로, 사주, 궁합, 손금, 관상, 토정비결, 꿈해몽, AI 운세채팅, 작명",
   "applicationCategory": "EntertainmentApplication",
   "operatingSystem": "Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
@@ -380,7 +380,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="tab-btn" data-tab="tojeong">토정비결</button>
     <button class="tab-btn" data-tab="dream">꿈해몽</button>
     <button class="tab-btn" data-tab="naming">작명</button>
-    <button class="tab-btn" data-tab="match">운세매칭</button>
   </div>
 
   <!-- ===== 오늘의 운세 ===== -->
@@ -524,6 +523,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
       </div>
 
+      <div class="input-group">
+        <label>관계 유형 <span style="color:var(--text2);font-weight:400;font-size:11px">(선택 — 풀이 톤 조정)</span></label>
+        <div id="cRelChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
       <button class="action-btn red" onclick="analyzeCompat()">궁합 분석하기</button>
     </div>
     <div id="compatResult"></div>
@@ -968,30 +971,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
   </div>
 
-  <!-- ===== 운세 매칭 ===== -->
-  <div class="section" id="sec-match">
-    <div class="card">
-      <div class="card-title">💫 운세 매칭</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">두 사람의 운세 궁합으로 매칭 점수를 확인하세요</p>
-      <div style="text-align:center;margin-bottom:10px;font-size:12px;color:var(--gold)">나의 정보</div>
-      <div class="input-group"><label>이름</label><input id="mName1" placeholder="이름" /></div>
-      <div class="input-row">
-        <div class="input-group"><label>생년월일</label><input type="date" id="mBirth1" /></div>
-        <div class="input-group"><label>성별</label><select id="mGender1"><option value="male">남성</option><option value="female">여성</option></select></div>
-      </div>
-      <div class="input-group"><label>MBTI (선택)</label><input id="mMbti1" placeholder="예: INFP" maxlength="4" style="text-transform:uppercase" /></div>
-      <hr class="divider">
-      <div style="text-align:center;margin-bottom:10px;font-size:12px;color:var(--gold)">상대방 정보</div>
-      <div class="input-group"><label>이름</label><input id="mName2" placeholder="이름" /></div>
-      <div class="input-row">
-        <div class="input-group"><label>생년월일</label><input type="date" id="mBirth2" /></div>
-        <div class="input-group"><label>성별</label><select id="mGender2"><option value="male">남성</option><option value="female">여성</option></select></div>
-      </div>
-      <div class="input-group"><label>MBTI (선택)</label><input id="mMbti2" placeholder="예: ENFJ" maxlength="4" style="text-transform:uppercase" /></div>
-      <button class="action-btn red" onclick="analyzeMatch()">운세 매칭 분석</button>
-    </div>
-    <div class="fortune-result" id="matchResult"></div>
-  </div>
 </div>
 
 <!-- Bottom Nav -->
@@ -1001,7 +980,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <button class="bnav" data-tab="saju"><span class="bi">卦</span><span class="bl">사주</span></button>
   <button class="bnav" data-tab="dream"><span class="bi">🌙</span><span class="bl">꿈</span></button>
   <button class="bnav new" data-tab="naming"><span class="bi">名</span><span class="bl">작명</span></button>
-  <button class="bnav" data-tab="match"><span class="bi">💕</span><span class="bl">매칭</span></button>
+  <button class="bnav" data-tab="compat"><span class="bi">💕</span><span class="bl">궁합</span></button>
 </div>
 
 <script>
@@ -1187,6 +1166,37 @@ function solarToLunar(sY,sM,sD){
     lm=m+1;
   }
   return{year:ly,month:lm,day:offset+1,isLeap};
+}
+
+// 음력 → 양력 변환 (solarToLunar 역변환)
+// ly,lm,ld: 음력 년/월/일, isLeap: 윤달 여부
+function lunarToSolar(ly,lm,ld,isLeap){
+  if(ly<1900||ly>2050)return null;
+  if(lm<1||lm>12||ld<1||ld>30)return null;
+  let offset=0;
+  for(let y=1900;y<ly;y++)offset+=lunarYearDays(y);
+  const leapM=lunarLeapMonth(ly);
+  // 평달 isLeap=true 인데 그 해 윤달이 lm 이 아니면 평달로 강제
+  if(isLeap && leapM!==lm) isLeap=false;
+  for(let m=1;m<lm;m++){
+    offset+=lunarMonthDays(ly,m);
+    if(m===leapM)offset+=lunarLeapDays(ly);
+  }
+  // 윤달인 경우 평달 분량 추가
+  if(isLeap && lm===leapM){
+    offset+=lunarMonthDays(ly,lm);
+    // 윤달 일수 제한 검증
+    const lDays=lunarLeapDays(ly);
+    if(ld>lDays)return null;
+  } else {
+    // 평달 일수 제한 검증
+    const mDays=lunarMonthDays(ly,lm);
+    if(ld>mDays)return null;
+  }
+  offset+=(ld-1);
+  const base=new Date(1900,0,31);
+  const t=new Date(base.getTime()+offset*86400000);
+  return{year:t.getFullYear(),month:t.getMonth()+1,day:t.getDate()};
 }
 
 // ── 괘 계산 ──
@@ -1777,8 +1787,15 @@ async function analyzeSaju(){
   let solarY=inputYear,solarM=inputMonth,solarD=inputDay;
   let lunarInfo=null;
   if(calType==='lunar'){
-    showToast('음력→양력 정확 변환은 다음 업데이트에서 — 일단 양력 기준으로 계산합니다');
-    lunarInfo={year:inputYear,month:inputMonth,day:inputDay,isLeap:false};
+    // ※ 윤달 여부 옵션은 별도 UI 없음 → 평달로 가정 (대부분 케이스)
+    const sol=lunarToSolar(inputYear,inputMonth,inputDay,false);
+    if(sol){
+      solarY=sol.year;solarM=sol.month;solarD=sol.day;
+      lunarInfo={year:inputYear,month:inputMonth,day:inputDay,isLeap:false};
+    } else {
+      showToast('음력 날짜가 1900~2050 범위를 벗어났거나 잘못되었습니다');
+      return;
+    }
   } else {
     const lun=solarToLunar(inputYear,inputMonth,inputDay);
     if(lun)lunarInfo=lun;
@@ -2432,6 +2449,41 @@ function setCompatCal(personIdx, type){
   else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
 }
 
+// 궁합 관계 유형 칩
+const COMPAT_REL_TYPES=[
+  {k:'marriage',n:'예비부부·결혼',e:'💍'},
+  {k:'couple',n:'연인',e:'💕'},
+  {k:'crush',n:'썸·짝사랑',e:'💘'},
+  {k:'friend',n:'친구',e:'🤝'},
+  {k:'work',n:'동료·업무',e:'💼'},
+  {k:'family',n:'가족',e:'👨‍👩‍👧'},
+  {k:'general',n:'그냥 궁금',e:'✨'}
+];
+let compatRelType='couple';
+function _initCompatRelChips(){
+  const w=document.getElementById('cRelChips');
+  if(!w||w.dataset.rendered)return;
+  COMPAT_REL_TYPES.forEach(function(r,i){
+    const ch=document.createElement('span');
+    ch.className='dream-tag'+(r.k==='couple'?' selected':'');
+    ch.dataset.kind='crel';ch.dataset.k=r.k;
+    ch.textContent=r.e+' '+r.n;
+    ch.onclick=function(){
+      w.querySelectorAll('.dream-tag').forEach(function(x){x.classList.remove('selected');});
+      ch.classList.add('selected');
+      compatRelType=r.k;
+    };
+    w.appendChild(ch);
+  });
+  w.dataset.rendered='1';
+  compatRelType='couple';
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(_initCompatRelChips,100);});
+}else{
+  setTimeout(_initCompatRelChips,100);
+}
+
 async function analyzeCompat(){
   // 입력 검증
   const b1=document.getElementById('cBirth1').value, b2=document.getElementById('cBirth2').value;
@@ -2450,21 +2502,31 @@ async function analyzeCompat(){
   const g1=document.getElementById('cGender1').value;
   const g2=document.getElementById('cGender2').value;
 
-  // 음력 입력 안내 (정확 변환 미구현)
-  if(calType1==='lunar'||calType2==='lunar'){
-    showToast('음력→양력 정확 변환은 다음 업데이트에서 — 일단 양력 기준으로 계산합니다');
-  }
-
   const d1=new Date(b1), d2=new Date(b2);
-  const sY1=d1.getFullYear(),sM1=d1.getMonth()+1,sD1=d1.getDate();
-  const sY2=d2.getFullYear(),sM2=d2.getMonth()+1,sD2=d2.getDate();
+  let sY1=d1.getFullYear(),sM1=d1.getMonth()+1,sD1=d1.getDate();
+  let sY2=d2.getFullYear(),sM2=d2.getMonth()+1,sD2=d2.getDate();
+  // 음력 입력이면 양력으로 변환
+  if(calType1==='lunar'){
+    const s1=lunarToSolar(sY1,sM1,sD1,false);
+    if(!s1){alert(`${n1}님의 음력 날짜(${sY1}-${sM1}-${sD1})가 잘못되었거나 1900~2050 범위를 벗어났습니다.`);return}
+    sY1=s1.year;sM1=s1.month;sD1=s1.day;
+  }
+  if(calType2==='lunar'){
+    const s2=lunarToSolar(sY2,sM2,sD2,false);
+    if(!s2){alert(`${n2}님의 음력 날짜(${sY2}-${sM2}-${sD2})가 잘못되었거나 1900~2050 범위를 벗어났습니다.`);return}
+    sY2=s2.year;sM2=s2.month;sD2=s2.day;
+  }
 
   // 두 사주 4기둥 계산
   const p1=calcSajuPillars(sY1,sM1,sD1,hi1);
   const p2=calcSajuPillars(sY2,sM2,sD2,hi2);
   const cmp=compareCompatibility(p1,p2);
 
-  const info={n1,n2,g1,g2,calType1,calType2,b1,b2,hi1,hi2,sY1,sM1,sD1,sY2,sM2,sD2,p1,p2,cmp};
+  // 관계 유형 (톤 조정용) — info/ctx 생성 전에 미리 결정
+  const rel=(typeof compatRelType!=='undefined'?compatRelType:'couple');
+  const relName=((typeof COMPAT_REL_TYPES!=='undefined'?COMPAT_REL_TYPES.find(function(x){return x.k===rel;}):null)||{n:'연인'}).n;
+
+  const info={n1,n2,g1,g2,calType1,calType2,b1,b2,hi1,hi2,sY1,sM1,sD1,sY2,sM2,sD2,p1,p2,cmp,relType:rel,relName:relName};
   window._compatResultData=info;
 
   // 로딩 UI
@@ -2486,6 +2548,7 @@ async function analyzeCompat(){
   // LLM 컨텍스트
   const ctx={
     name1:n1,name2:n2,
+    relType:relName, relTypeKey:rel,
     gender1:g1==='male'?'남성':'여성',gender2:g2==='male'?'남성':'여성',
     pillar1:`${HS[p1.year.stem]}${EB[p1.year.branch]} ${HS[p1.month.stem]}${EB[p1.month.branch]} ${HS[p1.day.stem]}${EB[p1.day.branch]} ${p1.hour?HS[p1.hour.stem]+EB[p1.hour.branch]:'(시간 모름)'}`,
     pillar2:`${HS[p2.year.stem]}${EB[p2.year.branch]} ${HS[p2.month.stem]}${EB[p2.month.branch]} ${HS[p2.day.stem]}${EB[p2.day.branch]} ${p2.hour?HS[p2.hour.stem]+EB[p2.hour.branch]:'(시간 모름)'}`,
@@ -2529,9 +2592,11 @@ function renderCompatResult(result,info){
     </div>`;
   };
 
+  const relBadge=info.relName?`<div style="text-align:center;margin-bottom:8px"><span style="display:inline-block;padding:4px 12px;background:rgba(201,165,78,.1);border:1px solid rgba(201,165,78,.25);border-radius:14px;font-size:11px;color:var(--gold)">${(COMPAT_REL_TYPES.find(function(x){return x.k===info.relType;})||{e:'✨'}).e} ${info.relName}</span></div>`:'';
   const r=document.getElementById('compatResult');
   r.innerHTML=`<div class="card pulse-card">
     <div class="card-title">☯ ${n1}님 ♥ ${n2}님 궁합</div>
+    ${relBadge}
     <div style="text-align:center;margin:12px 0">
       <div style="display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center">
         ${pillarMini(p1,'rgba(201,165,78,.05)')}
@@ -2794,8 +2859,10 @@ async function retryCompatPremiumAPI(){
 
 function _buildCompatContext(info){
   const {n1,n2,g1,g2,p1,p2,cmp}=info;
+  const relName=info.relName||(COMPAT_REL_TYPES.find(function(x){return x.k===(info.relType||'couple');})||{n:'연인'}).n;
   return {
     name1:n1,name2:n2,
+    relType:relName, relTypeKey:info.relType||'couple',
     gender1:g1==='male'?'남성':'여성',gender2:g2==='male'?'남성':'여성',
     pillar1:`${HS[p1.year.stem]}${EB[p1.year.branch]} ${HS[p1.month.stem]}${EB[p1.month.branch]} ${HS[p1.day.stem]}${EB[p1.day.branch]} ${p1.hour?HS[p1.hour.stem]+EB[p1.hour.branch]:'(시간 모름)'}`,
     pillar2:`${HS[p2.year.stem]}${EB[p2.year.branch]} ${HS[p2.month.stem]}${EB[p2.month.branch]} ${HS[p2.day.stem]}${EB[p2.day.branch]} ${p2.hour?HS[p2.hour.stem]+EB[p2.hour.branch]:'(시간 모름)'}`,
@@ -7524,7 +7591,7 @@ function renderNamingUI(){
 }
 
 // 사주 정보 수집 (사람·닉네임용 본인 사주, 회사용 사장 사주)
-function _collectSajuFromUI(birthId, hourId, _genderId){
+function _collectSajuFromUI(birthId, hourId, _genderId, calTypeId){
   const bs=document.getElementById(birthId).value;
   const hi=parseInt(document.getElementById(hourId).value);
   if(!bs)return null;
@@ -7532,7 +7599,16 @@ function _collectSajuFromUI(birthId, hourId, _genderId){
   const yCheck=parseInt(bs.substring(0,4),10);
   if(yCheck<1900||yCheck>2099)return null;
   const b=new Date(bs);
-  const pillars=calcSajuPillars(b.getFullYear(),b.getMonth()+1,b.getDate(),hi);
+  let sY=b.getFullYear(),sM=b.getMonth()+1,sD=b.getDate();
+  // 음력 입력이면 양력으로 변환
+  if(calTypeId){
+    const ct=document.getElementById(calTypeId);
+    if(ct && ct.value==='lunar'){
+      const s=lunarToSolar(sY,sM,sD,false);
+      if(s){sY=s.year;sM=s.month;sD=s.day;}
+    }
+  }
+  const pillars=calcSajuPillars(sY,sM,sD,hi);
   const els=calcElementDistribution(pillars);
   const dStem=pillars.day.stem;
   const max=Math.max(...els),min=Math.min(...els);
@@ -7564,8 +7640,8 @@ async function analyzeNaming(){
     info.hangryeolHanja=document.getElementById('namingHangryeolHanja').value.trim();
     info.hangryeolPos=document.getElementById('namingHangryeolPos').value;
     info.calType=document.getElementById('namingCalType').value;
-    // 사주 정보 수집 (입력 우선, 없으면 _sajuResultData)
-    let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender');
+    // 사주 정보 수집 (입력 우선, 없으면 _sajuResultData) — 음력 입력시 자동 변환
+    let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender','namingCalType');
     if(!saju&&window._sajuResultData){
       const s=window._sajuResultData;
       saju={pillars:s.pillars,els:s.els,ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],dayPillar:HS[s.pillars.day.stem]+EB[s.pillars.day.branch],pillarStr:`${HS[s.pillars.year.stem]}${EB[s.pillars.year.branch]} ${HS[s.pillars.month.stem]}${EB[s.pillars.month.branch]} ${HS[s.pillars.day.stem]}${EB[s.pillars.day.branch]} ${s.pillars.hour?HS[s.pillars.hour.stem]+EB[s.pillars.hour.branch]:'(시간 모름)'}`,dominant:s.dominant||'',lacking:s.lacking||''};
@@ -7639,8 +7715,8 @@ async function analyzeNaming(){
     if(!nickVibe){alert('표현하고 싶은 이미지를 입력해주세요.');return}
     const nickLang=document.getElementById('namingNickLang').value.trim();
     info.nickPlatform=nickPlatform;info.nickVibe=nickVibe;info.nickLang=nickLang;
-    // 본인 사주 (옵션)
-    let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender');
+    // 본인 사주 (옵션) — 음력 입력시 자동 변환
+    let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender','namingCalType');
     if(!saju&&window._sajuResultData){
       const s=window._sajuResultData;
       saju={ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],lacking:s.lacking||''};
@@ -8499,57 +8575,6 @@ function sendChat(){
     };
     showSuggest(followUps[cat]);
   },1200+Math.random()*800);
-}
-
-// ============================================================
-//  11. MATCHING
-// ============================================================
-function analyzeMatch(){
-  const n1=document.getElementById('mName1').value.trim(),n2=document.getElementById('mName2').value.trim();
-  const b1=document.getElementById('mBirth1').value,b2=document.getElementById('mBirth2').value;
-  if(!n1||!n2||!b1||!b2){alert('두 사람의 이름과 생년월일을 모두 입력하세요.');return}
-  const m1=(document.getElementById('mMbti1').value||'').toUpperCase();
-  const m2=(document.getElementById('mMbti2').value||'').toUpperCase();
-  const g1=document.getElementById('mGender1').value,g2=document.getElementById('mGender2').value;
-
-  const d1=new Date(b1),d2=new Date(b2);
-  const br1=(d1.getFullYear()-4)%12,br2=(d2.getFullYear()-4)%12;
-
-  // Calculate scores
-  const seed=nameHash(n1+n2)+d1.getTime()+d2.getTime();
-  const rng=sRng(seed);
-
-  let zodiacScore=65+Math.floor(rng()*20);
-  const gp=[[0,4],[4,8],[8,0],[1,5],[5,9],[9,1],[2,6],[6,10],[10,2],[3,7],[7,11],[11,3]];
-  const grp=[[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]];
-  if(gp.some(p=>(p[0]===br1&&p[1]===br2)||(p[1]===br1&&p[0]===br2)))zodiacScore+=10;
-  if(grp.some(p=>(p[0]===br1&&p[1]===br2)||(p[1]===br1&&p[0]===br2)))zodiacScore+=15;
-  zodiacScore=Math.min(99,zodiacScore);
-
-  let mbtiScore=70+Math.floor(rng()*15);
-  if(m1&&m2&&MBTI_COMPAT[m1]&&MBTI_COMPAT[m1].includes(m2))mbtiScore=90+Math.floor(rng()*10);
-
-  const nameScore=60+nameHash(n1+n2)%30;
-  const chemScore=Math.floor(rng()*25)+70;
-
-  const total=Math.min(99,Math.floor((zodiacScore*0.3+mbtiScore*0.2+nameScore*0.2+chemScore*0.3)));
-
-  let grade,detail,emoji;
-  if(total>=90){grade='운명적 매칭';emoji='💖';detail=`${n1}님과 ${n2}님은 하늘이 맺어준 인연입니다! 서로를 완벽하게 보완하며, 함께할수록 더 빛나는 관계입니다. 만약 아직 사귀는 사이가 아니라면, 지금 바로 고백하세요!`}
-  else if(total>=80){grade='환상의 케미';emoji='✨';detail=`${n1}님과 ${n2}님은 서로에게 최고의 파트너가 될 수 있습니다. 대화가 잘 통하고, 함께 있으면 편안한 관계입니다. 서로의 장점을 인정해주면 더욱 좋아질 거예요.`}
-  else if(total>=70){grade='좋은 매칭';emoji='💛';detail=`${n1}님과 ${n2}님은 서로에게 긍정적인 영향을 주는 관계입니다. 약간의 노력과 이해가 더해지면 훌륭한 파트너가 될 수 있어요.`}
-  else{grade='성장하는 매칭';emoji='🌱';detail=`${n1}님과 ${n2}님은 서로 다른 매력을 지닌 관계입니다. 차이점이 오히려 서로를 성장시키는 원동력이 됩니다. 소통에 더 신경 쓰면 좋겠어요.`}
-
-  const r=document.getElementById('matchResult');
-  r.innerHTML=`<div class="card pulse-card">
-  <div class="card-title">💫 매칭 분석 결과</div>
-  <div class="match-vs"><div class="match-profile"><div class="match-profile-circle">${ZOD[br1].e}</div><div class="match-profile-name">${n1}</div><div style="font-size:10px;color:var(--text2)">${ZOD[br1].n}띠${m1?' · '+m1:''}</div></div><div class="match-heart">${emoji}</div><div class="match-profile"><div class="match-profile-circle">${ZOD[br2].e}</div><div class="match-profile-name">${n2}</div><div style="font-size:10px;color:var(--text2)">${ZOD[br2].n}띠${m2?' · '+m2:''}</div></div></div>
-  <div class="match-result-score">${total}%</div>
-  <div class="match-grade">${grade}</div>
-  <div style="margin-bottom:16px"><div class="score-row"><span class="score-label">띠 궁합</span><div class="score-bar"><div class="score-fill" data-width="${zodiacScore}"></div></div></div><div class="score-row"><span class="score-label">MBTI</span><div class="score-bar"><div class="score-fill" data-width="${mbtiScore}"></div></div></div><div class="score-row"><span class="score-label">이름 궁합</span><div class="score-bar"><div class="score-fill" data-width="${nameScore}"></div></div></div><div class="score-row"><span class="score-label">케미</span><div class="score-bar"><div class="score-fill" data-width="${chemScore}"></div></div></div></div>
-  <div class="reading">${detail}</div>
-  <div class="share-wrap"><button class="share-btn" onclick="shareResult('match')">📤 결과 공유하기</button></div></div>`;
-  r.classList.add('show');burstConfetti();setTimeout(animateScores,200);r.scrollIntoView({behavior:'smooth',block:'start'})
 }
 
 // ============================================================
@@ -9977,7 +10002,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
 
 // ── 결과 이미지 공유 (Web Share API + 캡처 이미지) ──
 function shareResultImage(type){
-  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',match:'matchResult',tojeong:'tojeongResult',compat:'compatResult',naming:'namingResult'};
+  const targetIds={face:'faceResult',palm:'palmResult',saju:'sajuResult',daily:'dailyResult',dream:'dreamResult',tojeong:'tojeongResult',compat:'compatResult',naming:'namingResult'};
   const target=document.getElementById(targetIds[type]||'faceResult');
   if(!target){showToast('공유할 결과가 없습니다');return}
 
@@ -9991,7 +10016,7 @@ function shareResultImage(type){
     canvas.toBlob(blob=>{
       const today=new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
       const fileName=`천운_${type}_${today}.png`;
-      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',match:'운세 매칭',tojeong:'토정비결',compat:'궁합 분석',naming:'작명'};
+      const titles={face:'관상 분석',palm:'손금 해석',saju:'사주 분석',daily:'오늘의 운세',dream:'꿈 해몽',tojeong:'토정비결',compat:'궁합 분석',naming:'작명'};
       const t=titles[type]||'운세 결과';
 
       if(navigator.share){
@@ -10015,7 +10040,7 @@ function shareResultImage(type){
 
 // ── 결과 저장하기 — html2canvas로 실제 결과 화면 캡처 (비프리미엄용) ──
 function saveResult(type) {
-  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', match: 'matchResult', tojeong: 'tojeongResult', compat: 'compatResult', naming: 'namingResult' };
+  const targetIds = { face: 'faceResult', palm: 'palmResult', saju: 'sajuResult', daily: 'dailyResult', dream: 'dreamResult', tojeong: 'tojeongResult', compat: 'compatResult', naming: 'namingResult' };
   const target = document.getElementById(targetIds[type] || 'faceResult');
   if (!target) { showToast('저장할 결과가 없습니다'); return; }
 
@@ -10172,7 +10197,7 @@ function showTerms() {
         이 약관은 天運(이하 '서비스')이 제공하는 운세 서비스의 이용 조건 및 절차를 규정합니다.</p>
         <br>
         <p><strong style="color:#e8e6e0">제2조 (서비스 내용)</strong><br>
-        서비스는 오늘의 운세, 타로, 사주, 궁합, 손금, 관상, 토정비결, 꿈해몽, 운세채팅, 운세매칭 등의 오락 목적의 운세 콘텐츠를 제공합니다.</p>
+        서비스는 오늘의 운세, 타로, 사주, 궁합, 손금, 관상, 토정비결, 꿈해몽, 운세채팅, 작명 등의 오락 목적의 운세 콘텐츠를 제공합니다.</p>
         <br>
         <p><strong style="color:#e8e6e0">제3조 (면책사항 — 매우 중요)</strong><br>
         ① 본 서비스의 모든 AI 분석 결과는 <strong style="color:#e85a4f">오락 및 자기 이해 목적</strong>으로 제공되며, 과학적·통계적·법적 근거나 정확성을 보장하지 않습니다.<br>
@@ -10198,7 +10223,7 @@ function showTerms() {
 // ============================================================
 function insertAdSlots() {
   // Insert ad after daily fortune result
-  const adPositions = ['dailyResult', 'tarotReading', 'sajuResult', 'tojeongResult', 'dreamResult', 'matchResult'];
+  const adPositions = ['dailyResult', 'tarotReading', 'sajuResult', 'tojeongResult', 'dreamResult', 'compatResult'];
   adPositions.forEach(id => {
     const target = document.getElementById(id);
     if (target && !target.querySelector('.ad-slot')) {
@@ -10263,3 +10288,4 @@ setTimeout(insertAdSlots, 3000);
 
 </body>
 </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

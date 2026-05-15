@@ -1,6 +1,5 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v3.18.0';
-// 외부 모듈 — 타로 + 데일리 한 마디 + 면책 안내
+const CACHE_NAME = 'chunwoon-v3.20.0';
 const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js', '/js/disclaimer.js'];
 const ASSETS_TO_CACHE = [
   '/',
@@ -11,7 +10,6 @@ const ASSETS_TO_CACHE = [
   'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap'
 ];
 
-// Install - cache core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -20,7 +18,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate - clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -31,15 +28,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Clone and cache successful responses (HTTP/HTTPS only, skip extensions)
         if (response.ok && event.request.url.startsWith('http')) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -49,10 +42,8 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Fallback to cache
         return caches.match(event.request).then(cached => {
           if (cached) return cached;
-          // Fallback to main page for navigation
           if (event.request.mode === 'navigate') {
             return caches.match('/index.html');
           }
@@ -61,14 +52,10 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync for future features
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-fortune') {
-    // Future: sync user data when back online
-  }
+  if (event.tag === 'sync-fortune') {}
 });
 
-// Push notifications for future features
 self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();

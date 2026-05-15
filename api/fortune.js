@@ -423,17 +423,35 @@ ${c.sajuLinked?`사주 일간: ${c.ilgan||''}(${c.ilganElement||''})`:'사주 �
       systemPrompt = `당신은 사주명리 궁합 전문가입니다. 자평진전·삼명통회 기반.
 한국어 해요체. 두 사람의 사주 4기둥 + 합충 분석 데이터를 직접 인용하며 풀이.
 - 일간(日干) 케미가 핵심 (合化·相沖·相生·相剋)
-- 일지(日支)는 배우자궁이라 가장 중요
+- 일지(日支)는 배우자궁(연인궁/동반자궁)이라 가장 중요
 - 합·충·해 관계로 끌림과 갈등 진단
 - 두 사주의 오행 보완성 평가
 - 따뜻하고 희망적이지만 현실적인 톤
 - autoScore는 자동 산출값. LLM은 명리적 판단으로 보정한 score 제시.
 
+★ 중요: 관계 유형(relType)에 따라 풀이 관점·예시·조언 톤을 정확히 조정하세요.
+- "예비부부·결혼": 백년해로 관점 — 결혼 후 동거·자녀·재물 합·갈등 패턴. 결혼 적합성 진단.
+- "연인": 현재 연애 흐름 — 끌림·소통·장기 관계 발전 가능성·이별 위험.
+- "썸·짝사랑": 발전 가능성 — 고백 타이밍·상대의 마음·다가가는 법.
+- "친구": 우정 — 함께 어울리는 호흡·오래 가는 우정 비결·갈등 패턴.
+- "동료·업무": 협업 시너지 — 일 호흡·역할 분담·갈등 회피·합작 가능성.
+- "가족": 가족 인연 — 세대 간 호흡·갈등 패턴·정서적 거리·돌봄.
+- "그냥 궁금": 두 사람 사이의 인연 종합 — 어떤 관계가 가장 어울리는지도.
+
+scores 4영역은 관계 유형별로 가중치 조정:
+- "예비부부·결혼": personality/romance/wealth/life
+- "연인"/"썸·짝사랑": personality/romance + life (wealth는 부수)
+- "친구": personality/life + romance(친밀도)/wealth(같이 노는 비용 호흡)
+- "동료·업무": personality/wealth(일/협업)/life(업무 흐름) + romance(친화력)
+- "가족": personality/life + romance(애정)/wealth(생활 호흡)
+
 반드시 아래 JSON 구조로만 응답:
-{"summary":"두 사주 종합 궁합 풀이 250자 내외","ilganChemistry":"일간 케미 풀이 150자 내외","habChungAnalysis":"합·충·해 풀이 100자 내외","elementBalance":"오행 보완성 100자 내외","score":number(55-99),"grade":"등급 (천생연분/좋은인연/노력하면좋은궁합/평범한인연/특별한인연 중)","scores":{"personality":number(0-100),"romance":number(0-100),"wealth":number(0-100),"life":number(0-100)},"luckyInfo":{"color":"공통 행운의 색","direction":"공통 행운의 방위","activity":"좋은 함께 활동"},"caution":"주의사항 80자 내외","advice":"종합 조언 100자 내외"}` + JSON_FORCE;
+{"summary":"관계 유형에 맞춘 두 사주 종합 궁합 풀이 250자 내외","ilganChemistry":"일간 케미 풀이 150자 내외","habChungAnalysis":"합·충·해 풀이 100자 내외","elementBalance":"오행 보완성 100자 내외","score":number(55-99),"grade":"등급 (관계 유형에 맞춰: 천생연분/좋은인연/노력하면좋은궁합/평범한인연/특별한인연 등)","scores":{"personality":number(0-100),"romance":number(0-100),"wealth":number(0-100),"life":number(0-100)},"luckyInfo":{"color":"공통 행운의 색","direction":"공통 행운의 방위","activity":"좋은 함께 활동 (관계 유형에 맞게)"},"caution":"주의사항 80자 내외","advice":"관계 유형에 맞춘 종합 조언 100자 내외"}` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `궁합 분석 의뢰
+★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이)
+
 ${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1||''} / 일간 ${c.ilgan1||''}
 ${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2||''} / 일간 ${c.ilgan2||''}
 
@@ -449,52 +467,77 @@ ${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2||''} / 일간 ${c.ilgan2||''}
 과한 오행: ${c.excess||''}
 자동 산출 점수: ${c.autoScore||''}점
 
-이 두 사람의 궁합을 명리학적으로 풀이해주세요.`;
+이 두 사람의 궁합을 "${c.relType||'연인'}" 관점에서 명리학적으로 풀이해주세요. 결혼 위주 풀이를 일률적으로 적용하지 말고, 관계 유형에 맞춰 예시·조언·캐릭터화하세요.`;
 
     } else if (type === 'compat_premium_1') {
       // 1단계: 일간/일지 정밀 매치 + 합충 상세 + 오행 보완 + 영역별 심층
       systemPrompt = `당신은 명리 궁합 대가입니다. 자평진전·삼명통회·연해자평 기반.
 한국어 해요체. 고전 한문 원문+번역 인용 가능. 두 사주 데이터 직접 인용.
 - 일간 정밀 매치: 合化(예: 갑기→토)의 의미와 실제 영향력
-- 일지 매치: 배우자궁이 합인지 충인지에 따라 결혼 후 관계
+- 일지 매치: 배우자궁/연인궁/동반자궁이 합인지 충인지에 따라 관계 후 흐름
 - 합·충·형·해 8글자 단위 상세
 - 오행 보완 — 부족·과한 오행을 두 사람이 어떻게 채워주거나 충돌하는지
-- 영역별 심층 (성격·연애결혼·재물·자녀·생활)
-간결하게: 4영역 deep은 각 130자 내외, 일간·일지·합충·오행 deep은 각 200자 내외. 핵심만.
+- 5영역 심층 — 관계 유형별 라벨·강조점 조정
+간결하게: 5영역 deep은 각 130자 내외, 일간·일지·합충·오행 deep은 각 200자 내외. 핵심만.
+
+★ 관계 유형(relType)별 5영역 라벨·관점:
+- "예비부부·결혼": personality(성격), romance(연애·결혼), wealth(재물), children(자녀), life(가정생활)
+- "연인": personality, romance(연애·끌림), wealth(데이트·생활비), children(미래 계획), life(일상 호흡)
+- "썸·짝사랑": personality, romance(끌림·발전 가능성), wealth(데이트 호흡), children(가능성 시각), life(만남 흐름)
+- "친구": personality, romance(친밀도·우정), wealth(같이 노는 호흡), children(공동 추억), life(생활 합)
+- "동료·업무": personality, romance(친화력·팀워크), wealth(업무 시너지), children(공동 프로젝트), life(업무 흐름)
+- "가족": personality, romance(애정·돌봄), wealth(생활 분담), children(돌봄·양육), life(세대 합)
+- "그냥 궁금": 결혼 관점이 아닌 일반적 인연 관점으로 풀이
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"ilganDeep":"일간 정밀 매치 200자 내외","iljiDeep":"일지(배우자궁) 정밀 매치 200자 내외","habChungDetail":"합·충·형·해 상세 200자 내외","elementBalance":"오행 보완성 정밀 200자 내외","areasDeep":{"personality":"성격 케미 130자 내외","romance":"연애·결혼 130자 내외","wealth":"재물 호흡 130자 내외","children":"자녀운 130자 내외","life":"생활 합 130자 내외"}}` + JSON_FORCE;
+{"ilganDeep":"일간 정밀 매치 200자 내외","iljiDeep":"일지 정밀 매치 200자 내외 (관계 유형에 맞게)","habChungDetail":"합·충·형·해 상세 200자 내외","elementBalance":"오행 보완성 정밀 200자 내외","areasDeep":{"personality":"성격 케미 130자 내외","romance":"관계 유형 맞춤 130자 내외","wealth":"재물/호흡 130자 내외","children":"관계 유형 맞춤 130자 내외","life":"생활 합 130자 내외"}}` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `궁합 프리미엄 1단계 (정밀 매치·합충·영역 심층)
+★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이)
+
 ${c.name1||'A'}님: ${c.pillar1||''} / 일간 ${c.ilgan1||''}
 ${c.name2||'B'}님: ${c.pillar2||''} / 일간 ${c.ilgan2||''}
 일간 관계: ${c.ilganRelation||''} / 일지 관계: ${c.iljiRelation||''}
 천간합: ${c.hsHabs||''} / 천간충: ${c.hsChungs||''}
 지지 육합: ${c.ebHabs||''} / 육충: ${c.ebChungs||''} / 육해: ${c.ebHaes||''}
 오행 합산: ${c.elsCombined||''} / 부족: ${c.lacking||''} / 과: ${c.excess||''}
-이 두 사람의 정밀 매치·합충·오행·5영역을 풀이해주세요.`;
+
+이 두 사람의 정밀 매치·합충·오행·5영역을 "${c.relType||'연인'}" 관점에서 풀이해주세요.`;
 
     } else if (type === 'compat_premium_2') {
-      // 2단계: 대운 동행 + 갈등 시나리오 + 결혼 길흉일 + 개운법
+      // 2단계: 대운 동행 + 갈등 시나리오 + 길흉일 + 개운법
       systemPrompt = `당신은 명리 궁합 대가입니다.
 한국어 해요체. 1단계 해석과 일관성 유지. 간결하게 핵심만.
 - 대운 동행: 두 사람 8단계 대운(0~80세)을 비교, 함께 좋은 시기·도전 시기
 - 갈등 시나리오: 합충 관계로 발생할 수 있는 구체 상황 + 처방 3~4개
-- 결혼 길흉: 두 사주에 좋은 달·피할 달
-- 백년해로 개운법: 두 사람이 함께 실천할 보강법
+- weddingDays는 관계 유형에 맞춰 "중요 시기/길월" 의미로 사용
+- 개운법: 두 사람이 함께 실천할 보강법
+
+★ 관계 유형(relType)별 weddingDays·gaeunbup 의미 조정:
+- "예비부부·결혼": 결혼 길흉일 + 백년해로 개운법 (전통)
+- "연인": 함께 좋은 달·만남 적기 + 장기 연애 개운법
+- "썸·짝사랑": 고백·발전 적기 달 + 마음 잡는 개운법
+- "친구": 만남·여행·중대 결정 적기 + 우정 강화 개운법
+- "동료·업무": 협업·중요 미팅 적기 + 시너지 강화 개운법
+- "가족": 화합·여행·중대 결정 적기 + 가족 화목 개운법
+- "그냥 궁금": 일반적 좋은 달·주의 달 + 인연 강화 개운법
+이에 맞춰 "luckyMonths/cautionMonths/advice" 표현을 자연스럽게 조정 (꼭 "결혼"이라고 적지 말 것).
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"daewoonAlignment":[{"period":"0~9세","fortune":"50자 내외"},{"period":"10~19세","fortune":""},{"period":"20~29세","fortune":""},{"period":"30~39세","fortune":""},{"period":"40~49세","fortune":""},{"period":"50~59세","fortune":""},{"period":"60~69세","fortune":""},{"period":"70~79세","fortune":""}],"scenarios":[{"situation":"갈등 상황 한 줄","trigger":"발생 원인 한 줄 (사주 근거)","solution":"화합 처방 80자 내외"}],"weddingDays":{"luckyMonths":"길월 예: 3월·9월","cautionMonths":"피할 달 예: 7월","advice":"택일 조언 80자 내외"},"gaeunbup":"백년해로 개운법 200자 내외"}
+{"daewoonAlignment":[{"period":"0~9세","fortune":"50자 내외"},{"period":"10~19세","fortune":""},{"period":"20~29세","fortune":""},{"period":"30~39세","fortune":""},{"period":"40~49세","fortune":""},{"period":"50~59세","fortune":""},{"period":"60~69세","fortune":""},{"period":"70~79세","fortune":""}],"scenarios":[{"situation":"갈등 상황 한 줄","trigger":"발생 원인 한 줄 (사주 근거)","solution":"화합 처방 80자 내외"}],"weddingDays":{"luckyMonths":"길월","cautionMonths":"피할 달","advice":"관계 유형 맞춤 조언 80자 내외"},"gaeunbup":"관계 유형 맞춤 개운법 200자 내외"}
 daewoonAlignment 8단계 모두, scenarios 3~4개.` + JSON_FORCE;
 
       const c = context || {};
-      userPrompt = `궁합 프리미엄 2단계 (대운 동행·시나리오·결혼·개운)
+      userPrompt = `궁합 프리미엄 2단계 (대운 동행·시나리오·길흉일·개운)
+★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이 — 결혼 표현 일률 적용 X)
+
 ${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1||''}
 ${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2||''}
 일간/일지 관계: ${c.ilganRelation||''} / ${c.iljiRelation||''}
 합충 요약: 합 ${c.hsHabs||''} ${c.ebHabs||''} / 충 ${c.hsChungs||''} ${c.ebChungs||''} / 해 ${c.ebHaes||''}
-두 사람 8단계 대운 동행, 갈등 시나리오 3~4개, 결혼 길흉, 백년해로 개운법을 풀이해주세요.`;
+
+두 사람 8단계 대운 동행, 갈등 시나리오 3~4개, 관계 유형별 길흉일, 개운법을 풀이해주세요.`;
 
     } else if (type === 'saju') {
       // 사주 무료 분석
@@ -782,86 +825,4 @@ readings 배열에 6~10번 5장 모두 포함.` + JSON_FORCE;
       const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
       const posNames = ['가까운 미래','자신','환경','희망과 두려움','최종 결과'];
       const cardsDesc = (c.cards||[]).slice(5,10).map((card,i)=>`[${posNames[i]}] ${card.name}${card.reversed?'(역방향)':'(정방향)'} — 유형: ${card.kind||'major'}${card.suit?` / 수트: ${card.suitName||card.suit}`:''}${card.court?` / 코트: ${card.court}`:''} — 키워드: ${card.reversed?(card.rev||card.theme):(card.up||card.theme)}`).join('\n');
-      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~10번 + 사주·시점·행운)
-카테고리: ${catName}
-${c.question?`질문: "${c.question}"`:''}
-${c.ilgan?`사주: 일간 ${c.ilgan}(${c.ilganElement||''}) / 강함 ${c.dominant||''} / 부족 ${c.lacking||''}`:'사주: 미입력'}
-
-뽑힌 카드 (6~10번):
-${cardsDesc}
-
-각 위치 풀이 + 사주 연계 + 시점별 조언 + 실천 계획 + 행운 정보를 알려주세요.`;
-
-    } else {
-      return res.status(400).json({ error: 'Invalid type' });
-    }
-
-    // 타입별 max_tokens 조정
-    let maxTokens = 1500;
-    if (type === 'tojeong') maxTokens = 2200;
-    else if (type === 'tojeong_premium_1') maxTokens = 2500;
-    else if (type === 'tojeong_premium_2') maxTokens = 4000;
-    else if (type === 'saju') maxTokens = 2500;
-    else if (type === 'saju_premium_1') maxTokens = 4500;
-    else if (type === 'saju_premium_2') maxTokens = 4000;
-    else if (type === 'compat') maxTokens = 2500;
-    else if (type === 'compat_premium_1') maxTokens = 4500;
-    else if (type === 'compat_premium_2') maxTokens = 4000;
-    else if (type === 'dream') maxTokens = 2500;
-    else if (type === 'dream_premium_1') maxTokens = 3500;
-    else if (type === 'dream_premium_2') maxTokens = 4000;
-    else if (type === 'naming') maxTokens = 5500;
-    else if (type === 'naming_premium_1') maxTokens = 7000;
-    else if (type === 'naming_premium_2') maxTokens = 5500;
-    else if (type === 'naming_company') maxTokens = 3500;
-    else if (type === 'naming_company_premium_1') maxTokens = 6000;
-    else if (type === 'naming_company_premium_2') maxTokens = 5500;
-    else if (type === 'naming_product') maxTokens = 3500;
-    else if (type === 'naming_product_premium_1') maxTokens = 6000;
-    else if (type === 'naming_pet') maxTokens = 3000;
-    else if (type === 'naming_nickname') maxTokens = 3000;
-    else if (type === 'tarot') maxTokens = 2500;
-    else if (type === 'tarot_premium_1') maxTokens = 4000;
-    else if (type === 'tarot_premium_2') maxTokens = 4000;
-    else if (type === 'daily_message') maxTokens = 400;
-    else if (type === 'chat') maxTokens = 800;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      return res.status(502).json({ error: 'LLM API error', detail: response.status, message: errText.substring(0, 300) });
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-
-    // chat·daily_message는 자연어 응답 — JSON 파싱 안 함
-    if (type === 'chat' || type === 'daily_message') {
-      return res.status(200).json({ success: true, result: { text: text.trim() } });
-    }
-    const parsed = extractJSON(text);
-    if (parsed) {
-      return res.status(200).json({ success: true, result: parsed });
-    } else {
-      // JSON 파싱 실패 — 디버그용으로 원본 텍스트 첫 500자 포함
-      return res.status(200).json({ success: true, result: { raw: text.substring(0, 500) } });
-    }
-
-  } catch (err) {
-    return res.status(500).json({ error: 'Internal server error', message: err.message });
-  }
-}
+      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~
