@@ -177,8 +177,13 @@ function _renderTarotPaywall(){
 async function unlockTarotPremium(){
   const info = window._tarotResultData;
   if(!info){showToast('먼저 타로를 받아주세요');return}
-  if(!confirm('프리미엄 타로 리포트 (₩4,900)를 구매하시겠습니까?\n\n78장 풀덱 + 켈틱 크로스 10장 스프레드 + 사주 연계 + PDF 영구 보관.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.'))return;
-  if(window.markPremiumPayment) window.markPremiumPayment();
+  if(window.payWithToss){
+    const paid = await window.payWithToss('tarot');
+    if(!paid) return;
+  } else {
+    if(!confirm('프리미엄 타로 리포트 (₩4,900)를 구매하시겠습니까?'))return;
+    if(window.markPremiumPayment) window.markPremiumPayment();
+  }
 
   const pw = document.getElementById('tarotPaywall');
   let loadTimer = null;

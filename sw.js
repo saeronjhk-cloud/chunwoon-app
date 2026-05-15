@@ -1,6 +1,6 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v3.22.0';
-const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js', '/js/disclaimer.js'];
+const CACHE_NAME = 'chunwoon-v3.23.0';
+const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js', '/js/toss-pay.js', '/js/disclaimer.js'];
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -30,6 +30,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // /api/* 와 Toss SDK는 캐싱하지 않음 — 항상 네트워크
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/') || url.hostname === 'js.tosspayments.com' || url.hostname === 'api.tosspayments.com') {
+    return;
+  }
   event.respondWith(
     fetch(event.request)
       .then(response => {
