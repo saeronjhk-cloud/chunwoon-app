@@ -1,6 +1,6 @@
 // Service Worker for 天運 PWA
-const CACHE_NAME = 'chunwoon-v3.20.0';
-const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js', '/js/disclaimer.js'];
+const CACHE_NAME = 'chunwoon-v3.21.0';
+const EXTRA_ASSETS = ['/js/tarot.js', '/js/chat.js', '/js/palm-premium.js', '/js/disclaimer.js'];
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
