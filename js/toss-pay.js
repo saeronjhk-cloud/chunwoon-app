@@ -71,6 +71,16 @@ function _loadTossSDK(){
   return _tossSdkPromise;
 }
 
+// 이미 결제된 활성 회원인지 (30일 이내) — 이중 결제 방지
+function _isPremiumPaidActive(){
+  try {
+    const ts = parseInt(localStorage.getItem('cw_premium_last_payment') || '0', 10);
+    if(!ts) return false;
+    const days30 = 30 * 24 * 60 * 60 * 1000;
+    return (Date.now() - ts) < days30;
+  } catch(e) { return false; }
+}
+
 // ============================================================
 //  결제 요청 (메인 API)
 // ============================================================
@@ -79,6 +89,12 @@ async function payWithToss(productKey){
   if(!p){
     alert('알 수 없는 상품: ' + productKey);
     return false;
+  }
+
+  // 이미 30일 이내 결제 회원이면 결제 skip (이중 결제 방지)
+  if(_isPremiumPaidActive()){
+    if(typeof showToast === 'function') showToast('이미 결제하신 프리미엄 회원입니다 — 바로 분석을 받습니다');
+    return true;
   }
 
   // 키 미설정 안내 (테스트 키 없을 때 fallback)
@@ -211,11 +227,33 @@ async function _handleTossSuccessCallback(){
     // URL 정리
     window.history.replaceState(null, '', cleanUrl);
 
-    // 사용자에게 알림 + 자동 unlock 가이드
+    // 결제한 분석 탭으로 자동 이동
+    const tabMap = {
+      saju:'saju', compat:'compat', tojeong:'tojeong', dream:'dream',
+      face:'face', tarot:'tarot',
+      naming:'naming', naming_company:'naming', naming_product:'naming'
+    };
+    const targetTab = tabMap[pending.productKey];
+    if(targetTab){
+      setTimeout(function(){
+        const btn = document.querySelector('[data-tab="'+targetTab+'"]');
+        if(btn) btn.click();
+      }, 600);
+    }
+
+    // 사용자에게 알림 + 명확한 다음 단계 안내
     if(typeof showToast === 'function') showToast('✓ 결제가 완료되었습니다');
     setTimeout(function(){
-      alert('✓ 결제 완료!\n\n' + pending.orderName + '\n금액: ₩' + amount.toLocaleString() + '\n\n구매하신 프리미엄 분석 버튼을 다시 눌러 리포트를 받아주세요.');
-    }, 200);
+      alert(
+        '✓ 결제 완료!\n\n' +
+        pending.orderName + '\n금액: ₩' + amount.toLocaleString() + '\n\n' +
+        '【프리미엄 리포트 받는 법】\n' +
+        '결제하신 분석 페이지로 이동했습니다.\n' +
+        '입력하신 정보를 동일하게 다시 입력하고 "분석" 버튼을 누르세요.\n' +
+        '결제 완료 회원으로 자동 인식되어 프리미엄 리포트가 바로 표시됩니다.\n\n' +
+        '※ 결제는 30일간 유효 — 이 기간 동안 모든 프리미엄 분석 무제한 이용'
+      );
+    }, 800);
   } catch(err) {
     console.error('[Toss] 승인 실패:', err);
     alert('결제 승인 중 오류가 발생했습니다.\n\n' + ((err && err.message) || '고객센터에 문의해주세요') + '\n\n주문번호: ' + orderId);
