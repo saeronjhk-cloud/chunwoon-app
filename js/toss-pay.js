@@ -254,6 +254,3 @@ if(typeof window !== 'undefined'){
     setTimeout(_handleTossSuccessCallback, 0);
   }
 }
-etTimeout(_handleTossSuccessCallback, 0);
-  }
-}
