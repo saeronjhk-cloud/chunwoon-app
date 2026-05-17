@@ -3,38 +3,65 @@
 // 사용: payWithToss('saju') 등 productKey로 결제창 호출
 
 // ============================================================
-//  설정 (실제 키는 빌드 시점 또는 환경에서 주입)
+//  설정
 // ============================================================
 // 클라이언트 키 (Toss Payments 발급, 새론 비즈 MID: fihubscj0k)
 // 테스트 키 — 라이브 키 발급시 교체
 const TOSS_CLIENT_KEY = window.__TOSS_CLIENT_KEY__ || 'test_ck_DpexMgkW36wKXn24okn4VGbR5ozO';
 
-// 가격·상품명 매핑 (productKey → {amount, orderName, unlockFn})
+// 가격·상품명 매핑
 const TOSS_PRICING = {
-  // 일반 ₩4,900
   saju:          { amount: 4900, orderName: '천운 사주 프리미엄 리포트' },
   compat:        { amount: 4900, orderName: '천운 궁합 프리미엄 리포트' },
   tojeong:       { amount: 4900, orderName: '천운 토정비결 프리미엄 리포트' },
   dream:         { amount: 4900, orderName: '천운 꿈해몽 프리미엄 리포트' },
   face:          { amount: 4900, orderName: '천운 관상 프리미엄 리포트' },
   tarot:         { amount: 4900, orderName: '천운 타로 프리미엄 리포트' },
-  // 작명 ₩29,900
   naming:        { amount: 29900, orderName: '천운 작명 프리미엄 리포트' },
   naming_company:{ amount: 29900, orderName: '천운 회사 작명 프리미엄 리포트' },
   naming_product:{ amount: 29900, orderName: '천운 제품 작명 프리미엄 리포트' }
 };
 
-// SDK URL
 const TOSS_SDK_URL = 'https://js.tosspayments.com/v2/standard';
 
+// 매핑: productKey → 결과 element id / window 데이터 변수 / 탭 / unlock 함수
+const _RESULT_EL_MAP = {
+  saju:'sajuResult', compat:'compatResult', tojeong:'tojeongResult',
+  dream:'dreamResult', face:'faceResult', tarot:'tarotResult',
+  naming:'namingResult', naming_company:'namingResult', naming_product:'namingResult'
+};
+const _RESULT_DATA_MAP = {
+  saju:'_sajuResultData', compat:'_compatResultData', tojeong:'_tojeongResultData',
+  dream:'_dreamResultData', face:'_faceResultData', tarot:'_tarotResultData',
+  naming:'_namingResultData', naming_company:'_namingResultData', naming_product:'_namingResultData'
+};
+const _TAB_MAP = {
+  saju:'saju', compat:'compat', tojeong:'tojeong', dream:'dream',
+  face:'face', tarot:'tarot',
+  naming:'naming', naming_company:'naming', naming_product:'naming'
+};
+const _UNLOCK_FN_MAP = {
+  saju:'unlockSajuPremium', compat:'unlockCompatPremium', tojeong:'unlockTojeongPremium',
+  dream:'unlockDreamPremium', tarot:'unlockTarotPremium',
+  naming:'unlockNamingPremium', naming_company:'unlockNamingPremium', naming_product:'unlockNamingPremium'
+};
+
 // ============================================================
-//  customerKey 생성·보관 (UUID 유사, 비회원 식별용)
+//  헬퍼
 // ============================================================
+function _isPremiumPaidActive(){
+  try {
+    const ts = parseInt(localStorage.getItem('cw_premium_last_payment') || '0', 10);
+    if(!ts) return false;
+    const days30 = 30 * 24 * 60 * 60 * 1000;
+    return (Date.now() - ts) < days30;
+  } catch(e) { return false; }
+}
+
 function _getOrCreateCustomerKey(){
   try {
     let k = localStorage.getItem('cw_customer_key');
     if(!k){
-      // UUID v4 유사 (2~50자, 영문대소문자·숫자·_-=. 허용)
       const rnd = () => Math.random().toString(36).slice(2);
       k = 'cw_' + rnd() + rnd() + '_' + Date.now().toString(36);
       k = k.substring(0, 50);
@@ -46,16 +73,12 @@ function _getOrCreateCustomerKey(){
   }
 }
 
-// orderId 생성 (영문 대소문자·숫자·-_= 6~64자)
 function _genOrderId(productKey){
   const rnd = Math.random().toString(36).slice(2, 10);
   const ts = Date.now().toString(36);
   return ('cw_' + productKey + '_' + ts + '_' + rnd).substring(0, 64).replace(/[^A-Za-z0-9_=-]/g, '_');
 }
 
-// ============================================================
-//  SDK 동적 로드
-// ============================================================
 let _tossSdkPromise = null;
 function _loadTossSDK(){
   if(_tossSdkPromise) return _tossSdkPromise;
@@ -71,16 +94,6 @@ function _loadTossSDK(){
   return _tossSdkPromise;
 }
 
-// 이미 결제된 활성 회원인지 (30일 이내) — 이중 결제 방지
-function _isPremiumPaidActive(){
-  try {
-    const ts = parseInt(localStorage.getItem('cw_premium_last_payment') || '0', 10);
-    if(!ts) return false;
-    const days30 = 30 * 24 * 60 * 60 * 1000;
-    return (Date.now() - ts) < days30;
-  } catch(e) { return false; }
-}
-
 // ============================================================
 //  결제 요청 (메인 API)
 // ============================================================
@@ -91,21 +104,19 @@ async function payWithToss(productKey){
     return false;
   }
 
-  // 이미 30일 이내 결제 회원이면 결제 skip (이중 결제 방지)
+  // 이미 30일 이내 결제 회원이면 결제 skip
   if(_isPremiumPaidActive()){
     if(typeof showToast === 'function') showToast('이미 결제하신 프리미엄 회원입니다 — 바로 분석을 받습니다');
     return true;
   }
 
-  // 키 미설정 안내 (테스트 키 없을 때 fallback)
+  // 키 미설정시 fallback
   if(TOSS_CLIENT_KEY.indexOf('PLACEHOLDER') >= 0){
     const useTestMode = confirm(
       '⚠️ Toss Payments API 키가 아직 설정되지 않았습니다.\n\n' +
-      '테스트 모드로 진행하시겠습니까?\n(실제 결제 없이 콘텐츠 unlock)\n\n' +
-      '※ 정식 출시 후 실제 결제로 전환됩니다.'
+      '테스트 모드로 진행하시겠습니까?\n(실제 결제 없이 콘텐츠 unlock)'
     );
     if(!useTestMode) return false;
-    // 테스트 모드: 즉시 결제 마킹
     if(window.markPremiumPayment) window.markPremiumPayment();
     if(typeof showToast === 'function') showToast('테스트 모드 결제 완료');
     return true;
@@ -118,7 +129,7 @@ async function payWithToss(productKey){
     const payment = tossPayments.payment({ customerKey: customerKey });
     const orderId = _genOrderId(productKey);
 
-    // 결제 요청 전 임시 정보 저장 (successUrl 콜백에서 검증)
+    // 결제 요청 정보
     sessionStorage.setItem('cw_pending_payment', JSON.stringify({
       orderId: orderId,
       productKey: productKey,
@@ -127,8 +138,27 @@ async function payWithToss(productKey){
       ts: Date.now()
     }));
 
+    // 결제 후 자동 복원을 위해 — 결과 DOM + 데이터 저장
+    try {
+      const resultElId = _RESULT_EL_MAP[productKey];
+      const dataKey = _RESULT_DATA_MAP[productKey];
+      if(resultElId){
+        const el = document.getElementById(resultElId);
+        if(el && el.innerHTML){
+          sessionStorage.setItem('cw_resume_result_html', el.innerHTML);
+          sessionStorage.setItem('cw_resume_result_target', resultElId);
+        }
+      }
+      if(dataKey && window[dataKey] !== undefined){
+        try {
+          const json = JSON.stringify(window[dataKey]);
+          sessionStorage.setItem('cw_resume_data_key', dataKey);
+          sessionStorage.setItem('cw_resume_data_value', json);
+        } catch(serErr) { /* 직렬화 불가 — 결과 카드만 복원 */ }
+      }
+    } catch(e) { console.warn('[Toss] 결과 저장 실패:', e); }
+
     const origin = window.location.origin;
-    // 결제 요청 — Redirect 방식 (모바일·PC 통합)
     await payment.requestPayment({
       method: 'CARD',
       amount: { currency: 'KRW', value: p.amount },
@@ -138,7 +168,6 @@ async function payWithToss(productKey){
       failUrl: origin + '/?paymentResult=fail',
       card: { flowMode: 'DEFAULT', useEscrow: false, useCardPoint: false, useAppCardOnly: false }
     });
-    // 리다이렉트되므로 여기 도달 안 함
     return true;
   } catch(err) {
     console.error('[Toss] 결제 요청 오류:', err);
@@ -154,14 +183,12 @@ async function payWithToss(productKey){
 
 // ============================================================
 //  successUrl 콜백 처리
-//  — 페이지 로드 시 자동 검증 → 결제 승인 API 호출 → 콘텐츠 unlock
 // ============================================================
 async function _handleTossSuccessCallback(){
   const params = new URLSearchParams(window.location.search);
   const result = params.get('paymentResult');
   if(!result) return;
 
-  // 쿼리 파라미터 즉시 정리 (URL에 paymentKey 노출 안 함)
   const cleanUrl = window.location.origin + window.location.pathname;
 
   if(result === 'fail'){
@@ -171,6 +198,10 @@ async function _handleTossSuccessCallback(){
       alert('결제 실패\n\n' + message + (code ? '\n\n코드: ' + code : ''));
     }
     sessionStorage.removeItem('cw_pending_payment');
+    sessionStorage.removeItem('cw_resume_result_html');
+    sessionStorage.removeItem('cw_resume_result_target');
+    sessionStorage.removeItem('cw_resume_data_key');
+    sessionStorage.removeItem('cw_resume_data_value');
     window.history.replaceState(null, '', cleanUrl);
     return;
   }
@@ -187,7 +218,6 @@ async function _handleTossSuccessCallback(){
     return;
   }
 
-  // 임시 저장 정보와 amount 일치 검증 (변조 방지)
   let pending = null;
   try { pending = JSON.parse(sessionStorage.getItem('cw_pending_payment') || 'null'); } catch(e){}
   if(!pending || pending.orderId !== orderId || pending.amount !== amount){
@@ -196,7 +226,6 @@ async function _handleTossSuccessCallback(){
     return;
   }
 
-  // 백엔드에 결제 승인 요청
   if(typeof showToast === 'function') showToast('결제를 승인하고 있습니다...');
   try {
     const resp = await fetch('/api/confirm-payment', {
@@ -209,7 +238,6 @@ async function _handleTossSuccessCallback(){
       throw new Error((data && data.error && data.error.message) || data.error || 'HTTP ' + resp.status);
     }
 
-    // 결제 영수증 저장 (localStorage)
     _saveReceipt({
       productKey: pending.productKey,
       orderId: orderId,
@@ -221,39 +249,64 @@ async function _handleTossSuccessCallback(){
     });
     sessionStorage.removeItem('cw_pending_payment');
 
-    // 결제 마킹 → 프리미엄 활성화
     if(window.markPremiumPayment) window.markPremiumPayment();
 
-    // URL 정리
     window.history.replaceState(null, '', cleanUrl);
 
-    // 결제한 분석 탭으로 자동 이동
-    const tabMap = {
-      saju:'saju', compat:'compat', tojeong:'tojeong', dream:'dream',
-      face:'face', tarot:'tarot',
-      naming:'naming', naming_company:'naming', naming_product:'naming'
-    };
-    const targetTab = tabMap[pending.productKey];
-    if(targetTab){
-      setTimeout(function(){
-        const btn = document.querySelector('[data-tab="'+targetTab+'"]');
-        if(btn) btn.click();
-      }, 600);
+    // 자동 복원·자동 unlock
+    const productKey = pending.productKey;
+    const targetTab = _TAB_MAP[productKey];
+    const resumeHtml = sessionStorage.getItem('cw_resume_result_html');
+    const resumeTarget = sessionStorage.getItem('cw_resume_result_target');
+    const resumeDataKey = sessionStorage.getItem('cw_resume_data_key');
+    const resumeDataValue = sessionStorage.getItem('cw_resume_data_value');
+
+    if(resumeDataKey && resumeDataValue){
+      try { window[resumeDataKey] = JSON.parse(resumeDataValue); } catch(e){}
     }
 
-    // 사용자에게 알림 + 명확한 다음 단계 안내
-    if(typeof showToast === 'function') showToast('✓ 결제가 완료되었습니다');
+    if(typeof showToast === 'function') showToast('✓ 결제 완료 — 프리미엄 리포트 준비 중...');
+
+    // 1) 탭 이동
     setTimeout(function(){
-      alert(
-        '✓ 결제 완료!\n\n' +
-        pending.orderName + '\n금액: ₩' + amount.toLocaleString() + '\n\n' +
-        '【프리미엄 리포트 받는 법】\n' +
-        '결제하신 분석 페이지로 이동했습니다.\n' +
-        '입력하신 정보를 동일하게 다시 입력하고 "분석" 버튼을 누르세요.\n' +
-        '결제 완료 회원으로 자동 인식되어 프리미엄 리포트가 바로 표시됩니다.\n\n' +
-        '※ 결제는 30일간 유효 — 이 기간 동안 모든 프리미엄 분석 무제한 이용'
-      );
-    }, 800);
+      if(targetTab){
+        const btn = document.querySelector('[data-tab="'+targetTab+'"]');
+        if(btn) btn.click();
+      }
+    }, 300);
+
+    // 2) 결과 카드 DOM 복원
+    setTimeout(function(){
+      if(resumeHtml && resumeTarget){
+        const el = document.getElementById(resumeTarget);
+        if(el){
+          el.innerHTML = resumeHtml;
+          el.style.display = 'block';
+          if(el.classList && !el.classList.contains('show')) el.classList.add('show');
+          el.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      }
+      sessionStorage.removeItem('cw_resume_result_html');
+      sessionStorage.removeItem('cw_resume_result_target');
+      sessionStorage.removeItem('cw_resume_data_key');
+      sessionStorage.removeItem('cw_resume_data_value');
+    }, 700);
+
+    // 3) 자동 unlock
+    setTimeout(function(){
+      const unlockFnName = _UNLOCK_FN_MAP[productKey];
+      if(unlockFnName && typeof window[unlockFnName] === 'function'){
+        window[unlockFnName]();
+      } else if(productKey === 'face' && typeof window.handlePremiumPurchase === 'function'){
+        window.handlePremiumPurchase('face');
+      } else {
+        alert(
+          '✓ 결제 완료!\n\n' + pending.orderName + '\n₩' + amount.toLocaleString() + '\n\n' +
+          '프리미엄 분석 버튼을 다시 눌러주세요. 결제 회원으로 자동 인식됩니다.\n' +
+          '※ 30일간 모든 프리미엄 무제한'
+        );
+      }
+    }, 1500);
   } catch(err) {
     console.error('[Toss] 승인 실패:', err);
     alert('결제 승인 중 오류가 발생했습니다.\n\n' + ((err && err.message) || '고객센터에 문의해주세요') + '\n\n주문번호: ' + orderId);
@@ -261,14 +314,10 @@ async function _handleTossSuccessCallback(){
   }
 }
 
-// ============================================================
-//  영수증 보관 (localStorage)
-// ============================================================
 function _saveReceipt(receipt){
   try {
     const list = JSON.parse(localStorage.getItem('cw_receipts') || '[]');
     list.unshift(receipt);
-    // 최근 50건만 유지
     if(list.length > 50) list.length = 50;
     localStorage.setItem('cw_receipts', JSON.stringify(list));
   } catch(e) {}
@@ -279,13 +328,9 @@ function getReceipts(){
   catch(e) { return []; }
 }
 
-// ============================================================
-//  전역 노출 + 자동 콜백 처리
-// ============================================================
 if(typeof window !== 'undefined'){
   window.payWithToss = payWithToss;
   window.getTossReceipts = getReceipts;
-  // 페이지 로드 시 successUrl 콜백 자동 처리
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', _handleTossSuccessCallback);
   } else {
