@@ -6,7 +6,7 @@
 // ============================================================
 const CHAT_PERSONAS = [
   {k:'sun',n:'선녀',e:'🔮',tone:'한국 전통 무속·도교 점술가. 따뜻하고 신비로운 해요체. 정감 있고 격려 중심',greet:'안녕하세요, 저는 천운의 점술가 **선녀**입니다. 🔮\n\n매일 한 마디씩 운명의 흐름을 전해드릴게요. 분야를 골라주세요.'},
-  {k:'do',n:'도사',e:'🧙‍♂️',tone:'자평진전·적천수 통달한 동양 도교 학자. 진중하고 정밀한 해요체',greet:'어서 오십시오. 저는 자평진전과 적천수를 닦은 **도사**입니다. 🧙‍♂️\n\n오늘의 사주 흐름을 풀이해 드립니다. 분야를 골라주세요.'},
+  {k:'do',n:'도사',e:'🧙‍♂️',tone:'명리 고전에 통달한 동양 도교 학자. 진중하고 정밀한 해요체',greet:'어서 오십시오. 저는 명리 고전을 닦은 **도사**입니다. 🧙‍♂️\n\n오늘의 사주 흐름을 풀이해 드립니다. 분야를 골라주세요.'},
   {k:'astro',n:'점성술사',e:'✨',tone:'서양 점성술·타로·별자리 통합. 시적이고 영감 가득한 해요체',greet:'반가워요, 저는 별과 카드로 길을 안내하는 **점성술사**예요. ✨\n\n오늘의 우주적 메시지를 전해드릴게요. 분야를 골라주세요.'}
 ];
 
@@ -56,9 +56,100 @@ function _getDailyLimit(){
   return _isPremiumActive() ? 3 : 1;
 }
 
+// ════════════════════════════════════════════════════════════
+//  v7.63 R6 — 엔티틀먼트 1회성 마이그레이션 (제이 승인 · 실제 사용자 돈이 걸린 회귀)
+//  ★배경: 현 프로덕션(ab0fb8a)은 `cw_premium_last_payment` 30일 단일 판정으로
+//    프리미엄을 열어주는 구코드다. v7.63 이 신규 도입한 상품별 게이트
+//    `isPremiumActiveFor` 는 `cw_entitlements` 만 읽으므로, 그대로 배포하면
+//    **기존 30일 내 결제자 전원이 재결제를 요구받는다.**
+//  ★조치: `cw_entitlements` 부재 + `cw_premium_last_payment` 30일 내인 사용자에게만
+//    1회 역채움한다.
+//      1순위 — 영수증 `cw_receipts` 의 `productKey` 로 실제 구매 상품을 복원(고액 포함.
+//              결제 증적이 있으므로 정당).
+//      2순위 — 영수증이 없거나 전건 만료면 ₩4,900 소액 6종만 grace 부여.
+//    ★₩29,900 작명 3종(naming·naming_company·naming_product)은 영수증 없이 **절대**
+//      부여하지 않는다 — v7.62 가 막은 크로스-언락 누수(소액 1건이 고액을 여는 경로)를
+//      재개방하지 않기 위함.
+//  ★멱등: 완료 플래그 `cw_ent_migrated_v763` + 모듈 내 1회 가드. 중복 호출 무해.
+//  ★부여 범위는 현 프로덕션이 이미 열어주고 있는 범위보다 좁다(고액 3종 제외) —
+//    마이그레이션이 새 누수를 만들지 않는다.
+// ════════════════════════════════════════════════════════════
+const _CW_ENT_MIGRATION_FLAG = 'cw_ent_migrated_v763';
+const _CW_ENT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+// ₩4,900 소액 6종 — 영수증 부재 시 grace 대상 (js/toss-pay.js TOSS_PRICING 과 일치)
+const _CW_GRACE_PRODUCT_KEYS = ['saju', 'compat', 'tojeong', 'dream', 'face', 'tarot'];
+// ₩29,900 고액 3종 — 영수증 없는 grace 금지 (문서화 목적의 명시 목록)
+const _CW_NO_GRACE_PRODUCT_KEYS = ['naming', 'naming_company', 'naming_product'];
+let _cwEntMigrationRan = false;
+
+function _migrateEntitlementsOnce(){
+  if(_cwEntMigrationRan) return;   // 호출당 재실행 방지 (매 isPremiumActiveFor 호출마다 돌지 않게)
+  _cwEntMigrationRan = true;
+  try {
+    if(localStorage.getItem(_CW_ENT_MIGRATION_FLAG)) return;                        // 이미 수행됨
+    localStorage.setItem(_CW_ENT_MIGRATION_FLAG, Date.now().toString());            // ★먼저 표시 = 재실행 차단
+
+    // ① 이미 상품별 권한이 있으면 개입하지 않는다 (v7.63 이후 결제자)
+    let cur = {};
+    const rawEnt = localStorage.getItem('cw_entitlements');
+    if(rawEnt){ try { cur = JSON.parse(rawEnt) || {}; } catch(e){ cur = {}; } }
+    if(cur && typeof cur === 'object' && Object.keys(cur).length > 0) return;
+
+    // ② 구코드 프리미엄 판정 = cw_premium_last_payment 가 30일 내
+    const lp = parseInt(localStorage.getItem('cw_premium_last_payment') || '', 10);
+    if(isNaN(lp)) return;                                                          // 결제 이력 없음(신규 사용자)
+    const now = Date.now();
+    if(now - lp >= _CW_ENT_WINDOW_MS) return;                                      // 31일 경과 — 구코드에서도 이미 만료
+
+    const ent = {};
+    // ③ 1순위 — 영수증에서 실제 구매 상품 복원
+    let receipts = [];
+    try { receipts = JSON.parse(localStorage.getItem('cw_receipts') || '[]') || []; } catch(e){ receipts = []; }
+    if(Array.isArray(receipts)){
+      for(const r of receipts){
+        if(!r || typeof r.productKey !== 'string' || !r.productKey) continue;
+        let t = Date.parse(r.approvedAt || '');
+        if(isNaN(t)) t = lp;                                                       // 승인시각 파손 → 구 결제시각으로 대체
+        if(now - t >= _CW_ENT_WINDOW_MS) continue;                                 // 30일 지난 영수증은 어차피 만료
+        if(!ent[r.productKey] || t > ent[r.productKey]) ent[r.productKey] = t;
+      }
+    }
+    // ④ 2순위 — 영수증 부재·전건 만료 시 소액 6종만 grace. ★고액 3종은 부여하지 않는다.
+    if(Object.keys(ent).length === 0){
+      for(const k of _CW_GRACE_PRODUCT_KEYS) ent[k] = lp;
+    }
+    localStorage.setItem('cw_entitlements', JSON.stringify(ent));
+  } catch(e) {}
+}
+
 // 결제 시 외부에서 호출 (각 unlockPremium 함수에 한 줄 추가됨)
-window.markPremiumPayment = function(){
-  localStorage.setItem('cw_premium_last_payment', Date.now().toString());
+// P0(신뢰부채): 상품별 엔티틀먼트로 교정 — ₩4,900 한 건이 ₩29,900 작명까지 30일 여는 크로스-언락 누수 차단.
+window.markPremiumPayment = function(productKey){
+  // ★신규 결제가 cw_entitlements 를 먼저 만들어 마이그레이션을 봉쇄하지 않도록 선행 실행.
+  _migrateEntitlementsOnce();
+  const now = Date.now();
+  // 데일리 한 마디 3회/일 혜택용(임의 프리미엄 30일) — 의도된 소액 혜택이라 유지
+  localStorage.setItem('cw_premium_last_payment', now.toString());
+  // 상품별 30일 권한 (프리미엄 리포트 언락 게이트는 이 값만 신뢰)
+  if(productKey){
+    try {
+      const ent = JSON.parse(localStorage.getItem('cw_entitlements') || '{}');
+      ent[productKey] = now;
+      localStorage.setItem('cw_entitlements', JSON.stringify(ent));
+    } catch(e) {}
+  }
+};
+
+// 특정 상품이 최근 30일 내 결제되어 활성 상태인지
+window.isPremiumActiveFor = function(productKey){
+  if(!productKey) return false;
+  _migrateEntitlementsOnce();   // v7.63 R6 — 구 결제자 회귀 차단(1회성 · 멱등)
+  try {
+    const ent = JSON.parse(localStorage.getItem('cw_entitlements') || '{}');
+    const ts = ent[productKey];
+    if(!ts) return false;
+    return (Date.now() - ts) < 30 * 24 * 60 * 60 * 1000;
+  } catch(e) { return false; }
 };
 
 // ============================================================

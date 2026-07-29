@@ -7,3 +7,81 @@ Thumbs.db
 
 .vercel
 .env*.local
+
+# ═══════════════════════════════════════════════════════════════
+# 2026-07-28 · C축 프런트 확장 (결정 39) — 고전 원문 커밋 차단
+# ★이 항목들은 지금까지 「미추적」 상태였을 뿐 차단된 적이 없습니다.
+#   `git add -A` 한 번이면 연속 고전 원문 200,000자 이상이 커밋됩니다.
+#   근거: 법무의견 A·B · LQ6(P0) 미회신 · SRC_JCS_A UNREVIEWED
+#   검증: node eval/eval_prompt_citation_guard.js (G그룹 · 내용 기준)
+# ═══════════════════════════════════════════════════════════════
+
+# ── 고전 원문 자산 ──
+ocr_index_jcs/
+ocr_index_yhzp/
+영인본_직독_*/
+_internal_only/
+*/_internal_only/
+NLC416-*.pdf
+
+# ── 연구·설계·인수인계 문서 ──
+천운_*.md
+천운_*.html
+결정41_*.md
+H축_*.md
+작명/
+법무/
+사주_외부의존_패킷_*/
+DEV_TRACKER.md
+*.docx
+
+# ── 패키지 사본·작업본·아카이브 ──
+_work_v*/
+_v757/
+_v757_work/
+_v7.57_재작성/
+_archive_*/
+chunwoon_ip_poc*.json
+*.zip
+# ★2026-07-29 P1(R9): _work_v*/ 는 「_work_v」 접두를 요구하므로 _v761_work 와 어순이 달라
+#   매칭되지 않았다. `git add -A` 한 번이면 _v761_work/backup_pre_P0A/ (P0-A 수정 전 원본,
+#   미등재 문헌명 34건)가 커밋된다. _v*/ 로 전건 포섭한다.
+#   검증: node eval/eval_response_scrub.js (V1~V3)
+_v*/
+_mvtest/
+
+# ── 뮤테이션 잔여물 ──
+*_MUTANT.js
+
+# ═══════════════════════════════════════════════════════════════
+# 2026-07-29 · v7.63 R3 — 라이브 유출 차단 (제이 승인)
+# ★근거: E축 「라이브 유출 확정 4건 + 위험 20건」.
+#   아래 항목은 지금까지 두 ignore 어디에도 걸리지 않았거나(zi?????? · *.pth ·
+#   루트 *.pdf · 천운_*.csv/xlsx), 이미 인덱스에 들어가 라이브 노출 중입니다
+#   (palm-api/ · 천운-app/ · 상용화_가이드.docx · 천운_종합검증용_문서.md · HANDOVER.md).
+# ★★ .gitignore 추가만으로는 **이미 추적 중인 파일을 배포에서 빼지 못합니다.**
+#   R1 `git rm --cached` 를 반드시 함께 수행해야 합니다(인덱스 제거 · 로컬 파일 보존).
+# 검증: node eval/eval_distribution_guard.js · node eval/eval_prompt_citation_guard.js
+# ═══════════════════════════════════════════════════════════════
+
+# ── 손금 API 소스·모델 가중치 (55.5MB .pth + 1.5MB .caffemodel 라이브 노출) ──
+palm-api/
+천운-app/
+*.pth
+*.caffemodel
+
+# ── 고전 원문 스캔 PDF (루트 · 滴天髓闡微 · 자평진전 · 적천수천미) ──
+/*.pdf
+
+# ── 확장자 없는 zip 사본 6건 (ziPSYx2Z 등) ──
+zi??????
+
+# ── 연구 데이터·산출물 ──
+천운_*.csv
+천운_*.xlsx
+천운_*.js
+
+# ── 라이브 유출 확정분 (R1 git rm --cached 대상) ──
+상용화_가이드.docx
+천운_종합검증용_문서.md
+HANDOVER.md

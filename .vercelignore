@@ -1,0 +1,96 @@
+# 천운 — Vercel 배포 **화이트리스트** (2026-07-29 · v7.63 R3 / fail-closed 전환)
+#
+# ★★★ 이 파일은 반드시 커밋되어야 합니다 (git 추적 필수).
+#   Vercel 공식 문서: "these ignored files are only relevant when using Vercel CLI."
+#   → Git 연동 배포에서는 빌드 컨테이너에 파일 자체가 없으면 효력이 0 입니다.
+#   미추적(`?? .vercelignore`) 상태로 두면 이 방어선은 존재하지 않습니다.
+#
+# ★설계 전환 근거 (블랙리스트 폐기)
+#   v7.62 까지는 「나가면 안 되는 것」을 열거하는 블랙리스트였습니다. 그 방식은
+#   `_work_v*/` 가 `_v761_work` 를 매칭하지 못해 P0-A 수정 전 원본(미등재 문헌명 34건)이
+#   배포 대상에 남는 사고로 이미 한 번 실패했습니다. 새 파일이 추가될 때마다 패턴을
+#   뒤쫓는 구조는 원리적으로 fail-open 입니다.
+#   ⟹ `/*` 로 전부 배제한 뒤 `!` 로 배포 필수 자산만 되돌리는 fail-closed 구조로 전환합니다.
+#      Vercel 공식 문서(vercel-ignore)가 명시 지원하는 유일한 allowlist 방식입니다.
+#
+# ★운영 규칙: 새 배포 자산(새 JS 번들·새 정적 파일 등)을 추가하면 **반드시 아래
+#   allowlist 에 한 줄 추가**해야 합니다. 추가하지 않으면 배포되지 않습니다(안전한 실패).
+#
+# ★검증: node eval/eval_prompt_citation_guard.js · node eval/eval_response_scrub.js
+#        (파일명이 아니라 내용 기준으로 재검사합니다)
+
+# ── 1단계: 전부 배제 (루트 depth-1 전건) ──────────────────────────────────
+# 이 한 줄로 .env · _internal_only/ · _v*/ · palm-api/ · 천운-app/ · 천운_*.md ·
+# *.docx · *.zip · *.pdf · ocr_index_*/ · 영인본_직독_*/ · 법무/ · 작명/ ·
+# DEV_TRACKER.md · HANDOVER.md · node_modules/ 등 **미열거 자산 전건**이 배제됩니다.
+/*
+
+# ── 2단계: 배포 필수 자산만 되돌림 (allowlist) ────────────────────────────
+# 정적 엔트리
+!/index.html
+!/manifest.json
+!/robots.txt
+!/sitemap.xml
+!/sw.js
+
+# 플랫폼 설정 (rewrites · headers · functions.maxDuration 60s)
+!/vercel.json
+!/package.json
+
+# 서버리스 함수 — ★api/ 전체. api/fortune.js(운세) + api/confirm-payment.js(토스 결제 승인)
+#   결제 승인 엔드포인트가 빠지면 유료 결제가 전건 실패합니다.
+!/api
+
+# 프런트 스크립트 — chat.js · disclaimer.js · tarot.js · toss-pay.js
+!/js
+
+# PWA 아이콘 — favicon.svg · icon-192.svg · icon-512.svg · icon-maskable.svg
+!/icons
+
+# ── 3단계: 이중 방어 (2단계 뒤에 두어 마지막 매칭 우선 규칙으로 재배제) ──────
+# 위 allowlist 가 실수로 넓어지더라도 아래 부류는 끝까지 배제됩니다.
+# ★`.env`(ANTHROPIC_API_KEY · TOSS_SECRET_KEY 실키) — Vercel 기본 CLI 배제 목록에
+#   평문 `.env` 가 없고 `--prebuilt` 강제 업로드 버그(vercel/vercel#14367)가 존재합니다.
+.env
+.env.*
+*.env
+# 고전 원문·격리 자산
+_internal_only/
+*/_internal_only/
+ocr_index_jcs/
+ocr_index_yhzp/
+영인본_직독_*/
+NLC416-*.pdf
+# 연구·설계·인수인계·법무 문서
+천운_*.md
+천운_*.html
+천운_*.csv
+천운_*.xlsx
+결정41_*.md
+H축_*.md
+배포원문분리_판정서_*.md
+DEV_TRACKER.md
+HANDOVER.md
+*.docx
+*.pdf
+# 패키지 사본·모델 가중치·아카이브
+# ★`_v*/` 가 `_v757/`·`_v757_work/`·`_v7.57_재작성/` 을 이미 포섭하지만,
+#   eval_response_scrub.js V2(두 배제목록의 `_` 접두 패턴 집합 동일)가 **문자열 집합**으로
+#   대조하므로 `.gitignore` 와 동일한 8건을 명시 유지한다. 삭제하면 V2 가 FAIL 한다.
+_v*/
+_v757/
+_v757_work/
+_v7.57_재작성/
+_work_v*/
+_archive_*/
+_mvtest/
+chunwoon_ip_poc*.json
+*.zip
+*.pth
+*.caffemodel
+palm-api/
+천운-app/
+# 일반
+.git/
+node_modules/
+*_MUTANT.js

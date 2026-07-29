@@ -49,12 +49,14 @@ const _UNLOCK_FN_MAP = {
 // ============================================================
 //  헬퍼
 // ============================================================
-function _isPremiumPaidActive(){
+// P0(신뢰부채): 상품별 권한만 신뢰 — 크로스-언락 누수 차단.
+// 상품키 없이 호출되면 결제를 스킵하지 않는다(누수 방지).
+function _isPremiumPaidActive(productKey){
   try {
-    const ts = parseInt(localStorage.getItem('cw_premium_last_payment') || '0', 10);
-    if(!ts) return false;
-    const days30 = 30 * 24 * 60 * 60 * 1000;
-    return (Date.now() - ts) < days30;
+    if(productKey && typeof window.isPremiumActiveFor === 'function'){
+      return window.isPremiumActiveFor(productKey);
+    }
+    return false;
   } catch(e) { return false; }
 }
 
@@ -104,9 +106,9 @@ async function payWithToss(productKey){
     return false;
   }
 
-  // 이미 30일 이내 결제 회원이면 결제 skip
-  if(_isPremiumPaidActive()){
-    if(typeof showToast === 'function') showToast('이미 결제하신 프리미엄 회원입니다 — 바로 분석을 받습니다');
+  // 이미 이 상품을 30일 이내 결제했으면 결제 skip (상품별)
+  if(_isPremiumPaidActive(productKey)){
+    if(typeof showToast === 'function') showToast('이미 결제하신 프리미엄입니다 — 바로 분석을 받습니다');
     return true;
   }
 
@@ -117,7 +119,7 @@ async function payWithToss(productKey){
       '테스트 모드로 진행하시겠습니까?\n(실제 결제 없이 콘텐츠 unlock)'
     );
     if(!useTestMode) return false;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment(productKey);
     if(typeof showToast === 'function') showToast('테스트 모드 결제 완료');
     return true;
   }
@@ -249,7 +251,7 @@ async function _handleTossSuccessCallback(){
     });
     sessionStorage.removeItem('cw_pending_payment');
 
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment(pending.productKey);
 
     window.history.replaceState(null, '', cleanUrl);
 

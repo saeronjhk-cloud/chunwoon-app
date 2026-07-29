@@ -456,7 +456,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-saju">
     <div class="card">
       <div class="card-title">卦 사주풀이</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">절기 기준 정확한 만세력 계산 + AI 명리 해석</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">절기 기준 만세력 계산 + AI 명리 해석</p>
       <div class="input-group"><label>이름</label><input id="sajuName" placeholder="이름 입력" /></div>
       <div class="input-group">
         <label>달력 종류</label>
@@ -575,7 +575,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-tojeong">
     <div class="card">
       <div class="card-title">📜 토정비결</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">조선 중기 대학자 토정 이지함 선생의 토정비결에 기반한 AI 운세 해석</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">토정비결 형식을 참고한 AI 운세 해석</p>
       <div class="input-group"><label>이름</label><input id="tjName" placeholder="이름 입력" /></div>
       <div class="input-group">
         <label>달력 종류</label>
@@ -597,7 +597,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-dream">
     <div class="card">
       <div class="card-title">🌙 꿈 해몽</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">한국 전통 주공해몽 + 융 심리학 + 사주 연계 — 3관점 통합 AI 풀이</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">한국 전통 해몽 관점 + 융 심리학 + 사주 연계 — 3관점 통합 AI 풀이</p>
 
       <!-- 1) 시점 -->
       <div class="input-group">
@@ -641,7 +641,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-naming">
     <div class="card">
       <div class="card-title">名 AI 작명</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">사람·회사·제품·반려동물·닉네임 — 사주 기반 + 수리 + 발음 오행 통합 작명. 전통 작명소 깊이를 AI 속도로.</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">사람·회사·제품·반려동물·닉네임 — 사주 참고 + 수리 + 발음 오행 통합 작명. 전통 작명소 깊이를 AI 속도로.</p>
 
       <!-- 0) 작명 종류 (가장 위) -->
       <div class="input-group">
@@ -1500,7 +1500,7 @@ function checkSoundElPattern(fullName){
 }
 
 // DREAM data
-// 14대 분류 (주공해몽서 기반)
+// 14대 분류 (한국 전통 해몽 관점)
 const DREAM_CATEGORIES=[
   {k:'animal',n:'동물',e:'🦁',ex:'용·호랑이·뱀·돼지·새·물고기'},
   {k:'person',n:'사람',e:'👥',ex:'가족·연인·아이·낯선이·노인'},
@@ -1931,7 +1931,7 @@ function _renderSajuPaywall(){
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);border-radius:12px">
       <div style="font-size:22px;margin-bottom:8px">🔒</div>
       <div style="font-size:15px;color:#fff;font-weight:600;margin-bottom:4px">프리미엄 사주 리포트</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">자평진전·적천수 기반 8글자 심층 풀이</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">자평진전·적천수를 참고한 AI 8글자 심층 풀이</div>
       <button onclick="unlockSajuPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:12px 28px;border-radius:20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Noto Serif KR',serif">₩4,900 · 심층 분석 열기</button>
     </div>
   </div>`;
@@ -1948,7 +1948,7 @@ async function unlockSajuPremium(){
     if(!paid) return;
   } else {
     if(!confirm('프리미엄 사주 리포트 (₩4,900)를 구매하시겠습니까?'))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment('saju');
   }
 
   const pw=document.getElementById('sajuPaywall');
@@ -1958,7 +1958,7 @@ async function unlockSajuPremium(){
       <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">☰</div>
       <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="sajuPremLoadMsg">사주 8글자 정밀 분석 중...</div>
       <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="sajuPremLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
-      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">자평진전 + 적천수 대조 + 대운 매핑에 약 20~30초 소요</div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">명리 이론 대조 + 대운 매핑에 약 20~30초 소요</div>
     </div>`;
     pw.style.position='relative';pw.style.overflow='visible';
     const loadSteps=['사주 8글자 정밀 분석 중...','일간 강약 판정 중...','격국(格局) 분류 중...','용신(用神) 산출 중...','십성 위치별 의미 매핑 중...','대운(大運) 8단계 산출 중...','합·충·형·해 + 신살 분석 중...','12개월 세운 풀이 중...','개운법 처방 + 종합 정리 중...'];
@@ -2215,10 +2215,9 @@ function renderSajuPremium(prem,info){
     </div>`:''}
 
     <!-- 고전 인용 -->
+    <!-- ★2026-07-28 P0-A: 한문 원문·번역 렌더 금지. 서지 표기만. (P0-1 잔여분 수리) -->
     ${prem.citation?.original?`<div style="padding:12px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px">
-      <div style="color:var(--gold);font-weight:600">📜 ${prem.citation.book||'명리고전'}</div>
-      <div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px;font-size:13px">"${prem.citation.original}"</div>
-      <div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${prem.citation.translation||''}</div>
+      <div style="color:var(--gold);font-weight:600">📜 출전: 『${prem.citation.book||'명리고전'}』 ${prem.citation.chapter||''}</div>
     </div>`:''}
 
     <!-- PDF 저장 버튼 -->
@@ -2665,7 +2664,7 @@ async function unlockCompatPremium(){
     if(!paid) return;
   } else {
     if(!confirm('프리미엄 궁합 리포트 (₩4,900)를 구매하시겠습니까?'))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment('compat');
   }
 
   const pw=document.getElementById('compatPaywall');
@@ -2918,12 +2917,12 @@ const FACE_SOURCES={
     long:{el:'木形 (목형)',meaning:'木은 성장·품격·지혜를 상징'},
     inv:{el:'火形 (화형)',meaning:'火는 열정·민첩·추진력을 상징'}
   },
-  eyes:'마의상법(麻衣相法) 眼相篇 — "眼爲心之苗" (눈은 마음의 싹). 눈은 감찰관(監察官)으로, 지혜·수명·애정운을 드러낸다.',
-  nose:'마의상법 鼻相篇 — 코는 12궁 중 재백궁(財帛宮)이자 질액궁(疾厄宮). 중년 운세(40~50대)와 재물·건강을 주관한다.',
-  mouth:'유장상법(柳莊相法) 口相篇 — 입은 출납관(出納官). 복록·언어·만년 운세(50대 이후)를 주관한다.',
-  shapeCommon:'五行相法(오행상법) — 얼굴 윤곽을 木·火·土·金·水 다섯 가지 기본형으로 분류하여 운명의 결을 본다.'
+  eyes:'전통 관상학의 일반적 관점 — 눈은 감찰관(監察官)으로, 지혜·수명·애정운을 드러낸다.',
+  nose:'전통 관상학의 일반적 관점 — 코는 12궁 중 재백궁(財帛宮)이자 질액궁(疾厄宮). 중년 운세(40~50대)와 재물·건강을 주관한다.',
+  mouth:'전통 관상학의 일반적 관점 — 입은 출납관(出納官). 복록·언어·만년 운세(50대 이후)를 주관한다.',
+  shapeCommon:'오행(五行) 관점 — 얼굴 윤곽을 木·火·土·金·水 다섯 가지 기본형으로 분류하여 운명의 결을 본다.'
 };
-const METHOD_FACE='전통 관상학은 『마의상법(麻衣相法)』·『유장상법(柳莊相法)』·『신상전편(神相全編)』에 기반합니다. 얼굴을 오행(五行)의 형태로 분류하고, 눈·코·입을 포함한 <strong>십이궁(十二宮)</strong>을 살펴 타고난 기질과 운의 흐름을 읽습니다.';
+const METHOD_FACE='전통 관상학의 관점을 참고한 AI 해석입니다. 얼굴을 오행(五行)의 형태로 분류하고, 눈·코·입을 포함한 <strong>십이궁(十二宮)</strong>을 살펴 타고난 기질과 운의 흐름을 읽습니다.';
 let _mediaStream=null, _activeCam=null;
 function renderFaceUI(){} // legacy no-op
 
@@ -4149,7 +4148,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   </div>
   <div id="faceTraits"></div>
   <div id="faceSummarySection" class="reading" style="margin-top:14px;opacity:0;transform:translateY(10px);transition:all .8s ease">종합적으로 <strong style="color:var(--gold)">${fiveElement.el}</strong>의 기반 위에 <strong style="color:var(--gold)">${sR.t}</strong>과 <strong style="color:var(--gold)">${eR.t}</strong>이 더해진 상입니다. 좋은 마음이 좋은 상을 만듭니다.</div>
-  <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:left;line-height:1.6">※ 본 결과는 『마의상법』·『유장상법』·『신상전편』 등 전통 관상서를 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
+  <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:left;line-height:1.6">※ 본 결과는 전통 관상학의 일반적 관점을 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
   <div id="faceBasicButtons" style="display:flex;gap:10px;justify-content:center;margin-top:14px">
     <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장하기</button>
     <button class="share-btn" onclick="showShareMenu('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유하기</button>
@@ -4159,14 +4158,14 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   const cont=document.getElementById('faceTraits');
   const ra=aiScores?aiScores.ratios:null;
   const traits=[
-    {icon:'🔸',color:'#c9a54e',name:'얼굴형',label:sR.t,desc:sR.d,score:sR.s,source:'오행상법(五行相法)',
+    {icon:'🔸',color:'#c9a54e',name:'얼굴형',label:sR.t,desc:sR.d,score:sR.s,source:'오행(五行) 관점',
       basis:`판독상 <strong>${fiveElement.el}</strong>으로 분류. ${fiveElement.meaning}. ${FACE_SOURCES.shapeCommon}`
         +(ra?` <span style="opacity:.7">[가로세로비 ${ra.whRatio.toFixed(2)}, 턱비율 ${ra.jawRatio.toFixed(2)}]</span>`:'')},
-    {icon:'👁️',color:'#4fc3e8',name:'눈',label:eR.t,desc:eR.d,score:eyeScore,source:'『麻衣相法』 眼相篇',
+    {icon:'👁️',color:'#4fc3e8',name:'눈',label:eR.t,desc:eR.d,score:eyeScore,source:'전통 관상학 · 눈',
       basis:FACE_SOURCES.eyes+(ra?` <span style="opacity:.7">[눈 가로세로비 ${ra.eyeRatio.toFixed(1)}, 크기비 ${(ra.eyeSizeRatio*100).toFixed(1)}%]</span>`:'')},
-    {icon:'👃',color:'#e8a04f',name:'코',label:nR.t,desc:nR.d,score:noseScore,source:'『麻衣相法』 十二宮·財帛宮',
+    {icon:'👃',color:'#e8a04f',name:'코',label:nR.t,desc:nR.d,score:noseScore,source:'전통 관상학 · 십이궁·재백궁',
       basis:FACE_SOURCES.nose+(ra?` <span style="opacity:.7">[코너비/얼굴 ${(ra.noseWRatio*100).toFixed(1)}%, 높이비 ${(ra.noseHRatio*100).toFixed(1)}%]</span>`:'')},
-    {icon:'👄',color:'#e85a4f',name:'입',label:mR.t,desc:mR.d,score:mouthScore,source:'『柳莊相法』 口相篇',
+    {icon:'👄',color:'#e85a4f',name:'입',label:mR.t,desc:mR.d,score:mouthScore,source:'전통 관상학 · 입',
       basis:FACE_SOURCES.mouth+(ra?` <span style="opacity:.7">[입너비/동공간 ${ra.mouthFaceRatio.toFixed(2)}, 입술두께비 ${(ra.lipThicknessRatio*100).toFixed(1)}%]</span>`:'')}
   ];
   traits.forEach((t,i)=>{
@@ -4267,10 +4266,10 @@ function _showFacePaywall(fiveElement,aiScores){
       <div style="padding:0 18px 18px;background:rgba(20,20,30,0.8)">
         <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px;font-family:'Noto Serif KR',serif">🔒 프리미엄 리포트 구성</div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#c9a54e;font-size:14px">🏛️</span> 십이궁(十二宮) 8궁 정밀 분석 + 고전 원문 인용</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#c9a54e;font-size:14px">🏛️</span> 십이궁(十二宮) 8궁 상세 분석</div>
           <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#a78bfa;font-size:14px">👤</span> 오관(五官) 상세 분석 — 눈썹·눈·코·입 각각</div>
           <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fc3e8;font-size:14px">📐</span> 삼정(三停) 분석 — 초년·중년·말년 운세</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 면부백세유년도 기반 10대~70대 대운 그래프</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#f5b946;font-size:14px">📊</span> 연령대별 대운 그래프</div>
           <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#e85a4f;font-size:14px">⚠️</span> 파상 분석 + 개운 메이크업·스타일링 가이드</div>
           <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)"><span style="color:#4fe8a4;font-size:14px">🔥</span> 상극·상생 인연 분석 (피해야 할 / 좋은 관상)</div>
         </div>
@@ -4278,7 +4277,7 @@ function _showFacePaywall(fiveElement,aiScores){
           <button onclick="handlePremiumPurchase('face')" style="background:linear-gradient(135deg,#c9a54e,#8b6914);color:white;border:none;padding:14px 32px;border-radius:26px;font-weight:700;font-size:14px;font-family:'Noto Serif KR',serif;box-shadow:0 4px 20px rgba(201,165,78,0.45);cursor:pointer;transition:transform .2s,box-shadow .2s;width:100%;max-width:280px" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
             4,900원으로 내 운명의 비밀 풀기
           </button>
-          <div style="font-size:9px;color:var(--text2);opacity:.4;margin-top:8px">AI 468점 정밀 분석 기반 · 결제 후 즉시 확인</div>
+          <div style="font-size:9px;color:var(--text2);opacity:.4;margin-top:8px">AI 468점 랜드마크 분석 · 결제 후 즉시 확인</div>
         </div>
       </div>`;
     const summaryEl=document.getElementById('faceSummarySection');
@@ -4298,7 +4297,7 @@ async function handlePremiumPurchase(type){
     if(!paid) return;
   } else {
     if(!confirm(`${msg} (₩4,900)를 구매하시겠습니까?`))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment('face');
   }
 
   // 결제 성공 가정 후 프리미엄 콘텐츠 생성
@@ -4309,10 +4308,10 @@ async function handlePremiumPurchase(type){
       <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">🔮</div>
       <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="premLoadMsg">십이궁(十二宮) 분석 중...</div>
       <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="premLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
-      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">고전 문헌 대조 + 종합 분석에 약 15~20초 소요</div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">종합 분석에 약 15~20초 소요</div>
     </div>`;
     // 단계별 로딩 메시지
-    const loadSteps=['십이궁(十二宮) 분석 중...','오관(五官) 측정값 대조 중...','삼정(三停) 비율 판정 중...','면부백세유년도 매핑 중...','고전 원문 인용 검증 중...','파상(破相) 진단 중...','개운법 생성 중...','종합 리포트 완성 중...'];
+    const loadSteps=['십이궁(十二宮) 분석 중...','오관(五官) 측정값 대조 중...','삼정(三停) 비율 판정 중...','연령대별 운세 매핑 중...','해석 정리 중...','파상(破相) 진단 중...','개운법 생성 중...','종합 리포트 완성 중...'];
     let loadStep=0;
     loadTimer=setInterval(()=>{
       loadStep++;
@@ -4355,6 +4354,9 @@ async function handlePremiumPurchase(type){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
+      // ★2026-07-28 G-E5 수리: 2층 방어(파싱 실패 폴백 경로) 부재분 보강.
+      //   서버가 {raw:...}를 돌려줄 때 원본 텍스트가 그대로 렌더되는 것을 차단한다.
+      if(d.result&&d.result.raw&&!d.result.analysisProcess&&!d.result.fortuneGraph&&!d.result.breakingPoint&&!d.result.enemyFace)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
       if(d.success&&d.result)return d.result;
       throw new Error('응답 형식 오류');
     };
@@ -4443,6 +4445,9 @@ async function retryPremiumAPI(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
+      // ★2026-07-28 G-E5 수리: 2층 방어(파싱 실패 폴백 경로) 부재분 보강.
+      //   서버가 {raw:...}를 돌려줄 때 원본 텍스트가 그대로 렌더되는 것을 차단한다.
+      if(d.result&&d.result.raw&&!d.result.analysisProcess&&!d.result.fortuneGraph&&!d.result.breakingPoint&&!d.result.enemyFace)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
       if(d.success&&d.result)return d.result;
       throw new Error('응답 형식 오류');
     };
@@ -4460,7 +4465,7 @@ async function retryPremiumAPI(){
       renderPremiumReport(paywallEl,merged);
       return;
     }
-    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">응답 키 불일치: [${Object.keys(apiResult)}]</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
+    if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">응답 키 불일치: [${Object.keys(apiResult).length}개]</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }catch(e){
     if(oldNotice)oldNotice.innerHTML=`<div style="text-align:center;padding:10px"><div style="font-size:11px;color:#e85a4f">네트워크 오류: ${e.message}</div><button onclick="retryPremiumAPI()" style="margin-top:8px;background:#c9a54e;color:white;border:none;padding:8px 20px;border-radius:16px;font-size:11px;cursor:pointer">🔄 다시</button></div>`;
   }
@@ -4478,66 +4483,66 @@ function _generateClientPremium(ra, fiveEl){
      measurement:'미간 너비 비율 '+pct(ra.myungGungRatio),
      grade:g(ra.myungGungRatio,0.08,0.05),
      interpretation:ra.myungGungRatio>=0.08?'미간이 넓고 평탄하여 도량이 크고 운이 트인 상입니다. 타고난 복이 두텁고 성품이 관대하여 주변의 신뢰를 얻습니다.':'미간이 다소 좁은 편으로, 초년에 고생이 있을 수 있으나 노력으로 극복 가능한 상입니다. 미간을 펴는 표정 습관이 운을 열어줍니다.',
-     citation:{book:'마의상법(麻衣相法)',chapter:'十二宮·命宮',original:'印堂平闊 主人度量寬宏 一生少災',pronunciation:'인당평활 주인도량관굉 일생소재',translation:'인당(미간)이 평평하고 넓으면 도량이 관대하고 일생에 재앙이 적다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·명궁'}},
     {name:'재백궁(財帛宮)',area:'코',
      measurement:'코 너비 '+pct(ra.noseWRatio)+', 코 높이 '+pct(ra.noseHRatio),
      grade:g(ra.noseWRatio,0.25,0.20),
      interpretation:ra.noseWRatio>=0.25?'코가 풍만하고 넉넉하여 재물을 모으는 능력이 뛰어난 상입니다. 중년기(44~50세)에 재물이 크게 불어날 기운이 있습니다.':'코가 다소 좁아 재물의 출입이 잦을 수 있습니다. 저축 습관을 들이고 투기성 투자를 삼가면 안정적인 재물운을 만들 수 있습니다.',
-     citation:{book:'마의상법(麻衣相法)',chapter:'十二宮·財帛宮',original:'鼻如懸膽 家財萬貫',pronunciation:'비여현담 가재만관',translation:'코가 쓸개를 매단 듯 풍만하면 재물이 만 관에 이른다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·재백궁'}},
     {name:'관록궁(官祿宮)',area:'이마 중앙',
      measurement:'이마 너비 비율 '+pct(ra.foreheadWidthRatio),
      grade:g(ra.foreheadWidthRatio,0.55,0.45),
      interpretation:ra.foreheadWidthRatio>=0.55?'이마가 넓고 밝아 사회적 지위가 높아지는 상입니다. 직장에서 승진이 빠르고 리더십이 인정받을 가능성이 높습니다.':'이마가 다소 좁은 편으로, 초년의 사회생활에서 어려움이 있을 수 있으나 중년 이후 안정됩니다. 앞머리를 올려 이마를 드러내면 운이 열립니다.',
-     citation:{book:'신상전편(神相全編)',chapter:'面部總論·官祿宮',original:'天庭飽滿 仕途亨通',pronunciation:'천정포만 사도형통',translation:'천정(이마)이 풍만하면 벼슬길이 형통하다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·관록궁'}},
     {name:'천이궁(遷移宮)',area:'이마 양측 (관자놀이)',
      measurement:'좌우 균형도 '+pct(ra.templeBalance),
      grade:g(ra.templeBalance,0.90,0.80),
      interpretation:ra.templeBalance>=0.90?'관자놀이가 균형 있고 풍만하여 이사·여행·해외운이 좋습니다. 환경 변화가 오히려 기회가 되는 타입입니다.':'관자놀이 좌우 균형에 약간의 차이가 있어 큰 환경 변화에 신중할 필요가 있습니다. 익숙한 환경에서 기반을 다지는 것이 유리합니다.',
-     citation:{book:'마의상법(麻衣相法)',chapter:'十二宮·遷移宮',original:'遷移宮位居眉角 豐隆平滿保無憂',pronunciation:'천이궁위거미각 풍륭평만보무우',translation:'천이궁이 풍륭하고 평만하면 근심이 없다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·천이궁'}},
     {name:'부처궁(夫妻宮)',area:'눈꼬리',
      measurement:'눈꼬리 각도 '+((ra.eyeTailAngle||0).toFixed(1))+'°',
      grade:g(ra.eyeTailAngle>-3?1:0,1,0.5),
      interpretation:ra.eyeTailAngle>-3?'눈꼬리가 올라가 있어 주도적이고 독립적인 연애 스타일입니다. 배우자와 대등한 관계를 유지하며 상호 존중하는 인연을 만납니다.':'눈꼬리가 부드럽게 내려가 있어 정이 많고 헌신적인 사랑을 하는 타입입니다. 감정적으로 쉽게 상처받을 수 있으니 자기 보호가 필요합니다.',
-     citation:{book:'유장상법(柳莊相法)',chapter:'觀人八法·夫妻宮',original:'魚尾平滿 夫妻和諧',pronunciation:'어미평만 부처화해',translation:'어미(눈꼬리)가 평만하면 부부가 화합한다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·부처궁'}},
     {name:'자녀궁(子女宮)',area:'눈 아래 (와잠)',
      measurement:'와잠 두께 '+pct(ra.underEyeRatio),
      grade:g(ra.underEyeRatio,0.04,0.025),
      interpretation:ra.underEyeRatio>=0.04?'와잠(눈 아래)이 풍만하여 자녀 복이 두텁고 부하직원과의 관계도 원만합니다. 교육이나 양육 분야에서 큰 보람을 느낄 상입니다.':'와잠이 다소 얇은 편으로, 자녀와의 관계에서 의식적인 소통 노력이 필요합니다. 충분한 수면과 눈가 관리가 운기 상승에 도움이 됩니다.',
-     citation:{book:'마의상법(麻衣相法)',chapter:'十二宮·男女宮',original:'臥蠶豐滿 子女賢孝',pronunciation:'와잠풍만 자녀현효',translation:'와잠이 풍만하면 자녀가 어질고 효도한다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·자녀궁'}},
     {name:'질액궁(疾厄宮)',area:'산근 (코뿌리)',
      measurement:'산근 너비 '+pct(ra.sanGeunRatio),
      grade:g(ra.sanGeunRatio,0.12,0.08),
      interpretation:ra.sanGeunRatio>=0.12?'산근이 넓고 높아 건강 체질이 강건합니다. 41~43세 시기에도 큰 건강 문제 없이 지나갈 가능성이 높습니다.':'산근이 다소 좁은 편으로, 41~43세 전후에 건강 관리에 특히 신경 쓸 필요가 있습니다. 정기 검진과 스트레스 관리가 중요합니다.',
-     citation:{book:'달마상법(達磨相法)',chapter:'五官總論·疾厄宮',original:'山根隆起 一生少病',pronunciation:'산근융기 일생소병',translation:'산근이 높이 솟으면 일생에 병이 적다'}},
+     citation:{book:'전통 관상학',chapter:'십이궁·질액궁'}},
     {name:'전택궁(田宅宮)',area:'눈썹-눈 사이',
      measurement:'눈썹-눈 거리 '+pct(ra.jeonTaekRatio),
      grade:g(ra.jeonTaekRatio,0.06,0.04),
      interpretation:ra.jeonTaekRatio>=0.06?'눈썹과 눈 사이가 넓어 부동산운이 좋고 가정이 안정됩니다. 주거 환경에 복이 있어 편안한 삶의 터전을 마련할 상입니다.':'눈썹과 눈 사이가 다소 좁아 부동산 거래에 신중할 필요가 있습니다. 큰 투자보다는 안정적인 주거를 우선하는 것이 좋습니다.',
-     citation:{book:'신상전편(神相全編)',chapter:'十二宮歌·田宅宮',original:'田宅宮廣 家業豐盈',pronunciation:'전택궁광 가업풍영',translation:'전택궁이 넓으면 가업이 풍성하다'}}
+     citation:{book:'전통 관상학',chapter:'십이궁·전택궁'}}
   ];
 
   // 오관
   const officials=[
     {name:'보수관(保壽官) — 눈썹',
      measurement:'길이 '+pct(ra.browLengthRatio)+', 기울기 '+((ra.browAngle||0).toFixed(1))+'°, 두께 '+pct(ra.browThicknessRatio),
-     agePeriod:'31~34세 (면부백세유년도)',
+     agePeriod:'31~34세',
      interpretation:ra.browLengthRatio>=0.18?'눈썹이 길고 윤택하여 형제자매 복이 있고 35~40세에 좋은 운이 옵니다. 감정 조절 능력이 뛰어나 대인관계가 원만합니다.':'눈썹이 다소 짧은 편으로, 독립적인 성향이 강합니다. 눈썹을 약간 연장하여 그리면 보수관의 기운을 보충할 수 있습니다.',
-     citation:{book:'마의상법(麻衣相法)',chapter:'五官論·保壽官',original:'眉爲保壽官 宜長宜秀',pronunciation:'미위보수관 의장의수',translation:'눈썹은 보수관이니 길고 빼어나야 좋다'}},
+     citation:{book:'전통 관상학',chapter:'오관·보수관'}},
     {name:'감찰관(監察官) — 눈',
      measurement:'가로세로비 '+(ra.eyeRatio||0).toFixed(2)+', 크기비 '+pct(ra.eyeSizeRatio),
      agePeriod:'35~40세',
      interpretation:ra.eyeSizeRatio>=0.05?'눈이 크고 맑아 관찰력과 지혜가 뛰어납니다. 사람을 보는 안목이 정확하여 인재를 알아보는 능력이 있습니다.':'눈이 작고 날카로워 집중력과 분석력이 강점입니다. 세밀한 관찰을 통해 남들이 놓치는 기회를 포착하는 타입입니다.',
-     citation:{book:'마의상법(麻衣相法)',chapter:'五官論·監察官',original:'目爲監察官 黑白分明者吉',pronunciation:'목위감찰관 흑백분명자길',translation:'눈은 감찰관이니 흑백이 분명한 자가 길하다'}},
+     citation:{book:'전통 관상학',chapter:'오관·감찰관'}},
     {name:'심관(審辨官) — 코',
      measurement:'너비 '+pct(ra.noseWRatio)+', 높이 '+pct(ra.noseHRatio),
      agePeriod:'41~50세',
      interpretation:ra.noseHRatio>=0.25?'코가 높고 단정하여 자존심이 강하고 재물 관리 능력이 뛰어납니다. 48세 전후에 인생의 전환점이 될 좋은 기회가 찾아옵니다.':'코가 낮은 편으로, 겸손하고 협조적인 성격입니다. 중년기 재물운을 높이려면 적극적인 저축과 투자 계획이 필요합니다.',
-     citation:{book:'달마상법(達磨相法)',chapter:'五官總論·審辨官',original:'鼻爲審辨官 豐隆端正者 主富貴',pronunciation:'비위심변관 풍륭단정자 주부귀',translation:'코는 심변관이니 풍성하고 단정한 자는 부귀를 주관한다'}},
+     citation:{book:'전통 관상학',chapter:'오관·심변관'}},
     {name:'출납관(出納官) — 입',
      measurement:'너비비 '+(ra.mouthFaceRatio||0).toFixed(2)+', 두께 '+pct(ra.lipThicknessRatio),
      agePeriod:'56~70세',
      interpretation:ra.lipThicknessRatio>=0.045?'입술이 두텁고 단정하여 식복과 언복이 있습니다. 말년(60대 이후) 운이 안정적이고 주변 사람들의 도움을 받습니다.':'입술이 얇은 편으로, 언변이 날카롭고 논리적입니다. 말년 복을 키우려면 따뜻한 말 습관을 의식적으로 기르는 것이 좋습니다.',
-     citation:{book:'유장상법(柳莊相法)',chapter:'相口篇·出納官',original:'口爲出納官 唇紅齒白者福祿',pronunciation:'구위출납관 순홍치백자복록',translation:'입은 출납관이니 입술이 붉고 이가 흰 자에게 복록이 있다'}}
+     citation:{book:'전통 관상학',chapter:'오관·출납관'}}
   ];
 
   // 삼정
@@ -4551,7 +4556,7 @@ function _generateClientPremium(ra, fiveEl){
     balance:ra.thirdsScore>=0.9?'삼정이 매우 균형 잡혀 있어 초년·중년·말년 운이 고르게 발달한 이상적인 상입니다. 인생 전반에 걸쳐 큰 기복 없이 안정된 삶을 누릴 수 있습니다.'
       :ra.thirdsScore>=0.8?'삼정이 대체로 균형 잡혀 있으나 약간의 편차가 있습니다. 부족한 시기를 미리 인지하고 대비하면 순탄한 인생을 만들 수 있습니다.'
       :'삼정에 편차가 있어 인생의 기복이 다소 클 수 있습니다. 강한 시기에 기반을 다지고 약한 시기를 대비하는 지혜가 필요합니다.',
-    citation:{book:'달마상법(達磨相法)',chapter:'三停論',original:'三停平等 一生衣祿無虧',pronunciation:'삼정평등 일생의록무휴',translation:'삼정이 균등하면 일생 의식주에 부족함이 없다'}
+    citation:{book:'전통 관상학',chapter:'삼정'}
   };
 
   return { twelvePalaces:{palaces}, fiveOfficials:{officials}, threeCourtAnalysis };
@@ -4561,13 +4566,14 @@ function renderPremiumReport(container,data){
   let html='<div style="padding:4px">';
 
   // ── 고전 인용 블록 공통 헬퍼 ──
+  // ★2026-07-28 P0(저작권·C축 프런트 확장): 고전 한문 원문·번역은 렌더하지 않는다.
+  //   전통 관상서는 판본 미등재로 PD 판정 근거가 없고,
+  //   저본 미확보 상태의 「원문/번역」은 어느 판본을 옮긴 것인지 추적이 불가하다.
+  //   서지 표기(출전)만 남긴다. original/pronunciation/translation 필드는 렌더 금지.
   const citationHTML=(c)=>{
-    if(!c||!c.original)return'';
+    if(!c||!c.book)return'';
     return`<div style="margin:8px 0;padding:10px 12px;background:linear-gradient(135deg,rgba(201,165,78,.08),rgba(139,105,20,.04));border-left:3px solid var(--gold);border-radius:0 8px 8px 0">
-      <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:4px;font-family:'Noto Serif KR',serif">📜 출전: 『${c.book||''}』 ${c.chapter||''}</div>
-      <div style="font-size:15px;color:#f5d78e;font-family:'Noto Serif KR',serif;line-height:1.6;margin-bottom:4px;letter-spacing:1px">"${c.original}"</div>
-      ${c.pronunciation?`<div style="font-size:11px;color:var(--text2);opacity:.6;margin-bottom:4px">(${c.pronunciation})</div>`:''}
-      <div style="font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">→ ${c.translation||''}</div>
+      <div style="font-size:11px;color:var(--gold);font-weight:600;font-family:'Noto Serif KR',serif">📜 출전: 『${c.book}』 ${c.chapter||''}</div>
     </div>`;
   };
 
@@ -4580,7 +4586,7 @@ function renderPremiumReport(container,data){
     const ap=data.analysisProcess;
     html+=`<div style="margin-bottom:24px">`;
     html+=sectionHeader('🔬','AI 분석 과정 상세 공개');
-    html+=sectionSub('MediaPipe 468점 랜드마크에서 추출한 수치를 고전 문헌의 기준에 대입한 판정 과정입니다.');
+    html+=sectionSub('MediaPipe 468점 랜드마크에서 추출한 수치를 전통 관상학의 일반적 기준에 대입한 판정 과정입니다.');
     const partIcons=['🔸','✏️','👁️','👃','👄'];
     const partColors2={'얼굴형':'#c9a54e','눈썹':'#a78bfa','눈':'#4fc3e8','코':'#e8a04f','입':'#e85a4f'};
     (ap.features||[]).forEach((f,i)=>{
@@ -4694,13 +4700,13 @@ function renderPremiumReport(container,data){
     html+='</div>';
   }
 
-  // ④ 평생 대운 그래프 (면부백세유년도 기반)
+  // ④ 평생 대운 그래프 (연령대별)
   if(data.fortuneGraph){
     const fg=data.fortuneGraph;
     const decades=fg.decades||[];
     html+=`<div style="margin-bottom:24px">`;
-    html+=sectionHeader('📊','면부백세유년도(面部百歲流年圖) 기반 대운 그래프');
-    html+=sectionSub('고전의 면부백세유년도에 따라, 얼굴 각 부위가 주관하는 연령대별 운세를 그래프로 시각화합니다.');
+    html+=sectionHeader('📊','연령대별 대운 그래프');
+    html+=sectionSub('얼굴 각 부위가 주관하는 연령대별 운세를 그래프로 시각화합니다.');
     html+=`<div style="position:relative">
       <canvas id="premiumFortuneChart" width="640" height="400" style="width:100%;max-width:340px;height:auto;display:block;margin:0 auto;border-radius:8px"></canvas>
       </div>
@@ -4724,7 +4730,7 @@ function renderPremiumReport(container,data){
     const bp=data.breakingPoint;
     html+=`<div style="margin-bottom:24px">`;
     html+=sectionHeader('⚠️','파상(破相) 분석 & 개운법','#e85a4f');
-    html+=sectionSub('고전 기준에 미달하는 부위를 진단하고, 메이크업·스타일링·행동 습관으로 보완하는 방법을 제시합니다.');
+    html+=sectionSub('일반적 기준에 미달하는 부위를 살펴보고, 메이크업·스타일링·행동 습관으로 보완하는 방법을 제시합니다.');
     (bp.weaknesses||[]).forEach((w,i)=>{
       html+=`<div style="margin-bottom:14px;padding:12px 14px;background:rgba(232,90,79,.04);border-left:3px solid #e85a4f;border-radius:0 8px 8px 0">
         <div style="font-size:14px;color:#e85a4f;font-weight:600;margin-bottom:6px">${i+1}. ${w.part} ${w.measurement?'<span style="opacity:.7;font-size:12px">['+w.measurement+']</span>':''}</div>
@@ -4742,7 +4748,7 @@ function renderPremiumReport(container,data){
     const ef=data.enemyFace;
     html+=`<div style="margin-bottom:20px">`;
     html+=sectionHeader('🔥','상극(相克) · 상생(相生) 인연 분석');
-    html+=sectionSub('오행상법에 따라, 당신의 얼굴형과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.');
+    html+=sectionSub('오행 관점에서 당신의 얼굴형과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.');
     html+='<div style="font-size:14px;color:#e85a4f;font-weight:600;margin-bottom:8px">🚫 피해야 할 관상</div>';
     (ef.enemies||[]).forEach(e=>{
       html+=`<div style="margin-bottom:10px;padding:10px 12px;background:rgba(232,90,79,.04);border-radius:8px;font-size:13px;color:var(--text2);line-height:1.7">
@@ -4760,7 +4766,7 @@ function renderPremiumReport(container,data){
     html+='</div>';
   }
 
-  html+='<div style="text-align:left;margin-top:16px"><div style="font-size:11px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 정밀 분석 + 십이궁·오관·삼정·면부백세유년도 + 고전 문헌 원문 인용 기반</div></div>';
+  html+='<div style="text-align:left;margin-top:16px"><div style="font-size:11px;color:var(--text2);opacity:.5">※ 프리미엄 관상 종합 리포트 — AI 468점 랜드마크 분석 + 십이궁·오관·삼정·연령대별 대운 · AI 생성 해석</div></div>';
   html+=`<div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
     <button class="share-btn" onclick="savePremiumPDF()" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📄 리포트 저장</button>
     <button class="share-btn" onclick="shareResultImage('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">📤 결과 공유</button>
@@ -5027,7 +5033,7 @@ function renderTojeongResult(result,info){
       <div style="font-size:13px;line-height:1.8">
         <p>✦ 12개월 상세 운세 (재물·건강·연애·길일·흉일)</p>
         <p>✦ 재물운·직업운·건강운·연애운 심층 분석</p>
-        <p>✦ 괘(卦) 조합 심층 해석 + 고전 원문 인용</p>
+        <p>✦ 괘(卦) 조합 심층 해석</p>
         <p>✦ 맞춤형 개운법 처방</p>
         <p>✦ 행운의 색·숫자·방위·월 상세 안내</p>
       </div>
@@ -5035,7 +5041,7 @@ function renderTojeongResult(result,info){
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);border-radius:12px">
       <div style="font-size:22px;margin-bottom:8px">🔒</div>
       <div style="font-size:15px;color:#fff;font-weight:600;margin-bottom:4px">프리미엄 심층 분석</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">토정비결 원문 기반 12개월 상세 운세</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">토정비결 형식의 12개월 상세 운세</div>
       <button onclick="unlockTojeongPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:12px 28px;border-radius:20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Noto Serif KR',serif">₩4,900 · 심층 분석 열기</button>
     </div>
   </div>`;
@@ -5096,7 +5102,7 @@ function renderTojeongFallback(info){
       <div style="font-size:13px;line-height:1.8">
         <p>✦ 12개월 상세 운세 (재물·건강·연애·길일·흉일)</p>
         <p>✦ 재물운·직업운·건강운·연애운 심층 분석</p>
-        <p>✦ 괘(卦) 조합 심층 해석 + 고전 원문 인용</p>
+        <p>✦ 괘(卦) 조합 심층 해석</p>
         <p>✦ 맞춤형 개운법 처방</p>
         <p>✦ 행운의 색·숫자·방위·월 상세 안내</p>
       </div>
@@ -5104,7 +5110,7 @@ function renderTojeongFallback(info){
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);border-radius:12px">
       <div style="font-size:22px;margin-bottom:8px">🔒</div>
       <div style="font-size:15px;color:#fff;font-weight:600;margin-bottom:4px">프리미엄 심층 분석</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">토정비결 원문 기반 12개월 상세 운세</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px">토정비결 형식의 12개월 상세 운세</div>
       <button onclick="unlockTojeongPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:12px 28px;border-radius:20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Noto Serif KR',serif">₩4,900 · 심층 분석 열기</button>
     </div>
   </div>`;
@@ -5125,9 +5131,8 @@ async function unlockTojeongPremium(){
     if(!paid) return;
   } else {
     if(!confirm('프리미엄 토정비결 리포트 (₩4,900)를 구매하시겠습니까?'))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment('tojeong');
   }
-  if(window.markPremiumPayment) window.markPremiumPayment();
 
   const pw=document.getElementById('tojeongPaywall');
   let loadTimer=null;
@@ -5136,10 +5141,10 @@ async function unlockTojeongPremium(){
       <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">📜</div>
       <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="tjPremLoadMsg">상괘(上卦) 풀이 중...</div>
       <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="tjPremLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
-      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">토정비결 원문 대조 + 12개월 분석에 약 15~25초 소요</div>
+      <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">괘 조합 해석 + 12개월 분석에 약 15~25초 소요</div>
     </div>`;
     pw.style.position='relative';pw.style.overflow='visible';
-    const loadSteps=['상괘(上卦) 풀이 중...','중괘(中卦) 음양 대조 중...','하괘(下卦) 일진 매핑 중...','괘 조합 의미 추출 중...','12개월 상세 분석 중...','재물·건강·연애·직업 영역별 풀이 중...','개운법 처방 중...','고전 원문 인용 검증 중...','종합 리포트 완성 중...'];
+    const loadSteps=['상괘(上卦) 풀이 중...','중괘(中卦) 음양 대조 중...','하괘(下卦) 일진 매핑 중...','괘 조합 의미 추출 중...','12개월 상세 분석 중...','재물·건강·연애·직업 영역별 풀이 중...','개운법 처방 중...','해석 정리 중...','종합 리포트 완성 중...'];
     let loadStep=0;
     loadTimer=setInterval(()=>{
       loadStep++;
@@ -5329,7 +5334,8 @@ function renderTojeongPremium(prem,info){
         ${gua.lower?`<div style="padding:10px;background:rgba(201,165,78,.05);border-radius:8px;text-align:center"><div style="font-size:12px;font-weight:600;color:var(--gold)">${gua.lower.name||''}</div><div style="font-size:10px;color:var(--text2)">${gua.lower.element||''}</div><div style="font-size:11px;line-height:1.6;margin-top:4px;color:var(--text1)">${gua.lower.meaning||''}</div></div>`:''}
       </div>
       <div style="font-size:13px;line-height:1.8;padding:12px;background:rgba(201,165,78,.03);border-radius:8px;border:1px solid rgba(201,165,78,.1)">${gua.combination}</div>
-      ${gua.citation?`<div style="margin-top:8px;padding:10px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px"><div style="color:var(--gold);font-weight:600">📜 ${gua.citation.book||''}</div><div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px">"${gua.citation.original||''}"</div><div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${gua.citation.translation||''}</div></div>`:''}
+      <!-- ★2026-07-28 P0-A: 한문 원문·번역 렌더 금지. 서지 표기만. (P0-1 잔여분 수리) -->
+      ${gua.citation?`<div style="margin-top:8px;padding:10px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px"><div style="color:var(--gold);font-weight:600">📜 출전: 『${gua.citation.book||''}』 ${gua.citation.chapter||''}</div></div>`:''}
     </div>`:''}
 
     <!-- 심층 분석 -->
@@ -5366,10 +5372,9 @@ function renderTojeongPremium(prem,info){
     </div>`:''}
 
     <!-- 고전 인용 -->
+    <!-- ★2026-07-28 P0-A: 한문 원문·번역 렌더 금지. 서지 표기만. (P0-1 잔여분 수리) -->
     ${cit.original?`<div style="padding:12px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px">
-      <div style="color:var(--gold);font-weight:600">📜 ${cit.book||'토정비결'}</div>
-      <div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px;font-size:13px">"${cit.original}"</div>
-      <div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${cit.translation||''}</div>
+      <div style="color:var(--gold);font-weight:600">📜 출전: 『${cit.book||'토정비결'}』 ${cit.chapter||''}</div>
     </div>`:''}
 
     <!-- PDF 저장 버튼 -->
@@ -5605,7 +5610,7 @@ function _renderDreamPaywall(){
     <div style="filter:blur(5px);pointer-events:none;opacity:.5">
       <div class="card-title">🔮 프리미엄 꿈 심층 해석</div>
       <div style="font-size:13px;line-height:1.8">
-        <p>✦ 한국 전통 심층 (주공해몽서·몽점일지 인용)</p>
+        <p>✦ 한국 전통 해몽 관점 심층 풀이</p>
         <p>✦ 융 분석심리학 심층 (archetype·집단무의식)</p>
         <p>✦ 사주 연계 풀이 (일간·강한 오행과의 상관)</p>
         <p>✦ 무의식 진단 — 감정·욕구·갈등의 메시지</p>
@@ -5633,21 +5638,20 @@ async function unlockDreamPremium(){
     if(!paid) return;
   } else {
     if(!confirm('프리미엄 꿈 해몽 리포트 (₩4,900)를 구매하시겠습니까?'))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment('dream');
   }
-  if(window.markPremiumPayment) window.markPremiumPayment();
 
   const pw=document.getElementById('dreamPaywall');
   let loadTimer=null;
   if(pw){
     pw.innerHTML=`<div style="padding:30px;text-align:center">
       <div style="font-size:28px;margin-bottom:12px" class="spin-emoji">🌙</div>
-      <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="dreamPremLoadMsg">한국 전통 해몽서 대조 중...</div>
+      <div style="color:var(--gold);font-size:13px;font-family:'Noto Serif KR',serif" id="dreamPremLoadMsg">전통 해몽 관점 정리 중...</div>
       <div style="margin-top:10px;width:200px;height:3px;border-radius:2px;background:rgba(201,165,78,.2);overflow:hidden;display:inline-block"><div id="dreamPremLoadBar" style="height:100%;width:0;background:linear-gradient(90deg,#c9a54e,#f5d78e);border-radius:2px;transition:width 0.5s"></div></div>
       <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">전통+융+사주+상징+화몽법 통합에 약 20~30초</div>
     </div>`;
     pw.style.position='relative';pw.style.overflow='visible';
-    const loadSteps=['한국 전통 해몽서 대조 중...','주공해몽 14대 분류 매핑 중...','융 archetype 진단 중...','집단 무의식 패턴 분석 중...','사주 연계 검증 중...','핵심 상징 정밀 추출 중...','화몽법 처방 생성 중...','시기별 영향 매핑 중...','종합 정리 중...'];
+    const loadSteps=['전통 해몽 관점 정리 중...','14대 분류 매핑 중...','융 archetype 진단 중...','집단 무의식 패턴 분석 중...','사주 연계 검증 중...','핵심 상징 정밀 추출 중...','화몽법 처방 생성 중...','시기별 영향 매핑 중...','종합 정리 중...'];
     let loadStep=0;
     loadTimer=setInterval(()=>{
       loadStep++;
@@ -5849,10 +5853,9 @@ function renderDreamPremium(prem,info){
     </div>`:''}
 
     <!-- 고전 인용 -->
+    <!-- ★2026-07-28 P0-A: 한문 원문·번역 렌더 금지. 서지 표기만. (P0-1 잔여분 수리) -->
     ${prem.citation?.original?`<div style="padding:12px;border-left:3px solid var(--gold);background:rgba(201,165,78,.03);border-radius:0 6px 6px 0;font-size:11px;margin-bottom:14px">
-      <div style="color:var(--gold);font-weight:600">📜 ${prem.citation.book||'고전'}</div>
-      <div style="color:var(--text1);font-family:'Noto Serif KR',serif;margin-top:2px;font-size:13px">"${prem.citation.original}"</div>
-      <div style="color:var(--text2);font-style:italic;margin-top:2px">→ ${prem.citation.translation||''}</div>
+      <div style="color:var(--gold);font-weight:600">📜 출전: 『${prem.citation.book||'고전'}』 ${prem.citation.chapter||''}</div>
     </div>`:''}
 
     <!-- PDF 저장 -->
@@ -6349,7 +6352,7 @@ async function analyzeNaming(){
       saju={pillars:s.pillars,els:s.els,ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],dayPillar:HS[s.pillars.day.stem]+EB[s.pillars.day.branch],pillarStr:`${HS[s.pillars.year.stem]}${EB[s.pillars.year.branch]} ${HS[s.pillars.month.stem]}${EB[s.pillars.month.branch]} ${HS[s.pillars.day.stem]}${EB[s.pillars.day.branch]} ${s.pillars.hour?HS[s.pillars.hour.stem]+EB[s.pillars.hour.branch]:'(시간 모름)'}`,dominant:s.dominant||'',lacking:s.lacking||''};
     }
     if(!saju){
-      if(!confirm('사주 정보 없이 작명할까요?\n사주 정보가 있으면 부족한 오행을 보완하는 더 정확한 작명이 가능해요.'))return;
+      if(!confirm('사주 정보 없이 작명할까요?\n사주 정보가 있으면 부족한 오행을 보완하는 더 풍부한 작명이 가능해요.'))return;
     }
     if(saju){Object.assign(info,saju);}
     apiType='naming';
@@ -6792,7 +6795,7 @@ function _renderNamingPaywall(info){
   let bullets='', subtitle='', headline='프리미엄 작명 리포트';
   if(ntype==='company'){
     headline='프리미엄 회사명 리포트';
-    subtitle='네이밍 컨설팅사 100~500만원 깊이를';
+    subtitle='네이밍 컨설팅 수준의 깊이를';
     bullets=`<p>✦ 업종 분석 + 사장 사주 + 네이밍 전략 (250자+)</p>
       <p>✦ 추천 회사명 10개 — 한자·한글·외래어/합성어 다양</p>
       <p>✦ 각 이름의 의미·발음·업종 적합성·브랜드 이미지</p>
@@ -6804,7 +6807,7 @@ function _renderNamingPaywall(info){
       <p>✦ 슬로건·태그라인 후보 + 창업자 축원</p>`;
   } else if(ntype==='product'){
     headline='프리미엄 제품명 리포트';
-    subtitle='브랜드 컨설팅 50~200만원 깊이를';
+    subtitle='브랜드 컨설팅 수준의 깊이를';
     bullets=`<p>✦ 제품·타겟 분석 + 네이밍 전략 (250자+)</p>
       <p>✦ 추천 제품명 10개 — 한자·한글·외래어·합성어·조어</p>
       <p>✦ 각 이름의 마케팅 적합성·SEO 점수·SNS 해시태그 친화성</p>
@@ -6814,7 +6817,7 @@ function _renderNamingPaywall(info){
       <p>✦ 기억성·발음 점수 (1-10점)</p>`;
   } else {
     // person (default)
-    subtitle='전문 작명소가 5~30만원에 제공하는 깊이를';
+    subtitle='전문 작명소 수준의 깊이를';
     bullets=`<p>✦ 사주 정밀 분석 + 작명 방향 (250자+)</p>
       <p>✦ 추천 이름 10개 — 전통한자·현대한자·한글전용</p>
       <p>✦ 각 이름의 한자 글자별 정밀 (부수·획수·의미·음운 어감)</p>
@@ -6835,7 +6838,7 @@ function _renderNamingPaywall(info){
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(3px);border-radius:12px;padding:24px">
       <div style="font-size:28px;margin-bottom:8px">🔒</div>
       <div style="font-size:16px;color:#fff;font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">${headline}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;text-align:center;line-height:1.7">${subtitle}<br>천운에선 <span style="color:#f5d78e;font-weight:600">1/10 가격</span>으로</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;text-align:center;line-height:1.7">${subtitle}<br>천운에선 <span style="color:#f5d78e;font-weight:600">합리적인 가격</span>으로</div>
       <button onclick="unlockNamingPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:14px 32px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 16px rgba(201,165,78,.4)">₩29,900 · ${ntype==='company'?'사업 흐름 작명':ntype==='product'?'마케팅 풀스택':'평생 운명 작명'} 리포트</button>
       <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:10px;text-align:center;line-height:1.6">한 번의 결제, ${ntype==='company'?'창업 평생 사용':ntype==='product'?'런칭 후 영구 사용':'평생 사용하는 이름'}<br>A4 PDF 영구 보관</div>
     </div>
@@ -6854,15 +6857,15 @@ async function unlockNamingPremium(){
   // 종류별 프리미엄 안내·API 분기
   const promptMap={
     person:{
-      msg:'프리미엄 작명 리포트 (₩29,900)를 구매하시겠습니까?\n\n전문 작명소 5~30만원의 깊이를 천운만의 가격으로.\n베스트 3개 평생 운명 + 작명 의식 + 부모 축원까지.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
+      msg:'프리미엄 작명 리포트 (₩29,900)를 구매하시겠습니까?\n\n전문 작명소 수준의 깊이를 천운만의 가격으로.\n베스트 3개 평생 운명 + 작명 의식 + 부모 축원까지.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
       api1:'naming_premium_1', api2:'naming_premium_2'
     },
     company:{
-      msg:'프리미엄 회사명 리포트 (₩29,900)를 구매하시겠습니까?\n\n네이밍 컨설팅사 100~500만원의 깊이를 천운만의 가격으로.\n10개 후보 + 베스트 3 사업 흐름 + 슬로건 + 창업자 축원.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
+      msg:'프리미엄 회사명 리포트 (₩29,900)를 구매하시겠습니까?\n\n네이밍 컨설팅 수준의 깊이를 천운만의 가격으로.\n10개 후보 + 베스트 3 사업 흐름 + 슬로건 + 창업자 축원.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
       api1:'naming_company_premium_1', api2:'naming_company_premium_2'
     },
     product:{
-      msg:'프리미엄 제품명 리포트 (₩29,900)를 구매하시겠습니까?\n\n브랜드 컨설팅 50~200만원의 깊이를 천운만의 가격으로.\n10개 후보 + 마케팅 풀스택 분석.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
+      msg:'프리미엄 제품명 리포트 (₩29,900)를 구매하시겠습니까?\n\n브랜드 컨설팅 수준의 깊이를 천운만의 가격으로.\n10개 후보 + 마케팅 풀스택 분석.\n\n※ 현재 테스트 기간으로 무료 체험 가능합니다.',
       api1:'naming_product_premium_1', api2:null  // product는 1단계만
     }
   };
@@ -6874,7 +6877,7 @@ async function unlockNamingPremium(){
     if(!paid) return;
   } else {
     if(!confirm(cfg.msg))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment(info.ntype==='company'?'naming_company':info.ntype==='product'?'naming_product':'naming');
   }
   window._namingPremiumApiTypes=cfg;
 
@@ -6888,7 +6891,7 @@ async function unlockNamingPremium(){
       <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">10개 후보 + 베스트 3개 인생 풀이까지 약 30~40초</div>
     </div>`;
     pw.style.position='relative';pw.style.overflow='visible';
-    const loadSteps=['사주 8글자 분석 + 부족 오행 산출 중...','수리 81수 길수 매핑 중...','사격(천·인·지·외·총) 조합 검증 중...','발음 오행 상생 흐름 검증 중...','음양 배치 검증 중...','한자 의미 풀이 중...','10개 후보 정밀 평가 중...','베스트 3개 인생 흐름 매핑 중...','직업·동명이인·발음 환경 정리 중...'];
+    const loadSteps=['사주 8글자 분석 + 부족 오행 산출 중...','수리 81수 길수 매핑 중...','사격(천·인·지·외·총) 조합 확인 중...','발음 오행 상생 흐름 확인 중...','음양 배치 확인 중...','한자 의미 풀이 중...','10개 후보 평가 중...','베스트 3개 인생 흐름 매핑 중...','직업·동명이인·발음 환경 정리 중...'];
     let loadStep=0;
     loadTimer=setInterval(()=>{
       loadStep++;
@@ -6916,7 +6919,7 @@ async function unlockNamingPremium(){
     try{
       const r1=await doFetch(cfg.api1);Object.assign(merged,r1);
       const m=document.getElementById('namingPremLoadMsg');
-      if(m)m.textContent=cfg.api2?'베스트 3개 흐름 + 추가 분석 생성 중...':'마지막 검증 중...';
+      if(m)m.textContent=cfg.api2?'베스트 3개 흐름 + 추가 분석 생성 중...':'마지막 정리 중...';
       const bar=document.getElementById('namingPremLoadBar');if(bar)bar.style.width='55%';
     }catch(e){apiError='1단계: '+e.message;console.error('Naming Premium 1:',e)}
     if(cfg.api2){
@@ -7318,9 +7321,10 @@ function savePremiumPDF(){
 
   // ── 헬퍼 ──
   const esc=(s)=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // ★2026-07-28 P0: 서지 표기만 렌더. 한문 원문·번역 렌더 금지 (citationHTML과 동일 근거).
   const citBlock=(c)=>{
-    if(!c||!c.original)return'';
-    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』 ${esc(c.chapter||'')}</div><div class="cite-orig">"${esc(c.original)}"</div>${c.pronunciation?'<div class="cite-pron">('+esc(c.pronunciation)+')</div>':''}<div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
+    if(!c||!c.book)return'';
+    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』 ${esc(c.chapter||'')}</div></div>`;
   };
   const bar=(val,color)=>`<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,val||0)}%;background:${color}"></div><span class="bar-val">${val||0}</span></div>`;
   const gradeColor=(g)=>g==='상'?'#1a7a4a':g==='하'?'#c9443a':'#b8860b';
@@ -7330,7 +7334,7 @@ function savePremiumPDF(){
 
   // ⓪ AI 분석 과정
   if(D.analysisProcess&&D.analysisProcess.features){
-    body+=`<div class="section"><h2>🔬 AI 분석 과정 상세 공개</h2><p class="section-desc">MediaPipe 468점 랜드마크에서 추출한 수치를 고전 문헌의 기준에 대입한 판정 과정입니다.</p>`;
+    body+=`<div class="section"><h2>🔬 AI 분석 과정 상세 공개</h2><p class="section-desc">MediaPipe 468점 랜드마크에서 추출한 수치를 전통 관상학의 일반적 기준에 대입한 판정 과정입니다.</p>`;
     const icons=['🔸','✏️','👁️','👃','👄'];
     D.analysisProcess.features.forEach((f,i)=>{
       body+=`<div class="analysis-card">
@@ -7393,7 +7397,7 @@ function savePremiumPDF(){
   // ④ 대운 그래프
   if(D.fortuneGraph&&D.fortuneGraph.decades){
     const fg=D.fortuneGraph;
-    body+=`<div class="section page-break"><h2>📊 면부백세유년도 기반 대운 그래프</h2><p class="section-desc">얼굴 각 부위가 주관하는 연령대별 운세를 분석합니다.</p>`;
+    body+=`<div class="section page-break"><h2>📊 연령대별 대운 그래프</h2><p class="section-desc">얼굴 각 부위가 주관하는 연령대별 운세를 분석합니다.</p>`;
     // SVG 차트
     const decades=fg.decades;const n=decades.length;
     const svgW=600,svgH=280,pad={t:30,b:40,l:50,r:20};
@@ -7434,7 +7438,7 @@ function savePremiumPDF(){
   // ⑤ 파상 & 개운법
   if(D.breakingPoint){
     const bp=D.breakingPoint;
-    body+=`<div class="section page-break"><h2>⚠️ 파상(破相) 분석 &amp; 개운법</h2><p class="section-desc">고전 기준에 미달하는 부위를 진단하고, 보완 방법을 제시합니다.</p>`;
+    body+=`<div class="section page-break"><h2>⚠️ 파상(破相) 분석 &amp; 개운법</h2><p class="section-desc">일반적 기준에 미달하는 부위를 살펴보고, 보완 방법을 제시합니다.</p>`;
     (bp.weaknesses||[]).forEach((w,i)=>{
       body+=`<div class="weakness-card">
         <div class="wc-head">${i+1}. ${esc(w.part)} ${w.measurement?'<span class="dim">['+esc(w.measurement)+']</span>':''}</div>
@@ -7450,7 +7454,7 @@ function savePremiumPDF(){
   // ⑥ 상극·상생
   if(D.enemyFace){
     const ef=D.enemyFace;
-    body+=`<div class="section page-break"><h2>🔥 상극(相克) · 상생(相生) 인연 분석</h2><p class="section-desc">오행상법에 따라, 당신과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.</p>`;
+    body+=`<div class="section page-break"><h2>🔥 상극(相克) · 상생(相生) 인연 분석</h2><p class="section-desc">오행 관점에서 당신과 시너지를 내는 사람 / 충돌하는 사람의 관상을 분석합니다.</p>`;
     if(ef.enemies&&ef.enemies.length){
       body+='<h3 class="enemy-h">🚫 피해야 할 관상</h3>';
       ef.enemies.forEach(e=>{
@@ -7568,13 +7572,13 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
     <div class="sub">Premium Fortune Report</div>
     <div class="divider"></div>
     <div class="date">${today}</div>
-    <div class="badge">AI 468점 정밀 분석 · 고전 문헌 원문 인용</div>
+    <div class="badge">AI 468점 랜드마크 분석 · AI 생성 해석</div>
   </div>
   ${body}
   <div class="footer">
     <div class="mark">✦ 天 運 ✦</div>
     <div class="info">
-      마의상법(麻衣相法) · 유장상법(柳莊相法) · 신상전편(神相全篇) 기반<br>
+      전통 관상학의 일반적 관점 참고 · AI 생성 해석<br>
       chunwoon-app.vercel.app<br>
       본 리포트는 전통 관상서를 참고한 오락 콘텐츠이며, 과학적 근거가 있는 판독이 아닙니다.
     </div>
@@ -7611,8 +7615,9 @@ function savePremiumTojeongPDF(){
 
   const esc=(s)=>(s||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const citBlock=(c)=>{
-    if(!c||!c.original)return'';
-    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』</div><div class="cite-orig">"${esc(c.original)}"</div><div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
+    // ★2026-07-28 P0: 서지 표기만 렌더. 한문 원문·번역 렌더 금지 (판본 미등재·저본 미확보).
+    if(!c||!c.book)return'';
+    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』</div></div>`;
   };
 
   let body='';
@@ -7785,7 +7790,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   <div class="footer">
     <div class="mark">✦ 天 運 ✦</div>
     <div class="info">
-      토정비결(土亭秘訣) · 토정 이지함(李之菡) 선생의 원문에 기반<br>
+      토정비결 형식의 AI 생성 해석<br>
       chunwoon-app.vercel.app<br>
       본 리포트는 전통 운세서를 참고한 오락 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
     </div>
@@ -7823,8 +7828,9 @@ function savePremiumSajuPDF(){
 
   const esc=(s)=>(s||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const citBlock=(c)=>{
-    if(!c||!c.original)return'';
-    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』</div><div class="cite-orig">"${esc(c.original)}"</div><div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
+    // ★2026-07-28 P0: 서지 표기만 렌더. 한문 원문·번역 렌더 금지 (판본 미등재·저본 미확보).
+    if(!c||!c.book)return'';
+    return`<div class="cite"><div class="cite-src">📜 출전: 『${esc(c.book)}』</div></div>`;
   };
 
   let body='';
@@ -8006,7 +8012,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   <div class="footer">
     <div class="mark">✦ 天 運 ✦</div>
     <div class="info">
-      자평진전(子平眞詮) · 적천수(滴天髓) · 궁통보감(窮通寶鑑) 기반<br>
+      자평진전(子平眞詮) · 적천수(滴天髓) · 궁통보감(窮通寶鑑) 참고 · AI 생성 해석<br>
       chunwoon-app.vercel.app<br>
       본 리포트는 전통 명리학을 참고한 오락 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
     </div>
@@ -8181,7 +8187,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   <div class="footer">
     <div class="mark">✦ 天 運 ✦</div>
     <div class="info">
-      자평진전(子平眞詮) · 삼명통회(三命通會) · 연해자평(淵海子平) 기반<br>
+      자평진전(子平眞詮) · 연해자평(淵海子平) 참고 · AI 생성 해석<br>
       chunwoon-app.vercel.app<br>
       본 리포트는 전통 명리학을 참고한 오락 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
     </div>
@@ -8217,8 +8223,9 @@ function savePremiumDreamPDF(){
 
   const esc=(s)=>(s||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const citBlock=(c)=>{
-    if(!c||!c.original)return'';
-    return`<div class="cite"><div class="cite-src">📜 ${esc(c.book||'고전')}</div><div class="cite-orig">"${esc(c.original)}"</div><div class="cite-tl">→ ${esc(c.translation||'')}</div></div>`;
+    // ★2026-07-28 P0: 서지 표기만 렌더. 한문 원문·번역 렌더 금지 (판본 미등재·저본 미확보).
+    if(!c||!c.book)return'';
+    return`<div class="cite"><div class="cite-src">📜 ${esc(c.book)}</div></div>`;
   };
 
   let body='';
@@ -8236,7 +8243,7 @@ function savePremiumDreamPDF(){
 
   // ② 한국 전통 심층
   if(prem.traditionalDeep){
-    body+=`<div class="section page-break"><h2>📜 한국 전통 심층 풀이</h2><p class="section-desc">주공해몽서·몽점일지 기반의 한국 민속 해몽입니다.</p>
+    body+=`<div class="section page-break"><h2>📜 한국 전통 심층 풀이</h2><p class="section-desc">한국 민속 해몽 관점을 참고한 AI 해석입니다.</p>
       <div class="domain-card domain-career"><p>${esc(prem.traditionalDeep)}</p></div>
     </div>`;
   }
@@ -8379,7 +8386,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   <div class="footer">
     <div class="mark">✦ 天 運 ✦</div>
     <div class="info">
-      주공해몽서(周公解夢) · 몽점일지 · 융(C.G. Jung) 분석심리학 기반<br>
+      한국 민속 해몽 관점 · 융(C.G. Jung) 분석심리학 참고 · AI 생성 해석<br>
       chunwoon-app.vercel.app<br>
       본 리포트는 전통 해몽과 분석심리학을 참고한 오락 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
     </div>
@@ -8684,7 +8691,7 @@ body{background:#ffffff;color:#1a1a1a;font-family:'Noto Sans KR',sans-serif;line
   <div class="footer">
     <div class="mark">✦ 天 運 ✦</div>
     <div class="info">
-      작명대전 · 만성통보 · 자평진전 기반 사주명리 작명<br>
+      자평진전(子平眞詮) 참고 · 전통 성명학 관점의 AI 작명<br>
       chunwoon-app.vercel.app<br>
       본 리포트는 전통 성명학을 참고한 콘텐츠이며, 의료·법률·금융 결정의 근거가 아닙니다.
     </div>
@@ -9011,4 +9018,3 @@ setTimeout(insertAdSlots, 3000);
 
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              

@@ -164,7 +164,7 @@ function _renderTarotPaywall(){
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(3px);border-radius:12px;padding:24px">
       <div style="font-size:28px;margin-bottom:8px">🔒</div>
       <div style="font-size:16px;color:#fff;font-weight:700;margin-bottom:4px;font-family:'Noto Serif KR',serif">프리미엄 타로 리포트</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;text-align:center;line-height:1.7">전문 타로 리더 한 회 5~10만원 깊이를<br>천운에선 <span style="color:#f5d78e;font-weight:600">1/10 가격</span>으로</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.65);margin-bottom:14px;text-align:center;line-height:1.7">전문 타로 리더 수준의 깊이를<br>천운에선 <span style="color:#f5d78e;font-weight:600">합리적인 가격</span>으로</div>
       <button onclick="unlockTarotPremium()" style="background:linear-gradient(135deg,var(--gold),#d4a017);color:#000;border:none;padding:14px 32px;border-radius:24px;font-weight:700;font-size:15px;cursor:pointer;font-family:'Noto Serif KR',serif;box-shadow:0 4px 16px rgba(201,165,78,.4)">₩4,900 · 켈틱 크로스 풀스택 리포트</button>
       <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:10px;text-align:center;line-height:1.6">78장 풀덱 + 10장 스프레드 + 사주 연계<br>A4 PDF 영구 보관</div>
     </div>
@@ -182,7 +182,7 @@ async function unlockTarotPremium(){
     if(!paid) return;
   } else {
     if(!confirm('프리미엄 타로 리포트 (₩4,900)를 구매하시겠습니까?'))return;
-    if(window.markPremiumPayment) window.markPremiumPayment();
+    if(window.markPremiumPayment) window.markPremiumPayment('tarot');
   }
 
   const pw = document.getElementById('tarotPaywall');
