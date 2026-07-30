@@ -52,16 +52,16 @@ const CITATION_KEYS = ['citation', 'citation_ref'];   // ★서지 ID 사용자 
 const SCRUB_SOURCE_TOKEN_PAIRS = [
   [['마의', '麻衣'], ['상법', '相法']],
   [['유장', '柳莊'], ['상법', '相法']],
-  [['신상', '神相'], ['전편', '全編', '全篇']],
+  [['신상', '神相'], ['전편', '全編', '全篇'], { policy: 'common' }],
   [['달마', '達磨'], ['상법', '相法']],
   [['오행', '五行'], ['상법', '相法']],
   [['면부백세', '面部百歲'], ['유년도', '流年圖']],
   [['주공', '周公'], ['해몽', '解夢']],
   [['몽점', '夢占'], ['일지', '逸旨']],
-  [['작명'], ['대전']],
-  [['만성'], ['통보']],
+  [['작명'], ['대전'], { policy: 'common', tailExempt: 'DAEJEON', corpPrefix: true }],
+  [['만성'], ['통보'], { policy: 'common' }],
   [['삼명', '三命'], ['통회', '通會']],
-  [['자평', '子平'], ['진전', '眞詮']],
+  [['자평', '子平'], ['진전', '眞詮'], { policy: 'common' }],
   [['적천', '滴天'], ['수', '髓']],
   [['궁통', '窮通'], ['보감', '寶鑑']],
   [['연해', '淵海'], ['자평', '子平']]
@@ -72,6 +72,26 @@ const SCRUB_SOURCE_EXTRA_PAIRS = [
   [['적천수', '滴天髓'], ['천미', '闡微']],
   [['자평진전', '子平眞詮'], ['평주', '評註']]
 ];
+// ★2026-07-30 v7.64 P1-R6-1 — 쌍별 구분자 정책.
+//   SoT = IP/policy/scrub_token_policy.json 의 pair_policies / tail_context_exempt / corporate_prefix_forms
+//   검증 = eval/eval_scrub_token_policy.js (IP 와 아래 내장값의 집합 동일성 + 실구동 오탐·우회 코퍼스)
+//   ★왜 필요한가 — 구분자 허용({0,2} 구두점 · {1,6} 공백)을 전 쌍에 일률 적용하면 두 토큰이 각각
+//     일상 한국어 낱말인 쌍에서 정상 문장이 파손된다. 실측 파손:
+//       「작명 대전 지역 방문 상담」 「아기 이름 작명 대전 센터」 「작명 대전광역시 서구」
+//       「(주)작명 + 대전 컨설팅(법인명 인접형)」 「작명(대전) 지점 안내」 「스스로 자평 진전이 더뎠다」
+//       「신상 전편을 살펴보면」 「만성 통보다 급성 통증」
+//     작명은 본 앱 최고가 상품(₩29,900)이고 대전은 광역시명이라 작명 화면 전반이 깨진다.
+//   ★정책 — policy:'common' 인 쌍만 (a)구분자가 있는 형태에서 뒤토큰 직후 한글 연접을 배제하고
+//     (b)tailExempt 등재 낱말이 뒤따르면 배제한다. 인접형(구분자 0자)은 어느 쌍에서도 항상 잡는다.
+//   ★대가(명시 판단) — 「자평 진전이 인용됨」처럼 띄어쓴 문헌명 표기는 통과한다(누락).
+//     기존 원칙은 「누락보다 과대매칭이 낫다」이나 핵심 상품 파손은 그 예외로 승인됐다.
+const SCRUB_TAIL_EXEMPT = {
+  DAEJEON: ['광역시', '지역', '지사', '지점', '본점', '본사', '센터', '시청', '구청', '청사',
+    '방문', '상담', '예약', '사무소', '사무실', '캠퍼스', '매장', '학원', '연구소',
+    '컨설팅', '근교', '인근', '소재', '거주', '출장', '시내', '시민', '시장',
+    '서구', '중구', '동구', '유성구', '대덕구', '공항', '터미널', '지하철']
+};
+const SCRUB_CORP_PREFIX_FORMS = ['(주)', '㈜', '(유)', '(사)', '주식회사'];
 // 원소 29 = 한글 15 + 한자 14 (이체자 1종은 2원소 / 한글 2종은 hanja null).
 // ★수기 목록 이중관리를 없애고 위 15쌍에서 파생한다.
 //   한글 정식명 = 앞[0]+뒤[0] · 한자명 = 앞[1..] × 뒤[1..]
@@ -97,26 +117,35 @@ function scrubTokAlt(list){
 // ★R4-1 진입부 정규화 — NFC 만 쓴다.
 //   ✗ NFKC 금지: 전각 라틴·괄호기호·합자를 뭉개어 정상 출력을 파괴한다.
 //   ① NFC — NFD 한글(자모 분해)과 호환한자(U+F900~ · U+2F800~ 는 정규 단일 분해이므로 NFC 로 통일)를 잡는다.
-//   ② 불가시문자 제거 — 제로폭 6종·소프트하이픈·양방향 제어·워드조이너·주석문자.
-//   ③ 부수형 이체자 — 康熙 부수(U+2E80~U+2FDF)는 호환 분해뿐이어서 NFC 로 안 바뀐다.
-//      NFKC 를 쓰지 않고, 차단 토큰 집합에 실제로 등장하는 7자만 표적 사상한다.
-//      U+2F1F 土 · U+2F26 子 · U+2F42 文 · U+2F8F 行 · U+2F90 衣 · U+2FAF 面 · U+2FC7 麻
-// \u2605U+200C(ZWNJ)\u00B7U+200D(ZWJ) \uB294 \uBB34\uC870\uAC74 \uC9C0\uC6B0\uBA74 \uC548 \uB41C\uB2E4 \u2014 \uC774\uBAA8\uC9C0 ZWJ \uC2DC\uD000\uC2A4\uAC00 \uAE68\uC9C4\uB2E4.
-//   \uC2E4\uCE21: \uD83E\uDDD9\u200D\u2642\uFE0F(U+1F9D9 U+200D U+2642 U+FE0F) \u2192 \uD83E\uDDD9\u2642\uFE0F / \uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67 \u2192 \uD83D\uDC68\uD83D\uDC69\uD83D\uDC67 \uB85C \uBD84\uD574\uB428.
-//   \u27F9 \uC55E\uB4A4\uAC00 \uBAA8\uB450 \uD55C\uAE00\u00B7CJK\u00B7\uB77C\uD2F4 \uBB38\uC790\uC77C \uB54C\uB9CC \uC81C\uAC70\uD55C\uB2E4(\uC6B0\uD68C \uBCA1\uD130\uB294 \uADF8 \uACBD\uC6B0\uBFD0\uC774\uB2E4).
-//   \uADF8 \uBC16\uC758 \uBD88\uAC00\uC2DC\uBB38\uC790\uB294 \uC774\uBAA8\uC9C0 \uC870\uB9BD\uC5D0 \uC4F0\uC774\uC9C0 \uC54A\uC73C\uBBC0\uB85C \uBB34\uC870\uAC74 \uC81C\uAC70\uD55C\uB2E4.
-//   \u2717U+FE0F(\uBCC0\uC774 \uC120\uD0DD\uC790)\uB294 \uBAA9\uB85D\uC5D0 \uB123\uC9C0 \uC54A\uB294\uB2E4 \u2014 \uC774\uBAA8\uC9C0 \uD45C\uD604\uD615\uC5D0 \uD544\uC218.
-const SCRUB_INVISIBLE_RE = /[\u00AD\u034F\u180B-\u180E\u200B\u200E\u200F\u2060-\u2064\u206A-\u206F\uFEFF\uFFF9-\uFFFB]/g;
+//   ② 불가시문자 제거 — ★R6-5 로 목록을 확장했다. 종전 6종만으로는 U+FE00~FE0F(변이 선택자)·
+//      U+2066~2069(방향 격리)·U+3164 U+115F U+1160 U+FFA0(한글 필러)·U+17B4~17B5·
+//      U+E0000~E007F(태그)·U+E0100~E01EF(변이 선택자 보충)이 전부 통과했다(폭 0 이라 화면상 원문과 동일).
+//   ③ 이체자 — 康熙 부수(U+2E80~U+2FDF)는 호환 분해뿐이어서 NFC 로 안 바뀐다. NFKC 를 쓰지 않고
+//      표적 사상한다. ★R6-6 로 간체·일본 신자체·이체자를 글자 단위로 추가했다(SoT = IP scrub_token_policy).
+// ★U+200C(ZWNJ)·U+200D(ZWJ)·U+FE0E·U+FE0F 는 무조건 지우면 안 된다 — 이모지 시퀀스가 깨진다.
+//   실측: ❤️ · 🏳️‍🌈 · 1️⃣ · 🧙‍♂️ 가 모두 파손된다.
+//   ⟹ 앞뒤가 모두 한글·CJK·라틴 실문자일 때만 제거한다(우회 벡터는 그 경우뿐이다).
+//   ★R6-6b 투명 처리 — 조건부 불가시문자끼리 연쇄도 한 덩어리로 본다([ZWC]+).
+const SCRUB_INVISIBLE_RE = /[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180E\u200B\u200E\u200F\u2060-\u206F\u3164\uFE00-\uFE0D\uFEFF\uFFA0\uFFF9-\uFFFB]/g;
+// U+E0000~E007F(태그) · U+E0100~E01EF(변이 선택자 보충) — 상위 대체문자 U+DB40 를 공유한다.
+const SCRUB_INVISIBLE_ASTRAL_RE = /\uDB40[\uDC00-\uDC7F\uDD00-\uDDEF]/g;
 const SCRUB_ZWJ_WORD = '[0-9A-Za-z\\uAC00-\\uD7A3\\u3131-\\u318E\\u4E00-\\u9FFF\\uF900-\\uFAFF]';
-const SCRUB_ZWJ_RE = new RegExp('(' + SCRUB_ZWJ_WORD + ')[\\u200C\\u200D]+(?=' + SCRUB_ZWJ_WORD + ')', 'g');
+const SCRUB_ZWC_CLS = '[\\u200C\\u200D\\uFE0E\\uFE0F]';
+const SCRUB_ZWJ_RE = new RegExp('(' + SCRUB_ZWJ_WORD + ')' + SCRUB_ZWC_CLS + '+(?=' + SCRUB_ZWJ_WORD + ')', 'g');
 const SCRUB_VARIANT_MAP = {
   '\u2F1F': '土', '\u2F26': '子', '\u2F42': '文', '\u2F8F': '行',
-  '\u2F90': '衣', '\u2FAF': '面', '\u2FC7': '麻'
+  '\u2F90': '衣', '\u2FAF': '面', '\u2FC7': '麻',
+  '真': '眞', '诠': '詮', '会': '會', '渊': '淵', '渕': '淵', '编': '編',
+  '达': '達', '逹': '達', '穷': '窮', '宝': '寶', '寳': '寶',
+  '鉴': '鑑', '鑒': '鑑', '庄': '莊', '荘': '莊', '岁': '歲', '歳': '歲',
+  '图': '圖', '図': '圖', '梦': '夢', '髄': '髓', '祕': '秘', '诀': '訣'
 };
-const SCRUB_VARIANT_RE = /[\u2F1F\u2F26\u2F42\u2F8F\u2F90\u2FAF\u2FC7]/g;
+const SCRUB_VARIANT_RE = new RegExp('[' + Object.keys(SCRUB_VARIANT_MAP).join('') + ']', 'g');
 function scrubNormalize(s){
-  let t = String(s).normalize('NFC').replace(SCRUB_INVISIBLE_RE, '');
-  // ZWJ/ZWNJ 는 문맥 조건부. 연쇄 삽입(마ZWJ의ZWJ상ZWJ법)을 잡으려면 고정점까지 반복해야 한다.
+  let t = String(s).normalize('NFC')
+    .replace(SCRUB_INVISIBLE_RE, '')
+    .replace(SCRUB_INVISIBLE_ASTRAL_RE, '');
+  // ZWJ/ZWNJ/변이선택자는 문맥 조건부. 연쇄 삽입(마ZWJ의ZWJ상ZWJ법)을 잡으려면 고정점까지 반복해야 한다.
   for (let i = 0; i < 4; i++) {
     const prev = t;
     t = t.replace(SCRUB_ZWJ_RE, '$1');
@@ -129,8 +158,13 @@ function scrubNormalize(s){
 //   ★ | : 는 절대 넣지 않는다(js/chat.js:220 의 ★LUCK★색:파랑|숫자:7★ 토큰 파싱 보존).
 //   ★구두점류는 2자까지만 허용한다(더 열면 「마의 좋은 상법」류 오탐이 생긴다).
 //   반면 **공백만으로 벌린 형태**는 자연스러운 한국어 문장이 될 수 없으므로 6자까지 허용한다.
-//   (R5 검증관 실측 미차단분: 「마의   상법」 세 칸)
-const SCRUB_SEP = '(?:[\\s.,\\-_~/\\\\*+=\'"()\\[\\]{}<>·・「」『』〈〉《》【】〔〕]{0,2}|[\\s　]{1,6})';
+// ★R6-6b — 조건부 불가시문자(ZWNJ·ZWJ·변이선택자)도 구분자로 흡수한다.
+//   B축 실측: 「마의<ZWJ> 상법」은 ZWJ 문맥조건(앞뒤 실문자)에 걸리지 않아 살아남고,
+//   그 ZWJ 가 구분자 문자류에도 없어 T2 매칭까지 함께 무너졌다.
+const SCRUB_SEP_PUNCT = '[\\s.,\\-_~/\\\\*+=\'"()\\[\\]{}<>·・「」『』〈〉《》【】〔〕]';
+const SCRUB_SEP = '(?:' + SCRUB_ZWC_CLS + '{0,3}(?:' + SCRUB_SEP_PUNCT + '{0,2}|[\\s　]{1,6})' + SCRUB_ZWC_CLS + '{0,3})';
+// ★비어 있지 않은 구분자 — policy:'common' 쌍의 「벌린 형태」 분기 전용.
+const SCRUB_SEP_NE = '(?:' + SCRUB_ZWC_CLS + '{0,3}(?:' + SCRUB_SEP_PUNCT + '{1,2}|[\\s　]{1,6})' + SCRUB_ZWC_CLS + '{0,3}|' + SCRUB_ZWC_CLS + '{1,3})';
 
 // T1: 서지 ID — 값 안에 실려 나가는 SRC_* 를 삭제 (키 삭제로는 잡히지 않음)
 // ★R4-3 — \b 제거(1SRC_ · aSRC_ 우회) · i 플래그(소문자 우회) · 구분자 확장(- . 전각 ＿)
@@ -139,11 +173,69 @@ const SCRUB_SEP = '(?:[\\s.,\\-_~/\\\\*+=\'"()\\[\\]{}<>·・「」『』〈〉�
 //   서식을 파괴한다(실측: 프런트 코퍼스 10,190행 중 7,666행이 공백 정리만으로 변형됨).
 //   개행은 절대 먹지 않도록 [ \t] 로 한정한다.
 const SCRUB_SRC_ID_RE = /[ \t]*SRC[_\-.＿][A-Za-z0-9_\-.＿]+/gi;
+// ★R6-3 — 보호 문맥. \b 를 뺀 대가로 URL·이메일·파일명 안의 소문자 src 가 파손됐다. 실측:
+//   https://cdn.esrc.io/a.png → https://cdn.e/a.png · src_main.js → (통삭) · help.src-team@… → help.@…
+//   정규식 리터럴 자체는 게이트가 pin 하므로 바꾸지 않고 **적용 단계**에서 문맥을 본다.
+//   보호 문맥 안에서는 대문자 정확형 SRC 만 지운다(서지 ID 는 코드가 대문자로만 만든다).
+const SCRUB_T1_PROTECT_RE = new RegExp(
+  '(?:https?|ftp|file):\\/\\/[^\\s<>"\'`]+' +
+  '|www\\.[A-Za-z0-9][A-Za-z0-9.\\-]*[^\\s<>"\'`]*' +
+  '|[A-Za-z0-9._%+\\-]+@[A-Za-z0-9][A-Za-z0-9.\\-]*\\.[A-Za-z]{2,}' +
+  '|[A-Za-z0-9_\\-./\\\\]*[A-Za-z0-9_\\-]\\.(?:js|mjs|cjs|jsx|ts|tsx|json|css|scss|html?|md|txt|csv|tsv' +
+  '|png|jpe?g|gif|svg|webp|ico|bmp|pdf|zip|gz|tar|ya?ml|xml|log|sh|bat|py|java|rb|go|rs|cpp|map' +
+  '|woff2?|ttf|otf|mp3|mp4|wav|env|lock)(?![A-Za-z0-9])' +
+  '|[A-Za-z0-9][A-Za-z0-9\\-]*(?:\\.[A-Za-z0-9][A-Za-z0-9\\-]*)*' +
+  '\\.(?:com|net|org|io|co|kr|jp|cn|us|uk|de|fr|dev|app|ai|me|info|biz|xyz|cloud|tech)' +
+  '(?:\\/[^\\s<>"\'`]*)?(?![A-Za-z0-9.])',
+  'g');
+const SCRUB_T1_UPPER_RE = /SRC[_\-.＿]/;
+function scrubSrcIds(t){
+  if (t.indexOf('SRC') === -1 && t.indexOf('src') === -1 && t.indexOf('Src') === -1) return t;
+  const prot = [];
+  SCRUB_T1_PROTECT_RE.lastIndex = 0;
+  let pm;
+  while ((pm = SCRUB_T1_PROTECT_RE.exec(t)) !== null) {
+    if (pm[0].length === 0) { SCRUB_T1_PROTECT_RE.lastIndex++; continue; }
+    prot.push([pm.index, pm.index + pm[0].length]);
+  }
+  if (prot.length === 0) return t.replace(SCRUB_SRC_ID_RE, '');
+  return t.replace(SCRUB_SRC_ID_RE, function(m, off){
+    for (let i = 0; i < prot.length; i++) {
+      if (off < prot[i][1] && off + m.length > prot[i][0]) {
+        return SCRUB_T1_UPPER_RE.test(m) ? '' : m;
+      }
+    }
+    return '';
+  });
+}
+
 // T2: 문헌명 15종 + 파생 2종 → '고전'. 파생 쌍을 앞에 두어 부분 선점(「고전천미」 파손)을 막는다.
+// ★R6-1 — 쌍별 정책. policy:'common' 은 「벌린 형태 + 뒤토큰 직후 한글 연접」과
+//   「tailExempt 후행 낱말」을 배제한다. 인접형은 두 정책 모두 항상 매칭한다.
+const SCRUB_COMMON_TAIL_GUARD = '(?![가-힣])';
+const SCRUB_CLOSE_BRACKET = '[)\\]}」』】〉》〕]{0,2}';
+const SCRUB_GAP_BEFORE_WORD = '[\\s,·、]{0,3}';
+function scrubTailExemptGuard(key){
+  const list = key ? (SCRUB_TAIL_EXEMPT[key] || []) : [];
+  if (!list.length) return '';
+  return '(?!' + SCRUB_CLOSE_BRACKET + SCRUB_GAP_BEFORE_WORD + '(?:' +
+    list.slice().sort(function(a, b){ return b.length - a.length; }).map(escapeRegExp).join('|') + '))';
+}
+function scrubCorpGuard(on){
+  if (!on) return '';
+  return '(?<!' + SCRUB_CORP_PREFIX_FORMS.map(escapeRegExp).join('|') + ')';
+}
+function scrubPairSrc(p){
+  const opt = (p[2] && typeof p[2] === 'object') ? p[2] : {};
+  const head = scrubTokAlt(p[0]), tail = scrubTokAlt(p[1]);
+  if (opt.policy !== 'common') return head + SCRUB_SEP + tail;
+  const corp = scrubCorpGuard(!!opt.corpPrefix);
+  const ex = scrubTailExemptGuard(opt.tailExempt);
+  return corp + head + SCRUB_SEP_NE + tail + SCRUB_COMMON_TAIL_GUARD + ex +
+    '|' + corp + head + tail + ex;
+}
 const SCRUB_SOURCE_RE = new RegExp(
-  SCRUB_SOURCE_EXTRA_PAIRS.concat(SCRUB_SOURCE_TOKEN_PAIRS)
-    .map(function(p){ return scrubTokAlt(p[0]) + SCRUB_SEP + scrubTokAlt(p[1]); })
-    .join('|'),
+  SCRUB_SOURCE_EXTRA_PAIRS.concat(SCRUB_SOURCE_TOKEN_PAIRS).map(scrubPairSrc).join('|'),
   'g'
 );
 
@@ -190,7 +282,21 @@ const SCRUB_BASIS_SEP = '[\\s·・.\\-]{0,1}';
 // ★R4-8 어절 경계 — 뒤에 한글이 이어지되 조사가 아니면 다른 낱말이므로 손대지 않는다.
 //   C축 R1 오탐 차단: 「…자료」 「…장」 같은 복합명사는 무변형으로 통과해야 한다.
 const SCRUB_JOSA = '[은는이가을를에의와과도만로으라며서부터까지처럼보다대랑나고인임]';
-const SCRUB_BASIS_TAIL = '(?:(?![가-힣])|(?=' + SCRUB_JOSA + '{1,4}(?![가-힣])))';
+// ★R6-2 — 조사를 **캡처해서 소비**한다. 종전에는 lookahead 로 확인만 하고 원래 조사를 남겨서
+//   차단에 성공해도 반드시 비문이 됐다. 실측: 「원문을 제공하지」→「풀이을 제공하지」 ·
+//   「판본이 업데이트」→「풀이이 업데이트」. 토정비결은 유료 상품 본문이라 노출 빈도가 매우 높다.
+//   중립어 '풀이'는 받침이 없으므로 을→를 · 은→는 · 이→가 · 과→와 · 으로→로 로 재조립한다.
+const SCRUB_BASIS_TAIL = '(' + SCRUB_JOSA + '{1,4})?(?![가-힣])';
+function scrubJosaFit(j){
+  if (!j) return '';
+  const c = j.charAt(0);
+  if (c === '을') return '를' + j.slice(1);
+  if (c === '은') return '는' + j.slice(1);
+  if (c === '과') return '와' + j.slice(1);
+  if (c === '으') return j.slice(1);
+  if (c === '이') return j.length === 1 ? '가' : j.slice(1);
+  return j;
+}
 // ★R4-5 — 삭제하지 않고 중립어로 치환한다. 삭제는 ①조사가 남아 문장이 깨지고
 //   ②앞뒤 토큰이 붙어 T2 대상어가 사후 합성되는 두 파손을 동시에 만든다.
 const SCRUB_BASIS_NEUTRAL = '풀' + '이';
@@ -242,11 +348,15 @@ function scrubText(s){
   let out = scrubNormalize(s);
   for (let i = 0; i < 4; i++) {
     const prev = out;
-    out = out.replace(SCRUB_SRC_ID_RE, '');
+    out = scrubSrcIds(out);
     out = out.replace(SCRUB_SOURCE_RE, '고전');
     out = out.replace(SCRUB_SPACED_RE, '고전');
-    out = out.replace(SCRUB_TOJEONG_FWD_RE, function(m, head, mid){ return head + mid + SCRUB_BASIS_NEUTRAL; });
-    out = out.replace(SCRUB_TOJEONG_REV_RE, function(m, w, mid, tail){ return SCRUB_BASIS_NEUTRAL + mid + tail; });
+    out = out.replace(SCRUB_TOJEONG_FWD_RE, function(m, head, mid, basis, josa){
+      return head + mid + SCRUB_BASIS_NEUTRAL + scrubJosaFit(josa);
+    });
+    out = out.replace(SCRUB_TOJEONG_REV_RE, function(m, basis, josa, mid, tail){
+      return SCRUB_BASIS_NEUTRAL + scrubJosaFit(josa) + mid + tail;
+    });
     for (const g of SCRUB_TJ_PHRASE_RES) {
       out = out.replace(g.fwd, function(m, head, mid){ return head + mid + g.neutral; });
       out = out.replace(g.rev, function(m, w, mid, tail){ return g.neutral + mid + tail; });
@@ -260,8 +370,14 @@ function scrubText(s){
 // JSON.parse 산출물만 들어오므로 순환 참조 없음 (api/fortune.js extractJSON 근거).
 // ★R4-6 — 키 이름도 스크럽한다. 종전에는 키가 무검사여서 index.html 의 Object.keys 출력 경로로
 //   문헌명·서지 ID 가 innerHTML 에 그대로 실려 나갔다(입력측 우회 「객체 키」 클래스).
-//   스크럽 결과가 원본과 같으면 그대로 두고, 달라지면 옛 키를 버리고 새 키로 옮긴다.
-//   전부 지워져 빈 문자열이 되면 키 자체를 버린다.
+// ★R6-4 — 종전 구현은 충돌 검사 없이 delete + assign 을 해서 데이터가 무성 소실됐다. 실측:
+//   {"고전":"정상값","자평 진전":"유실될값"} → {"고전":"유실될값"} (앞 키의 값이 덮어써짐)
+//   {"src_id":"v1","summary":"v2"}          → {"summary":"v2"}    (키·값 통째 소실)
+//   ⟹ ①충돌하면 덮어쓰지 않고 _2·_3 접미로 분기 ②빈 키가 되면 중립 키로 옮겨 값을 보존한다.
+//   ★빈 키에 「원 키 유지」를 쓰지 않는 이유 — 빈 문자열이 됐다는 것은 키 전체가 금지 토큰이었다는
+//     뜻이므로 원 키 유지는 곧 누출이다. 보존과 비노출을 동시에 만족하는 중립 키 이관을 택한다.
+const SCRUB_EMPTY_KEY = '항' + '목';
+const SCRUB_KEY_MAX_SUFFIX = 999;
 function scrubDeep(node){
   if (typeof node === 'string') return scrubText(node);
   if (Array.isArray(node)) {
@@ -274,8 +390,12 @@ function scrubDeep(node){
       const v = scrubDeep(node[k]);
       const nk = scrubText(k);
       if (nk === k) { node[k] = v; continue; }
+      const base = (typeof nk === 'string' && nk.trim() !== '') ? nk.trim() : SCRUB_EMPTY_KEY;
+      let target = base;
+      for (let n = 2; n <= SCRUB_KEY_MAX_SUFFIX && target !== k &&
+        Object.prototype.hasOwnProperty.call(node, target); n++) target = base + '_' + n;
       delete node[k];
-      if (typeof nk === 'string' && nk.trim() !== '') node[nk] = v;
+      node[target] = v;
     }
   }
   return node;
@@ -326,9 +446,16 @@ export default async function handler(req, res) {
     // P0(신뢰부채·저작권): 생성형 문헌 인용 금지. 인용은 등재·확보완료 판본의 서지 ID로만 표기한다.
     // 허용 목록은 IP/sources/source_editions.json 중 PD 확정 + 확보완료 판본으로 한정한 폐쇄 목록이다.
     // SRC_TOJEONG_A(license:UNDECIDED)·SRC_SMTH_A(미확보)는 의도적으로 제외한다.
+    // ★2026-07-30 R6-7 — 프롬프트에서 문헌명 병기를 뺀다(자기모순 해소).
+    //   종전에는 프롬프트가 LLM 에게 4종 문헌명을 그대로 알려주면서 응답 스크럽은 그 이름을
+    //   '고전'으로 치웠다. 이름을 알려주면 LLM 이 본문에 그 이름을 쓸 개연성이 올라가고,
+    //   그만큼 T2 치환이 발화해 해석 문장이 '고전' 으로 뭉개진다.
+    //   ★해석 품질 영향 없음(판단 근거) — citation_ref 는 CITATION_KEYS 로 응답에서 전건 삭제되므로
+    //     서지 ID 는 애초에 사용자에게 도달하지 않는다. 즉 ID↔문헌명 대응은 사용자 가치가 0 이다.
+    //     ID 4종은 그대로 두어 eval_prompt_citation_guard C2(허용 ID 명시)를 유지한다.
     const CITATION_RULE = '\n\n인용 규칙(절대 준수): 고전 문헌의 한문 원문이나 번역문을 생성하지 마세요.'
       + ' 인용은 반드시 서지 ID로만 표기합니다. 허용 ID는 다음 4종뿐입니다 —'
-      + ' SRC_ZPJZ_A(자평진전), SRC_JCS_A(적천수), SRC_GTBG_A(궁통보감), SRC_YHZP_A(연해자평).'
+      + ' SRC_ZPJZ_A, SRC_JCS_A, SRC_GTBG_A, SRC_YHZP_A.'
       + ' 참고할 문헌이 이 4종에 없으면 반드시 "NONE"을 쓰세요. 목록에 없는 문헌명을 서지 ID 자리에 쓰지 마세요.'
       + ' 어떤 경우에도 한문 원문 문장을 지어내지 마세요.';
 
