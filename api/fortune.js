@@ -1,5 +1,8 @@
 // Vercel Serverless Function — LLM 운세 해석 API
 // 환경 변수: ANTHROPIC_API_KEY (Vercel 대시보드 → Settings → Environment Variables)
+//            CW_PREMIUM_HMAC_SECRET (v7.66 P1-AUTH 안 B — 프리미엄 서명 토큰 검증 키)
+
+import { createHmac, timingSafeEqual } from 'crypto';
 
 // JSON 추출 헬퍼: 마크다운 코드블록, 순수 JSON 모두 처리
 function extractJSON(text) {
@@ -540,34 +543,153 @@ function scrubDeep(node){
   return node;
 }
 
-export default async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+// ============================================================================
+//  v7.66 P1-AUTH 안 B — 프리미엄 HMAC 서명 토큰 검증
+// ============================================================================
+// ★배경 — v7.65 까지 이 엔드포인트는 무인증이었다. curl 한 번으로
+//   {"type":"naming_premium_1","context":{}} 를 보내면 HTTP 200 · LLM 도달 ·
+//   max_tokens 7000 이 나갔다. 유일한 관문 `!features && !context` 는 {} 가 truthy 라
+//   전혀 작동하지 않았다.
+// ★설계 — 결제 승인(api/confirm-payment.js)이 HMAC 서명 토큰을 발급하고, 여기서는
+//   그 서명만 검증한다. ★호출당 외부 왕복 0 · 신규 인프라 0(env 1개뿐).
+// ★잔여 위험(문서화 필수) — 토큰 리플레이와 토큰 공유는 이 설계로 막지 못한다.
+//   서버에 원장이 없으므로 「유효 서명 = 통과」이며, 한 번 발급된 토큰을 여러 기기가
+//   동시에 쓰는 것을 구별할 수 없다. 막으려면 KV 원장(안 C)이 필요하다.
 
-  // GET = 헬스 체크 + API 키 테스트
+// ★★함정 방지 — naming · naming_company · naming_product 는 무료 type 이름이면서
+//   동시에 유료 productKey 이름이다. startsWith('naming') 류 접두어 매칭으로 짜면
+//   무료 작명이 통째로 막히는 회귀가 난다. 반드시 아래 명시 화이트리스트만 쓴다.
+//   ★이 맵에 없는 type = 무료 = 토큰 불필요. 맵에 있는 type = 유료 = 토큰 필수.
+const PREMIUM_TYPE_TO_PRODUCT = {
+  saju_premium_1: 'saju',                     saju_premium_2: 'saju',
+  compat_premium_1: 'compat',                 compat_premium_2: 'compat',
+  tojeong_premium_1: 'tojeong',               tojeong_premium_2: 'tojeong',
+  dream_premium_1: 'dream',                   dream_premium_2: 'dream',
+  face_premium_1: 'face',                     face_premium_2: 'face',
+  tarot_premium_1: 'tarot',                   tarot_premium_2: 'tarot',
+  naming_premium_1: 'naming',                 naming_premium_2: 'naming',
+  naming_company_premium_1: 'naming_company', naming_company_premium_2: 'naming_company',
+  naming_product_premium_1: 'naming_product'
+};
+// 무료 type 12종. ★프리미엄 17 + 무료 12 = 29 = 이 파일이 처리하는 전체 type.
+const FREE_TYPES = ['saju', 'compat', 'tojeong', 'dream', 'face', 'tarot',
+  'naming', 'naming_company', 'naming_product', 'naming_pet', 'naming_nickname', 'daily_message'];
+
+const CW_TOKEN_PREFIX = 'cwp1';
+const CW_TOKEN_MAX_LEN = 2048;
+const CW_CLOCK_SKEW_MS = 5 * 60 * 1000;     // 발급시각 미래 오차 허용치
+
+function b64uDecode(s) {
+  const t = String(s).replace(/-/g, '+').replace(/_/g, '/');
+  return Buffer.from(t + '='.repeat((4 - (t.length % 4)) % 4), 'base64');
+}
+function b64uEncode(buf) {
+  return Buffer.from(buf).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function hmacB64u(payloadB64, secret) {
+  return b64uEncode(createHmac('sha256', secret).update(payloadB64).digest());
+}
+// 길이가 달라도 예외를 던지지 않는 상수시간 비교
+function safeEqualStr(a, b) {
+  const ba = Buffer.from(String(a), 'utf8');
+  const bb = Buffer.from(String(b), 'utf8');
+  if (ba.length !== bb.length) { try { timingSafeEqual(ba, ba); } catch (e) {} return false; }
+  try { return timingSafeEqual(ba, bb); } catch (e) { return false; }
+}
+
+// 반환: { ok:true, payload } | { ok:false, code, status }
+function verifyPremiumToken(token, requiredProductKey) {
+  const secret = process.env.CW_PREMIUM_HMAC_SECRET;
+  // ★fail-closed — 시크릿이 없으면 프리미엄은 전건 거부한다. 무료 경로는 영향 없다.
+  if (!secret || String(secret).length < 16) {
+    return { ok: false, code: 'AUTH_NOT_CONFIGURED', status: 503 };
+  }
+  if (typeof token !== 'string' || token.length === 0 || token.length > CW_TOKEN_MAX_LEN) {
+    return { ok: false, code: 'TOKEN_MISSING', status: 402 };
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3 || parts[0] !== CW_TOKEN_PREFIX || !parts[1] || !parts[2]) {
+    return { ok: false, code: 'TOKEN_MALFORMED', status: 403 };
+  }
+  if (!safeEqualStr(hmacB64u(parts[1], secret), parts[2])) {
+    return { ok: false, code: 'TOKEN_BAD_SIGNATURE', status: 403 };
+  }
+  let payload;
+  try { payload = JSON.parse(b64uDecode(parts[1]).toString('utf8')); }
+  catch (e) { return { ok: false, code: 'TOKEN_BAD_PAYLOAD', status: 403 }; }
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { ok: false, code: 'TOKEN_BAD_PAYLOAD', status: 403 };
+  }
+  if (payload.v !== 1) return { ok: false, code: 'TOKEN_VERSION', status: 403 };
+  const now = Date.now();
+  if (typeof payload.exp !== 'number' || payload.exp <= now) {
+    return { ok: false, code: 'TOKEN_EXPIRED', status: 403 };
+  }
+  if (typeof payload.iat !== 'number' || payload.iat > now + CW_CLOCK_SKEW_MS) {
+    return { ok: false, code: 'TOKEN_BAD_IAT', status: 403 };
+  }
+  // 상품 결속 — ₩4,900 토큰으로 ₩29,900 상품을 열 수 없다.
+  if (typeof payload.pk !== 'string' || payload.pk !== requiredProductKey) {
+    return { ok: false, code: 'TOKEN_PRODUCT_MISMATCH', status: 403 };
+  }
+  return { ok: true, payload };
+}
+
+// ---- CORS — 자기 오리진(+ 선택적 명시 허용 목록)만 반영. '*' 폐기 ------------
+// ★CORS 는 브라우저측 방어일 뿐 curl 을 막지 못한다. 실제 관문은 위 토큰 검증이다.
+function resolveAllowedOrigin(req) {
+  const origin = req.headers && req.headers.origin;
+  if (!origin) return null;                       // 동일출처 요청 — 헤더 자체가 불필요
+  let u;
+  try { u = new URL(origin); } catch (e) { return null; }
+  const host = (req.headers && req.headers.host) || '';
+  if (host && u.host === host) return origin;     // 자기 오리진
+  const extra = String(process.env.CW_ALLOWED_ORIGINS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (extra.indexOf(origin) !== -1) return origin;
+  return null;
+}
+function applyCors(req, res) {
+  const allowed = resolveAllowedOrigin(req);
+  res.setHeader('Vary', 'Origin');
+  if (allowed) {
+    res.setHeader('Access-Control-Allow-Origin', allowed);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-cw-premium-token');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+  return allowed;
+}
+
+// ---- 요청 본문 게이트 ---------------------------------------------------------
+function isPlainObject(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+// ★기존 `!features && !context` 는 {} 가 truthy 라 무력했다. 실제 내용 유무를 본다.
+function hasContent(v) {
+  return isPlainObject(v) && Object.keys(v).length > 0;
+}
+const CW_MAX_PAYLOAD_CHARS = 120000;
+
+export default async function handler(req, res) {
+  const allowedOrigin = applyCors(req, res);
+
+  if (req.method === 'OPTIONS') {
+    if (!allowedOrigin) return res.status(403).end();
+    return res.status(204).end();
+  }
+
+  // GET = 헬스 체크. ★v7.66 P1-AUTH — ?test=1 의 Anthropic 실호출 경로 제거(무인증
+  //   상태로 상류 API 를 때리는 경로였다) · keyPreview 제거(API 키 말미 4자 노출).
   if (req.method === 'GET') {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    const hasKey = !!apiKey;
-    const keyPreview = apiKey ? apiKey.substring(0, 12) + '...' + apiKey.slice(-4) : 'none';
-    // ?test=1 파라미터로 실제 API 호출 테스트
-    const url = new URL(req.url, `https://${req.headers.host}`);
-    if (url.searchParams.get('test') === '1' && apiKey) {
-      try {
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 10, messages: [{ role: 'user', content: 'say ok' }] })
-        });
-        // P1-R2: 응답 본문(response 필드) 미노출. status·httpStatus·keyPreview 만으로 진단 유지
-        return res.status(200).json({ status: resp.ok ? 'API_OK' : 'API_FAIL', httpStatus: resp.status, keyPreview });
-      } catch (e) {
-        return res.status(200).json({ status: 'API_ERROR', keyPreview, error: scrubText(String(e.message || '')) });
-      }
-    }
-    return res.status(200).json({ status: 'ok', runtime: 'serverless', hasApiKey: hasKey, keyPreview, timestamp: new Date().toISOString() });
+    return res.status(200).json({
+      status: 'ok',
+      runtime: 'serverless',
+      hasApiKey: !!process.env.ANTHROPIC_API_KEY,
+      premiumAuth: (process.env.CW_PREMIUM_HMAC_SECRET || '').length >= 16 ? 'configured' : 'missing',
+      timestamp: new Date().toISOString()
+    });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -575,8 +697,51 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
   try {
-    const { type, features, context } = req.body;
-    if (!type || (!features && !context)) return res.status(400).json({ error: 'Missing type, features, or context' });
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = null; } }
+    if (!isPlainObject(body)) return res.status(400).json({ error: 'Invalid body' });
+    const { type, features, context } = body;
+
+    // ① type 화이트리스트 — 미등재 type 은 프롬프트 분기 전에 잘라낸다.
+    if (typeof type !== 'string' ||
+      (!Object.prototype.hasOwnProperty.call(PREMIUM_TYPE_TO_PRODUCT, type) &&
+        FREE_TYPES.indexOf(type) === -1)) {
+      return res.status(400).json({ error: 'Invalid type' });
+    }
+    // ② 페이로드 형상 — 객체가 아니면 거부(배열·문자열·null 차단)
+    if (features !== undefined && !isPlainObject(features)) {
+      return res.status(400).json({ error: 'Invalid features' });
+    }
+    if (context !== undefined && !isPlainObject(context)) {
+      return res.status(400).json({ error: 'Invalid context' });
+    }
+    // ③ ★실제 내용 유무 — {} 통과 구멍을 여기서 막는다.
+    if (!hasContent(features) && !hasContent(context)) {
+      return res.status(400).json({ error: 'Missing type, features, or context' });
+    }
+    // ④ 크기 상한 — 프롬프트 비용 폭주 차단
+    let payloadChars = 0;
+    try { payloadChars = JSON.stringify({ features, context }).length; } catch (e) { payloadChars = Infinity; }
+    if (!(payloadChars <= CW_MAX_PAYLOAD_CHARS)) {
+      return res.status(413).json({ error: 'Payload too large' });
+    }
+
+    // ⑤ ★프리미엄 게이트 — 화이트리스트 등재 type 만 토큰을 요구한다.
+    //    무료 naming·naming_company·naming_product 는 이 분기에 들어오지 않는다.
+    const requiredProductKey = PREMIUM_TYPE_TO_PRODUCT[type];
+    if (requiredProductKey) {
+      const hdr = req.headers || {};
+      const token = hdr['x-cw-premium-token'] || hdr['X-CW-Premium-Token'] ||
+        (typeof body.premiumToken === 'string' ? body.premiumToken : '');
+      const v = verifyPremiumToken(token, requiredProductKey);
+      if (!v.ok) {
+        return res.status(v.status).json({
+          error: 'PREMIUM_AUTH_REQUIRED',
+          code: v.code,
+          message: '프리미엄 이용 권한을 확인하지 못했습니다. 결제 후 다시 시도해주세요.'
+        });
+      }
+    }
 
     let systemPrompt, userPrompt;
     // 모든 프롬프트 끝에 추가할 JSON 강제 지시

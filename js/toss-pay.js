@@ -47,14 +47,132 @@ const _UNLOCK_FN_MAP = {
 };
 
 // ============================================================
+//  v7.66 P1-AUTH 안 B — 프리미엄 서명 토큰 보관·전송
+// ============================================================
+// ★서버(api/fortune.js)는 프리미엄 type 요청에 HMAC 서명 토큰을 요구한다.
+//   토큰은 /api/confirm-payment 가 Toss 검증에 성공했을 때만 발급된다.
+//   localStorage 의 cw_entitlements 는 UI 표시용일 뿐 더 이상 서버 관문이 아니다.
+// ★함정 주의 — naming·naming_company·naming_product 는 무료 type 이름이기도 하다.
+//   아래 맵은 명시 화이트리스트이며 접두어 매칭을 절대 쓰지 않는다.
+//   맵에 없는 type(무료 작명 포함)은 헤더를 붙이지 않고 그대로 나간다.
+const CW_PREMIUM_TOKEN_STORE = 'cw_premium_tokens';
+const CW_PREMIUM_TYPE_TO_PRODUCT = {
+  saju_premium_1: 'saju',                     saju_premium_2: 'saju',
+  compat_premium_1: 'compat',                 compat_premium_2: 'compat',
+  tojeong_premium_1: 'tojeong',               tojeong_premium_2: 'tojeong',
+  dream_premium_1: 'dream',                   dream_premium_2: 'dream',
+  face_premium_1: 'face',                     face_premium_2: 'face',
+  tarot_premium_1: 'tarot',                   tarot_premium_2: 'tarot',
+  naming_premium_1: 'naming',                 naming_premium_2: 'naming',
+  naming_company_premium_1: 'naming_company', naming_company_premium_2: 'naming_company',
+  naming_product_premium_1: 'naming_product'
+};
+
+function _cwReadTokenStore(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(CW_PREMIUM_TOKEN_STORE) || '{}');
+    return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+  } catch(e){ return {}; }
+}
+function _cwSavePremiumToken(productKey, token, exp){
+  if(!productKey || typeof token !== 'string' || !token) return;
+  try {
+    const store = _cwReadTokenStore();
+    store[productKey] = { t: token, exp: (typeof exp === 'number' ? exp : 0) };
+    localStorage.setItem(CW_PREMIUM_TOKEN_STORE, JSON.stringify(store));
+  } catch(e){}
+}
+// 만료된 토큰은 반환하지 않는다(서버도 어차피 거부한다).
+function cwGetPremiumToken(productKey){
+  if(!productKey) return '';
+  const e = _cwReadTokenStore()[productKey];
+  if(!e || typeof e.t !== 'string' || !e.t) return '';
+  if(typeof e.exp === 'number' && e.exp > 0 && Date.now() >= e.exp) return '';
+  return e.t;
+}
+
+// ---- fetch 패치: 프리미엄 요청에만 토큰 헤더를 붙인다 -------------------------
+// ★index.html 19곳 · js/tarot.js 2곳 등 호출부가 흩어져 있어 한 곳에서 가로챈다.
+//   무료 요청은 손대지 않으므로 무료 경로 회귀가 발생할 수 없다.
+(function(){
+  if(typeof window === 'undefined' || !window.fetch || window.__cwFetchPatched) return;
+  window.__cwFetchPatched = true;
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    try {
+      const url = (typeof input === 'string') ? input : ((input && input.url) || '');
+      if(url.indexOf('/api/fortune') !== -1 && init && typeof init.body === 'string'){
+        const parsed = JSON.parse(init.body);
+        const pk = parsed && CW_PREMIUM_TYPE_TO_PRODUCT[parsed.type];
+        if(pk){
+          const tok = cwGetPremiumToken(pk);
+          if(tok){
+            const h = Object.assign({}, init.headers || {});
+            h['x-cw-premium-token'] = tok;
+            init = Object.assign({}, init, { headers: h });
+          }
+        }
+      }
+    } catch(e){ /* 파싱 실패 시 원본 그대로 통과 — 무료 경로 보호 */ }
+    return _origFetch(input, init);
+  };
+})();
+
+// ---- 구 결제자 부트스트랩 ---------------------------------------------------
+// ★v7.66 이전 결제자는 cw_receipts 에 paymentKey·orderId 는 있으나 토큰이 없다.
+//   서버에 원장이 없으므로 서버가 「진짜 영수증」을 스스로 판별할 수 없다.
+//   따라서 Toss 에 1회 재조회를 시켜 검증받고 토큰을 받아 온다(결제당 1회, 이후 0회).
+//   ★Toss 조회가 실패하면 토큰은 나오지 않는다(fail-closed).
+let _cwBootstrapRan = false;
+async function cwBootstrapLegacyReceipts(){
+  if(_cwBootstrapRan) return;
+  _cwBootstrapRan = true;
+  let receipts = [];
+  try { receipts = JSON.parse(localStorage.getItem('cw_receipts') || '[]') || []; } catch(e){ return; }
+  if(!Array.isArray(receipts) || receipts.length === 0) return;
+  const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+  const seen = {};
+  for(const r of receipts){
+    if(!r || typeof r.productKey !== 'string' || !r.productKey) continue;
+    if(typeof r.paymentKey !== 'string' || !r.paymentKey) continue;
+    if(typeof r.orderId !== 'string' || !r.orderId) continue;
+    if(typeof r.amount !== 'number') continue;
+    if(seen[r.productKey]) continue;                      // 상품당 1건이면 충분
+    let t = Date.parse(r.approvedAt || '');
+    if(!isNaN(t) && (Date.now() - t) >= WINDOW_MS) continue;   // 30일 지난 영수증은 제외
+    if(cwGetPremiumToken(r.productKey)) { seen[r.productKey] = true; continue; }
+    seen[r.productKey] = true;
+    try {
+      const resp = await fetch('/api/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'bootstrap',
+          paymentKey: r.paymentKey,
+          orderId: r.orderId,
+          amount: r.amount
+        })
+      });
+      const data = await resp.json();
+      if(resp.ok && data && data.success && data.premiumToken){
+        _cwSavePremiumToken(data.productKey || r.productKey, data.premiumToken, data.premiumTokenExp);
+      }
+    } catch(e){ /* fail-closed — 토큰 없이 진행. 프리미엄은 서버가 거부한다. */ }
+  }
+}
+
+// ============================================================
 //  헬퍼
 // ============================================================
 // P0(신뢰부채): 상품별 권한만 신뢰 — 크로스-언락 누수 차단.
 // 상품키 없이 호출되면 결제를 스킵하지 않는다(누수 방지).
+// ★v7.66 P1-AUTH — 로컬 엔티틀먼트만으로 결제를 건너뛰면, 서명 토큰이 없는 상태로
+//   프리미엄 요청이 나가 서버에서 거부당한다(사용자에겐 「결제했는데 안 된다」로 보인다).
+//   그래서 서버가 실제로 인정하는 조건(유효 토큰 보유)까지 함께 만족해야 스킵한다.
 function _isPremiumPaidActive(productKey){
   try {
     if(productKey && typeof window.isPremiumActiveFor === 'function'){
-      return window.isPremiumActiveFor(productKey);
+      return window.isPremiumActiveFor(productKey) && !!cwGetPremiumToken(productKey);
     }
     return false;
   } catch(e) { return false; }
@@ -239,6 +357,12 @@ async function _handleTossSuccessCallback(){
     if(!resp.ok || !data.success){
       throw new Error((data && data.error && data.error.message) || data.error || 'HTTP ' + resp.status);
     }
+    // ★v7.66 P1-AUTH — 서명 토큰이 없으면 프리미엄을 열 수 없다(서버가 거부한다).
+    //   토큰 없는 성공 응답은 서버 설정 사고이므로 조용히 넘기지 않고 실패로 처리한다.
+    if(!data.premiumToken){
+      throw new Error('이용권 발급에 실패했습니다 (서버 설정 확인 필요). 고객센터로 주문번호를 알려주세요');
+    }
+    _cwSavePremiumToken(data.productKey || pending.productKey, data.premiumToken, data.premiumTokenExp);
 
     _saveReceipt({
       productKey: pending.productKey,
@@ -333,9 +457,17 @@ function getReceipts(){
 if(typeof window !== 'undefined'){
   window.payWithToss = payWithToss;
   window.getTossReceipts = getReceipts;
+  // v7.66 P1-AUTH — 토큰 접근자 공개(다른 모듈이 UI 판정에 쓸 수 있게)
+  window.cwGetPremiumToken = cwGetPremiumToken;
+  window.cwBootstrapLegacyReceipts = cwBootstrapLegacyReceipts;
+  const _cwInit = function(){
+    _handleTossSuccessCallback();
+    // 결제 콜백 처리 뒤에 구 영수증 부트스트랩을 돌린다(신규 토큰을 덮어쓰지 않게).
+    setTimeout(function(){ cwBootstrapLegacyReceipts(); }, 1200);
+  };
   if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', _handleTossSuccessCallback);
+    document.addEventListener('DOMContentLoaded', _cwInit);
   } else {
-    setTimeout(_handleTossSuccessCallback, 0);
+    setTimeout(_cwInit, 0);
   }
 }
