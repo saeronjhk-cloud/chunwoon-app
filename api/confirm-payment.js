@@ -42,7 +42,22 @@ function productKeyFromOrderId(orderId) {
 }
 
 const CW_TOKEN_PREFIX = 'cwp1';
-const CW_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;   // 30일 — 프런트 엔티틀먼트 창과 동일
+// ★v7.67 RL L0 — 토큰 TTL 을 선택 env 로 조정 가능하게 한다.
+//   기본값 720시간(30일)은 v7.66 과 **완전히 동일**하다. env 미설정 시 동작 무변화.
+//   TTL 을 줄이면 토큰 1개가 유출됐을 때의 리플레이 창이 그만큼 줄어든다(30일→72시간이면 10배).
+//   ★단, 만료 후에는 bootstrap 재조회로 토큰을 다시 받아야 하며 그 경로는
+//   P1AUTH 구현보고 §6 의 [추정] Toss 조회 엔드포인트에 의존한다.
+//   그 엔드포인트가 실증되기 전에 기본값을 줄이면 30일차에 유료 사용자가 잠긴다.
+//   따라서 기본값 변경은 제이 결정 사항으로 남긴다.
+const CW_TOKEN_TTL_H_DEFAULT = 720;                 // 720h = 30일 (v7.66 과 동일)
+const CW_TOKEN_TTL_H_MIN = 1;
+const CW_TOKEN_TTL_H_MAX = 720;
+function resolveTokenTtlMs() {
+  const raw = parseInt(String(process.env.CW_PREMIUM_TOKEN_TTL_H || ''), 10);
+  const h = (isFinite(raw) && raw >= CW_TOKEN_TTL_H_MIN && raw <= CW_TOKEN_TTL_H_MAX)
+    ? raw : CW_TOKEN_TTL_H_DEFAULT;
+  return h * 60 * 60 * 1000;
+}
 
 function b64uEncode(buf) {
   return Buffer.from(buf).toString('base64')
@@ -68,7 +83,7 @@ function issuePremiumToken(fields) {
     pay: fields.paymentKey,
     amt: fields.amount,
     iat: now,
-    exp: now + CW_TOKEN_TTL_MS,
+    exp: now + resolveTokenTtlMs(),
     src: fields.src || 'confirm'
   };
   const p = b64uEncode(JSON.stringify(payload));

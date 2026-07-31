@@ -1,8 +1,9 @@
 // Vercel Serverless Function — LLM 운세 해석 API
 // 환경 변수: ANTHROPIC_API_KEY (Vercel 대시보드 → Settings → Environment Variables)
 //            CW_PREMIUM_HMAC_SECRET (v7.66 P1-AUTH 안 B — 프리미엄 서명 토큰 검증 키)
+//            [선택] CW_PREMIUM_TOKEN_TTL_H (v7.67 RL L0 — 토큰 TTL 시간. 미설정=720h=30일)
 
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac, createHash, timingSafeEqual } from 'crypto';
 
 // JSON 추출 헬퍼: 마크다운 코드블록, 순수 JSON 모두 처리
 function extractJSON(text) {
@@ -670,7 +671,81 @@ function isPlainObject(v) {
 function hasContent(v) {
   return isPlainObject(v) && Object.keys(v).length > 0;
 }
-const CW_MAX_PAYLOAD_CHARS = 120000;
+// ★v7.67 RL L0 — 요청 페이로드 상한 축소 120,000 → 24,000 자.
+//   근거: 리포 프런트가 실제로 보내는 context/features 는 전 type 최대 3KB 미만이다
+//   (index.html 의 _buildSajuContext·_buildCompatContext·_buildDreamContext·premFeatures,
+//    js/tarot.js 의 ctx 를 실측. 얼굴 랜드마크 468점은 전송하지 않고 ratios 만 보낸다).
+//   24,000 자는 실사용 대비 약 8배 여유이므로 무료·유료 어느 경로도 회귀하지 않는다.
+//   ★이것은 호출 「횟수」를 줄이지 않는다. 호출 「1회당 입력 토큰 비용의 최악값」을 줄인다.
+const CW_MAX_PAYLOAD_CHARS = 24000;
+
+// ★v7.67 RL L0 — 출력 토큰 하드 실링. 아래 type 별 max_tokens 분기가 앞으로
+//   어떻게 바뀌더라도 상류로 나가는 출력 상한이 이 값을 넘지 않는다(성질 고정).
+const CW_HARD_MAX_TOKENS = 7000;
+
+// ★v7.67 RL L0-c — 상품 정가 표. api/confirm-payment.js 의 PRODUCT_CATALOG 와 동일해야 한다.
+const CW_PRODUCT_PRICE = {
+  saju: 4900, compat: 4900, tojeong: 4900, dream: 4900, face: 4900, tarot: 4900,
+  naming: 29900, naming_company: 29900, naming_product: 29900
+};
+
+// ==========================================================================
+//  v7.67 RL L1 — 결제 1건당 호출 상한 (무상태 근사 · best-effort)
+// ==========================================================================
+// ★정직성 고지 — 이 층은 「차단」이 아니라 「완화」다. 아래를 보장하지 못한다.
+//   ① Vercel 서버리스 인스턴스는 수시로 생성·폐기된다. 인스턴스가 바뀌면 카운터는
+//      0 으로 리셋된다. 공격자는 잠깐 쉬었다 오는 것만으로 새 예산을 얻을 수 있다.
+//   ② 동시 요청은 여러 인스턴스로 흩어진다. 각 인스턴스가 독립 한도를 가지므로
+//      병렬도 K 로 공격하면 실효 한도는 대략 K 배가 된다.
+//   ③ 따라서 이 코드가 보장하는 상한은 「인스턴스 1개 · 창 1개 기준」뿐이며
+//      전역 상한이 아니다. 전역 상한은 L2(KV 원장)가 있어야 성립한다.
+//   막는 것: 단일 프로세스에서 순차로 도는 소박한 남용 루프 · 프런트 버그성 폭주.
+//   못 막는 것: 병렬·분산 남용 · 인스턴스 교체를 이용한 우회.
+//
+// ★버킷 키 = paymentKey + productKey (토큰 서명이 아니다).
+//   토큰 서명을 키로 잡으면 bootstrap 재발급 때 iat 가 바뀌어 서명이 달라지고
+//   버킷이 새로 열린다 = 한 줄로 우회된다. paymentKey 는 결제 1건에 고정이므로
+//   「결제 1건당」이라는 성질을 실제로 표현한다.
+const CW_RL_WINDOW_MS = 60 * 60 * 1000;      // 고정창 1시간
+const CW_RL_PER_PAYMENT = 40;                // 결제 1건당 · 창당 · 인스턴스당
+const CW_RL_PER_INSTANCE = 300;              // 인스턴스 전역 프리미엄 호출 · 창당
+const CW_RL_MAX_ENTRIES = 5000;              // 메모리 상한(축출 기준)
+
+const cwRlBuckets = new Map();               // key -> { n, start }
+let cwRlGlobal = { n: 0, start: 0 };
+
+function cwRlKey(payload) {
+  const pay = payload && typeof payload.pay === 'string' ? payload.pay : '';
+  const pk = payload && typeof payload.pk === 'string' ? payload.pk : '';
+  return createHash('sha256').update(pay + '|' + pk).digest('base64').slice(0, 22);
+}
+
+// 반환: { ok:true } | { ok:false, code, retryAfterSec }
+function premiumBudgetCheck(payload, nowArg) {
+  const t = typeof nowArg === 'number' ? nowArg : Date.now();
+  if (t - cwRlGlobal.start >= CW_RL_WINDOW_MS) cwRlGlobal = { n: 0, start: t };
+  if (cwRlGlobal.n >= CW_RL_PER_INSTANCE) {
+    return { ok: false, code: 'RATE_LIMIT_INSTANCE',
+      retryAfterSec: Math.max(1, Math.ceil((cwRlGlobal.start + CW_RL_WINDOW_MS - t) / 1000)) };
+  }
+  const k = cwRlKey(payload);
+  let b = cwRlBuckets.get(k);
+  if (!b || t - b.start >= CW_RL_WINDOW_MS) b = { n: 0, start: t };
+  if (b.n >= CW_RL_PER_PAYMENT) {
+    cwRlBuckets.delete(k); cwRlBuckets.set(k, b);
+    return { ok: false, code: 'RATE_LIMIT_PAYMENT',
+      retryAfterSec: Math.max(1, Math.ceil((b.start + CW_RL_WINDOW_MS - t) / 1000)) };
+  }
+  b.n += 1;
+  cwRlGlobal.n += 1;
+  cwRlBuckets.delete(k); cwRlBuckets.set(k, b);      // 삽입 순서 = LRU 순서
+  while (cwRlBuckets.size > CW_RL_MAX_ENTRIES) {
+    const oldest = cwRlBuckets.keys().next();
+    if (oldest.done) break;
+    cwRlBuckets.delete(oldest.value);
+  }
+  return { ok: true };
+}
 
 export default async function handler(req, res) {
   const allowedOrigin = applyCors(req, res);
@@ -743,6 +818,28 @@ export default async function handler(req, res) {
           error: 'PREMIUM_AUTH_REQUIRED',
           code: v.code,
           message: '프리미엄 이용 권한을 확인하지 못했습니다. 결제 후 다시 시도해주세요.'
+        });
+      }
+      // ★v7.67 RL L0-c — 토큰 금액 ↔ 상품 정가 결속(2차 방어선).
+      //   pk 결속만으로 상품 교차 언락은 이미 막히지만, 금액 필드가 조작된 토큰이
+      //   존재할 수 있는 상황(시크릿 유출·발급 로직 회귀)에서 한 겹 더 잡는다.
+      const cwExpectAmt = CW_PRODUCT_PRICE[requiredProductKey];
+      if (typeof v.payload.amt !== 'number' || v.payload.amt !== cwExpectAmt) {
+        return res.status(403).json({
+          error: 'PREMIUM_AUTH_REQUIRED',
+          code: 'TOKEN_AMOUNT_MISMATCH',
+          message: '프리미엄 이용 권한을 확인하지 못했습니다. 결제 후 다시 시도해주세요.'
+        });
+      }
+      // ★v7.67 RL L1 — 결제 1건당 호출 상한(인스턴스 국소 · best-effort).
+      //   ★무료 type 은 이 분기 자체에 들어오지 않으므로 무료 경로 회귀가 원리적으로 없다.
+      const cwRl = premiumBudgetCheck(v.payload);
+      if (!cwRl.ok) {
+        res.setHeader('Retry-After', String(cwRl.retryAfterSec));
+        return res.status(429).json({
+          error: 'RATE_LIMITED',
+          code: cwRl.code,
+          message: '이용 한도에 도달했습니다. 잠시 후 다시 시도해주세요.'
         });
       }
     }
@@ -1513,6 +1610,11 @@ ${cardsDesc}
     else if (type === 'tarot_premium_1') maxTokens = 4000;
     else if (type === 'tarot_premium_2') maxTokens = 4000;
     else if (type === 'daily_message') maxTokens = 400;
+
+    // ★v7.67 RL L0 — 출력 토큰 하드 실링(성질 고정). 위 분기가 어떻게 바뀌어도
+    //   상류로 나가는 max_tokens 는 CW_HARD_MAX_TOKENS 를 넘지 않는다.
+    if (!(maxTokens > 0)) maxTokens = 1500;
+    if (maxTokens > CW_HARD_MAX_TOKENS) maxTokens = CW_HARD_MAX_TOKENS;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
