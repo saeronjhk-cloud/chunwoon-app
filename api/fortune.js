@@ -682,12 +682,16 @@ export default async function handler(req, res) {
 
   // GET = 헬스 체크. ★v7.66 P1-AUTH — ?test=1 의 Anthropic 실호출 경로 제거(무인증
   //   상태로 상류 API 를 때리는 경로였다) · keyPreview 제거(API 키 말미 4자 노출).
+  // ★v7.66 R11-FIX — premiumAuth 필드 제거.
+  //   시크릿 설정 여부를 **무인증 GET** 으로 외부에 알리는 것은 정보 노출이다.
+  //   ("missing" 을 본 공격자는 프리미엄이 전건 503 이라는 사실 · 즉 배포 사고 창을 알게 된다.)
+  //   설정 여부는 배포자가 Vercel 대시보드에서 확인할 사항이며, 미설정이면 프리미엄 요청이
+  //   503 AUTH_NOT_CONFIGURED 로 즉시 드러난다(진단 능력 손실 없음).
   if (req.method === 'GET') {
     return res.status(200).json({
       status: 'ok',
       runtime: 'serverless',
       hasApiKey: !!process.env.ANTHROPIC_API_KEY,
-      premiumAuth: (process.env.CW_PREMIUM_HMAC_SECRET || '').length >= 16 ? 'configured' : 'missing',
       timestamp: new Date().toISOString()
     });
   }
