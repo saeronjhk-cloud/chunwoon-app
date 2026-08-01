@@ -524,6 +524,37 @@ const SCRUB_TOJEONG_REV_RE = new RegExp(
 // ★R4-4 — 계층을 고정점까지 반복한다. T1 삭제가 T2 대상어를 사후 합성하는 경로
 //   (예: 앞토큰 + SRC_XXX + 뒤토큰 → 삭제 후 붙어버림)를 이 반복이 잡는다. 상한 4회.
 // ★R4-8 — 말미 이중공백 정리(T1 삭제 자리에 남는 두 칸 공백. C축 R5).
+// ★2026-08-01 v7.68 — 중립어 **연쇄 축약**. (인수인계 v7.67 §23-3 · 프로덕션 실측 결함)
+//   【실측된 문제】 스크럽은 성공했으나 사용자가 실제로 보는 문장이 비문이었다.
+//     T2 축: "고전과 고전의 원리에 따라 …"   "고전·고전·고전의 이론에 기반해 …"
+//     T3 축: 상품명 + 출전어휘 2개가 붙은 문장 -> "… 풀이 풀이를 인용"  ← 같은 결함이 여기도 있었다
+//       (재현 입력은 게이트 W6 이 IP 목록에서 파생해 매 실행 생성한다 — 여기 적지 않는다)
+//     서로 다른 문헌명·출전어휘가 각각 같은 중립어로 치환되면서 낱말이 연달아 남은 것이다.
+//   ★게이트는 「문헌명이 안 나오는가」만 검사하고 「문장이 자연스러운가」는 검사하지 않는다.
+//     그래서 response_scrub 67/67 인 채로 이 비문이 유료 상품 본문에 그대로 나갔다(결정 67).
+//   【수리 성질】 **스크럽 결과에만** 작용한다 — 치환은 그대로 전건 수행하고, 그 산출물에서
+//     인접 중복만 접는다. 차단력은 1비트도 줄지 않는다(게이트 W5-1·W5-2 가 이를 검사한다).
+//   ★뒤따르는 중립어가 조사·비한글로 이어질 때만 접는다 — 「고전문학」 같은 복합어는 손대지 않는다.
+const SCRUB_DUP_CONN = '(?:\\s*(?:그리고|하고|또는|이나|및|와|과|랑|·|\u3395|\u30FB|\u3001|,|/)\\s*|\\s+)';
+const SCRUB_DUP_JOSA_AFTER = '(?:[은는이가을를의에와과도만로야며서]|[^\uAC00-\uD7A3]|$)';
+const SCRUB_DUP_NEUTRALS = [SCRUB_T2_NEUTRAL, SCRUB_BASIS_NEUTRAL];
+const SCRUB_DUP_RES = SCRUB_DUP_NEUTRALS.map(function(w){
+  return { w: w, re: new RegExp('(?:' + w + SCRUB_DUP_CONN + ')+(?=' + w + SCRUB_DUP_JOSA_AFTER + ')', 'g') };
+});
+function scrubNeutralDedup(t){
+  if (typeof t !== 'string') return t;
+  let out = t;
+  for (const g of SCRUB_DUP_RES) {
+    if (out.indexOf(g.w) === -1) continue;
+    for (let i = 0; i < 4; i++) {
+      const prev = out;
+      out = out.replace(g.re, '');
+      if (out === prev) break;
+    }
+  }
+  return out;
+}
+
 function scrubText(s){
   if (typeof s !== 'string') return s;
   let out = scrubNormalize(s);
@@ -547,6 +578,8 @@ function scrubText(s){
     }
     if (out === prev) break;
   }
+  // ★v7.68 — 치환이 전건 끝난 뒤에만 접는다. 치환 루프 안에서 접으면 다음 회차 매칭 대상이 바뀐다.
+  out = scrubNeutralDedup(out);
   return out;
 }
 
@@ -930,7 +963,13 @@ export default async function handler(req, res) {
       + ' 인용은 반드시 서지 ID로만 표기합니다. 허용 ID는 다음 4종뿐입니다 —'
       + ' SRC_ZPJZ_A, SRC_JCS_A, SRC_GTBG_A, SRC_YHZP_A.'
       + ' 참고할 문헌이 이 4종에 없으면 반드시 "NONE"을 쓰세요. 목록에 없는 문헌명을 서지 ID 자리에 쓰지 마세요.'
-      + ' 어떤 경우에도 한문 원문 문장을 지어내지 마세요.';
+      + ' 어떤 경우에도 한문 원문 문장을 지어내지 마세요.'
+      // ★v7.68 — 생성 시점 차단. 종전 규칙은 「원문·번역문 생성」만 금지했고 **문헌명 언급**은
+      //   막지 않아, LLM 이 자기 지식으로 서명을 나열했다. 그것이 전부 중립어로 치환되면서
+      //   「고전·고전·고전의 이론에 기반해」 같은 비문이 유료 본문에 나갔다(§23-3 실측).
+      //   ★후처리 축약(scrubT2Dedup)은 증상 완화이고, 이 한 줄이 근본이다 — 둘 다 둔다.
+      + ' 해석 본문에는 고전 문헌의 제목·서명을 적지 마세요.'
+      + ' 근거를 밝힐 때는 "전통 명리 이론에 따르면" 처럼 일반적인 표현을 쓰세요.';
 
     if (type === 'face') {
       systemPrompt = `당신은 전통 관상학(觀相學) 해석을 돕는 AI 어시스턴트입니다. 전통 관상학의 일반적 관점을 참고합니다.
