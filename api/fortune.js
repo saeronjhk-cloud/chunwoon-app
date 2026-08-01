@@ -1690,7 +1690,25 @@ ${cardsDesc}
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    // ★v7.67 — content 배열에서 type==='text' 블록만 골라 결합한다.
+    //   종전 `data.content?.[0]?.text` 는 «첫 블록이 항상 text» 를 가정했는데, 상류가
+    //   추론 블록(thinking)을 앞세우면 [0].text 가 undefined 가 되어 빈 문자열이 되고
+    //   extractJSON 이 전건 실패해 [PARSE_FAILED] 로 떨어진다. 실측에서 단순 요청
+    //   (daily_message)만 성공하고 사주·작명·토정비결이 전건 실패한 양상과 일치한다.
+    //   ★블록 타입과 무관하게 text 만 취하므로 상류가 어떤 조합을 보내도 안전하다.
+    let text = '';
+    if (Array.isArray(data && data.content)) {
+      for (const b of data.content) {
+        if (b && b.type === 'text' && typeof b.text === 'string') text += b.text;
+      }
+    }
+    if (text === '' && data && data.content && data.content[0] && typeof data.content[0].text === 'string') {
+      text = data.content[0].text;   // 하위호환 — 구 형식(type 미표기) 대비
+    }
+    // ★응답 형상 관측(원인 확정용). 대입 우변이 전부 리터럴이라 오염이 전파되지 않는다.
+    let cwShape = 'none';
+    if (Array.isArray(data && data.content) && data.content.length === 1) cwShape = 'single';
+    if (Array.isArray(data && data.content) && data.content.length > 1) cwShape = 'multi';
     // ★v7.67 — 출력 잘림 관측. 잘리면 extractJSON 3단 폴백이 전부 실패해 [PARSE_FAILED] 가
     //   되는데, v7.66 까지는 그것을 200 으로 조용히 삼켜 사용자가 빈 화면을 봤다.
     //   ★상류 값을 출구로 흘리지 않는다 — 대입 우변이 전부 리터럴이므로 오염이 전파되지 않고,
@@ -1710,7 +1728,7 @@ ${cardsDesc}
     } else {
       // P1-R4: 파싱 실패 시 LLM 원문 미노출. raw 키는 유지하되 센티넬로 대체
       // 프런트 가드 18곳이 if(d.result.raw && ...) truthy 판정에 의존하므로 키 삭제·빈문자열·null 금지
-      return res.status(200).json({ success: true, result: { raw: '[PARSE_FAILED]' }, truncated: cwTruncFlag });
+      return res.status(200).json({ success: true, result: { raw: '[PARSE_FAILED]' }, truncated: cwTruncFlag, shape: cwShape });
     }
 
   } catch (err) {
