@@ -1650,6 +1650,13 @@ ${cardsDesc}
 
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
+    // ★v7.67 — 출력 잘림 관측. 잘리면 extractJSON 3단 폴백이 전부 실패해 [PARSE_FAILED] 가
+    //   되는데, v7.66 까지는 그것을 200 으로 조용히 삼켜 사용자가 빈 화면을 봤다.
+    //   ★상류 값을 출구로 흘리지 않는다 — 대입 우변이 전부 리터럴이므로 오염이 전파되지 않고,
+    //   상류는 조건 판정에만 쓰인다. 출구 인자 = 리터럴 상수라는 성질을 지킨다(결정 49 · M14).
+    //   ★D출구(raw)는 정확히 1회를 유지한다(M9) — 분기를 늘리지 않는다.
+    let cwTruncFlag = false;
+    if (data && data.stop_reason === 'max_tokens') cwTruncFlag = true;
 
     // daily_message는 자연어 응답 — JSON 파싱 안 함
     if (type === 'daily_message') {
@@ -1662,7 +1669,7 @@ ${cardsDesc}
     } else {
       // P1-R4: 파싱 실패 시 LLM 원문 미노출. raw 키는 유지하되 센티넬로 대체
       // 프런트 가드 18곳이 if(d.result.raw && ...) truthy 판정에 의존하므로 키 삭제·빈문자열·null 금지
-      return res.status(200).json({ success: true, result: { raw: '[PARSE_FAILED]' } });
+      return res.status(200).json({ success: true, result: { raw: '[PARSE_FAILED]' }, truncated: cwTruncFlag });
     }
 
   } catch (err) {

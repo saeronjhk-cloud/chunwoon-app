@@ -3,7 +3,7 @@
   "name": "chunwoon-app",
   "functions": {
     "api/fortune.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   },
   "rewrites": [
