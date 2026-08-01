@@ -20,6 +20,47 @@ function extractJSON(text) {
   }
   // 3) 전체 텍스트를 JSON으로 시도
   try { return JSON.parse(text.trim()); } catch {}
+  // ★v7.67 — 4) 중괄호 균형 스캔. 2) 는 「첫 { ~ 마지막 }」라 본문 뒤에 산문·닫는 코드펜스가
+  //   붙거나 JSON 이 여러 덩어리면 통째로 깨진다. 문자열 리터럴과 이스케이프를 인식하며
+  //   첫 { 에서 균형이 맞는 지점까지만 잘라 시도한다.
+  if (first !== -1) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = first; i < text.length; i++) {
+      const c = text[i];
+      if (esc) { esc = false; continue; }
+      if (c === '\\') { if (inStr) esc = true; continue; }
+      if (c === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          try { return JSON.parse(text.substring(first, i + 1)); } catch {}
+          break;
+        }
+      }
+    }
+  }
+  // ★5) 제어문자(U+0000-U+001F)를 문자열 밖에서 제거한 뒤 재시도. 모델이 원시 개행을
+  //   문자열 값 안에 넣으면 JSON.parse 가 거부하는데, 그 경우가 실무에서 가장 흔하다.
+  if (first !== -1 && last > first) {
+    const sliced = text.substring(first, last + 1);
+    // ★이스케이프 복원을 먼저 시도한다 — 제어문자 제거를 앞세우면 파싱은 성공해도
+    //   결과 문자열에서 줄바꿈이 사라진다. 작명·사주 본문은 줄바꿈이 의미를 갖는다.
+    let out = '', inStr2 = false, esc2 = false;
+    for (const c of sliced) {
+      if (esc2) { out += c; esc2 = false; continue; }
+      if (c === '\\') { out += c; if (inStr2) esc2 = true; continue; }
+      if (c === '"') { inStr2 = !inStr2; out += c; continue; }
+      if (inStr2 && c === '\n') { out += '\\n'; continue; }
+      if (inStr2 && c === '\r') { out += '\\r'; continue; }
+      if (inStr2 && c === '\t') { out += '\\t'; continue; }
+      out += c;
+    }
+    try { return JSON.parse(out); } catch {}
+    // 최후: 제어문자를 제거하고 시도한다(줄바꿈 손실을 감수하되 null 보다는 낫다)
+    try { return JSON.parse(sliced.replace(/[\u0000-\u001F]/g, '')); } catch {}
+  }
   return null;
 }
 
