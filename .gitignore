@@ -85,3 +85,7 @@ zi??????
 상용화_가이드.docx
 천운_종합검증용_문서.md
 HANDOVER.md
+
+# ★v7.69 — 게이트 실행 부산물(eval_rl.js·eval_p1auth_v767fix.js 가 front_root 에 만든다).
+#   api/fortune.js 전문 사본이 쌓이므로 커밋·배포 양쪽에서 제외한다.
+.evaltmp/

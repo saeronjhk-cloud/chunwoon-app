@@ -94,3 +94,6 @@ palm-api/
 .git/
 node_modules/
 *_MUTANT.js
+
+# ★v7.69 — 게이트 실행 부산물. api/fortune.js 사본이 쌓인다.
+.evaltmp/
