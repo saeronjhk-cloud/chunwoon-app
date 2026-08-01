@@ -51,21 +51,41 @@ function splitPillar(p) {
   const ch = [...p.trim()];
   if (ch.length !== 2) return null;
   const s = ch[0], b = ch[1];
-  if (STEMS.indexOf(s) === -1 || BRANCHES.indexOf(b) === -1) return null;
+  const si = STEMS.indexOf(s), bi = BRANCHES.indexOf(b);
+  if (si === -1 || bi === -1) return null;
+  // ★v7.70-b — 60갑자에 **실재하는 조합**인지 본다(적대적 검증 관통 #5 수리).
+  //   종전에는 천간·지지를 각각만 검사해 '甲丑' 같은 **120중 60개의 비실재 조합**이 통과했다.
+  //   그러면 daewoon.js 의 ganziIndex 가 -1 을 돌려주고, 그것을 검사하지 않는 computeDaewoon 이
+  //   월주와 무관한 甲子 기점 시퀀스를 만든다 — 십성·합충은 정상값이라
+  //   **부분적으로 그럴듯한 오답**이 「서버 엔진 산출 확정값」으로 프롬프트에 들어갔다.
+  //   60갑자는 천간·지지의 **음양이 같은 조합만** 존재한다(甲子·乙丑 … / 甲丑은 없음).
+  if ((si % 2) !== (bi % 2)) return null;
   return { s: s, b: b };
 }
 
-// context → pillars[4]. ★시주 미상('-' · '' · null)이면 **전체를 포기**한다.
-//   엔진은 4기둥 필수이고, 시주를 임의로 채우면 대운·합충 결과가 조용히 틀린다.
+// context → pillars[3 또는 4].
+// ★v7.70-b — **3기둥 모드**를 지원한다(적대적 검증 관통 #11 수리).
+//   【실측된 문제】 index.html 의 시간 select 는 `<option value="-1">모름</option>` 이
+//     **첫 항목이자 기본 선택값**이고(:441 · :471 · :499 · :520),
+//     그때 클라이언트는 `hourPillar: ''` 를 보낸다(:1769 · :2092).
+//     종전 설계는 그것을 「전체 포기」로 처리해 **시간을 고르지 않은 사용자 전원이
+//     엔진 3축을 하나도 못 받고 LLM 환각 그대로**를 받았다. 기본값이 그러므로 다수다.
+//   【수리】 연·월·일 3기둥만으로도 산출 가능한 것은 산출한다.
+//     · 대운  : 월주 기준이라 시주와 **무관** — 완전 산출 가능
+//     · 십성  : 연·월·일 3개 (시주 항목만 빠짐)
+//     · 지지관계: 연·월·일 3쌍 (시지 관련 3쌍만 빠짐)
+//   ★시주를 임의로 채우지는 않는다. 없는 것은 없다고 하고, 있는 것만 확정한다.
 function toPillars(ctx) {
-  if (!ctx || typeof ctx !== 'object') return null;
-  const raw = [ctx.yearPillar, ctx.monthPillar, ctx.dayPillar, ctx.hourPillar];
+  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return null;
+  const head = [ctx.yearPillar, ctx.monthPillar, ctx.dayPillar];
   const out = [];
-  for (const p of raw) {
+  for (const p of head) {
     const q = splitPillar(p);
-    if (!q) return null;
-    out.push(q);
+    if (!q) return null;                                  // 연·월·일은 필수
+  out.push(q);
   }
+  const h = splitPillar(ctx.hourPillar);                   // 없거나 어긋나면 3기둥으로 간다
+  if (h) out.push(h);
   return out;
 }
 
@@ -75,7 +95,7 @@ function toPillars(ctx) {
 function sipsungDetail(pillars) {
   const dayStem = pillars[2].s;
   const out = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < pillars.length; i++) {
     const r = M.sipsin(dayStem, pillars[i].s);
     if (!r || !r.name) return null;                    // fail-closed
     out.push({ position: POS[i], stem: pillars[i].s, name: r.name, code: r.code, group: r.group });
@@ -86,8 +106,8 @@ function sipsungDetail(pillars) {
 /** ② 지지 관계 — 4기둥 지지의 6개 순서 없는 쌍 전수. */
 function branchRelations(pillars) {
   const out = [];
-  for (let i = 0; i < 4; i++) {
-    for (let j = i + 1; j < 4; j++) {
+  for (let i = 0; i < pillars.length; i++) {
+    for (let j = i + 1; j < pillars.length; j++) {
       const rel = M.branchRelations(pillars[i].b, pillars[j].b);
       if (!Array.isArray(rel)) return null;            // fail-closed
       for (const t of rel) {
@@ -120,6 +140,19 @@ function daewoonList(pillars, gender) {
  * ★authority 검사를 **매 호출** 통과시킨다. 승격이 되돌려지면 값이 즉시 사라진다 —
  *   봉인 정책과 산출 경로가 갈라지지 않게 하는 결속이다.
  */
+// ★v7.70-b — 산출 키 화이트리스트 (적대적 검증 관통 #1 수리)
+//   【실측된 문제】 게이트(SELF-1)는 authority·daewoon·manse·myeongli 4파일만 해시 고정하고
+//     **bind.js 는 명시적으로 제외**했다("어댑터는 api/ 전용"). 그런데 ⑴무엇을 산출하고
+//     ⑵무엇을 「확정값」으로 프롬프트에 넣고 ⑶무엇을 응답에 덮어쓸지를 전부 정하는 것이
+//     bind.js 다. 그래서 authority.js 를 한 글자도 안 고치고 bind.js 만으로
+//     격국·용신·대운수(전부 DENY)를 「서버 엔진 산출 확정값」으로 주입해도 게이트가 17/17 이었다.
+//   【수리】 산출물·프롬프트 라벨을 **코드 상수로 닫는다.** 목록 밖 키는 여기서 걸러지고,
+//     eval_engine_binding 이 이 상수와 authority 승격 목록의 **일치**를 검사한다.
+const FACT_KEYS = ['sipsungDetail', 'habChung', 'daewoon'];          // 산출 가능한 사실
+const FACT_AUTHORITY = { sipsungDetail: 'sipsin', habChung: 'branch_relation', daewoon: 'daewoon_direction' };
+const FACT_LABELS = ['십성', '대운', '지지 관계'];                    // factsBlock 이 쓸 수 있는 라벨
+const META_KEYS = ['engine_version', 'pillars', 'authority', 'mode']; // 사실이 아닌 메타
+
 function computeFacts(ctx) {
   const pillars = toPillars(ctx);
   if (!pillars) return null;
@@ -134,8 +167,9 @@ function computeFacts(ctx) {
 
   if (!sipsung && !rel && !dw) return null;
 
-  return {
-    engine_version: 'bind/1.0.0',
+  const out = {
+    engine_version: 'bind/1.1.0',
+    mode: pillars.length === 4 ? '4기둥' : '3기둥(시주 미상)',
     pillars: pillars.map((p, i) => ({ position: POS[i], ganji: p.s + p.b })),
     sipsungDetail: sipsung,
     habChung: rel,
@@ -147,6 +181,11 @@ function computeFacts(ctx) {
       daewoon_start_age: authority.userSurfaceable('daewoon_start_age') // false — DENY
     }
   };
+  // ★출구 화이트리스트 — 허용 목록 밖 키는 **여기서 삭제**한다. bind.js 를 고쳐
+  //   봉인축을 끼워 넣어도 사실로 나가지 못한다.
+  const allow = FACT_KEYS.concat(META_KEYS);
+  for (const k of Object.keys(out)) if (allow.indexOf(k) === -1) delete out[k];
+  return out;
 }
 
 /**
@@ -157,6 +196,8 @@ function computeFacts(ctx) {
 function factsBlock(facts) {
   if (!facts) return '';
   const L = [];
+  // ★v7.70-b — 아래 push 는 FACT_LABELS 안의 라벨만 쓴다. 라벨을 늘리려면 상수를 먼저 늘려야 하고,
+  //   eval_engine_binding 이 「블록의 모든 항목 라벨이 FACT_LABELS 에 있다」를 검사한다.
   L.push('【서버 엔진 산출 확정값 — 아래 값을 그대로 사용하세요. 임의로 바꾸거나 다시 계산하지 마세요.】');
   if (facts.sipsungDetail) {
     L.push('· 십성(일간 ' + facts.pillars[2].ganji[0] + ' 기준): ' +
@@ -170,6 +211,13 @@ function factsBlock(facts) {
     L.push('· 지지 관계: ' + (facts.habChung.length
       ? facts.habChung.map((x) => x.between + ' ' + x.branches + ' ' + x.type).join(' / ')
       : '해당 없음(합·충·형·해 없음 — 없다고 쓰세요. 지어내지 마세요)'));
+  }
+  // ★출구 검사 — 라벨 화이트리스트 밖의 줄이 섞이면 **블록 전체를 버린다**(fail-closed).
+  //   ★라벨 판정 = 「'· <라벨>' 로 시작하는가」. 부분 문자열 비교가 아니라 **접두사 일치**라
+  //     '십성' 을 포함하는 임의 문자열이 통과하지 못한다.
+  const body = L.slice(1);
+  for (const line of body) {
+    if (!FACT_LABELS.some((lab) => line.indexOf('· ' + lab) === 0)) return '';
   }
   return L.join('\n');
 }
@@ -192,6 +240,11 @@ function pickString(v) { return typeof v === 'string' ? v : ''; }
  * @returns {{applied:string[], dropped:number, kept:number}|null}
  */
 function applyEngineFacts(type, parsed, facts) {
+  // ★v7.70-b — 이 함수에는 **조기 return 이 없다**(적대적 검증 관통 #2 수리).
+  //   종전 구조에서는 선두에 조건부 return 을 하나 넣는 것만으로 덮어쓰기 전체를 끌 수 있었고,
+  //   그 조건을 LLM 이 채우는 필드(citation_ref.source_id — premium_1 스키마가 LLM 에게
+  //   직접 요구한다)로 걸면 **LLM 한 줄로 자기 감시를 끌 수 있었다.**
+  //   ⟹ 아래 3블록은 무조건 실행된다. 조건은 「엔진이 그 축을 냈는가」뿐이다.
   if (!facts || !parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const applied = [];
   let dropped = 0, kept = 0;
@@ -216,7 +269,12 @@ function applyEngineFacts(type, parsed, facts) {
       const src = llm[i] || {};
       if (src && typeof src.ganji === 'string' && src.ganji !== e.ganji) dropped++;   // ★LLM 오답 계수
       else if (src && src.ganji) kept++;
-      return { age: pickString(src.age) || AGE_BUCKETS[i], ganji: e.ganji, fortune: pickString(src.fortune) };
+      // ★v7.70-b — age 를 **엔진 버킷으로 고정**한다(적대적 검증 관통 #6 수리).
+      //   종전에는 LLM 의 age 를 그대로 썼는데, 그 자리는 대운수(시작 나이)를 담는 자리다.
+      //   `daewoon_start_age` 는 APPROX_FIXED_TERM 이라 surface_policy=DENY 인데,
+      //   LLM 이 "3세~12세" 라고 쓰면 **봉인된 정보가 무방비로 사용자에게 나갔다.**
+      //   ⟹ 10년 고정 버킷만 쓴다. 대운수는 정밀 절입 만세력 도입 후 별도 승격 대상.
+      return { age: AGE_BUCKETS[i], ganji: e.ganji, fortune: pickString(src.fortune) };
     });
     applied.push('daewoon');
   }
@@ -232,12 +290,11 @@ function applyEngineFacts(type, parsed, facts) {
         const t = pickString(llm[i].type), bw = pickString(llm[i].between);
         if (t.indexOf(e.type) !== -1 && bw && e.between.indexOf(bw.slice(0, 2)) !== -1) { src = llm[i]; used.add(i); break; }
       }
-      if (!src) {
-        for (let i = 0; i < llm.length; i++) {
-          if (used.has(i) || !llm[i]) continue;
-          if (pickString(llm[i].type).indexOf(e.type) !== -1) { src = llm[i]; used.add(i); break; }
-        }
-      }
+      // ★v7.70-b — 2차 매칭(type 만 보는 느슨한 매칭)을 **제거**했다(적대적 검증 관통 #9 수리).
+      //   「三合 [연지-일지]」 라벨에 「월지와 시지가 三合」 서술이 붙는 오배치가 정상 경로에서
+      //   생성됐다. 위치가 다르면 서술도 다른 관계에 대한 것이므로 **가져오면 안 된다.**
+      //   못 찾으면 effect 는 빈 문자열이고, 프롬프트가 엔진 관계를 이미 알려주므로
+      //   정상 응답에서는 1차 매칭이 성립한다.
       if (src) kept++;
       return { type: e.type, between: e.between, effect: pickString(src && src.effect) };
     });
@@ -249,6 +306,9 @@ function applyEngineFacts(type, parsed, facts) {
 }
 
 module.exports = {
+  FACT_KEYS: FACT_KEYS,
+  FACT_LABELS: FACT_LABELS,
+  FACT_AUTHORITY: FACT_AUTHORITY,
   applyEngineFacts: applyEngineFacts,
   AGE_BUCKETS: AGE_BUCKETS,
   splitPillar: splitPillar,
