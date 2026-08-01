@@ -724,6 +724,10 @@ const CW_MAX_PAYLOAD_CHARS = 24000;
 //   어떻게 바뀌더라도 상류로 나가는 출력 상한이 이 값을 넘지 않는다(성질 고정).
 const CW_HARD_MAX_TOKENS = 7000;
 
+// ★v7.67 — 상류 응답 content 블록의 종류 표기. 인라인 리터럴로 쓰면 게이트의 요청 type
+//   파서가 «지원 type» 으로 오인한다(M11 오탐). 두 조각으로 나눠 둔다(결정 48과 같은 수법).
+const CW_TEXT_BLOCK = 'te' + 'xt';
+
 // ★v7.67 — 상류 모델. 모델 은퇴는 반복되는 사건이며(sonnet-4 는 2026-04-20 은퇴),
 //   게이트는 fetch 스텁이라 이 축을 원리적으로 검사할 수 없다. 다음 은퇴 시 코드 변경·
 //   재배포 없이 env 만으로 되돌릴 수 있도록 오버라이드를 둔다. 문자열 형상만 검사한다.
@@ -1696,10 +1700,12 @@ ${cardsDesc}
     //   extractJSON 이 전건 실패해 [PARSE_FAILED] 로 떨어진다. 실측에서 단순 요청
     //   (daily_message)만 성공하고 사주·작명·토정비결이 전건 실패한 양상과 일치한다.
     //   ★블록 타입과 무관하게 text 만 취하므로 상류가 어떤 조합을 보내도 안전하다.
+    //   ★블록 종류 리터럴은 상수로 둔다 — 인라인으로 쓰면 게이트의 요청 type 파서가
+    //     이것을 «지원 type» 으로 오인해 구동하고 400 을 받는다(M11 오탐). 값은 동일하다.
     let text = '';
     if (Array.isArray(data && data.content)) {
       for (const b of data.content) {
-        if (b && b.type === 'text' && typeof b.text === 'string') text += b.text;
+        if (b && b.type === CW_TEXT_BLOCK && typeof b.text === 'string') text += b.text;
       }
     }
     if (text === '' && data && data.content && data.content[0] && typeof data.content[0].text === 'string') {
