@@ -728,6 +728,21 @@ const CW_HARD_MAX_TOKENS = 7000;
 //   파서가 «지원 type» 으로 오인한다(M11 오탐). 두 조각으로 나눠 둔다(결정 48과 같은 수법).
 const CW_TEXT_BLOCK = 'te' + 'xt';
 
+// ★v7.67 — 추론 깊이(effort). sonnet-5 계열은 adaptive thinking 이 기본이고 기본 effort 가
+//   high 라, 추론 블록이 max_tokens 예산을 잠식해 본문 JSON 이 잘린다(naming 실측: 5500 소진).
+//   천운은 사주 계산을 엔진이 수행하고 LLM 은 서술 생성만 맡으므로 깊은 추론이 불필요하다.
+//   ★'off' 로 두면 파라미터 자체를 보내지 않는다 — 구 모델 호환 롤백 경로.
+const CW_LLM_EFFORT = (function () {
+  const v = process.env.CW_LLM_EFFORT;
+  return (typeof v === 'string' && /^(off|low|medium|high|xhigh|max)$/.test(v)) ? v : 'low';
+})();
+// 상류 요청 본문에 effort 를 얹는다. 'off' 면 원본을 그대로 돌려주어 파라미터를 보내지 않는다.
+function cwWithEffort(payload) {
+  if (CW_LLM_EFFORT === 'off') return payload;
+  payload.output_config = { effort: CW_LLM_EFFORT };
+  return payload;
+}
+
 // ★v7.67 — 상류 모델. 모델 은퇴는 반복되는 사건이며(sonnet-4 는 2026-04-20 은퇴),
 //   게이트는 fetch 스텁이라 이 축을 원리적으로 검사할 수 없다. 다음 은퇴 시 코드 변경·
 //   재배포 없이 env 만으로 되돌릴 수 있도록 오버라이드를 둔다. 문자열 형상만 검사한다.
@@ -1676,7 +1691,7 @@ ${cardsDesc}
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
+      body: JSON.stringify(cwWithEffort({
         // ★v7.67 — claude-sonnet-4-20250514 는 2026-04-20 은퇴했다. 은퇴 후 상류가 404 를
         //   돌려주어 전 type 이 502 로 죽어 있었다(무료·유료 전건). 게이트는 fetch 스텁이라
         //   이 축을 원리적으로 볼 수 없으므로, 다음 은퇴에 재배포 없이 대응할 수 있도록
@@ -1685,7 +1700,7 @@ ${cardsDesc}
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
-      })
+      }))
     });
 
     if (!response.ok) {
