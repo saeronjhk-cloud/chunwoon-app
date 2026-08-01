@@ -33,7 +33,7 @@
       ]
     },
     {
-      "source": "/(.*\\.(md|txt|csv|tsv|xlsx|xls|docx|doc|pdf|zip|pth|caffemodel|log|bak))",
+      "source": "/(.*)\\.(md|txt|csv|tsv|xlsx|xls|docx|doc|pdf|zip|pth|caffemodel|log|bak)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
