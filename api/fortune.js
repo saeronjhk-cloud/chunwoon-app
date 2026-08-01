@@ -4,6 +4,30 @@
 //            [선택] CW_PREMIUM_TOKEN_TTL_H (v7.67 RL L0 — 토큰 TTL 시간. 미설정=720h=30일)
 
 import { createHmac, createHash, timingSafeEqual } from 'crypto';
+// ★v7.70 결정 77 1단계 — 결정적 사실 3축(대운 간지·십성·지지관계)을 서버 엔진이 산출한다.
+//   종전에는 이 3축을 서버도 클라이언트도 계산하지 않고 **LLM 이 생성**했다(v7.69 §3).
+//   고정 원칙 5: 엔진 안에서 결과를 도출하고, 못 내는 것만 AI 추론으로 넘긴다.
+//   ★서술(meaning·fortune·effect)은 그대로 LLM 담당이다.
+//
+// ★정적 import 를 쓰지 않는 이유 (실측된 문제 · 결정 70 준수)
+//   게이트 6종(scrub_token_policy · token_roundtrip · rl · p1auth 등)이 api/fortune.js 를
+//   **단일 파일로 임시 디렉터리에 복사해** ESM import 한다. 정적 import 를 두면 상대 경로
+//   './_engine/bind.js' 가 따라가지 않아 게이트 전건이 「모듈 없음」으로 죽었다(실측 fail 6).
+//   ⟹ 게이트를 고치지 않고(결정 70) **지연 동적 import** 로 바꾼다.
+//   ★런타임 성질: 모듈이 없으면 엔진 축만 비활성화되고 서비스는 종전 LLM 경로로 동작한다.
+//     이것은 fail-open 이 아니다 — **엔진 결속의 실재는 eval/eval_engine_binding.js 가
+//     fail-closed 로 못박는다.** 런타임은 안전하게, 게이트는 엄격하게.
+let __cwEngine = null;          // 모듈 캐시(콜드스타트 1회)
+let __cwEngineTried = false;
+async function cwEngine() {
+  if (__cwEngineTried) return __cwEngine;
+  __cwEngineTried = true;
+  try {
+    const m = await import('./_engine/bind.js');
+    __cwEngine = (m && m.default) ? m.default : (m || null);
+  } catch (e) { __cwEngine = null; }
+  return __cwEngine;
+}
 
 // JSON 추출 헬퍼: 마크다운 코드블록, 순수 JSON 모두 처리
 function extractJSON(text) {
@@ -946,6 +970,17 @@ export default async function handler(req, res) {
     }
 
     let systemPrompt, userPrompt;
+
+    // ★v7.70 — 엔진 사실 산출. 4기둥을 못 읽거나 성별이 없으면 해당 축은 null 이고,
+    //   그때는 **종전대로 LLM 이 담당**한다(fail-closed · 잘못된 사실을 주입하느니 안 한다).
+    //   authority.js 의 승격 상태를 매 호출 확인하므로, 승격을 되돌리면 값이 즉시 사라진다.
+    // 엔진 사실을 쓰는 type — 4기둥 기반 사주 계열만.
+    const CW_ENGINE_TYPES = ['saju', 'saju_premium_1', 'saju_premium_2'];
+    let cwFacts = null;
+    const cwEng = (CW_ENGINE_TYPES.indexOf(type) !== -1) ? await cwEngine() : null;
+    if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
+    const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
+
     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
     const JSON_FORCE = '\n\n중요: 반드시 순수 JSON만 출력하세요. 마크다운 코드블록(```)이나 설명 텍스트 없이 { 로 시작하여 } 로 끝나는 JSON만 응답하세요.';
 
@@ -1723,6 +1758,11 @@ ${cardsDesc}
     if (!(maxTokens > 0)) maxTokens = 1500;
     if (maxTokens > CW_HARD_MAX_TOKENS) maxTokens = CW_HARD_MAX_TOKENS;
 
+    // ★v7.70 — 엔진 확정값을 userPrompt 끝에 붙인다. 위 분기가 어떻게 바뀌어도 여기 한 곳에서만
+    //   붙으므로 type 을 추가해도 누락되지 않는다(단일 지점 원칙).
+    //   ★이것은 「지시」일 뿐이다. LLM 이 어겨도 §응답 덮어쓰기에서 무효화된다 — 이중 방어.
+    if (cwFactsBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwFactsBlock;
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -1783,6 +1823,18 @@ ${cardsDesc}
     }
     const parsed = extractJSON(text);
     if (parsed) {
+      // ★v7.70 — 엔진 확정값으로 덮어쓴다. ★반드시 scrubDeep **이전**이다.
+      //   【처음엔 이후에 뒀다가 게이트에 잡혔다 · 결정 70】 M14(200 출구 화이트리스트)가
+      //   「인가 이후 컨테이너 재대입」으로 적발했다(v7.68 §2-2 ADV-2 수리가 작동한 것).
+      //   실제 오염은 없었지만 — 넣는 값은 엔진 리터럴과 LLM 서술뿐 — **미래에 상류 값을
+      //   넣도록 바뀌면 조용히 뚫린다.** 게이트의 지적이 옳다.
+      //   ⟹ 적용을 앞으로 옮겨 scrubDeep 이 **마지막 인가**가 되게 한다.
+      //   ★부수 효과(안전 강화): 엔진 값도 스크럽을 통과하므로, 엔진이 훗날 문헌명을
+      //     내보내게 되더라도 차단된다.
+      //   ★LLM 이 프롬프트 지시를 어겨도 여기서 무효화된다. 엔진에 없는 합충은 버려진다.
+      if (cwFacts && cwEng) {
+        try { cwEng.applyEngineFacts(type, parsed, cwFacts); } catch (e) { /* 적용 실패 시 LLM 값 유지 */ }
+      }
       scrubDeep(parsed); // P1-R7: 인용 키 삭제 + 모든 문자열 값 스크럽 (Phase1 룩업 DB 도입 시 복원)
       return res.status(200).json({ success: true, result: parsed });
     } else {
