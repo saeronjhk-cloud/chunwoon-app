@@ -683,6 +683,14 @@ const CW_MAX_PAYLOAD_CHARS = 24000;
 //   어떻게 바뀌더라도 상류로 나가는 출력 상한이 이 값을 넘지 않는다(성질 고정).
 const CW_HARD_MAX_TOKENS = 7000;
 
+// ★v7.67 — 상류 모델. 모델 은퇴는 반복되는 사건이며(sonnet-4 는 2026-04-20 은퇴),
+//   게이트는 fetch 스텁이라 이 축을 원리적으로 검사할 수 없다. 다음 은퇴 시 코드 변경·
+//   재배포 없이 env 만으로 되돌릴 수 있도록 오버라이드를 둔다. 문자열 형상만 검사한다.
+const CW_LLM_MODEL = (function () {
+  const v = process.env.CW_LLM_MODEL;
+  return (typeof v === 'string' && /^[A-Za-z0-9._-]{3,64}$/.test(v)) ? v : 'claude-sonnet-5';
+})();
+
 // ★v7.67 RL L0-c — 상품 정가 표. api/confirm-payment.js 의 PRODUCT_CATALOG 와 동일해야 한다.
 const CW_PRODUCT_PRICE = {
   saju: 4900, compat: 4900, tojeong: 4900, dream: 4900, face: 4900, tarot: 4900,
@@ -1624,7 +1632,11 @@ ${cardsDesc}
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        // ★v7.67 — claude-sonnet-4-20250514 는 2026-04-20 은퇴했다. 은퇴 후 상류가 404 를
+        //   돌려주어 전 type 이 502 로 죽어 있었다(무료·유료 전건). 게이트는 fetch 스텁이라
+        //   이 축을 원리적으로 볼 수 없으므로, 다음 은퇴에 재배포 없이 대응할 수 있도록
+        //   env 오버라이드를 둔다. CW_LLM_MODEL 미설정 시 아래 기본값으로 동작한다.
+        model: CW_LLM_MODEL,
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
