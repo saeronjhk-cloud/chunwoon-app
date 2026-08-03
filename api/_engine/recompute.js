@@ -50,15 +50,37 @@ const TERM_EDGE_MIN = 30;
  * ★index.html 은 `new Date(bs)` 를 쓴 뒤 로컬 게터로 읽어, UTC− 타임존에서
  *   하루가 밀렸다(v7.71 결함 B). 여기서는 문자열을 직접 분해한다.
  */
-function parseBirthDate(s) {
+/**
+ * @param {string} s        'YYYY-MM-DD'
+ * @param {'solar'|'lunar'} calType
+ *
+ * ★★v7.72 수리 — 종전에는 **음력 입력에도 양력 달력 규칙**을 적용했다.
+ *   음력 달은 대소월(30·29일)뿐이라 **2월 29일·30일이 정상적으로 존재**하는데,
+ *   `jdnToGregorian(gregorianToJDN(y,2,29))` 왕복 검사가 평년 2/29·2/30 을
+ *   거부해 `parseBirthDate` 가 null 을 냈다.
+ *   ⟹ 음력 2월 29·30일생이 재계산에서 **전원 탈락**하고 있었다.
+ *   종전에는 그것이 fail-open(무검증 통과)이라 **증상이 보이지 않았고**,
+ *   v7.72 fail-closed 전환으로 400 이 되면서 비로소 드러났다.
+ *   ★실측: 1930~2015 음력 조합에서 이 원인의 탈락이 **129건**이었다.
+ *
+ *   ⟹ 음력은 여기서 **범위만** 본다(1~30). 그 날이 실재하는지는
+ *      `LU.lunarToSolar` 가 대소월·윤달을 보고 판정하며, 없으면
+ *      `LUNAR_OUT_OF_RANGE` 로 귀결된다 — 판정 주체를 하나로 둔다.
+ */
+function parseBirthDate(s, calType) {
   if (typeof s !== 'string') return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
   if (!m) return null;
   const y = +m[1], mo = +m[2], d = +m[3];
   if (y < 1900 || y > 2050) return null;          // 음력·절기 계산 보증 구간
-  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  if (mo < 1 || mo > 12 || d < 1) return null;
+  if (calType === 'lunar') {
+    if (d > 30) return null;                      // 음력 달은 최대 30일
+    return { y, m: mo, d };
+  }
+  if (d > 31) return null;
   const g = A.jdnToGregorian(A.gregorianToJDN(y, mo, d));
-  if (g.y !== y || g.m !== mo || g.d !== d) return null;  // 2월 30일 등 차단
+  if (g.y !== y || g.m !== mo || g.d !== d) return null;  // 양력 2월 30일 등 차단
   return { y, m: mo, d };
 }
 
@@ -143,10 +165,11 @@ function yearAndMonthBranch(birthDayFloat, gy) {
 function recompute(inp) {
   if (!inp || typeof inp !== 'object') return null;
 
-  const parsed = parseBirthDate(inp.birth);
+  const calType = inp.calType === 'lunar' ? 'lunar' : 'solar';
+  // ★v7.72 — calType 을 파싱보다 먼저 정한다. 음력·양력의 날짜 유효 규칙이 다르다.
+  const parsed = parseBirthDate(inp.birth, calType);
   if (!parsed) return null;
   const hourIdx = normHourIdx(inp.hourIdx);
-  const calType = inp.calType === 'lunar' ? 'lunar' : 'solar';
   const isLeap = !!inp.isLeap;
 
   const notes = [];

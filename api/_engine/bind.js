@@ -333,6 +333,10 @@ module.exports = {
   guardContext: ctxguard.guardContext,
   ctxSelfCheck: ctxguard.selfCheck,
   CTX_REPLACE_KEYS: ctxguard.CTX_REPLACE_KEYS,
+  // ★v7.72 관통 #2 — fail-open 차단 판정. 재노출만 한다(로직은 ctxguard 안).
+  ctxUnverifiable: ctxguard.unverifiable,
+  ctxHasGuardedKeys: ctxguard.hasGuardedKeys,
+  CTX_GUARDED_KEYS: ctxguard.CTX_GUARDED_KEYS,
 
   FACT_KEYS: FACT_KEYS,
   FACT_LABELS: FACT_LABELS,

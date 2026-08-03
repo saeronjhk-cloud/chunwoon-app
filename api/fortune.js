@@ -979,6 +979,29 @@ export default async function handler(req, res) {
     //   authority.js 의 승격 상태를 매 호출 확인하므로, 승격을 되돌리면 값이 즉시 사라진다.
     // 엔진 사실을 쓰는 type — 4기둥 기반 사주 계열만.
     const CW_ENGINE_TYPES = ['saju', 'saju_premium_1', 'saju_premium_2'];
+
+    // ★v7.72 관통 #2 — 감시 대상 키의 **fallback 사본**.
+    //   정본은 `api/_engine/ctxguard.js` 의 `CTX_GUARDED_KEYS` 다(결정 80 —
+    //   무엇을 덮어쓸지 정하는 권한은 어댑터가 아니라 엔진이 쥔다).
+    //   그럼에도 사본을 두는 이유: 엔진 모듈이 로드되지 않은 상황(삭제·문법오류·
+    //   selfCheck 실패)에서도 「원국 키가 왔는가」를 판정해야 fail-closed 가 성립한다.
+    //   ★두 목록이 갈라지면 「엔진을 죽이면 뚫리는 구멍」이 되므로, 엔진이 살아
+    //     있을 때는 매 호출 순서까지 동일한지 대조하고 다르면 GUARDED_KEYS_DRIFT 로
+    //     차단한다. 게이트에서도 eval_ctxguard.js 가 이 동일성을 검사한다.
+    const CW_GUARDED_KEYS_FALLBACK = Object.freeze([
+      'yearPillar', 'monthPillar', 'dayPillar', 'hourPillar',
+      'ilgan', 'ilganElement', 'ilganYinyang', 'yearStemYinyang',
+      'sajuYear', 'isAdjusted',
+      'els',
+      'sipsungYear', 'sipsungMonth', 'sipsungHour',
+      'hourLabel',
+    ]);
+    const cwHasGuardedKeysFallback = (c) => {
+      if (!c || typeof c !== 'object') return false;
+      const has = Object.prototype.hasOwnProperty;
+      for (const k of CW_GUARDED_KEYS_FALLBACK) if (has.call(c, k)) return true;
+      return false;
+    };
     let cwFacts = null;
     const cwEng = (CW_ENGINE_TYPES.indexOf(type) !== -1) ? await cwEngine() : null;
 
@@ -1003,13 +1026,70 @@ export default async function handler(req, res) {
     //     내면 정상 사용자가 막힌다. 재계산이 성립하지 않으면 **무변경**이다.
     //   ★적용 순서: 반드시 computeFacts 앞이다. 엔진 3축(십성·대운·지지관계)이
     //     재계산된 기둥 위에서 산출돼야 두 축이 갈라지지 않는다.
+    //
+    //   ★★v7.72 관통 #2 수리 — 위 「무변경」은 fail-closed 가 **아니었다**.
+    //     재계산을 실패시키는 입력이 8종 이상이었고(inputYear 를 실수·배열·객체로,
+    //     inputMonth 키 생략, 1899/2051, 2월 30일 …), 전부 클라이언트 원국이
+    //     무검증으로 프롬프트에 들어갔다. ★프리미엄은 프롬프트에 생년월일이
+    //     없으므로 `inputYear/Month/Day` 를 통째로 생략하면 **손실조차 없이**
+    //     게이트만 꺼졌다 — 위조 4기둥 `갑자 갑자 갑자 갑자` 가 200 으로 통과했다.
+    //   ⟹ 감시 대상 키(`CTX_GUARDED_KEYS` = 교체 14키 + `hourLabel`)가 하나라도
+    //     왔는데 서버가 재유도하지 못하면 **400 CONTEXT_UNVERIFIABLE** 로 막는다.
+    //     「값이 다르다」(클라 버그 · 통과)와 「검증 자체가 불가능하다」(차단)는 별개다.
     let cwCtxMetrics = null;
+    let cwCtxGuard = null;                 // guardContext 결과. null = 가드 부재
+    const cwCtxRaw = context;              // ★교체 전 원본. 판정은 반드시 이것으로 한다
     if (cwEng && typeof cwEng.guardContext === 'function') {
       try {
         const g = cwEng.guardContext(context);
+        cwCtxGuard = g;
         cwCtxMetrics = g.metrics;
         if (g.applied) context = g.context;
-      } catch (e) { cwCtxMetrics = { engine: 'ctxguard/v7.71', applied: false, reason: 'THREW' }; }
+      } catch (e) {
+        cwCtxMetrics = { engine: 'ctxguard/v7.72', applied: false, reason: 'THREW' };
+        cwCtxGuard = { applied: false, metrics: cwCtxMetrics };
+      }
+    }
+
+    // ★v7.72 — fail-closed 차단. 엔진 type 에서만 판정한다(compat·tojeong 은 관통 #9).
+    if (CW_ENGINE_TYPES.indexOf(type) !== -1) {
+      let cwBlock = null;
+      if (cwEng && typeof cwEng.ctxUnverifiable === 'function') {
+        try {
+          // ★상수 갈림 검사 — 정본은 ctxguard.CTX_GUARDED_KEYS 다. 아래 fallback 과
+          //   갈라지면 「엔진이 죽었을 때만 뚫리는 구멍」이 되므로 즉시 차단한다.
+          const ek = cwEng.CTX_GUARDED_KEYS;
+          const same = Array.isArray(ek) && ek.length === CW_GUARDED_KEYS_FALLBACK.length
+            && ek.every((k, i) => k === CW_GUARDED_KEYS_FALLBACK[i]);
+          if (!same) cwBlock = 'GUARDED_KEYS_DRIFT';
+          else {
+            const u = cwEng.ctxUnverifiable(cwCtxRaw, cwCtxGuard);
+            if (u && u.blocked) cwBlock = u.reason || 'GUARD_INCONCLUSIVE';
+          }
+        } catch (e) { cwBlock = 'GUARD_THREW'; }
+      } else if (cwHasGuardedKeysFallback(cwCtxRaw)) {
+        // ★가드 모듈이 없다 = 관통 #5 계열(게이트가 꺼진 것).
+        //   감시 대상 키가 **실제로 온 경우에만** 막는다. 키가 없으면 위조할 것이
+        //   없고 프롬프트에 원국도 안 들어가므로 종전 경로가 안전하다.
+        cwBlock = 'ENGINE_UNAVAILABLE';
+      }
+      if (cwBlock) {
+        try {
+          console.log('[cw:ctxguard]', JSON.stringify({ type, applied: false, blocked: true, reason: cwBlock }));
+        } catch (e) { /* 로깅 실패는 차단 결정에 영향 주지 않는다 */ }
+        // ★사유별 안내 — 사용자가 고칠 수 있는 것과 아닌 것을 구분한다.
+        //   LUNAR_OUT_OF_RANGE 는 「그 달에 없는 음력 날짜」다. 브라우저의 음력표에
+        //   대소월 오류 138건이 있어(v7.71 결함 C) 클라이언트만 통과시키던 조합이며,
+        //   실측 36건/30,485(0.118%)이다. 날짜를 바꿔야 하므로 그렇게 안내한다.
+        const cwMsg = (cwBlock === 'LUNAR_OUT_OF_RANGE')
+          ? '입력하신 음력 날짜가 그 달에 존재하지 않습니다. 음력 날짜를 다시 확인해주세요.'
+          : '생년월일시를 확인할 수 없어 사주를 산출하지 못했습니다. 입력값을 다시 확인해주세요.';
+        return res.status(400).json({
+          error: 'CONTEXT_UNVERIFIABLE',
+          code: cwBlock,
+          message: cwMsg
+        });
+      }
     }
 
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }

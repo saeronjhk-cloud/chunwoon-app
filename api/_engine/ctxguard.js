@@ -20,8 +20,18 @@
  *   · 불일치 항목은 `metrics.diffs` 로 남긴다(차단하지 않는다).
  *     차단하지 않는 이유: 불일치의 주된 원인이 **공격이 아니라 클라이언트
  *     버그**(v7.71 결함 A·B·C·D)이므로, 400 을 내면 정상 사용자가 막힌다.
- *   · 재계산이 성립하지 않으면 **아무것도 손대지 않는다**(fail-closed).
+ *   · 재계산이 성립하지 않으면 **아무것도 손대지 않는다**.
  *     틀린 값을 주입하느니 종전 경로를 그대로 둔다.
+ *
+ * ★★v7.72 관통 #2 수리 — 위 「무변경」이 **fail-closed 가 아니라 fail-open** 이었다.
+ *   재계산을 실패시키는 입력이 8종 이상 있었고(§4-2), 전부 클라이언트가 보낸
+ *   원국이 무검증으로 프롬프트에 들어갔다. 특히 프리미엄 프롬프트에는 생년월일이
+ *   아예 없으므로(`fortune.js:1550~1556 · 1572~1579`) `inputYear/Month/Day` 를
+ *   **통째로 생략**하면 게이트만 꺼지고 프롬프트 품질은 완전히 동일했다 —
+ *   위조 4기둥 `갑자 갑자 갑자 갑자` 가 200 으로 통과했다.
+ *   ⟹ 「불일치는 막지 않는다」(클라 버그 배려)와 「재계산 자체가 불가능한 요청은
+ *      막는다」는 **별개의 정책**이다. 후자를 `unverifiable()` 로 판정하고
+ *      호출부가 `400 CONTEXT_UNVERIFIABLE` 를 낸다.
  * ============================================================================
  */
 
@@ -44,6 +54,15 @@ const CTX_REPLACE_KEYS = Object.freeze([
   'els',
   'sipsungYear', 'sipsungMonth', 'sipsungHour',
 ]);
+
+/**
+ * ★v7.72 관통 #2 — 「이 키가 왔는데 재계산이 안 됐으면 요청을 막는다」의 대상.
+ *   `CTX_REPLACE_KEYS` 에 `hourLabel` 을 더한 집합이다.
+ *   `hourLabel` 을 넣는 이유: 관통 #4 수리는 **applied 일 때만** 재작성하므로,
+ *   applied=false 경로에서는 자유 문자열이 그대로 프롬프트에 보간된다.
+ *   ⟹ 인젝션 표면이 「게이트를 끄면 되살아나는」 형태였다.
+ */
+const CTX_GUARDED_KEYS = Object.freeze(CTX_REPLACE_KEYS.concat(['hourLabel']));
 
 /** 서버 산출 → context 키 매핑. CTX_REPLACE_KEYS 와 1:1 이어야 한다(SELF 검사 대상). */
 const CTX_VALUE_OF = Object.freeze({
@@ -165,18 +184,70 @@ function guardContext(ctx) {
 }
 
 /**
+ * ★v7.72 관통 #2 — 클라이언트가 감시 대상 키를 **하나라도** 보냈는가.
+ *   own 속성만 본다(`in` 은 프로토타입 체인을 타므로 `{}` 만 보내도 `constructor`
+ *   같은 키가 참이 되어 정상 요청을 막는 오탐이 난다).
+ */
+function hasGuardedKeys(ctx) {
+  if (!ctx || typeof ctx !== 'object') return false;
+  const has = Object.prototype.hasOwnProperty;
+  for (const k of CTX_GUARDED_KEYS) if (has.call(ctx, k)) return true;
+  return false;
+}
+
+/**
+ * ★v7.72 관통 #2 — 「이 요청을 400 으로 막아야 하는가」의 **단일 판정점**.
+ *
+ *   막는다:   감시 대상 키가 왔는데 서버가 그것을 재유도하지 못했다.
+ *             ⟹ 그 값이 맞는지 **원리적으로 알 수 없다**. 통과시키면 위조와
+ *                구별이 불가능하다.
+ *   막지 않는다: 재계산이 성립했고 값만 다르다(클라 버그 A·B·C·D) ⟹ 서버값 채택.
+ *             감시 대상 키가 아예 안 왔다 ⟹ 위조할 것이 없다(품질만 저하).
+ *
+ *   ★결정 81 준수 확인 — 판정 입력은 ⑴ 서버가 계산한 `applied` ⑵ 「키의 존재
+ *     여부」뿐이다. 클라이언트가 키를 숨기면 게이트가 아니라 **프롬프트 내용이**
+ *     비므로, 숨겨서 얻는 이득이 없다(종전에는 게이트만 꺼지고 내용은 동일했다).
+ *
+ * @param {object} ctx 클라이언트가 보낸 원본 context
+ * @param {{applied:boolean, metrics:object}|null} g guardContext 결과. null 이면
+ *        가드 자체가 없었다는 뜻이다(모듈 삭제·로드 실패 = 관통 #5 계열).
+ * @returns {{blocked:boolean, reason:string|null}}
+ */
+function unverifiable(ctx, g) {
+  if (!hasGuardedKeys(ctx)) return { blocked: false, reason: null };
+  if (g && g.applied === true) return { blocked: false, reason: null };
+  const r = (g && g.metrics && g.metrics.reason) || (g ? 'GUARD_INCONCLUSIVE' : 'GUARD_MISSING');
+  return { blocked: true, reason: r };
+}
+
+/**
  * ★자기검사 — 상수 정합. 게이트와 별개로 런타임에서도 확인 가능하게 둔다.
  *   CTX_REPLACE_KEYS 와 CTX_VALUE_OF 의 키 집합이 어긋나면 교체가 조용히
  *   빠지므로(= 감시 구멍), 즉시 드러나야 한다.
+ *
+ * ★v7.72 관통 #6 수리 — 종전에는 정의·export 만 돼 있고 **호출하는 코드가
+ *   리포 전체에 없었다.** 모듈 로드 시점에 1회 실행하고, 어긋나면 즉시 throw 한다.
+ *   throw 하면 `cwEngine()` 이 null 을 돌려주고, 그러면 관통 #2 수리에 의해
+ *   감시 대상 키가 온 요청이 400 으로 막힌다 ⟹ **정합 붕괴가 fail-closed 로 귀결**된다.
  */
 function selfCheck() {
   const a = CTX_REPLACE_KEYS.slice().sort();
   const b = Object.keys(CTX_VALUE_OF).sort();
   const ok = a.length === b.length && a.every((k, i) => k === b[i]);
-  return { ok, replaceKeys: a, valueKeys: b };
+  // CTX_GUARDED_KEYS 는 REPLACE 를 진부분집합으로 포함해야 한다.
+  const covers = CTX_REPLACE_KEYS.every((k) => CTX_GUARDED_KEYS.indexOf(k) !== -1);
+  return { ok: ok && covers, replaceKeys: a, valueKeys: b, guardedKeys: CTX_GUARDED_KEYS.slice() };
+}
+
+// ★로드 시점 자기검사 — 상수가 어긋난 채로 서비스되지 않게 한다.
+{
+  const sc = selfCheck();
+  if (!sc.ok) {
+    throw new Error('[ctxguard] selfCheck failed: CTX_REPLACE_KEYS/CTX_VALUE_OF/CTX_GUARDED_KEYS mismatch');
+  }
 }
 
 module.exports = {
-  guardContext, inputFromContext, selfCheck,
-  CTX_REPLACE_KEYS, CTX_VALUE_OF, HOUR_LABELS,
+  guardContext, inputFromContext, selfCheck, hasGuardedKeys, unverifiable,
+  CTX_REPLACE_KEYS, CTX_GUARDED_KEYS, CTX_VALUE_OF, HOUR_LABELS,
 };
