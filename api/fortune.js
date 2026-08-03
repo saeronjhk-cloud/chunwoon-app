@@ -994,6 +994,8 @@ export default async function handler(req, res) {
       'sajuYear', 'isAdjusted',
       'els',
       'sipsungYear', 'sipsungMonth', 'sipsungHour',
+      'currentYear', 'currentGanji',
+      'inputYear', 'inputMonth', 'inputDay',
       'hourLabel',
     ]);
     const cwHasGuardedKeysFallback = (c) => {
@@ -1036,6 +1038,29 @@ export default async function handler(req, res) {
     //   ⟹ 감시 대상 키(`CTX_GUARDED_KEYS` = 교체 14키 + `hourLabel`)가 하나라도
     //     왔는데 서버가 재유도하지 못하면 **400 CONTEXT_UNVERIFIABLE** 로 막는다.
     //     「값이 다르다」(클라 버그 · 통과)와 「검증 자체가 불가능하다」(차단)는 별개다.
+    // ★v7.72-b 적대검증 관통 #5 — `name` 은 무제한 자유 문자열이었다.
+    //   관통 #4 수리는 `hourLabel` 만 막았는데, **바로 한 줄 위의 `이름: ${c.name}`**
+    //   (fortune.js:1606·1631·1677·1696·1717)은 손대지 않았다. 표면을 열거하지 않고
+    //   발견된 1개만 막은 것이다. 무료 saju 로 토큰 없이 24,000자 지시 주입이 가능했다.
+    //   ⟹ 이름 필드는 **이름의 형상**으로 정규화한다. 개행·제어문자 제거 + 길이 상한.
+    //     엔진 type 뿐 아니라 **전 type** 에 적용한다(naming·compat 등도 같은 표면이다).
+    //   ★자유 서술 필드(`question`·`dream` 등)는 대상이 아니다 — 사용자가 문장을 쓰는
+    //     것이 상품 기능이며, 그 축은 응답측 스크럽·JSON 강제가 담당한다.
+    const CW_NAME_KEYS = ['name', 'nickname', 'surname', 'ceoName', 'companyName', 'productName', 'petType', 'personaName'];
+    const cwNormName = (v) => {
+      if (typeof v !== 'string') return v;
+      // 개행·탭·제어문자·유니코드 줄분리자 → 공백 1칸. 그 뒤 연속 공백 축약 + 길이 상한.
+      const flat = v.replace(/[\u0000-\u001F\u007F\u00A0\u2028\u2029\s]+/g, ' ').trim();
+      return flat.length > 40 ? flat.slice(0, 40) : flat;
+    };
+    if (context && typeof context === 'object' && !Array.isArray(context)) {
+      for (const k of CW_NAME_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(context, k) && typeof context[k] === 'string') {
+          context[k] = cwNormName(context[k]);
+        }
+      }
+    }
+
     let cwCtxMetrics = null;
     let cwCtxGuard = null;                 // guardContext 결과. null = 가드 부재
     const cwCtxRaw = context;              // ★교체 전 원본. 판정은 반드시 이것으로 한다

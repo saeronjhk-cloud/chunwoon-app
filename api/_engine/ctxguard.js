@@ -53,6 +53,19 @@ const CTX_REPLACE_KEYS = Object.freeze([
   'sajuYear', 'isAdjusted',
   'els',
   'sipsungYear', 'sipsungMonth', 'sipsungHour',
+  // ★v7.72-b 적대검증 관통 #3 — `currentYear`·`currentGanji` 를 편입한다.
+  //   종전 주석은 「currentYear 는 클라이언트 벽시계 값이므로 서버가 재계산하면 안 된다」를
+  //   근거로 둘 다 제외했다. 그 근거는 `currentYear` 에만 성립하고, **`currentGanji` 는
+  //   `(year-4)%10 / (year-4)%12` 로 완전히 결정되는 파생 사실**이다(index.html:1142).
+  //   즉 「벽시계 값」과 「벽시계 값에서 파생된 사실」을 구별하지 못해 후자가 함께
+  //   화이트리스트 밖으로 밀려났고, 그 결과 `올해 세운: ${c.currentYear}년 ${c.currentGanji}`
+  //   가 ⑴ 위조 세운 주입 ⑵ 무제한 자유 문자열 인젝션 표면으로 남아 있었다.
+  //   ★`currentYear` 도 서버가 정한다 — KST 기준 현재 연도다. 벽시계는 서버도 안다.
+  'currentYear', 'currentGanji',
+  // ★v7.72-b 관통 #6 — 정규화한 값을 context 에 **되쓴다**. 종전에는 검사만 하고
+  //   프롬프트는 원문 `${c.inputYear}` 를 보간해, `'\n\n\n1990'` 같은 값으로
+  //   프롬프트 줄 구조를 깨뜨릴 수 있었다(관통 #4 수리의 원칙이 숫자 3키에 미적용).
+  'inputYear', 'inputMonth', 'inputDay',
 ]);
 
 /**
@@ -80,7 +93,31 @@ const CTX_VALUE_OF = Object.freeze({
   sipsungYear: (r) => r.sipsung.year,
   sipsungMonth: (r) => r.sipsung.month,
   sipsungHour: (r) => r.sipsung.hour,
+  // ★v7.72-b 관통 #3 — 세운은 서버가 정한다. 두 번째 인자는 정규화된 입력이다.
+  currentYear: () => kstYear(),
+  currentGanji: () => ganjiOf(kstYear()),
+  // ★v7.72-b 관통 #6 — 정규화된 정수로 되쓴다.
+  inputYear: (r, inp) => inp.y,
+  inputMonth: (r, inp) => inp.m,
+  inputDay: (r, inp) => inp.d,
 });
+
+/** 한글 60갑자 — index.html:1140~1142 `getGanji` 와 동일 규칙. */
+const K_STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const K_BRANCHES = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+function ganjiOf(y) {
+  const n = ((y - 4) % 60 + 60) % 60;
+  return K_STEMS[n % 10] + K_BRANCHES[n % 12];
+}
+/**
+ * ★KST 기준 현재 연도. 서버(Vercel)는 UTC 로 도는데 제품은 한국 사용자 기준이므로,
+ *   1월 1일 00:00~09:00 KST 구간에서 UTC 연도를 쓰면 세운이 한 해 밀린다.
+ *   `Date` 를 쓰지만 여기서는 「지금이 언제인가」이므로 v7.71 의 `Date` 금지
+ *   (날짜 산술에서 TZ 밀림이 났던 건) 대상이 아니다 — 산술이 아니라 현재 시각 판독이다.
+ */
+function kstYear() {
+  return new Date(Date.now() + 9 * 3600 * 1000).getUTCFullYear();
+}
 
 /** context 를 재계산에 필요한 입력으로 환원한다. 실패하면 null. */
 function inputFromContext(ctx) {
@@ -112,6 +149,8 @@ function inputFromContext(ctx) {
     calType: ctx.calType === 'lunar' ? 'lunar' : 'solar',
     isLeap: false,                 // 클라이언트에 윤달 UI 가 없다(index.html:1715)
     hourIdx,
+    // ★v7.72-b 관통 #6 — 정규화된 정수를 그대로 내보내 context 되쓰기에 쓴다.
+    y, m, d,
   };
 }
 
@@ -143,6 +182,7 @@ function guardContext(ctx) {
   const inp = inputFromContext(ctx);
   if (!inp) { metrics.reason = 'NO_BIRTH_FIELDS'; return { applied: false, context: ctx, metrics }; }
   metrics.attempted = true;
+  const norm = { y: inp.y, m: inp.m, d: inp.d };
 
   let r;
   try { r = RC.recompute(inp); } catch (e) { r = null; }
@@ -171,7 +211,7 @@ function guardContext(ctx) {
   for (const k of CTX_REPLACE_KEYS) {
     const get = CTX_VALUE_OF[k];
     if (typeof get !== 'function') continue;          // 상수 불일치 시 조용히 건너뛰지 않도록 SELF 가 검사
-    const sv = get(r);
+    const sv = get(r, norm);
     if (k in ctx && !eq(ctx[k], sv)) {
       metrics.diffs.push({ key: k, client: ctx[k], server: sv });
     }
