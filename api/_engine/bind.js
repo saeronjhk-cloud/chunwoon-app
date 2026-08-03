@@ -43,15 +43,32 @@ const STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '�
 const BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
 const POS = ['연', '월', '일', '시'];
 
+// ★v7.71 — 클라이언트는 **한글**로 보낸다. 한자가 아니다.
+//   index.html:1766 `yearPillar: HS[stem] + EB[branch]` 이고
+//   HS=['갑','을',…] · EB=['자','축',…] (index.html:1015~1016).
+//   종전 splitPillar 는 한자 배열만 봤으므로 `STEMS.indexOf('갑') === -1` 이 되어
+//   **모든 실제 요청에서 computeFacts 가 null** 이었다 ⟹ v7.70 의 엔진 결속
+//   (대운 8단계·십성·지지관계)이 프로덕션에서 **한 번도 발화하지 않았다**.
+//   ★게이트가 못 잡은 이유(결정 80 재발): eval_engine_binding 의 정상 픽스처가
+//     한자였고, 한글 '무진' 을 「null 이어야 한다」는 fail-closed 케이스로
+//     **명시 등재**해 두었다. 게이트가 실제 계약의 반대편을 정본으로 못박은 것이다.
+//   ⟹ 두 표기를 모두 받는다. 내부 표준은 한자를 유지한다(daewoon.js·myeongli.js 계약).
+const STEMS_KO = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const BRANCHES_KO = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+
 // ── 1. 어댑터 ────────────────────────────────────────────────────────────────
-// 클라이언트는 '戊辰' 처럼 **2자 문자열**로 보낸다(index.html:1766 / :2089).
-// ★코드포인트 단위로 자른다 — 한자는 BMP 안이지만 [...str] 로 통일해 서로게이트 사고를 원천 차단.
+// 클라이언트는 '무진'(한글) 처럼 **2자 문자열**로 보낸다(index.html:1766 / :2089).
+// ★코드포인트 단위로 자른다 — [...str] 로 통일해 서로게이트 사고를 원천 차단.
 function splitPillar(p) {
   if (typeof p !== 'string') return null;
   const ch = [...p.trim()];
   if (ch.length !== 2) return null;
   const s = ch[0], b = ch[1];
-  const si = STEMS.indexOf(s), bi = BRANCHES.indexOf(b);
+  // ★표기 정규화 — 한글로 오면 한자로 옮긴다. 혼용('갑子')은 받지 않는다.
+  let si = STEMS.indexOf(s), bi = BRANCHES.indexOf(b);
+  if (si === -1 && bi === -1) {
+    si = STEMS_KO.indexOf(s); bi = BRANCHES_KO.indexOf(b);
+  }
   if (si === -1 || bi === -1) return null;
   // ★v7.70-b — 60갑자에 **실재하는 조합**인지 본다(적대적 검증 관통 #5 수리).
   //   종전에는 천간·지지를 각각만 검사해 '甲丑' 같은 **120중 60개의 비실재 조합**이 통과했다.
@@ -60,7 +77,9 @@ function splitPillar(p) {
   //   **부분적으로 그럴듯한 오답**이 「서버 엔진 산출 확정값」으로 프롬프트에 들어갔다.
   //   60갑자는 천간·지지의 **음양이 같은 조합만** 존재한다(甲子·乙丑 … / 甲丑은 없음).
   if ((si % 2) !== (bi % 2)) return null;
-  return { s: s, b: b };
+  // ★반드시 **한자로 정규화**해서 돌려준다. 하류(daewoon.js·myeongli.js)의
+  //   계약이 한자이므로, 입력 문자를 그대로 돌려주면 한글 경로가 다시 죽는다.
+  return { s: STEMS[si], b: BRANCHES[bi] };
 }
 
 // context → pillars[3 또는 4].
@@ -305,7 +324,16 @@ function applyEngineFacts(type, parsed, facts) {
   return { applied: applied, dropped: dropped, kept: kept };
 }
 
+// ── 5. context 재계산 게이트 (v7.71 · 결정 78) ───────────────────────────────
+// ★재노출만 한다. 판정 로직은 ctxguard.js 안에 있고 그 파일도 pin 봉인 대상이다.
+//   여기에 로직을 두면 결정 80 의 「어댑터가 실질 권한을 쥔다」가 재발한다.
+const ctxguard = require('./ctxguard');
+
 module.exports = {
+  guardContext: ctxguard.guardContext,
+  ctxSelfCheck: ctxguard.selfCheck,
+  CTX_REPLACE_KEYS: ctxguard.CTX_REPLACE_KEYS,
+
   FACT_KEYS: FACT_KEYS,
   FACT_LABELS: FACT_LABELS,
   FACT_AUTHORITY: FACT_AUTHORITY,

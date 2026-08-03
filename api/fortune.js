@@ -904,7 +904,10 @@ export default async function handler(req, res) {
     let body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = null; } }
     if (!isPlainObject(body)) return res.status(400).json({ error: 'Invalid body' });
-    const { type, features, context } = body;
+    // ★v7.71 — `context` 를 let 으로 바꾼다. ctxguard 가 서버 재계산값으로
+    //   교체하기 때문이다(결정 78). const 로 두면 재대입이 TypeError 를 던지고
+    //   그것이 try/catch 에 삼켜져 **기능 전체가 조용히 무효화**된다(실측 확인).
+    let { type, features, context } = body;
 
     // ① type 화이트리스트 — 미등재 type 은 프롬프트 분기 전에 잘라낸다.
     if (typeof type !== 'string' ||
@@ -978,6 +981,37 @@ export default async function handler(req, res) {
     const CW_ENGINE_TYPES = ['saju', 'saju_premium_1', 'saju_premium_2'];
     let cwFacts = null;
     const cwEng = (CW_ENGINE_TYPES.indexOf(type) !== -1) ? await cwEngine() : null;
+
+    // ★v7.71 — 결정 78 이행: context 원국을 **서버가 재계산**한다.
+    //   종전에는 클라이언트가 계산한 4기둥·오행·십성을 서버가 그대로 프롬프트에
+    //   보간했다. 서버는 생년월일에서 기둥을 다시 유도하지 않았으므로
+    //   ⑴ 임의 원국 주입이 가능했고(무료 saju 는 토큰조차 불필요)
+    //   ⑵ 클라이언트 계산 결함이 그대로 사용자에게 도달했다.
+    //
+    //   ★수리되는 클라이언트 결함 (v7.71 실측)
+    //     A 음력 변환 TZ 밀림 — `new Date(1900,0,31)` 의 LMT(+08:27:52)와
+    //       현대 KST(+09:00) 차 33분을 `Math.floor` 가 깎아, 한국 브라우저에서
+    //       1908년 이후 **전 날짜**의 음력이 하루 밀렸다(546표본 100%).
+    //     B ISO 파싱 — `new Date("YYYY-MM-DD")` 는 UTC 자정으로 파싱되는데
+    //       로컬 게터로 읽어, UTC− 타임존에서 4기둥 전체가 하루 밀렸다.
+    //     C `LUNAR_INFO` 표 데이터 오류 138건 — 1930~2015 출생일의 3.63%.
+    //     D 절기 고정일 표(입춘 2/4 등) — 연평균 3.79일 오배정 + 절입 시각
+    //       미반영. 입춘이 2/4 가 아닌 해가 121년 중 28건이다.
+    //
+    //   ★정책(제이 확정): **서버값 채택 + 메트릭**. 불일치로 요청을 막지 않는다 —
+    //     불일치의 주된 원인이 공격이 아니라 위 클라이언트 버그이므로, 400 을
+    //     내면 정상 사용자가 막힌다. 재계산이 성립하지 않으면 **무변경**이다.
+    //   ★적용 순서: 반드시 computeFacts 앞이다. 엔진 3축(십성·대운·지지관계)이
+    //     재계산된 기둥 위에서 산출돼야 두 축이 갈라지지 않는다.
+    let cwCtxMetrics = null;
+    if (cwEng && typeof cwEng.guardContext === 'function') {
+      try {
+        const g = cwEng.guardContext(context);
+        cwCtxMetrics = g.metrics;
+        if (g.applied) context = g.context;
+      } catch (e) { cwCtxMetrics = { engine: 'ctxguard/v7.71', applied: false, reason: 'THREW' }; }
+    }
+
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
 
@@ -1834,6 +1868,25 @@ ${cardsDesc}
       //   ★LLM 이 프롬프트 지시를 어겨도 여기서 무효화된다. 엔진에 없는 합충은 버려진다.
       if (cwFacts && cwEng) {
         try { cwEng.applyEngineFacts(type, parsed, cwFacts); } catch (e) { /* 적용 실패 시 LLM 값 유지 */ }
+      }
+      // ★v7.71 — 재계산 메트릭은 **서버 로그로만** 낸다. 응답에 실으면
+      //   ⑴ 클라이언트 값이 그대로 되비쳐 나가 스크럽 대상이 늘고
+      //   ⑵ 프런트 렌더링 계약(M14 출구 화이트리스트)을 건드린다.
+      //   불일치 사유는 대부분 클라이언트 버그이므로 분포 관측이 목적이다.
+      // ★v7.71-b 관통 #5 수리 — 종전에는 `applied && diffCount>0` 일 때만 로깅해,
+      //   **가장 의심스러운 이벤트(게이트가 꺼진 것)가 유일하게 관측되지 않았다.**
+      //   ctxguard.js 를 지워도 로그가 0줄이었다. ⟹ 항상 낸다.
+      if (CW_ENGINE_TYPES.indexOf(type) !== -1) {
+        try {
+          const m = cwCtxMetrics;
+          console.log('[cw:ctxguard]', JSON.stringify(
+            !cwEng ? { type, applied: false, reason: 'ENGINE_UNAVAILABLE' }
+              : !m ? { type, applied: false, reason: 'GUARD_MISSING' }
+                : m.applied
+                  ? { type, applied: true, mode: m.mode, notes: m.notes, diffKeys: m.diffs.map((d) => d.key), diffCount: m.diffCount }
+                  : { type, applied: false, reason: m.reason }   // ★스킵 사유를 반드시 남긴다
+          ));
+        } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
       }
       scrubDeep(parsed); // P1-R7: 인용 키 삭제 + 모든 문자열 값 스크럽 (Phase1 룩업 DB 도입 시 복원)
       return res.status(200).json({ success: true, result: parsed });
