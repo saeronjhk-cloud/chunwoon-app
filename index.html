@@ -140,6 +140,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .input-group input:focus,.input-group select:focus,.input-group textarea:focus{border-color:var(--gold)}
 .input-group select option{background:var(--bg-card);color:var(--text)}
 .input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* v7.73 음력 입력 UI (관통 #10) — <input type=date>는 음력 2/30을 브라우저가 거부하므로 select 로 전환 */
+.cw-lunar-row{display:flex;gap:6px}
+.cw-lunar-row select{flex:1;min-width:0;padding-left:10px;padding-right:6px}
+.cw-lunar-row select.cw-ly{flex:1.4}
+.cw-leap{display:flex;flex-direction:row;align-items:center;gap:7px;margin-top:2px;font-size:12px;color:var(--text);cursor:pointer}
+.cw-leap input[type=checkbox]{width:17px;height:17px;padding:0;margin:0;flex:none;border-radius:4px;accent-color:var(--gold);cursor:pointer}
+.cw-leap input[type=checkbox]:disabled{opacity:.35;cursor:not-allowed}
+.cw-leap-note{font-size:10px;color:var(--text2);line-height:1.6}
 
 /* Grid helpers */
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
@@ -435,7 +443,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
         <input type="hidden" id="tarotCalType" value="solar" />
-        <div class="input-group" style="margin-bottom:8px"><label>생년월일</label><input type="date" id="tarotBirth" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px" id="tarotBirth_SOLARWRAP"><label>생년월일</label><input type="date" id="tarotBirth" min="1900-01-01" max="2050-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px;display:none" id="tarotBirth_LUNARWRAP"><label>생년월일 — 음력(陰曆)</label><div class="cw-lunar-row"><select id="tarotBirth_LY" class="cw-ly"></select><select id="tarotBirth_LM"></select><select id="tarotBirth_LD"></select></div><label class="cw-leap"><input type="checkbox" id="tarotBirth_LEAP" />윤달(閏月)</label><div class="cw-leap-note" id="tarotBirth_LEAPNOTE"></div></div>
         <div class="input-row">
           <div class="input-group" style="margin-bottom:0"><label>성별</label><select id="tarotGender"><option value="male">남성</option><option value="female">여성</option></select></div>
           <div class="input-group" style="margin-bottom:0"><label>시간</label><select id="tarotHour"><option value="-1">모름</option><option value="0">자시 (23:00~00:59)</option><option value="1">축시 (01:00~02:59)</option><option value="2">인시 (03:00~04:59)</option><option value="3">묘시 (05:00~06:59)</option><option value="4">진시 (07:00~08:59)</option><option value="5">사시 (09:00~10:59)</option><option value="6">오시 (11:00~12:59)</option><option value="7">미시 (13:00~14:59)</option><option value="8">신시 (15:00~16:59)</option><option value="9">유시 (17:00~18:59)</option><option value="10">술시 (19:00~20:59)</option><option value="11">해시 (21:00~22:59)</option></select></div>
@@ -466,7 +475,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
       </div>
       <input type="hidden" id="sajuCalType" value="solar" />
-      <div class="input-group"><label>생년월일</label><input type="date" id="sajuBirth" min="1900-01-01" max="2099-12-31" /></div>
+      <div class="input-group" id="sajuBirth_SOLARWRAP"><label>생년월일</label><input type="date" id="sajuBirth" min="1900-01-01" max="2050-12-31" /></div>
+      <div class="input-group" style="display:none" id="sajuBirth_LUNARWRAP"><label>생년월일 — 음력(陰曆)</label><div class="cw-lunar-row"><select id="sajuBirth_LY" class="cw-ly"></select><select id="sajuBirth_LM"></select><select id="sajuBirth_LD"></select></div><label class="cw-leap"><input type="checkbox" id="sajuBirth_LEAP" />윤달(閏月)</label><div class="cw-leap-note" id="sajuBirth_LEAPNOTE"></div></div>
       <div class="input-row">
         <div class="input-group"><label>태어난 시간</label><select id="sajuHour"><option value="-1">모름</option><option value="0">자시(23~01)</option><option value="1">축시(01~03)</option><option value="2">인시(03~05)</option><option value="3">묘시(05~07)</option><option value="4">진시(07~09)</option><option value="5">사시(09~11)</option><option value="6">오시(11~13)</option><option value="7">미시(13~15)</option><option value="8">신시(15~17)</option><option value="9">유시(17~19)</option><option value="10">술시(19~21)</option><option value="11">해시(21~23)</option></select></div>
         <div class="input-group"><label>성별</label><select id="sajuGender"><option value="male">남성</option><option value="female">여성</option></select></div>
@@ -494,7 +504,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
         <input type="hidden" id="cCal1Type" value="solar" />
-        <div class="input-group"><label>생년월일</label><input type="date" id="cBirth1" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" id="cBirth1_SOLARWRAP"><label>생년월일</label><input type="date" id="cBirth1" min="1900-01-01" max="2050-12-31" /></div>
+        <div class="input-group" style="display:none" id="cBirth1_LUNARWRAP"><label>생년월일 — 음력(陰曆)</label><div class="cw-lunar-row"><select id="cBirth1_LY" class="cw-ly"></select><select id="cBirth1_LM"></select><select id="cBirth1_LD"></select></div><label class="cw-leap"><input type="checkbox" id="cBirth1_LEAP" />윤달(閏月)</label><div class="cw-leap-note" id="cBirth1_LEAPNOTE"></div></div>
         <div class="input-row">
           <div class="input-group"><label>태어난 시간</label><select id="cHour1"><option value="-1">모름</option><option value="0">자시(23~01)</option><option value="1">축시(01~03)</option><option value="2">인시(03~05)</option><option value="3">묘시(05~07)</option><option value="4">진시(07~09)</option><option value="5">사시(09~11)</option><option value="6">오시(11~13)</option><option value="7">미시(13~15)</option><option value="8">신시(15~17)</option><option value="9">유시(17~19)</option><option value="10">술시(19~21)</option><option value="11">해시(21~23)</option></select></div>
           <div class="input-group"><label>성별</label><select id="cGender1"><option value="male">남성</option><option value="female">여성</option></select></div>
@@ -515,7 +526,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
         <input type="hidden" id="cCal2Type" value="solar" />
-        <div class="input-group"><label>생년월일</label><input type="date" id="cBirth2" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" id="cBirth2_SOLARWRAP"><label>생년월일</label><input type="date" id="cBirth2" min="1900-01-01" max="2050-12-31" /></div>
+        <div class="input-group" style="display:none" id="cBirth2_LUNARWRAP"><label>생년월일 — 음력(陰曆)</label><div class="cw-lunar-row"><select id="cBirth2_LY" class="cw-ly"></select><select id="cBirth2_LM"></select><select id="cBirth2_LD"></select></div><label class="cw-leap"><input type="checkbox" id="cBirth2_LEAP" />윤달(閏月)</label><div class="cw-leap-note" id="cBirth2_LEAPNOTE"></div></div>
         <div class="input-row">
           <div class="input-group"><label>태어난 시간</label><select id="cHour2"><option value="-1">모름</option><option value="0">자시(23~01)</option><option value="1">축시(01~03)</option><option value="2">인시(03~05)</option><option value="3">묘시(05~07)</option><option value="4">진시(07~09)</option><option value="5">사시(09~11)</option><option value="6">오시(11~13)</option><option value="7">미시(13~15)</option><option value="8">신시(15~17)</option><option value="9">유시(17~19)</option><option value="10">술시(19~21)</option><option value="11">해시(21~23)</option></select></div>
           <div class="input-group"><label>성별</label><select id="cGender2"><option value="female">여성</option><option value="male">남성</option></select></div>
@@ -585,7 +597,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         </div>
       </div>
       <input type="hidden" id="tjCalType" value="solar" />
-      <div class="input-group"><label>생년월일</label><input type="date" id="tjBirth" min="1900-01-01" max="2099-12-31" /></div>
+      <div class="input-group" id="tjBirth_SOLARWRAP"><label>생년월일</label><input type="date" id="tjBirth" min="1900-01-01" max="2050-12-31" /></div>
+      <div class="input-group" style="display:none" id="tjBirth_LUNARWRAP"><label>생년월일 — 음력(陰曆)</label><div class="cw-lunar-row"><select id="tjBirth_LY" class="cw-ly"></select><select id="tjBirth_LM"></select><select id="tjBirth_LD"></select></div><label class="cw-leap"><input type="checkbox" id="tjBirth_LEAP" />윤달(閏月)</label><div class="cw-leap-note" id="tjBirth_LEAPNOTE"></div></div>
       <div class="input-group"><label>성별</label><select id="tjGender"><option value="male">남성</option><option value="female">여성</option></select></div>
       <div class="input-group"><label>운세 확인 연도</label><select id="tjTargetYear"></select></div>
       <button class="action-btn red" onclick="analyzeTojeong()">📜 토정비결 보기</button>
@@ -788,7 +801,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           </div>
         </div>
         <input type="hidden" id="namingCalType" value="solar" />
-        <div class="input-group" style="margin-bottom:8px"><label>생년월일 (아기/본인)</label><input type="date" id="namingBirth" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px" id="namingBirth_SOLARWRAP"><label>생년월일 (아기/본인)</label><input type="date" id="namingBirth" min="1900-01-01" max="2050-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px;display:none" id="namingBirth_LUNARWRAP"><label>생년월일 (아기/본인) — 음력(陰曆)</label><div class="cw-lunar-row"><select id="namingBirth_LY" class="cw-ly"></select><select id="namingBirth_LM"></select><select id="namingBirth_LD"></select></div><label class="cw-leap"><input type="checkbox" id="namingBirth_LEAP" />윤달(閏月)</label><div class="cw-leap-note" id="namingBirth_LEAPNOTE"></div></div>
         <div class="input-group" style="margin-bottom:8px">
           <label>태어난 시간 <span style="color:var(--text2);font-weight:400;font-size:11px">(정확한 시간을 알면 직접 입력)</span></label>
           <input type="time" id="namingHourPicker" oninput="_syncHourFromPicker('namingHourPicker','namingHour')" placeholder="예: 03:45" />
@@ -808,7 +822,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <input id="namingCEOName" placeholder="예: 김민수 / John Kim" maxlength="20" />
           <div style="font-size:10px;color:var(--text2);margin-top:3px">💡 대표 이름의 발음·한자가 회사명과 어울리는지(상생 음운/오행) 평가에 사용</div>
         </div>
-        <div class="input-group" style="margin-bottom:8px"><label>대표 생년월일</label><input type="date" id="namingCEOBirth" min="1900-01-01" max="2099-12-31" /></div>
+        <div class="input-group" style="margin-bottom:8px"><label>대표 생년월일</label><input type="date" id="namingCEOBirth" min="1900-01-01" max="2050-12-31" /></div>
         <div class="input-group" style="margin-bottom:8px">
           <label>대표 출생 시간 <span style="color:var(--text2);font-weight:400;font-size:11px">(직접 입력)</span></label>
           <input type="time" id="namingCEOHourPicker" oninput="_syncHourFromPicker('namingCEOHourPicker','namingCEOHour')" placeholder="예: 14:30" />
@@ -1047,82 +1061,872 @@ const TJ_MON=[
 ['한 해를 마무리하며 감사.','내년을 준비하세요.','가족과 함께하는 시간이 복.']
 ];
 
-// ── 음력 변환 데이터 (1900-2050) ──
-// 비트 레이아웃: bit16=윤달크기(1=30일), bits15-4=월별크기(1=30일,0=29일), bits3-0=윤달(0=없음)
-const LUNAR_INFO=[
-0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
-0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
-0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
-0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
-0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
-0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,
-0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
-0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
-0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
-0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x05ac0,0x0ab60,0x096d5,0x092e0,
-0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
-0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
-0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
-0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
-0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,
-0x14b63
-];
-
-function lunarLeapMonth(y){return LUNAR_INFO[y-1900]&0xf}
-function lunarLeapDays(y){return lunarLeapMonth(y)?((LUNAR_INFO[y-1900]&0x10000)?30:29):0}
-function lunarMonthDays(y,m){return(LUNAR_INFO[y-1900]&(0x10000>>m))?30:29}
-function lunarYearDays(y){let s=0;for(let m=1;m<=12;m++)s+=lunarMonthDays(y,m);return s+lunarLeapDays(y)}
-
-function solarToLunar(sY,sM,sD){
-  const base=new Date(1900,0,31);const target=new Date(sY,sM-1,sD);
-  let offset=Math.floor((target-base)/86400000);
-  if(offset<0)return null;
-  let ly=1900;
-  while(ly<2051){const yd=lunarYearDays(ly);if(offset<yd)break;offset-=yd;ly++}
-  let lm=1,isLeap=false,leapM=lunarLeapMonth(ly);
-  for(let m=1;m<=12;m++){
-    let days=lunarMonthDays(ly,m);
-    if(offset<days){lm=m;break}
-    offset-=days;
-    if(m===leapM){
-      let ld=lunarLeapDays(ly);
-      if(offset<ld){lm=m;isLeap=true;break}
-      offset-=ld;
-    }
-    lm=m+1;
-  }
-  return{year:ly,month:lm,day:offset+1,isLeap};
+// ── 역법·천문 엔진 — api/_engine/{astro,lunar,recompute}.js 기계 이식본 ──
+// ★관통 #7 (v7.73) — 「화면 기둥 ≠ 해석 기둥」의 원인은 클라이언트에만 있던 별도 알고리즘이었다.
+//   · 절기: 고정일표(입춘 2/4 …)가 천문 계산 대조 667/1,812(36.8%) 오답이고,
+//           절입의 49.9%가 정오 이후인데 클라는 날짜만 비교했다 → 월주 오답.
+//   · 음력: LUNAR_INFO 비트마스크 표의 대소월 비트가 33개 달에서 뒤집혀 있었다 → 일주 오답.
+//   ⟹ 표를 손보는 대신 **서버와 같은 코드**를 쓴다. 이 블록은 손으로 쓰지 않는다.
+//     생성:  node _v773_work/gen_client_astro.js --apply
+//     검사:  node _v773_work/gen_client_astro.js --check   ← 엔진만 고치고 여기를
+//            갱신하지 않으면 FAIL 한다(안 (가)의 유일한 약점 「코드 2벌 드리프트」 차단).
+// ==== CW_ENGINE_PORT BEGIN (generated by _v773_work/gen_client_astro.js - DO NOT EDIT BY HAND) ====
+// src: astro.js@5903f3e29920b267 lunar.js@cbd4da8181d73012 recompute.js@7d203bfa895be054
+// block-sha256: 16e5e750169b1152a2d07dd1701e6d8a249b97f09d58d594d2e5869caf1cfba0
+const CW_ENGINE = (function () {
+'use strict';
+// ---- astro.js ----
+function gregorianToJDN(y, m, d) {
+  const a = Math.floor((14 - m) / 12);
+  const yy = y + 4800 - a;
+  const mm = m + 12 * a - 3;
+  return d + Math.floor((153 * mm + 2) / 5) + 365 * yy
+    + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045;
 }
 
-// 음력 → 양력 변환 (solarToLunar 역변환)
-// ly,lm,ld: 음력 년/월/일, isLeap: 윤달 여부
-function lunarToSolar(ly,lm,ld,isLeap){
-  if(ly<1900||ly>2050)return null;
-  if(lm<1||lm>12||ld<1||ld>30)return null;
-  let offset=0;
-  for(let y=1900;y<ly;y++)offset+=lunarYearDays(y);
-  const leapM=lunarLeapMonth(ly);
-  // 평달 isLeap=true 인데 그 해 윤달이 lm 이 아니면 평달로 강제
-  if(isLeap && leapM!==lm) isLeap=false;
-  for(let m=1;m<lm;m++){
-    offset+=lunarMonthDays(ly,m);
-    if(m===leapM)offset+=lunarLeapDays(ly);
+function jdnToGregorian(jdn) {
+  const a = jdn + 32044;
+  const b = Math.floor((4 * a + 3) / 146097);
+  const c = a - Math.floor((146097 * b) / 4);
+  const dd = Math.floor((4 * c + 3) / 1461);
+  const e = c - Math.floor((1461 * dd) / 4);
+  const mm = Math.floor((5 * e + 2) / 153);
+  return {
+    y: 100 * b + dd - 4800 + Math.floor(mm / 10),
+    m: mm + 3 - 12 * Math.floor(mm / 10),
+    d: e - Math.floor((153 * mm + 2) / 5) + 1,
+  };
+}
+
+function jdToKstJdn(jd) {
+  return Math.floor(jd + 0.5 + 9 / 24);
+}
+
+const J2000 = 2451545.0;
+
+const toT = (jd) => (jd - J2000) / 36525.0;
+
+const RAD = Math.PI / 180;
+
+function deltaTSeconds(year, month) {
+  const y = year + (month - 0.5) / 12;
+  let u, t;
+  if (y < 1900) {
+    t = y - 1860;
+    return 7.62 + 0.5737 * t - 0.251754 * t * t + 0.01680668 * t ** 3
+      - 0.0004473624 * t ** 4 + t ** 5 / 233174;
   }
-  // 윤달인 경우 평달 분량 추가
-  if(isLeap && lm===leapM){
-    offset+=lunarMonthDays(ly,lm);
-    // 윤달 일수 제한 검증
-    const lDays=lunarLeapDays(ly);
-    if(ld>lDays)return null;
+  if (y < 1920) { t = y - 1900; return -2.79 + 1.494119 * t - 0.0598939 * t * t + 0.0061966 * t ** 3 - 0.000197 * t ** 4; }
+  if (y < 1941) { t = y - 1920; return 21.20 + 0.84493 * t - 0.076100 * t * t + 0.0020936 * t ** 3; }
+  if (y < 1961) { t = y - 1950; return 29.07 + 0.407 * t - t * t / 233 + t ** 3 / 2547; }
+  if (y < 1986) { t = y - 1975; return 45.45 + 1.067 * t - t * t / 260 - t ** 3 / 718; }
+  if (y < 2005) { t = y - 2000; return 63.86 + 0.3345 * t - 0.060374 * t * t + 0.0017275 * t ** 3 + 0.000651814 * t ** 4 + 0.00002373599 * t ** 5; }
+  if (y < 2050) { t = y - 2000; return 62.92 + 0.32217 * t + 0.005589 * t * t; }
+  if (y < 2150) { u = (y - 1820) / 100; return -20 + 32 * u * u - 0.5628 * (2150 - y); }
+  u = (y - 1820) / 100;
+  return -20 + 32 * u * u;
+}
+
+function ttToUt(jdTT) {
+  const g = jdnToGregorian(Math.floor(jdTT + 0.5));
+  return jdTT - deltaTSeconds(g.y, g.m) / 86400.0;
+}
+
+function solarApparentLongitude(jdTT) {
+  const T = toT(jdTT);
+
+  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
+
+  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
+  const Mr = M * RAD;
+
+  const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(Mr)
+    + (0.019993 - 0.000101 * T) * Math.sin(2 * Mr)
+    + 0.000289 * Math.sin(3 * Mr);
+  const trueLong = L0 + C;
+
+  const omega = 125.04 - 1934.136 * T;
+  const apparent = trueLong - 0.00569 - 0.00478 * Math.sin(omega * RAD);
+  return ((apparent % 360) + 360) % 360;
+}
+
+function solveSolarLongitude(targetDeg, jdGuess) {
+  let jd = jdGuess;
+  for (let i = 0; i < 60; i++) {
+    const lon = solarApparentLongitude(jd);
+
+    let diff = targetDeg - lon;
+    while (diff > 180) diff -= 360;
+    while (diff <= -180) diff += 360;
+    if (Math.abs(diff) < 1e-9) break;
+    jd += diff * 365.2422 / 360.0;
+  }
+  return jd;
+}
+
+function newMoonJDE(k) {
+  const T = k / 1236.85;
+  const T2 = T * T, T3 = T2 * T, T4 = T3 * T;
+
+  let jde = 2451550.09766 + 29.530588861 * k
+    + 0.00015437 * T2 - 0.000000150 * T3 + 0.00000000073 * T4;
+
+  const M = 2.5534 + 29.10535670 * k - 0.0000014 * T2 - 0.00000011 * T3;
+
+  const Mp = 201.5643 + 385.81693528 * k + 0.0107582 * T2 + 0.00001238 * T3 - 0.000000058 * T4;
+
+  const F = 160.7108 + 390.67050284 * k - 0.0016118 * T2 - 0.00000227 * T3 + 0.000000011 * T4;
+
+  const Om = 124.7746 - 1.56375588 * k + 0.0020672 * T2 + 0.00000215 * T3;
+
+  const E = 1 - 0.002516 * T - 0.0000074 * T2;
+
+  const s = (deg) => Math.sin(deg * RAD);
+  const Mr = M, Mpr = Mp, Fr = F, Omr = Om;
+
+  jde += -0.40720 * s(Mpr)
+    + 0.17241 * E * s(Mr)
+    + 0.01608 * s(2 * Mpr)
+    + 0.01039 * s(2 * Fr)
+    + 0.00739 * E * s(Mpr - Mr)
+    - 0.00514 * E * s(Mpr + Mr)
+    + 0.00208 * E * E * s(2 * Mr)
+    - 0.00111 * s(Mpr - 2 * Fr)
+    - 0.00057 * s(Mpr + 2 * Fr)
+    + 0.00056 * E * s(2 * Mpr + Mr)
+    - 0.00042 * s(3 * Mpr)
+    + 0.00042 * E * s(Mr + 2 * Fr)
+    + 0.00038 * E * s(Mr - 2 * Fr)
+    - 0.00024 * E * s(2 * Mpr - Mr)
+    - 0.00017 * s(Omr)
+    - 0.00007 * s(Mpr + 2 * Mr)
+    + 0.00004 * s(2 * Mpr - 2 * Fr)
+    + 0.00004 * s(3 * Mr)
+    + 0.00003 * s(Mpr + Mr - 2 * Fr)
+    + 0.00003 * s(2 * Mpr + 2 * Fr)
+    - 0.00003 * s(Mpr + Mr + 2 * Fr)
+    + 0.00003 * s(Mpr - Mr + 2 * Fr)
+    - 0.00002 * s(Mpr - Mr - 2 * Fr)
+    - 0.00002 * s(3 * Mpr + Mr)
+    + 0.00002 * s(4 * Mpr);
+
+  const A = [
+    [299.77 + 0.107408 * k - 0.009173 * T2, 0.000325],
+    [251.88 + 0.016321 * k, 0.000165],
+    [251.83 + 26.651886 * k, 0.000164],
+    [349.42 + 36.412478 * k, 0.000126],
+    [84.66 + 18.206239 * k, 0.000110],
+    [141.74 + 53.303771 * k, 0.000062],
+    [207.14 + 2.453732 * k, 0.000060],
+    [154.84 + 7.306860 * k, 0.000056],
+    [34.52 + 27.261239 * k, 0.000047],
+    [207.19 + 0.121824 * k, 0.000042],
+    [291.34 + 1.844379 * k, 0.000040],
+    [161.72 + 24.198154 * k, 0.000037],
+    [239.56 + 25.513099 * k, 0.000035],
+    [331.55 + 3.592518 * k, 0.000023],
+  ];
+  for (const [ang, coef] of A) jde += coef * s(ang);
+
+  return jde;
+}
+
+function kFromJD(jd) {
+  return Math.floor((jd - 2451550.09766) / 29.530588861);
+}
+
+const MAJOR_TERMS = [
+  [315, '입춘', 2],
+  [345, '경칩', 3],
+  [15, '청명', 4],
+  [45, '입하', 5],
+  [75, '망종', 6],
+  [105, '소서', 7],
+  [135, '입추', 8],
+  [165, '백로', 9],
+  [195, '한로', 10],
+  [225, '입동', 11],
+  [255, '대설', 0],
+  [285, '소한', 1],
+];
+
+function majorTermsOfYear(year) {
+  const out = [];
+  for (const [lon, name, branch] of MAJOR_TERMS) {
+
+    let approxMonth = Math.round(((lon - 315 + 360) % 360) / 30) + 2;
+    if (approxMonth > 12) approxMonth -= 12;
+    const guess = gregorianToJDN(year, approxMonth, 5) - 0.5;
+    const jdTT = solveSolarLongitude(lon, guess);
+    const jdUT = ttToUt(jdTT);
+    out.push({ name, lonDeg: lon, branch, jdUT, jdn: jdToKstJdn(jdUT) });
+  }
+  out.sort((a, b) => a.jdUT - b.jdUT);
+  return out;
+}
+
+function minorTermJdn(year, lonDeg) {
+  let approxMonth = Math.round(((lonDeg - 330 + 360) % 360) / 30) + 2;
+  if (approxMonth > 12) approxMonth -= 12;
+  const guess = gregorianToJDN(year, approxMonth, 20) - 0.5;
+  return jdToKstJdn(ttToUt(solveSolarLongitude(lonDeg, guess)));
+}
+
+function winterSolsticeJdn(year) {
+  const guess = gregorianToJDN(year, 12, 21) - 0.5;
+  return jdToKstJdn(ttToUt(solveSolarLongitude(270, guess)));
+}
+
+function newMoonJdn(k) {
+  return jdToKstJdn(ttToUt(newMoonJDE(k)));
+}
+
+// ---- lunar.js ----
+const MINOR_TERM_LONS = [270, 300, 330, 0, 30, 60, 90, 120, 150, 180, 210, 240];
+
+const _cache = new Map();
+
+function buildSui(year) {
+
+  const ws0 = winterSolsticeJdn(year);
+  const ws1 = winterSolsticeJdn(year + 1);
+
+  const nmOnOrBefore = (jdn) => {
+    let k = kFromJD(jdn) + 2;
+    while (newMoonJdn(k) > jdn) k--;
+    return { k, jdn: newMoonJdn(k) };
+  };
+  const m0 = nmOnOrBefore(ws0);
+  const m1 = nmOnOrBefore(ws1);
+
+  const months = [];
+  for (let k = m0.k; k < m1.k; k++) {
+    months.push({ k, startJdn: newMoonJdn(k), endJdn: newMoonJdn(k + 1) - 1 });
+  }
+  const count = months.length;
+
+  const termJdns = [];
+  for (const lon of MINOR_TERM_LONS) {
+
+    termJdns.push(minorTermJdn(year, lon), minorTermJdn(year + 1, lon));
+  }
+  const hasMinorTerm = (mo) =>
+    termJdns.some((t) => t >= mo.startJdn && t <= mo.endJdn);
+
+  let leapIdx = -1;
+  if (count === 13) {
+    for (let i = 1; i < months.length; i++) {
+      if (!hasMinorTerm(months[i])) { leapIdx = i; break; }
+    }
+    if (leapIdx === -1) leapIdx = 1;
+  }
+
+  const out = [];
+  let num = 11;
+  for (let i = 0; i < months.length; i++) {
+    if (i === leapIdx) {
+      out.push({ startJdn: months[i].startJdn, endJdn: months[i].endJdn, monthNum: num, isLeap: true });
+    } else {
+      num = i === 0 ? 11 : num + 1;
+      if (num > 12) num -= 12;
+      out.push({ startJdn: months[i].startJdn, endJdn: months[i].endJdn, monthNum: num, isLeap: false });
+    }
+  }
+  return out;
+}
+
+function _monthsCovering(jdn) {
+  const g = jdnToGregorian(jdn);
+  const key = g.y;
+  if (!_cache.has(key)) {
+
+    _cache.set(key, [].concat(buildSui(g.y - 2), buildSui(g.y - 1), buildSui(g.y)));
+    if (_cache.size > 24) _cache.delete(_cache.keys().next().value);
+  }
+  return _cache.get(key);
+}
+
+function solarToLunar(y, m, d) {
+  const jdn = gregorianToJDN(y, m, d);
+  const months = _monthsCovering(jdn);
+  const idx = months.findIndex((mo) => jdn >= mo.startJdn && jdn <= mo.endJdn);
+  if (idx === -1) return null;
+  const mo = months[idx];
+  const day = jdn - mo.startJdn + 1;
+
+  let j = idx;
+  while (j >= 0 && !(months[j].monthNum === 1 && !months[j].isLeap)) j--;
+  if (j < 0) return null;
+  const lunarYear = jdnToGregorian(months[j].startJdn).y;
+
+  return { year: lunarYear, month: mo.monthNum, day, isLeap: mo.isLeap };
+}
+
+function lunarToSolar(ly, lm, ld, isLeap) {
+  if (!Number.isInteger(ly) || !Number.isInteger(lm) || !Number.isInteger(ld)) return null;
+  if (lm < 1 || lm > 12 || ld < 1 || ld > 30) return null;
+
+  const pool = [].concat(buildSui(ly - 2), buildSui(ly - 1), buildSui(ly));
+
+  let start = -1;
+  for (let i = 0; i < pool.length; i++) {
+    if (pool[i].monthNum === 1 && !pool[i].isLeap
+      && jdnToGregorian(pool[i].startJdn).y === ly) { start = i; break; }
+  }
+  if (start === -1) return null;
+  for (let i = start; i < pool.length; i++) {
+    const mo = pool[i];
+    if (mo.monthNum === lm && !!mo.isLeap === !!isLeap) {
+      const len = mo.endJdn - mo.startJdn + 1;
+      if (ld > len) return null;
+      return jdnToGregorian(mo.startJdn + ld - 1);
+    }
+
+    if (i > start && mo.monthNum === 1 && !mo.isLeap) break;
+  }
+  return null;
+}
+
+function leapMonthOf(ly) {
+  const pool = [].concat(buildSui(ly - 1), buildSui(ly));
+  let start = -1;
+  for (let i = 0; i < pool.length; i++) {
+    if (pool[i].monthNum === 1 && !pool[i].isLeap
+      && jdnToGregorian(pool[i].startJdn).y === ly) { start = i; break; }
+  }
+  if (start === -1) return 0;
+  for (let i = start; i < pool.length; i++) {
+    if (i > start && pool[i].monthNum === 1 && !pool[i].isLeap) break;
+    if (pool[i].isLeap) return pool[i].monthNum;
+  }
+  return 0;
+}
+
+// ---- recompute.js ----
+const HS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const EB = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+const HS_CH = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+const EB_CH = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+const EL = ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'];
+const HS_EL = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4];
+const HS_YIN = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1];
+const EB_EL = [4, 2, 0, 0, 2, 1, 1, 2, 3, 3, 2, 4];
+
+const DAY_REF_JDN = gregorianToJDN(1990, 1, 1);
+const DAY_REF_IDX = 2;
+
+const TERM_EDGE_MIN = 30;
+
+function parseBirthDate(s, calType) {
+  if (typeof s !== 'string') return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 1900 || y > 2050) return null;
+  if (mo < 1 || mo > 12 || d < 1) return null;
+  if (calType === 'lunar') {
+    if (d > 30) return null;
+    return { y, m: mo, d };
+  }
+  if (d > 31) return null;
+  const g = jdnToGregorian(gregorianToJDN(y, mo, d));
+  if (g.y !== y || g.m !== mo || g.d !== d) return null;
+  return { y, m: mo, d };
+}
+
+function normHourIdx(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (t === '' || t === '-' || t === '모름' || t === '미상') return null;
+    v = Number(t);
+  }
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+  if (!Number.isInteger(v)) return null;
+  if (v < 0 || v > 11) return null;
+  return v;
+}
+
+const _termCache = new Map();
+function termsOf(year) {
+  if (!_termCache.has(year)) {
+    _termCache.set(year, majorTermsOfYear(year));
+    if (_termCache.size > 40) _termCache.delete(_termCache.keys().next().value);
+  }
+  return _termCache.get(year);
+}
+
+function termKstDayFloat(t) { return t.jdUT + 9 / 24 + 0.5; }
+
+function yearAndMonthBranch(birthDayFloat, gy) {
+
+  const all = [].concat(termsOf(gy - 1), termsOf(gy), termsOf(gy + 1))
+    .map((t) => ({ ...t, kst: termKstDayFloat(t) }))
+    .sort((a, b) => a.kst - b.kst);
+
+  let idx = -1;
+  for (let i = 0; i < all.length; i++) { if (all[i].kst <= birthDayFloat) idx = i; else break; }
+  if (idx === -1) return null;
+  const cur = all[idx];
+
+  let ip = null;
+  for (let i = idx; i >= 0; i--) { if (all[i].lonDeg === 315) { ip = all[i]; break; } }
+  if (!ip) return null;
+  const sajuYear = jdnToGregorian(Math.floor(ip.kst)).y;
+
+  const marginMin = (birthDayFloat - cur.kst) * 1440;
+  const nextTerm = all[idx + 1];
+  const marginNextMin = nextTerm ? (nextTerm.kst - birthDayFloat) * 1440 : Infinity;
+
+  return {
+    sajuYear,
+    monthBranch: cur.branch,
+    termName: cur.name,
+    termJdn: Math.floor(cur.kst),
+    marginMin, marginNextMin,
+  };
+}
+
+function recompute(inp) {
+  if (!inp || typeof inp !== 'object') return null;
+
+  const calType = inp.calType === 'lunar' ? 'lunar' : 'solar';
+
+  const parsed = parseBirthDate(inp.birth, calType);
+  if (!parsed) return null;
+  const hourIdx = normHourIdx(inp.hourIdx);
+  const isLeap = !!inp.isLeap;
+
+  const notes = [];
+
+  let sy, sm, sd, lunarIn = null;
+  if (calType === 'lunar') {
+    const sol = lunarToSolar(parsed.y, parsed.m, parsed.d, isLeap);
+    if (!sol) return { ok: false, reason: 'LUNAR_OUT_OF_RANGE', input: parsed };
+    sy = sol.y; sm = sol.m; sd = sol.d;
+    lunarIn = { year: parsed.y, month: parsed.m, day: parsed.d, isLeap };
+    if (!isLeap && leapMonthOf(parsed.y) === parsed.m) {
+      notes.push('LUNAR_LEAP_AMBIGUOUS');
+    }
   } else {
-    // 평달 일수 제한 검증
-    const mDays=lunarMonthDays(ly,lm);
-    if(ld>mDays)return null;
+    sy = parsed.y; sm = parsed.m; sd = parsed.d;
   }
-  offset+=(ld-1);
-  const base=new Date(1900,0,31);
-  const t=new Date(base.getTime()+offset*86400000);
-  return{year:t.getFullYear(),month:t.getMonth()+1,day:t.getDate()};
+
+  const jdn = gregorianToJDN(sy, sm, sd);
+
+  let dayFloat, hourKnown = hourIdx !== null;
+  if (hourKnown) {
+    const centerHour = hourIdx === 0 ? 0 : hourIdx * 2;
+    dayFloat = jdn + centerHour / 24;
+  } else {
+    dayFloat = jdn + 0.5;
+    notes.push('HOUR_UNKNOWN');
+  }
+
+  const ym = yearAndMonthBranch(dayFloat, sy);
+  if (!ym) return { ok: false, reason: 'TERM_RESOLVE_FAILED' };
+
+  if (Math.abs(ym.marginMin) < TERM_EDGE_MIN * 4 || ym.marginNextMin < TERM_EDGE_MIN * 4) {
+    notes.push('TERM_BOUNDARY_NEAR');
+  }
+  if (!hourKnown && (ym.termJdn === jdn)) {
+    notes.push('TERM_SAME_DAY_HOUR_UNKNOWN');
+  }
+
+  const yIdx = ((ym.sajuYear - 4) % 60 + 60) % 60;
+  const yearStem = yIdx % 10, yearBranch = yIdx % 12;
+
+  const monthBranch = ym.monthBranch;
+
+  const monthStem = ([2, 4, 6, 8, 0][yearStem % 5] + ((monthBranch - 2 + 12) % 12)) % 10;
+
+  const dIdx = ((DAY_REF_IDX + (jdn - DAY_REF_JDN)) % 60 + 60) % 60;
+  const dayStem = dIdx % 10, dayBranch = dIdx % 12;
+
+  let hourStem = null;
+  if (hourKnown) hourStem = ([0, 2, 4, 6, 8][dayStem % 5] + hourIdx) % 10;
+
+  const pill = (s, b) => ({
+    stem: s, branch: b,
+    ganji: HS[s] + EB[b], ganjiCh: HS_CH[s] + EB_CH[b],
+    el: HS_EL[s],
+  });
+  const pillars = {
+    year: pill(yearStem, yearBranch),
+    month: pill(monthStem, monthBranch),
+    day: pill(dayStem, dayBranch),
+    hour: hourKnown ? pill(hourStem, hourIdx) : null,
+  };
+
+  const els = [0, 0, 0, 0, 0];
+  for (const k of ['year', 'month', 'day', 'hour']) {
+    const p = pillars[k]; if (!p) continue;
+    els[p.el]++; els[EB_EL[p.branch]]++;
+  }
+
+  const sipsungOf = (other) => {
+    if (other === null || other === undefined) return '';
+    const dE = HS_EL[dayStem], oE = HS_EL[other];
+    const same = HS_YIN[dayStem] === HS_YIN[other];
+    if (dE === oE) return same ? '비견' : '겁재';
+    if ((dE + 1) % 5 === oE) return same ? '식신' : '상관';
+    if ((dE + 2) % 5 === oE) return same ? '편재' : '정재';
+    if ((dE + 3) % 5 === oE) return same ? '편관' : '정관';
+    if ((dE + 4) % 5 === oE) return same ? '편인' : '정인';
+    return '';
+  };
+
+  const lunarOut = solarToLunar(sy, sm, sd);
+
+  return {
+    ok: true,
+    input: { calType, birth: `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`, hourIdx, isLeap },
+    solar: { y: sy, m: sm, d: sd },
+    lunar: lunarOut,
+    lunarInput: lunarIn,
+    jdn,
+    sajuYear: ym.sajuYear,
+    isAdjusted: ym.sajuYear !== sy,
+    term: { name: ym.termName, jdn: ym.termJdn, marginMin: Math.round(ym.marginMin) },
+    pillars,
+    pillarStrings: {
+      yearPillar: pillars.year.ganji,
+      monthPillar: pillars.month.ganji,
+      dayPillar: pillars.day.ganji,
+      hourPillar: pillars.hour ? pillars.hour.ganji : '',
+    },
+    ilgan: HS[dayStem],
+    ilganElement: EL[HS_EL[dayStem]],
+    ilganYinyang: HS_YIN[dayStem] ? '음' : '양',
+    yearStemYinyang: HS_YIN[yearStem] ? '음' : '양',
+    els,
+    sipsung: {
+      year: sipsungOf(yearStem),
+      month: sipsungOf(monthStem),
+      day: sipsungOf(dayStem),
+      hour: hourKnown ? sipsungOf(hourStem) : '',
+    },
+    mode: hourKnown ? '4기둥' : '3기둥(시주 미상)',
+    notes,
+  };
+}
+
+function compatPillarLine(r) {
+  if (!r || !r.ok || !r.pillarStrings) return null;
+  const ps = r.pillarStrings;
+  const hour = (r.pillars && r.pillars.hour) ? ps.hourPillar : '(시간 모름)';
+  return ps.yearPillar + ' ' + ps.monthPillar + ' ' + ps.dayPillar + ' ' + hour;
+}
+
+function compatIlganLabel(r) {
+  if (!r || !r.ok || !r.pillars || !r.pillars.day) return null;
+  const s = r.pillars.day.stem;
+  return HS_CH[s] + '(' + (HS_YIN[s] ? '음' : '양') + EL[HS_EL[s]] + ')';
+}
+
+const COMPARE_KEYS = [
+  ['yearPillar', (r) => r.pillarStrings.yearPillar],
+  ['monthPillar', (r) => r.pillarStrings.monthPillar],
+  ['dayPillar', (r) => r.pillarStrings.dayPillar],
+  ['hourPillar', (r) => r.pillarStrings.hourPillar],
+  ['ilgan', (r) => r.ilgan],
+  ['ilganElement', (r) => r.ilganElement],
+  ['ilganYinyang', (r) => r.ilganYinyang],
+  ['yearStemYinyang', (r) => r.yearStemYinyang],
+  ['sajuYear', (r) => r.sajuYear],
+  ['isAdjusted', (r) => r.isAdjusted],
+  ['sipsungYear', (r) => r.sipsung.year],
+  ['sipsungMonth', (r) => r.sipsung.month],
+  ['sipsungHour', (r) => r.sipsung.hour],
+  ['els', (r) => r.els],
+];
+
+const eq = (a, b) => {
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => v === b[i]);
+  return a === b;
+};
+
+function compareWithContext(ctx, r) {
+  const diffs = [];
+  if (!ctx || typeof ctx !== 'object' || !r || !r.ok) return { match: false, diffs, server: r };
+  for (const [key, get] of COMPARE_KEYS) {
+    if (!(key in ctx)) continue;
+    const sv = get(r);
+    if (!eq(ctx[key], sv)) diffs.push({ key, client: ctx[key], server: sv });
+  }
+  return { match: diffs.length === 0, diffs, server: r };
+}
+
+function lunarMonthLen(ly, lm, isLeap) {
+  const s = lunarToSolar(ly, lm, 1, !!isLeap);
+  if (!s) return 0;
+  const j = gregorianToJDN(s.y, s.m, s.d);
+  const months = _monthsCovering(j);
+  for (let i = 0; i < months.length; i++) {
+    const mo = months[i];
+    if (j >= mo.startJdn && j <= mo.endJdn) return mo.endJdn - mo.startJdn + 1;
+  }
+  return 0;
+}
+
+function lunarLeapLen(ly) {
+  const m = leapMonthOf(ly);
+  return m ? lunarMonthLen(ly, m, true) : 0;
+}
+
+const RANGE = { minY: 1900, maxY: 2050 };
+
+return {
+  recompute: recompute,
+  solarToLunar: solarToLunar,
+  lunarToSolar: lunarToSolar,
+  leapMonthOf: leapMonthOf,
+  lunarMonthLen: lunarMonthLen,
+  lunarLeapLen: lunarLeapLen,
+  gregorianToJDN: gregorianToJDN,
+  jdnToGregorian: jdnToGregorian,
+  majorTermsOfYear: majorTermsOfYear,
+  parseBirthDate: parseBirthDate,
+  normHourIdx: normHourIdx,
+  compatPillarLine: compatPillarLine,
+  compatIlganLabel: compatIlganLabel,
+  RANGE: RANGE
+};
+})();
+// ==== CW_ENGINE_PORT END ====
+
+// ── 기존 호출부 시그니처 유지용 얇은 어댑터 (계산은 전부 CW_ENGINE 이 한다) ──
+// ★대소월(29/30)은 표를 참조하지 않는다. CW_ENGINE.lunarToSolar 가 「그 달에 없는 날짜면
+//   null」을 보장하므로(api/_engine/lunar.js: `if (ld > len) return null`), 30일이 성립하는지
+//   물어보는 것만으로 달의 길이가 나온다. 별도 산식을 두지 않아 드리프트 표면이 0 이다.
+const _cwMLen=Object.create(null);
+function lunarLeapMonth(y){return CW_ENGINE.leapMonthOf(y)}
+function _cwMonthLen(y,m,leap){
+  if(!m)return 0;
+  const k=y+':'+m+':'+(leap?1:0);
+  if(k in _cwMLen)return _cwMLen[k];
+  const v=CW_ENGINE.lunarToSolar(y,m,30,!!leap)?30:(CW_ENGINE.lunarToSolar(y,m,29,!!leap)?29:0);
+  _cwMLen[k]=v;return v;
+}
+function lunarLeapDays(y){return _cwMonthLen(y,CW_ENGINE.leapMonthOf(y),true)}
+function lunarMonthDays(y,m){return _cwMonthLen(y,m,false)}
+
+/** 양력 → 음력. 반환 형상 종전과 동일 {year,month,day,isLeap} · 보증 구간 밖이면 null */
+function solarToLunar(sY,sM,sD){
+  if(!(sY>=CW_ENGINE.RANGE.minY&&sY<=CW_ENGINE.RANGE.maxY))return null;
+  return CW_ENGINE.solarToLunar(sY,sM,sD);
+}
+
+/** 음력 → 양력. 반환 형상 종전과 동일 {year,month,day} · 실재하지 않는 날짜면 null */
+function lunarToSolar(ly,lm,ld,isLeap){
+  if(!(ly>=CW_ENGINE.RANGE.minY&&ly<=CW_ENGINE.RANGE.maxY))return null;
+  const s=CW_ENGINE.lunarToSolar(ly,lm,ld,!!isLeap);
+  return s?{year:s.y,month:s.m,day:s.d}:null;
+}
+
+// ============================================================
+//  생년월일 단일 판독기 (v7.73 · 관통 #12 + 관통 #10)
+// ============================================================
+//  ★설계 원칙: 「판정 주체를 하나로」 — 생년월일을 읽는 곳은 여기 한 곳뿐이다.
+//    상품마다 제각기 new Date(bs) 를 부르던 4개 함수(사주·궁합×2·토정·작명/타로)를
+//    전부 이 함수로 모아, 파싱 규칙이 한 곳에서만 바뀌게 만든다(결정 90 재발 방지).
+//  ★관통 #12: new Date('1990-05-15') 는 **UTC 자정**으로 해석돼 UTC- 지역에서 하루 밀린다.
+//    반드시 문자열을 직접 쪼갠다 — const [y,mo,d]=bs.split('-').map(Number)
+//  ★관통 #10: 음력은 <input type="date"> 로 못 받는다(브라우저가 음력 2/30 을 거부).
+//    음력일 때는 년/월/일 드롭다운(select) + 윤달 체크박스에서 읽는다.
+
+// 상품별 생년월일 입력 UI 배선표. 여기에 한 줄 추가하면 그 상품도 자동으로 음력 UI·정본 파싱을 얻는다.
+const CW_BIRTH_UI={
+  tarotBirth:    {cal:'tarotCalType',  label:'생년월일'},
+  sajuBirth:     {cal:'sajuCalType',   label:'생년월일'},
+  cBirth1:       {cal:'cCal1Type',     label:'생년월일'},
+  cBirth2:       {cal:'cCal2Type',     label:'생년월일'},
+  tjBirth:       {cal:'tjCalType',     label:'생년월일'},
+  namingBirth:   {cal:'namingCalType', label:'생년월일 (아기/본인)'},
+  namingCEOBirth:{cal:null,            label:'대표 생년월일'}   // 음력 토글 없음(양력 전용)
+};
+const CW_LUNAR_MIN_Y=1900, CW_LUNAR_MAX_Y=2050; // CW_ENGINE 보증 구간(= 서버 판정 구간)
+const CW_SOLAR_MIN_Y=1900, CW_SOLAR_MAX_Y=2050; // ★v7.73 관통 #7 — 서버 엔진 보증 구간과 일치시킨다(종전 2099 는 클라만 통과하고 서버는 거부했다)
+
+function _cwCalTypeOf(birthId){
+  const m=CW_BIRTH_UI[birthId];
+  if(!m||!m.cal)return 'solar';
+  const el=document.getElementById(m.cal);
+  return (el&&el.value==='lunar')?'lunar':'solar';
+}
+
+/**
+ * 생년월일 판독 — 유일한 진입점.
+ * @returns {{ok:boolean, err?:string, calType:'solar'|'lunar', y:number, m:number, d:number, leap:boolean}}
+ *   y/m/d 는 **사용자가 입력한 원본**(양력 변환 전). 음력이면 음력 값 그대로.
+ */
+function cwReadBirth(birthId){
+  const calType=_cwCalTypeOf(birthId);
+  if(calType==='lunar'){
+    let ys=document.getElementById(birthId+'_LY');
+    // 방어 — 어떤 경로로든 select 가 아직 안 채워졌으면 여기서 채운다
+    if(ys&&ys.options.length===0)cwInitLunarUI(birthId);
+    ys=document.getElementById(birthId+'_LY');
+    const ms=document.getElementById(birthId+'_LM'),
+          ds=document.getElementById(birthId+'_LD'),
+          lp=document.getElementById(birthId+'_LEAP');
+    if(!ys||!ms||!ds)return{ok:false,err:'NOUI',calType:calType};
+    const y=parseInt(ys.value,10),m=parseInt(ms.value,10),d=parseInt(ds.value,10);
+    if(!y||!m||!d)return{ok:false,err:'EMPTY',calType:calType};
+    if(y<CW_LUNAR_MIN_Y||y>CW_LUNAR_MAX_Y)return{ok:false,err:'RANGE',calType:calType};
+    return{ok:true,calType:'lunar',y:y,m:m,d:d,leap:!!(lp&&lp.checked&&!lp.disabled)};
+  }
+  const el=document.getElementById(birthId);
+  const bs=el?String(el.value||''):'';
+  if(!bs)return{ok:false,err:'EMPTY',calType:'solar'};
+  // 연도 6자리 등 비정상 입력 차단 (Chrome <input type=date> 가 허용해버려서 JS 에서 한 번 더)
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs))return{ok:false,err:'FORMAT',calType:'solar'};
+  // ★★계약 §1 정본 파싱 — new Date(bs) 금지
+  const [y,m,d]=bs.split('-').map(Number);
+  if(y<CW_SOLAR_MIN_Y||y>CW_SOLAR_MAX_Y)return{ok:false,err:'RANGE',calType:'solar'};
+  if(!(m>=1&&m<=12)||!(d>=1&&d<=31))return{ok:false,err:'FORMAT',calType:'solar'};
+  return{ok:true,calType:'solar',y:y,m:m,d:d,leap:false};
+}
+
+/** 판독 실패 사유 → 사용자 문구 */
+function cwBirthErrMsg(r,who){
+  const w=who?who+'님의 ':'';
+  switch(r&&r.err){
+    case 'EMPTY': return r.calType==='lunar'?`${w}음력 생년월일을 선택해주세요.`:`${w}생년월일을 입력하세요.`;
+    case 'FORMAT':return `${w}생년월일 형식이 올바르지 않습니다.\n${CW_SOLAR_MIN_Y}~${CW_SOLAR_MAX_Y}년 사이로 다시 입력해주세요.`;
+    case 'RANGE': return r.calType==='lunar'
+      ? `${w}음력은 ${CW_LUNAR_MIN_Y}~${CW_LUNAR_MAX_Y}년만 지원합니다.`
+      : `${w}${CW_SOLAR_MIN_Y}년부터 ${CW_SOLAR_MAX_Y}년 사이의 생년월일을 입력해주세요.`;
+    case 'NOUI':  return `${w}음력 입력 UI를 찾지 못했습니다. 페이지를 새로고침해주세요.`;
+    default:      return `${w}생년월일을 확인해주세요.`;
+  }
+}
+
+/**
+ * 판독 결과 → 양력 {y,m,d} + 음력 정보.
+ * 음력 입력이면 lunarToSolar 로 변환하고, 양력 입력이면 solarToLunar 로 음력을 부기한다.
+ * @returns {{ok:boolean, err?:string, solarY,solarM,solarD, lunarInfo:{year,month,day,isLeap}|null}}
+ */
+function cwToSolar(r){
+  if(!r||!r.ok)return{ok:false,err:(r&&r.err)||'EMPTY'};
+  if(r.calType==='lunar'){
+    const s=lunarToSolar(r.y,r.m,r.d,r.leap);
+    if(!s)return{ok:false,err:'LUNAR_INVALID'};
+    return{ok:true,solarY:s.year,solarM:s.month,solarD:s.day,
+           lunarInfo:{year:r.y,month:r.m,day:r.d,isLeap:!!r.leap}};
+  }
+  const lun=solarToLunar(r.y,r.m,r.d);
+  return{ok:true,solarY:r.y,solarM:r.m,solarD:r.d,lunarInfo:lun||null};
+}
+
+// ── 음력 입력 UI (년/월/일 select + 윤달 체크) ──
+// <input type="date"> 는 음력 2월 30일을 브라우저가 거부하므로(음력 달은 대소월 29/30일),
+// 음력 선택 시 select 로 전환한다. 일 목록은 해당 음력 월의 실제 대소월을 반영해 생성한다.
+function _cwFillSel(sel,from,to,suffix,cur){
+  if(!sel)return;
+  const keep=cur!=null?cur:parseInt(sel.value,10);
+  sel.innerHTML='';
+  const step=from<=to?1:-1;
+  for(let v=from;step>0?v<=to:v>=to;v+=step){
+    const o=document.createElement('option');o.value=v;o.textContent=v+suffix;sel.appendChild(o);
+  }
+  if(keep&&!isNaN(keep)){
+    const lo=Math.min(from,to),hi=Math.max(from,to);
+    if(keep>=lo&&keep<=hi)sel.value=String(keep);
+  }
+  // 목록을 다시 그린 뒤 선택값이 사라지는(빈 문자열) 상태를 남기지 않는다.
+  // 예: 음력 2월 30일 선택 → 윤달 체크 → 윤2월은 29일뿐 → 30일 옵션 소멸.
+  if(sel.value===''&&sel.options.length)sel.selectedIndex=sel.options.length-1;
+}
+
+/** 년·월 선택에 맞춰 일 목록(29/30)과 윤달 체크박스 활성 여부를 갱신 */
+function cwSyncLunarDays(birthId){
+  const ys=document.getElementById(birthId+'_LY'),
+        ms=document.getElementById(birthId+'_LM'),
+        ds=document.getElementById(birthId+'_LD'),
+        lp=document.getElementById(birthId+'_LEAP'),
+        note=document.getElementById(birthId+'_LEAPNOTE');
+  if(!ys||!ms||!ds)return;
+  const y=parseInt(ys.value,10),m=parseInt(ms.value,10);
+  if(!y||!m)return;
+  const leapM=lunarLeapMonth(y);
+  const hasLeap=(leapM===m);
+  if(lp){
+    if(!hasLeap){lp.checked=false;lp.disabled=true;}
+    else{lp.disabled=false;}
+  }
+  if(note){
+    note.textContent=hasLeap?`※ ${y}년에는 윤${m}월이 있습니다 — 윤달생이면 체크하세요.`
+                            :`※ ${y}년에는 윤${m}월이 없습니다.`;
+    note.style.color=hasLeap?'var(--gold)':'var(--text2)';
+  }
+  // 대소월 반영 — 윤달이면 윤달 일수, 아니면 평달 일수 (음력 2월 30일 같은 정상 날짜를 반드시 허용)
+  const useLeap=!!(lp&&lp.checked&&hasLeap);
+  const dmax=useLeap?lunarLeapDays(y):lunarMonthDays(y,m);
+  const curD=parseInt(ds.value,10);
+  _cwFillSel(ds,1,dmax,'일',curD>dmax?dmax:curD);
+}
+
+/** 음력 select 초기 구성 (1회) */
+function cwInitLunarUI(birthId){
+  const ys=document.getElementById(birthId+'_LY'),
+        ms=document.getElementById(birthId+'_LM'),
+        ds=document.getElementById(birthId+'_LD'),
+        lp=document.getElementById(birthId+'_LEAP');
+  if(!ys||!ms||!ds||ys.dataset.cwInit==='1')return;
+  _cwFillSel(ys,CW_LUNAR_MAX_Y,CW_LUNAR_MIN_Y,'년',1990);
+  _cwFillSel(ms,1,12,'월',1);
+  _cwFillSel(ds,1,30,'일',1);
+  ys.dataset.cwInit='1';
+  const h=function(){cwSyncLunarDays(birthId)};
+  ys.addEventListener('change',h);ms.addEventListener('change',h);
+  if(lp)lp.addEventListener('change',h);
+  cwSyncLunarDays(birthId);
+}
+
+/**
+ * 달력 종류 전환 시 입력 UI 교체.
+ * 양력 → <input type="date"> 노출 / 음력 → select+윤달 노출.
+ * 값은 서로 변환해 옮겨준다(사용자가 다시 입력하지 않도록).
+ */
+function cwSwitchBirthUI(birthId,type){
+  const solarWrap=document.getElementById(birthId+'_SOLARWRAP'),
+        lunarWrap=document.getElementById(birthId+'_LUNARWRAP');
+  if(!solarWrap||!lunarWrap)return;
+  cwInitLunarUI(birthId);
+  const ys=document.getElementById(birthId+'_LY'),
+        ms=document.getElementById(birthId+'_LM'),
+        ds=document.getElementById(birthId+'_LD'),
+        lp=document.getElementById(birthId+'_LEAP'),
+        inp=document.getElementById(birthId);
+  if(type==='lunar'){
+    // 양력 입력값이 있으면 음력으로 옮겨 담는다
+    const bs=inp?String(inp.value||''):'';
+    if(/^\d{4}-\d{2}-\d{2}$/.test(bs)){
+      const [y,m,d]=bs.split('-').map(Number);           // ★정본 파싱
+      const lun=solarToLunar(y,m,d);
+      if(lun&&lun.year>=CW_LUNAR_MIN_Y&&lun.year<=CW_LUNAR_MAX_Y){
+        ys.value=String(lun.year);ms.value=String(lun.month);
+        if(lp){lp.checked=!!lun.isLeap;}
+        cwSyncLunarDays(birthId);
+        ds.value=String(lun.day);
+      }
+    }
+    cwSyncLunarDays(birthId);
+    solarWrap.style.display='none';
+    lunarWrap.style.display='';
+  }else{
+    // 음력 선택값이 있으면 양력으로 옮겨 담는다
+    const y=parseInt(ys?ys.value:'',10),m=parseInt(ms?ms.value:'',10),d=parseInt(ds?ds.value:'',10);
+    if(y&&m&&d&&inp){
+      const s=lunarToSolar(y,m,d,!!(lp&&lp.checked&&!lp.disabled));
+      if(s&&s.year>=CW_SOLAR_MIN_Y&&s.year<=CW_SOLAR_MAX_Y){
+        inp.value=`${s.year}-${String(s.month).padStart(2,'0')}-${String(s.day).padStart(2,'0')}`;
+      }
+    }
+    lunarWrap.style.display='none';
+    solarWrap.style.display='';
+  }
 }
 
 // ── 괘 계산 ──
@@ -1157,16 +1961,13 @@ function calcLowerGua(lunarDay){
 }
 
 // ============================================================
-//  사주 만세력 (簡略) — 24절기 + 60갑자, 정확도 ±1일
+//  사주 만세력 — 절입 **순간**(태양 황경) 기준. 산출은 CW_ENGINE 이 한다.
 // ============================================================
-// 24절기 평균 양력 날짜 [월, 일]. 1900~2099 범위에서 ±1일 정확도.
-// 각 연도별 정확한 절기일은 ±1일 변동(천문학적 계산이 더 정확하지만 평균값으로도 사주 판정에 충분)
-const SOLAR_TERMS=[
-  ['입춘',2,4],['우수',2,19],['경칩',3,6],['춘분',3,21],['청명',4,5],['곡우',4,20],
-  ['입하',5,6],['소만',5,21],['망종',6,6],['하지',6,22],['소서',7,7],['대서',7,23],
-  ['입추',8,8],['처서',8,23],['백로',9,8],['추분',9,23],['한로',10,8],['상강',10,24],
-  ['입동',11,7],['소설',11,22],['대설',12,7],['동지',12,22],['소한',1,6],['대한',1,20]
-];
+// ★v7.73 관통 #7 — 종전 주석의 「정확도 ±1일」은 절기표에는 성립해도 사주 경계
+//   판정에는 성립하지 않는다(경계는 ±1일이 곧 오답이다). 그래서 표를 버렸다.
+// ★v7.73 관통 #7 — 절기 고정일표(SOLAR_TERMS)는 삭제했다.
+//   1900~2050 전수 대조에서 12절 1,812건 중 667건(36.8%)이 실제 절입일과 달랐고,
+//   입동은 고정일 11/7 이 최빈일(11/8)조차 아니었다. 절입은 CW_ENGINE 이 계산한다.
 
 // 12지지 한자 + 오행
 const JIJI_CH=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
@@ -1179,103 +1980,34 @@ const HS_YIN=[0,1,0,1,0,1,0,1,0,1];
 const HS_EL=[0,0,1,1,2,2,3,3,4,4];
 
 /**
- * 양력 날짜의 사주 연주 (입춘 보정).
- * 입춘(2/4) 이전이면 전년도 사주 적용.
- */
-function getSajuYear(solarYear,month,day){
-  if(month<2||(month===2&&day<4))return solarYear-1;
-  return solarYear;
-}
-
-/**
- * 양력 날짜의 사주 월지지 인덱스 (절기 기준, 12개월).
- * 입춘=寅(2), 경칩=卯(3), 청명=辰(4), 입하=巳(5), 망종=午(6), 소서=未(7),
- * 입추=申(8), 백로=酉(9), 한로=戌(10), 입동=亥(11), 대설=子(0), 소한=丑(1)
- */
-function getSajuMonthBranch(month,day){
-  // 12경계 + 다음 경계까지의 월지지
-  const boundaries=[
-    [1,6,1],[2,4,2],[3,6,3],[4,5,4],[5,6,5],[6,6,6],
-    [7,7,7],[8,8,8],[9,8,9],[10,8,10],[11,7,11],[12,7,0]
-  ];
-  for(let i=boundaries.length-1;i>=0;i--){
-    const [bm,bd,br]=boundaries[i];
-    if(month>bm||(month===bm&&day>=bd))return br;
-  }
-  return 0; // 1월 1~5일은 전해 12/7(대설) 이후 → 子월
-}
-
-/**
- * 60갑자 인덱스 (0~59) — 연주
- */
-function ganjiIdx60(year){return ((year-4)%60+60)%60}
-
-/**
- * 월주 천간 (五虎遁 — 연간 기준)
- * 갑·기 년 → 寅월 천간 = 丙(2)
- * 을·경 년 → 戊(4), 병·신 년 → 庚(6), 정·임 년 → 壬(8), 무·계 년 → 甲(0)
- */
-function calcMonthStem(yearStem,monthBranchIdx){
-  const baseStems=[2,4,6,8,0]; // 갑기, 을경, 병신, 정임, 무계 → 寅월 천간
-  const yearBase=baseStems[yearStem%5];
-  // 寅(2) 부터 시작. 子=10번째, 丑=11번째.
-  const monthOrder=(monthBranchIdx-2+12)%12;
-  return (yearBase+monthOrder)%10;
-}
-
-/**
- * 일주 60갑자 인덱스 — 한국천문연구원(KASI) 데이터로 검증된 기준점.
- * 1990-01-01 = 丙寅日 (idx 2). @fullstackfamily/manseryeok 라이브러리(KASI 기반)와
- * 8개 케이스(1900~2024 범위, 입춘 경계 포함) 모두 일치 검증 완료.
- */
-function calcDayPillar(year,month,day){
-  const REF=new Date(1990,0,1).getTime(); // 1990-01-01 = 丙寅 (idx 2)
-  const REF_IDX=2;
-  const target=new Date(year,month-1,day).getTime();
-  const days=Math.round((target-REF)/86400000);
-  return ((REF_IDX+days)%60+60)%60;
-}
-
-/**
- * 시주 천간 (五鼠遁 — 일간 기준)
- * 갑·기 일 → 자시 갑(0), 을·경 일 → 병(2), 병·신 일 → 무(4), 정·임 일 → 경(6), 무·계 일 → 임(8)
- */
-function calcHourStem(dayStem,hourBranch){
-  const baseStems=[0,2,4,6,8];
-  const dayBase=baseStems[dayStem%5];
-  return (dayBase+hourBranch)%10;
-}
-
-/**
- * 사주 4기둥 풀 계산. 입춘 보정 + 절기 월주 + 만세력 일주 + 5호둔 시주.
- * @param {number} solarYear 양력 연도
- * @param {number} solarMonth 양력 월
- * @param {number} solarDay 양력 일
- * @param {number} hourIdx 12시진 인덱스 (-1 = 모름, 0=자시 ~ 11=해시)
- * @returns {object} 4기둥 정보 + 입춘 보정 여부
+ * 사주 4기둥 — 산출 주체는 **CW_ENGINE.recompute** 하나다(= 서버가 돌리는 바로 그 코드).
+ * ★v7.73 관통 #7 — 종전에는 클라 전용 산출식(입춘 2/4 고정 · 절기 고정일표 · Date 일수차)이
+ *   따로 있어 화면과 해석이 갈렸다(양력 1.76% · 음력 5.05%). 그 5개 함수
+ *   (getSajuYear·getSajuMonthBranch·ganjiIdx60·calcMonthStem·calcDayPillar·calcHourStem)는
+ *   전부 삭제했다 — 두 번째 구현이 남아 있으면 재발한다.
+ * ★반환 형상은 종전과 **완전히 동일**하다({year,month,day,hour,sajuYear,isAdjusted}).
+ *   덕분에 렌더·로딩 UI 함수는 한 줄도 손대지 않는다.
+ * @param {number} hourIdx 12시진 인덱스 (-1·NaN = 모름 → 서버와 같은 정오 가정)
+ * @returns {object|null} 엔진 보증 구간(1900~2050) 밖이면 null
  */
 function calcSajuPillars(solarYear,solarMonth,solarDay,hourIdx){
-  const sajuYear=getSajuYear(solarYear,solarMonth,solarDay);
-  const yIdx=ganjiIdx60(sajuYear);
-  const yearStem=yIdx%10,yearBranch=yIdx%12;
-  const monthBranchIdx=getSajuMonthBranch(solarMonth,solarDay);
-  const monthStemIdx=calcMonthStem(yearStem,monthBranchIdx);
-  const dIdx=calcDayPillar(solarYear,solarMonth,solarDay);
-  const dayStem=dIdx%10,dayBranch=dIdx%12;
-  let hourPillar=null;
-  if(hourIdx>=0){
-    const hourStemIdx=calcHourStem(dayStem,hourIdx);
-    hourPillar={stem:hourStemIdx,branch:hourIdx,ganji:HS[hourStemIdx]+EB[hourIdx],ganjiCh:HS_CH[hourStemIdx]+JIJI_CH[hourIdx],el:HS_EL[hourStemIdx]};
-  }
+  const _p=function(v){return String(v).padStart(2,'0')};
+  const r=CW_ENGINE.recompute({
+    birth:solarYear+'-'+_p(solarMonth)+'-'+_p(solarDay),
+    calType:'solar',
+    hourIdx:(hourIdx>=0&&hourIdx<=11)?hourIdx:null
+  });
+  if(!r||!r.ok)return null;
   return {
-    year:{stem:yearStem,branch:yearBranch,ganji:HS[yearStem]+EB[yearBranch],ganjiCh:HS_CH[yearStem]+JIJI_CH[yearBranch],el:HS_EL[yearStem]},
-    month:{stem:monthStemIdx,branch:monthBranchIdx,ganji:HS[monthStemIdx]+EB[monthBranchIdx],ganjiCh:HS_CH[monthStemIdx]+JIJI_CH[monthBranchIdx],el:HS_EL[monthStemIdx]},
-    day:{stem:dayStem,branch:dayBranch,ganji:HS[dayStem]+EB[dayBranch],ganjiCh:HS_CH[dayStem]+JIJI_CH[dayBranch],el:HS_EL[dayStem]},
-    hour:hourPillar,
-    sajuYear, // 입춘 보정된 사주 연도 (양력 연도와 다를 수 있음)
-    isAdjusted:sajuYear!==solarYear
+    year:r.pillars.year,month:r.pillars.month,day:r.pillars.day,hour:r.pillars.hour,
+    sajuYear:r.sajuYear,           // 입춘 절입 **순간** 기준 (날짜 고정 아님)
+    isAdjusted:r.isAdjusted,
+    term:r.term,notes:r.notes,lunar:r.lunar
   };
 }
+
+/** 기둥 산출 실패(보증 구간 밖) 안내 문구 — 서버 판정과 같은 경계를 쓴다. */
+const CW_PILLAR_RANGE_MSG='생년월일이 지원 범위('+CW_ENGINE.RANGE.minY+'~'+CW_ENGINE.RANGE.maxY+'년)를 벗어났습니다.';
 
 /**
  * 오행 분포 (천간 + 지지). 일간 강약 판정 보조.
@@ -1667,6 +2399,7 @@ function setTarotCal(type){
   const sBtn=document.getElementById('tarotCalSolar'),lBtn=document.getElementById('tarotCalLunar');
   if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
   else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+  cwSwitchBirthUI('tarotBirth',type); // ★관통 #10
 }
 
 function renderTarot(){_initTarotChips();const s=document.getElementById('tarotSpread');s.innerHTML='';for(let i=0;i<3;i++){const c=document.createElement('div');c.className='tarot-card glow';c.id=`tc-${i}`;c.innerHTML=`<div class="tarot-card-face tarot-back"></div><div class="tarot-card-face tarot-front"><div class="t-emoji"></div><div class="t-name"></div></div>`;s.appendChild(c)}}
@@ -1692,42 +2425,32 @@ function setSajuCal(type){
   const sBtn=document.getElementById('sajuCalSolar'),lBtn=document.getElementById('sajuCalLunar');
   if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
   else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+  cwSwitchBirthUI('sajuBirth',type); // ★관통 #10
 }
 
 async function analyzeSaju(){
-  const bs=document.getElementById('sajuBirth').value;
-  if(!bs){alert('생년월일을 입력하세요.');return}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs)){alert('생년월일 형식이 올바르지 않습니다.\n1900~2099년 사이로 다시 입력해주세요.');return}
-  const yCheck=parseInt(bs.substring(0,4),10);
-  if(yCheck<1900||yCheck>2099){alert('1900년부터 2099년 사이의 생년월일을 입력해주세요.');return}
-
-  const b=new Date(bs);
-  const inputYear=b.getFullYear(),inputMonth=b.getMonth()+1,inputDay=b.getDate();
-  const calType=document.getElementById('sajuCalType').value;
+  // ★관통 #12 — new Date(bs) 금지. 생년월일 판독은 cwReadBirth 한 곳에서만 한다.
+  // ★관통 #10 — 음력이면 select+윤달 체크박스에서 읽는다(윤달 하드코딩 false 제거).
+  const br=cwReadBirth('sajuBirth');
+  if(!br.ok){alert(cwBirthErrMsg(br));return}
+  const inputYear=br.y,inputMonth=br.m,inputDay=br.d;
+  const calType=br.calType;
   const hi=parseInt(document.getElementById('sajuHour').value);
   const g=document.getElementById('sajuGender').value;
   const name=document.getElementById('sajuName').value.trim()||'당신';
 
   // 음력 입력이면 양력으로 변환 (만세력은 양력 기준)
-  let solarY=inputYear,solarM=inputMonth,solarD=inputDay;
-  let lunarInfo=null;
-  if(calType==='lunar'){
-    // ※ 윤달 여부 옵션은 별도 UI 없음 → 평달로 가정 (대부분 케이스)
-    const sol=lunarToSolar(inputYear,inputMonth,inputDay,false);
-    if(sol){
-      solarY=sol.year;solarM=sol.month;solarD=sol.day;
-      lunarInfo={year:inputYear,month:inputMonth,day:inputDay,isLeap:false};
-    } else {
-      showToast('음력 날짜가 1900~2050 범위를 벗어났거나 잘못되었습니다');
-      return;
-    }
-  } else {
-    const lun=solarToLunar(inputYear,inputMonth,inputDay);
-    if(lun)lunarInfo=lun;
+  const conv=cwToSolar(br);
+  if(!conv.ok){
+    showToast('음력 날짜가 1900~2050 범위를 벗어났거나 잘못되었습니다');
+    return;
   }
+  const solarY=conv.solarY,solarM=conv.solarM,solarD=conv.solarD;
+  const lunarInfo=conv.lunarInfo;
 
   // 사주 4기둥 계산
   const pillars=calcSajuPillars(solarY,solarM,solarD,hi);
+  if(!pillars){showToast(CW_PILLAR_RANGE_MSG);return}
   const els=calcElementDistribution(pillars);
   const dStem=pillars.day.stem;
   const sipsung={
@@ -1761,6 +2484,8 @@ async function analyzeSaju(){
   const ctx={
     name,gender:g,
     calType,inputYear,inputMonth,inputDay,
+    // ★관통 #10 (계약 §3) — 윤달 여부. 양력 입력이면 항상 false.
+    isLeapMonth:(calType==='lunar'?!!br.leap:false),
     hourLabel:hi>=0?EB[hi]+'시':'시간 모름',
     isAdjusted:pillars.isAdjusted,sajuYear:pillars.sajuYear,
     yearPillar:HS[pillars.year.stem]+EB[pillars.year.branch],
@@ -1807,7 +2532,7 @@ function renderSajuResult(result,info){
   r.innerHTML=`<div class="card pulse-card">
     <div class="card-title">☰ ${name}님의 사주팔자</div>
     ${pillars.isAdjusted?`<div style="text-align:center;margin-bottom:8px;padding:8px 12px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:8px;font-size:11px;color:var(--gold)">⚠️ 입춘 이전 출생 → 사주 연주는 ${pillars.sajuYear}년 (${getGanji(pillars.sajuYear)})으로 적용</div>`:''}
-    <div style="text-align:center;margin-bottom:14px;font-size:11px;color:var(--text2)">${calType==='solar'?'양력':'음력'} ${inputYear}년 ${inputMonth}월 ${inputDay}일${hi>=0?' · '+EB[hi]+'시':''} · ${gender==='male'?'남성':'여성'}${lunarInfo&&calType==='solar'?` · 음력 ${lunarInfo.year}년 ${lunarInfo.month}월 ${lunarInfo.day}일`:''}</div>
+    <div style="text-align:center;margin-bottom:14px;font-size:11px;color:var(--text2)">${calType==='solar'?'양력':'음력'}${calType==='lunar'&&lunarInfo&&lunarInfo.isLeap?' 윤달':''} ${inputYear}년 ${inputMonth}월 ${inputDay}일${hi>=0?' · '+EB[hi]+'시':''} · ${gender==='male'?'남성':'여성'}${lunarInfo&&calType==='solar'?` · 음력 ${lunarInfo.year}년 ${lunarInfo.month}월 ${lunarInfo.day}일`:''}</div>
     <div class="pillar-grid">
       ${pillarHTML(pillars.year,'연주',sipsung.year)}
       ${pillarHTML(pillars.month,'월주',sipsung.month)}
@@ -1887,7 +2612,7 @@ function renderSajuFallback(info){
   r.innerHTML=`<div class="card pulse-card">
     <div class="card-title">☰ ${name}님의 사주팔자</div>
     ${pillars.isAdjusted?`<div style="text-align:center;margin-bottom:8px;padding:8px 12px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:8px;font-size:11px;color:var(--gold)">⚠️ 입춘 이전 출생 → 사주 연주는 ${pillars.sajuYear}년 (${getGanji(pillars.sajuYear)})으로 적용</div>`:''}
-    <div style="text-align:center;margin-bottom:14px;font-size:11px;color:var(--text2)">${calType==='solar'?'양력':'음력'} ${inputYear}년 ${inputMonth}월 ${inputDay}일${hi>=0?' · '+EB[hi]+'시':''} · ${gender==='male'?'남성':'여성'}${lunarInfo&&calType==='solar'?` · 음력 ${lunarInfo.year}년 ${lunarInfo.month}월 ${lunarInfo.day}일`:''}</div>
+    <div style="text-align:center;margin-bottom:14px;font-size:11px;color:var(--text2)">${calType==='solar'?'양력':'음력'}${calType==='lunar'&&lunarInfo&&lunarInfo.isLeap?' 윤달':''} ${inputYear}년 ${inputMonth}월 ${inputDay}일${hi>=0?' · '+EB[hi]+'시':''} · ${gender==='male'?'남성':'여성'}${lunarInfo&&calType==='solar'?` · 음력 ${lunarInfo.year}년 ${lunarInfo.month}월 ${lunarInfo.day}일`:''}</div>
     <div class="pillar-grid">
       ${pillarHTML(pillars.year,'연주',sipsung.year)}
       ${pillarHTML(pillars.month,'월주',sipsung.month)}
@@ -2084,6 +2809,8 @@ function _buildSajuContext(info){
   return {
     name,gender,
     calType,inputYear,inputMonth,inputDay,
+    // ★관통 #10 (계약 §3) — 무료 사주만 고치면 유료 사주가 남는다(결정 90). 프리미엄 경로에도 동일 키를 싣는다.
+    isLeapMonth:(calType==='lunar'&&info.lunarInfo?!!info.lunarInfo.isLeap:false),
     hourLabel:hi>=0?EB[hi]+'시':'시간 모름',
     isAdjusted:pillars.isAdjusted,sajuYear:pillars.sajuYear,
     yearPillar:HS[pillars.year.stem]+EB[pillars.year.branch],
@@ -2376,6 +3103,7 @@ function setCompatCal(personIdx, type){
   const sBtn=document.getElementById(`cCal${personIdx}Solar`),lBtn=document.getElementById(`cCal${personIdx}Lunar`);
   if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
   else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+  cwSwitchBirthUI('cBirth'+personIdx,type); // ★관통 #10 — 음력이면 select+윤달 UI로 전환
 }
 
 // 궁합 관계 유형 칩
@@ -2414,48 +3142,49 @@ if(document.readyState==='loading'){
 }
 
 async function analyzeCompat(){
-  // 입력 검증
-  const b1=document.getElementById('cBirth1').value, b2=document.getElementById('cBirth2').value;
-  if(!b1||!b2){alert('두 사람의 생년월일을 모두 입력해주세요.');return}
-  for(const bs of [b1,b2]){
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(bs)){alert('생년월일 형식이 올바르지 않습니다.\n1900~2099년 사이로 다시 입력해주세요.');return}
-    const yCheck=parseInt(bs.substring(0,4),10);
-    if(yCheck<1900||yCheck>2099){alert('1900년부터 2099년 사이의 생년월일을 입력해주세요.');return}
-  }
   const n1=document.getElementById('cName1').value.trim()||'나';
   const n2=document.getElementById('cName2').value.trim()||'상대';
-  const calType1=document.getElementById('cCal1Type').value;
-  const calType2=document.getElementById('cCal2Type').value;
+  // ★관통 #12 — new Date(b1)/new Date(b2) 제거. 판독은 cwReadBirth 한 곳에서만.
+  // ★계약 §2 — 옛 지역변수 d1/d2 는 신규 payload 키 d1/d2 와 이름이 충돌하므로 **제거**했다.
+  const br1=cwReadBirth('cBirth1'), br2=cwReadBirth('cBirth2');
+  if(!br1.ok){alert(cwBirthErrMsg(br1,n1));return}
+  if(!br2.ok){alert(cwBirthErrMsg(br2,n2));return}
+  const calType1=br1.calType;
+  const calType2=br2.calType;
   const hi1=parseInt(document.getElementById('cHour1').value);
   const hi2=parseInt(document.getElementById('cHour2').value);
   const g1=document.getElementById('cGender1').value;
   const g2=document.getElementById('cGender2').value;
 
-  const d1=new Date(b1), d2=new Date(b2);
-  let sY1=d1.getFullYear(),sM1=d1.getMonth()+1,sD1=d1.getDate();
-  let sY2=d2.getFullYear(),sM2=d2.getMonth()+1,sD2=d2.getDate();
-  // 음력 입력이면 양력으로 변환
-  if(calType1==='lunar'){
-    const s1=lunarToSolar(sY1,sM1,sD1,false);
-    if(!s1){alert(`${n1}님의 음력 날짜(${sY1}-${sM1}-${sD1})가 잘못되었거나 1900~2050 범위를 벗어났습니다.`);return}
-    sY1=s1.year;sM1=s1.month;sD1=s1.day;
-  }
-  if(calType2==='lunar'){
-    const s2=lunarToSolar(sY2,sM2,sD2,false);
-    if(!s2){alert(`${n2}님의 음력 날짜(${sY2}-${sM2}-${sD2})가 잘못되었거나 1900~2050 범위를 벗어났습니다.`);return}
-    sY2=s2.year;sM2=s2.month;sD2=s2.day;
-  }
+  // ★계약 §2 — 서버가 pillar/ilgan 을 재유도할 수 있도록 **양력 변환 전 원본 입력**을 보관한다.
+  //   음력이면 음력 값 그대로. 양력 변환 판정 주체는 서버 하나로 일원화된다.
+  const inputY1=br1.y,inputM1=br1.m,inputD1=br1.d,leap1=!!br1.leap;
+  const inputY2=br2.y,inputM2=br2.m,inputD2=br2.d,leap2=!!br2.leap;
+  const _pad=function(v){return String(v).padStart(2,'0')};
+  const b1=`${inputY1}-${_pad(inputM1)}-${_pad(inputD1)}`;
+  const b2=`${inputY2}-${_pad(inputM2)}-${_pad(inputD2)}`;
+
+  // 음력 입력이면 양력으로 변환 (만세력은 양력 기준)
+  const cv1=cwToSolar(br1);
+  if(!cv1.ok){alert(`${n1}님의 음력 날짜(${inputY1}-${inputM1}-${inputD1}${leap1?' 윤달':''})가 잘못되었거나 1900~2050 범위를 벗어났습니다.`);return}
+  const cv2=cwToSolar(br2);
+  if(!cv2.ok){alert(`${n2}님의 음력 날짜(${inputY2}-${inputM2}-${inputD2}${leap2?' 윤달':''})가 잘못되었거나 1900~2050 범위를 벗어났습니다.`);return}
+  const sY1=cv1.solarY,sM1=cv1.solarM,sD1=cv1.solarD;
+  const sY2=cv2.solarY,sM2=cv2.solarM,sD2=cv2.solarD;
 
   // 두 사주 4기둥 계산
   const p1=calcSajuPillars(sY1,sM1,sD1,hi1);
   const p2=calcSajuPillars(sY2,sM2,sD2,hi2);
+  if(!p1||!p2){alert(CW_PILLAR_RANGE_MSG);return}
   const cmp=compareCompatibility(p1,p2);
 
   // 관계 유형 (톤 조정용) — info/ctx 생성 전에 미리 결정
   const rel=(typeof compatRelType!=='undefined'?compatRelType:'couple');
   const relName=((typeof COMPAT_REL_TYPES!=='undefined'?COMPAT_REL_TYPES.find(function(x){return x.k===rel;}):null)||{n:'연인'}).n;
 
-  const info={n1,n2,g1,g2,calType1,calType2,b1,b2,hi1,hi2,sY1,sM1,sD1,sY2,sM2,sD2,p1,p2,cmp,relType:rel,relName:relName};
+  const info={n1,n2,g1,g2,calType1,calType2,b1,b2,hi1,hi2,sY1,sM1,sD1,sY2,sM2,sD2,p1,p2,cmp,relType:rel,relName:relName,
+    // ★계약 §2 — 유료(프리미엄) 궁합이 재유도 키를 그대로 이어 쓸 수 있도록 원본 입력을 보관
+    inputY1,inputM1,inputD1,leap1,inputY2,inputM2,inputD2,leap2};
   window._compatResultData=info;
 
   // 로딩 UI
@@ -2479,6 +3208,12 @@ async function analyzeCompat(){
     name1:n1,name2:n2,
     relType:relName, relTypeKey:rel,
     gender1:g1==='male'?'남성':'여성',gender2:g2==='male'?'남성':'여성',
+    // ★★계약 §2 (관통 #4) — 서버가 pillar/ilgan 을 **재유도**하기 위한 12키.
+    //   y/m/d 는 **양력 변환 전 사용자 원본 입력**이다(음력이면 음력 값 그대로).
+    //   양력 변환은 서버가 cal1/cal2 를 보고 수행한다 — 판정 주체를 하나로.
+    //   h1/h2 는 -1(시간 모름) ~ 11. leap1/leap2 는 관통 #10 윤달 체크박스의 실제 값.
+    cal1:calType1, y1:inputY1, m1:inputM1, d1:inputD1, h1:hi1, leap1:leap1,
+    cal2:calType2, y2:inputY2, m2:inputM2, d2:inputD2, h2:hi2, leap2:leap2,
     pillar1:`${HS[p1.year.stem]}${EB[p1.year.branch]} ${HS[p1.month.stem]}${EB[p1.month.branch]} ${HS[p1.day.stem]}${EB[p1.day.branch]} ${p1.hour?HS[p1.hour.stem]+EB[p1.hour.branch]:'(시간 모름)'}`,
     pillar2:`${HS[p2.year.stem]}${EB[p2.year.branch]} ${HS[p2.month.stem]}${EB[p2.month.branch]} ${HS[p2.day.stem]}${EB[p2.day.branch]} ${p2.hour?HS[p2.hour.stem]+EB[p2.hour.branch]:'(시간 모름)'}`,
     ilgan1:HS_CH[p1.day.stem]+`(${HS_YIN[p1.day.stem]?'음':'양'}${EL[HS_EL[p1.day.stem]]})`,
@@ -2794,10 +3529,15 @@ async function retryCompatPremiumAPI(){
 function _buildCompatContext(info){
   const {n1,n2,g1,g2,p1,p2,cmp}=info;
   const relName=info.relName||(COMPAT_REL_TYPES.find(function(x){return x.k===(info.relType||'couple');})||{n:'연인'}).n;
+  const _h=function(v){return typeof v==='number'&&!isNaN(v)?v:-1};
   return {
     name1:n1,name2:n2,
     relType:relName, relTypeKey:info.relType||'couple',
     gender1:g1==='male'?'남성':'여성',gender2:g2==='male'?'남성':'여성',
+    // ★★계약 §2 — 유료 궁합(compat_premium_1/2)도 동일한 12키를 실어야 서버가 재유도할 수 있다.
+    //   무료 경로만 고치면 유료 2종이 그대로 남는다(결정 90).
+    cal1:info.calType1||'solar', y1:(info.inputY1!=null?info.inputY1:info.sY1), m1:(info.inputM1!=null?info.inputM1:info.sM1), d1:(info.inputD1!=null?info.inputD1:info.sD1), h1:_h(info.hi1), leap1:!!info.leap1,
+    cal2:info.calType2||'solar', y2:(info.inputY2!=null?info.inputY2:info.sY2), m2:(info.inputM2!=null?info.inputM2:info.sM2), d2:(info.inputD2!=null?info.inputD2:info.sD2), h2:_h(info.hi2), leap2:!!info.leap2,
     pillar1:`${HS[p1.year.stem]}${EB[p1.year.branch]} ${HS[p1.month.stem]}${EB[p1.month.branch]} ${HS[p1.day.stem]}${EB[p1.day.branch]} ${p1.hour?HS[p1.hour.stem]+EB[p1.hour.branch]:'(시간 모름)'}`,
     pillar2:`${HS[p2.year.stem]}${EB[p2.year.branch]} ${HS[p2.month.stem]}${EB[p2.month.branch]} ${HS[p2.day.stem]}${EB[p2.day.branch]} ${p2.hour?HS[p2.hour.stem]+EB[p2.hour.branch]:'(시간 모름)'}`,
     ilgan1:HS_CH[p1.day.stem]+`(${HS_YIN[p1.day.stem]?'음':'양'}${EL[HS_EL[p1.day.stem]]})`,
@@ -4876,6 +5616,7 @@ function setTjCal(type){
   const sBtn=document.getElementById('tjCalSolar'),lBtn=document.getElementById('tjCalLunar');
   if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
   else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+  cwSwitchBirthUI('tjBirth',type); // ★관통 #10
 }
 function initTjYearSelect(){
   const sel=document.getElementById('tjTargetYear');if(!sel)return;
@@ -4884,25 +5625,23 @@ function initTjYearSelect(){
 }
 
 async function analyzeTojeong(){
-  const bs=document.getElementById('tjBirth').value;
-  if(!bs){alert('생년월일을 입력하세요.');return}
-  // 연도 6자리 등 비정상 입력 차단 (Chrome <input type=date>가 허용해버려서 JS에서 한 번 더)
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs)){alert('생년월일 형식이 올바르지 않습니다.\n1900~2099년 사이로 다시 입력해주세요.');return}
-  const yCheck=parseInt(bs.substring(0,4),10);
-  if(yCheck<1900||yCheck>2099){alert('1900년부터 2099년 사이의 생년월일을 입력해주세요.');return}
-  const b=new Date(bs);
+  // ★관통 #12 — new Date(bs) 제거. ★관통 #10 — 음력이면 select+윤달에서 읽는다.
+  const br=cwReadBirth('tjBirth');
+  if(!br.ok){alert(cwBirthErrMsg(br));return}
   const name=document.getElementById('tjName').value.trim()||'당신';
   const gender=document.getElementById('tjGender').value;
-  const calType=document.getElementById('tjCalType').value;
+  const calType=br.calType;
   const targetYear=parseInt(document.getElementById('tjTargetYear').value)||new Date().getFullYear();
 
-  // 음력 변환
+  // 음력 변환 (토정비결의 중괘·하괘는 음력 월/일로 세운다)
   let lunar;
   if(calType==='solar'){
-    lunar=solarToLunar(b.getFullYear(),b.getMonth()+1,b.getDate());
+    lunar=solarToLunar(br.y,br.m,br.d);
     if(!lunar){alert('음력 변환에 실패했습니다. 1900~2050년 사이의 날짜를 입력하세요.');return}
   } else {
-    lunar={year:b.getFullYear(),month:b.getMonth()+1,day:b.getDate(),isLeap:false};
+    // 입력이 이미 음력이면 그대로 사용하되, 실재하는 날짜인지 양력 왕복으로 검증한다.
+    if(!lunarToSolar(br.y,br.m,br.d,br.leap)){alert('음력 날짜가 잘못되었거나 1900~2050 범위를 벗어났습니다.');return}
+    lunar={year:br.y,month:br.m,day:br.d,isLeap:!!br.leap};
   }
 
   // 괘 계산
@@ -6038,6 +6777,7 @@ function setNamingCal(type){
   const sBtn=document.getElementById('namingCalSolar'),lBtn=document.getElementById('namingCalLunar');
   if(type==='solar'){sBtn.style.background='var(--gold)';sBtn.style.color='#000';sBtn.style.fontWeight='600';lBtn.style.background='var(--card)';lBtn.style.color='var(--text2)';lBtn.style.fontWeight='normal'}
   else{lBtn.style.background='var(--gold)';lBtn.style.color='#000';lBtn.style.fontWeight='600';sBtn.style.background='var(--card)';sBtn.style.color='var(--text2)';sBtn.style.fontWeight='normal'}
+  cwSwitchBirthUI('namingBirth',type); // ★관통 #10
 }
 
 // 한글 음절 → 한자 후보 픽커 (선호 한자용 — 여러 개 누적)
@@ -6297,23 +7037,20 @@ function renderNamingUI(){
 
 // 사주 정보 수집 (사람·닉네임용 본인 사주, 회사용 사장 사주)
 function _collectSajuFromUI(birthId, hourId, _genderId, calTypeId){
-  const bs=document.getElementById(birthId).value;
-  const hi=parseInt(document.getElementById(hourId).value);
-  if(!bs)return null;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(bs))return null;
-  const yCheck=parseInt(bs.substring(0,4),10);
-  if(yCheck<1900||yCheck>2099)return null;
-  const b=new Date(bs);
-  let sY=b.getFullYear(),sM=b.getMonth()+1,sD=b.getDate();
-  // 음력 입력이면 양력으로 변환
-  if(calTypeId){
-    const ct=document.getElementById(calTypeId);
-    if(ct && ct.value==='lunar'){
-      const s=lunarToSolar(sY,sM,sD,false);
-      if(s){sY=s.year;sM=s.month;sD=s.day;}
-    }
-  }
+  const hEl=document.getElementById(hourId);
+  const hi=hEl?parseInt(hEl.value):-1;
+  // ★관통 #12 — new Date(bs) 제거. 판독은 cwReadBirth 한 곳에서만.
+  // ★관통 #10 — 음력이면 select+윤달 체크박스에서 읽는다(윤달 하드코딩 false 제거).
+  // ★배선 — 달력 종류는 CW_BIRTH_UI 배선표에서 찾으므로, 호출부가 calTypeId 를 넘기지 않아도
+  //   음력 토글이 무시되지 않는다. (js/tarot.js 는 calTypeId 를 넘기지 않아 타로의 음력
+  //   버튼이 사문화돼 있었다 — 사용자가 음력을 눌러도 양력으로 계산됐다.)
+  const br=cwReadBirth(birthId);
+  if(!br.ok)return null;
+  const conv=cwToSolar(br);
+  if(!conv.ok)return null;
+  const sY=conv.solarY,sM=conv.solarM,sD=conv.solarD;
   const pillars=calcSajuPillars(sY,sM,sD,hi);
+  if(!pillars)return null;
   const els=calcElementDistribution(pillars);
   const dStem=pillars.day.stem;
   const max=Math.max(...els),min=Math.min(...els);

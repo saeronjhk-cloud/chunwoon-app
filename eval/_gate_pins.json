@@ -1,0 +1,374 @@
+{
+  "_note": "게이트 외부 pin SoT (v7.65). ★이 파일은 버전관리 데이터다 — 변경은 반드시 커밋 diff 에 드러난다. 갱신은 node tools/regen_gate_pins.js 로만 하라(sha256 64자 전체를 재계산한다).",
+  "version": "v7.65",
+  "runner": {
+    "path": "tools/run_gate.js",
+    "eval_min": 35,
+    "mut_min": 11
+  },
+  "evals": {
+    "eval_response_scrub.js": {
+      "checks_min": 69,
+      "sha256": "50e89bbc6ca52c997ea7e517f2f20005fd5ebe40d8f2ccf1b779c1f046ba9b96",
+      "bytes_min": 120637
+    },
+    "eval_prompt_citation_guard.js": {
+      "checks_min": 32,
+      "sha256": "483ed7e3a77e125f797fb5fe5a6f94efcbddb7db5fbb058a591f670aba02450e",
+      "bytes_min": 18114
+    },
+    "eval_claim_whitelist.js": {
+      "checks_min": 27,
+      "sha256": "3ddd3e44d2b9f16a17ae9888cc189eae62076e19fdd2dc3bf8ac558a590e7800",
+      "bytes_min": 23632
+    },
+    "eval_distribution_guard.js": {
+      "checks_min": 23,
+      "sha256": "cb08e6d3d9d72588705145d298c201c046b4bdfa4befa3aedc2afc55cb7fad07",
+      "bytes_min": 8351
+    },
+    "_failclosed.js": {
+      "checks_min": null,
+      "sha256": "8072631b4df7fc11dc741e6f6da05b86f67e5b0c76de45123efb499a7bc4595b",
+      "bytes_min": 1965
+    },
+    "eval_ganhap_gyeokwi_design.js": {
+      "checks_min": 41,
+      "sha256": "ff0c6dec91337e5b039f5e9dd111b2d0400726bdf475ed36946a82939fc5051c",
+      "bytes_min": 21913
+    },
+    "eval_metamorphic.js": {
+      "checks_min": 27,
+      "sha256": "ff624528efbc958c5fe2bca91c4811f1f5d2edf752b1cb2b5ba6a266754b14c1",
+      "bytes_min": 4615
+    },
+    "eval_metamorphic_c2_resolver.js": {
+      "checks_min": null,
+      "sha256": "d18d70d35a8a4bdb6eb5a1599d0821540bebb4eba105a4e1ad514504a6f66382",
+      "bytes_min": 7003
+    },
+    "eval_metamorphic_chung.js": {
+      "checks_min": 44,
+      "sha256": "038593cd4dc786c1356ca96b0b2dbc018df7a33b51df6632f617f39d6a3eefa0",
+      "bytes_min": 8046
+    },
+    "eval_metamorphic_chung_b4.js": {
+      "checks_min": null,
+      "sha256": "82568e0cabd07f16be3acfe24913f3453c8f800bb2a200858926d86521114074",
+      "bytes_min": 7249
+    },
+    "eval_metamorphic_chung_edge.js": {
+      "checks_min": 60,
+      "sha256": "3c6d289526b7e510ccf60872fe984a7aa7adeac7657366811e4a74062187fa01",
+      "bytes_min": 9058
+    },
+    "eval_metamorphic_chung_haegu.js": {
+      "checks_min": 61,
+      "sha256": "a4429848c25159872f88edda800e20b8514adbb6191df62e8b4932db35e51615",
+      "bytes_min": 9216
+    },
+    "eval_metamorphic_chung_sago.js": {
+      "checks_min": 71,
+      "sha256": "1376676e31e174a793e5ff5a02a7e8f5d01c283b71d7d8fdec8bd2dbd4792a2d",
+      "bytes_min": 7641
+    },
+    "eval_metamorphic_chung_transit.js": {
+      "checks_min": 56,
+      "sha256": "aa5a4e012d758079fab7b66dfd4083323c66e8dde2c13967bce089d771b145cf",
+      "bytes_min": 7295
+    },
+    "eval_metamorphic_chung_v08.js": {
+      "checks_min": 48,
+      "sha256": "8ba5f8514275b37996f18d46f586e6b555528b1e19e46a98dec563098ec2ac9a",
+      "bytes_min": 7510
+    },
+    "eval_metamorphic_dual_doctrine.js": {
+      "checks_min": null,
+      "sha256": "0a0e94845d1564f1459c227605b151715a4ea86d7f117fe970c1804156ab4537",
+      "bytes_min": 5658
+    },
+    "eval_metamorphic_hoehap_g.js": {
+      "checks_min": null,
+      "sha256": "d21bc458bea07d81a260c38d13f1789a8cecc4a8e47ff27c83fba331ee4992d1",
+      "bytes_min": 15471
+    },
+    "eval_metamorphic_huisin_autowire.js": {
+      "checks_min": null,
+      "sha256": "23616ebe2a6184551d4fdbc6c9343315068eee5560a33da84c542b5156a34b68",
+      "bytes_min": 6366
+    },
+    "eval_metamorphic_huisin_gong_activation.js": {
+      "checks_min": null,
+      "sha256": "1cfaa60a5e9d36b94532c6fca5e807525fb988087457ce9c1f0bf2d8e1136f2d",
+      "bytes_min": 6912
+    },
+    "eval_metamorphic_huisin_gong_prescription.js": {
+      "checks_min": null,
+      "sha256": "2b018e9c2555d333e29257b85558eec883cba56f0b77df6b80434ce1fbe0cded",
+      "bytes_min": 7762
+    },
+    "eval_metamorphic_huisin_guk_activation.js": {
+      "checks_min": null,
+      "sha256": "86ad29fe50db5e7ae9f5696596f0037ddf8fc7fc7703c6cf5b83959c24851529",
+      "bytes_min": 4792
+    },
+    "eval_metamorphic_huisin_guk_prescription.js": {
+      "checks_min": null,
+      "sha256": "deed2da0e178ae485e472002ee655096b57c1a4a7b8ff3fa2357fe35c3bcd9f3",
+      "bytes_min": 6301
+    },
+    "eval_metamorphic_huisin_guk_transit_chung.js": {
+      "checks_min": null,
+      "sha256": "57d6e27d6b70b73a925bc5b95cbf21b06d5d8fa808d5a7d5bd106b4e962c82f5",
+      "bytes_min": 6681
+    },
+    "eval_metamorphic_huisin_orientation.js": {
+      "checks_min": null,
+      "sha256": "986f561a647ec16444fb800e98117ce04bef10ec3c10c1b8a28ea4617d66581f",
+      "bytes_min": 6430
+    },
+    "eval_metamorphic_huisin_prescription.js": {
+      "checks_min": null,
+      "sha256": "1d90a83cd22bbe82f15b75e925d7af9eb2f98608bb6dbc69a32f45415d0310bb",
+      "bytes_min": 5245
+    },
+    "eval_metamorphic_jcs_ch7.js": {
+      "checks_min": null,
+      "sha256": "aeb79f590636be41fdae90b248b7390db97cb158ec2972cec38e69dfd058088a",
+      "bytes_min": 8085
+    },
+    "eval_metamorphic_jcs_ch7_hyeong.js": {
+      "checks_min": null,
+      "sha256": "192b02f960e0bc96f9a8a4b93c2bbddae89577d686af1e6ce3805cc0259f4927",
+      "bytes_min": 8634
+    },
+    "eval_metamorphic_jcs_ch7_hyeong_29b.js": {
+      "checks_min": null,
+      "sha256": "990f37e48dc6fb5ae5b2daf80f12d2f8594cfa426381314d9959135bb58ef53a",
+      "bytes_min": 7921
+    },
+    "eval_metamorphic_jcs_ch7_hyeong_29c.js": {
+      "checks_min": null,
+      "sha256": "0fe3cf8c1a7ba36ef7fefda851bfefc5ed5a694252e724370dadc44383b9a5b6",
+      "bytes_min": 9200
+    },
+    "eval_metamorphic_position_meta.js": {
+      "checks_min": 28,
+      "sha256": "25c5f612c2abb2c04356e372c39b07dcae848f54f9a155b9cf63cdd43afdaf2c",
+      "bytes_min": 8622
+    },
+    "eval_metamorphic_sehyeok_interaction.js": {
+      "checks_min": null,
+      "sha256": "d313525fb586b00da3daa571ef1ce83d5c3443ae28835ad92caa5df785438983",
+      "bytes_min": 7318
+    },
+    "eval_naming_gyeok.js": {
+      "checks_min": 34,
+      "sha256": "0159939f1818e53b70cd683523a3cba05866ffafd2ff637b90e9e3559a818faf",
+      "bytes_min": 11951
+    },
+    "eval_naming_phonetic.js": {
+      "checks_min": 41,
+      "sha256": "fe24d31c0154b048b9362f719638be8bf841ac09efdf0bc8e48c3d8b43e0bc08",
+      "bytes_min": 17121
+    },
+    "eval_naming_radical_table.js": {
+      "checks_min": 20,
+      "sha256": "da134e598384ef4fbec7279806c391d11e43ab4383bf602ccffcb5d3a37a2c2b",
+      "bytes_min": 6772
+    },
+    "eval_root_wonmun.js": {
+      "checks_min": 212,
+      "sha256": "77b5f4ef599068b8dc2685f87648408cd7e8a4f74af1aebc1361ccede6874114",
+      "bytes_min": 13326
+    },
+    "eval_scrub_token_policy.js": {
+      "checks_min": 34,
+      "sha256": "5ddf3e2960e899af646c279189edf8d229c6f4bcfc0c9f91588216cfdcf7595c",
+      "bytes_min": 33823
+    },
+    "eval_wonmun_anchor_cases.js": {
+      "checks_min": 40,
+      "sha256": "64c72dbb4972b041a906d50f688fbcf30d56584c4c6664ad42f24cb2a295ec4a",
+      "bytes_min": 14283
+    },
+    "mutation_kill_c2.js": {
+      "checks_min": 3,
+      "sha256": "e53d6851a7e562a888f39429c961e3e5d37d3e18c0c3078b1fb05db3e401f8e4",
+      "bytes_min": 1299
+    },
+    "mutation_kill_chung.js": {
+      "checks_min": 44,
+      "sha256": "26627763e01124951f99de3b929af5a76165d870e69d8b44e1ad4f51a0351c83",
+      "bytes_min": 7043
+    },
+    "mutation_kill_dual_doctrine.js": {
+      "checks_min": 3,
+      "sha256": "fedd210fb923dfb683f575eb5e012224e409696f6f49fca94c2460d7910e0446",
+      "bytes_min": 1162
+    },
+    "mutation_kill_huisin.js": {
+      "checks_min": 3,
+      "sha256": "b1f24c40edcf1fb7baea182555520116fe6e7be964171735c809e70c7035b0c3",
+      "bytes_min": 1107
+    },
+    "mutation_kill_huisin_autowire.js": {
+      "checks_min": 3,
+      "sha256": "3546748138232eca9ff94b4191caec0d56db751fca42635821bb42bb4b52715c",
+      "bytes_min": 1194
+    },
+    "mutation_kill_huisin_gong_activation.js": {
+      "checks_min": 3,
+      "sha256": "9804df923e55c51d397349ded51be492f3a44c4235aedde1a97e9cf2f506a607",
+      "bytes_min": 1264
+    },
+    "mutation_kill_huisin_gong_prescription.js": {
+      "checks_min": 3,
+      "sha256": "de71024ad26928b431e82a036f612629efcffd1f31609a9b4afa4533ce072e01",
+      "bytes_min": 1236
+    },
+    "mutation_kill_huisin_guk_activation.js": {
+      "checks_min": 3,
+      "sha256": "3b1631e67e418920503e6334f5dc8e9d97527aa0f6dd8c9dbc20e30fbdb0e4cf",
+      "bytes_min": 1107
+    },
+    "mutation_kill_huisin_guk_prescription.js": {
+      "checks_min": 3,
+      "sha256": "a1aef4544f6a8c7d099f4e4bc4ca2327277228774595481f0c0d2fbed188a81c",
+      "bytes_min": 1132
+    },
+    "mutation_kill_huisin_guk_transit_chung.js": {
+      "checks_min": 3,
+      "sha256": "cbc49d401f0262732bb5037a37d85cfd23f22ee29d1a04e17141d62724f4cb72",
+      "bytes_min": 1259
+    },
+    "mutation_kill_huisin_prescription.js": {
+      "checks_min": 3,
+      "sha256": "3f9e5dee3c97fa327856d561285237ddb9ca2ee20567426317ee9116dddcf0b9",
+      "bytes_min": 1162
+    },
+    "mutation_kill_position_meta.js": {
+      "checks_min": 8,
+      "sha256": "9d8bb3cbcd330b8ddc43bcacc11d31abe27399b173aa1ce10c31994b81d62b28",
+      "bytes_min": 2171
+    },
+    "mutation_kill_sehyeok.js": {
+      "checks_min": 3,
+      "sha256": "4fd1f71d5614d722218058c824028cedaabd53e5b0966dcb9775d0f6262bb0fd",
+      "bytes_min": 1161
+    },
+    "eval_token_roundtrip.js": {
+      "checks_min": 51,
+      "sha256": "509aae5c516cf6df05e940215edd1b8fc07908834e037407bd19a1378aa51c8d",
+      "bytes_min": 23673
+    },
+    "eval_p1auth_v767fix.js": {
+      "checks_min": null,
+      "sha256": "c309aa5c7c3a296eddd3f6d2640697642829acdc82f6513103ffef9729dc69bc",
+      "bytes_min": 13820
+    },
+    "eval_rl.js": {
+      "checks_min": null,
+      "sha256": "8f78b813edabc822c769adad7d2101d5fc6b5b87dfe038f8ceaf2362fc93dbd4",
+      "bytes_min": 14746
+    },
+    "eval_vercel_config.js": {
+      "checks_min": 14,
+      "sha256": "c464afa74ff41212269116242cc919fc4ddd1377eafb2c4270b9fac8f3a731c1",
+      "bytes_min": 8464
+    },
+    "eval_engine_binding.js": {
+      "checks_min": 21,
+      "sha256": "cf6e5f5711ad92cdf6a08967cffdffd35ad8a949a68390980af0aa3156b63b67",
+      "bytes_min": 21804
+    },
+    "eval_ctxguard.js": {
+      "checks_min": 56,
+      "sha256": "038b0761407bfda1ffe3869d05a462dd996b0af5821b1ccd128de47245c1726d",
+      "bytes_min": 38487
+    },
+    "eval_client_port_drift.js": {
+      "checks_min": 10,
+      "sha256": "fb77cb9b7f20a67097d34fcf4e218ec9231421f9f83fdce2aebbd7ab7f8720d6",
+      "bytes_min": 7984
+    },
+    "eval_compat_guard.js": {
+      "checks_min": 46,
+      "sha256": "6e531d56a75c3bcec70a6c706ec4364a47022432656cd3f908bfa342aaf77123",
+      "bytes_min": 31756
+    },
+    "eval_gate_asset_commit.js": {
+      "checks_min": 10,
+      "sha256": "7c2ac23e8ed2a5247ca818c581e6be923015a13f2721563087e6f24c95484232",
+      "bytes_min": 9247
+    }
+  },
+  "generated_at": "2026-08-06T10:55:36.730Z",
+  "front_root": {
+    "allow_env": true,
+    "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",
+    "_risk": "★남는 위험 — 배포 트리와 바이트 동일한 git 사본을 임의 경로에 두고 그 경로를 가리키면 로컬 검사만으로는 구별할 수 없다. 배포 파이프라인이 실제로 쓰는 커밋과의 대조는 네트워크(원격 tip) 없이는 불가능하다."
+  },
+  "sources": {
+    "api/fortune.js": {
+      "sha256": "08cddb87bb090a3ef18dc069ed7cffefec98426aa4ba33c6440bcba5db29e9e5",
+      "bytes_min": 99490,
+      "root": "front"
+    },
+    "api/_engine/package.json": {
+      "sha256": "4b1d2e4c5f2e447f456ecdb4270bbb9a4c93c195560aed718d465cf658215c6b",
+      "bytes_min": 352,
+      "root": "front"
+    },
+    "api/_engine/bind.js": {
+      "sha256": "8a6d9c98fbfc800d0c2471d5c866b7081c391d52f8bdc2f31c09ff8152e3d246",
+      "bytes_min": 12904,
+      "root": "front"
+    },
+    "api/_engine/ctxguard.js": {
+      "sha256": "376513aab8041e2f6816de0c08c446c1c95447bbbd371ec417f5511fcf6afe2e",
+      "bytes_min": 25618,
+      "root": "front"
+    },
+    "api/_engine/recompute.js": {
+      "sha256": "7d203bfa895be0547572f9ae6acd2e0269b52349f0e5de47aaf1133ed95f9822",
+      "bytes_min": 11595,
+      "root": "front"
+    },
+    "api/_engine/astro.js": {
+      "sha256": "5903f3e29920b26793458d734b39cd4f617492619a4bf8f326ef50ba69d968a3",
+      "bytes_min": 8287,
+      "root": "front"
+    },
+    "api/_engine/lunar.js": {
+      "sha256": "cbd4da8181d73012f16d982cca699cc69f68d723a833c793aa87d35e05e4d3f0",
+      "bytes_min": 4377,
+      "root": "front"
+    },
+    "api/_engine/daewoon.js": {
+      "sha256": "d3035033cdfbcb590333c90ee0ba2503892a07cc297baf51701bfdd13c0bfe5f",
+      "bytes_min": 2619,
+      "root": "front"
+    },
+    "api/_engine/myeongli.js": {
+      "sha256": "c0402aa41d3147485b762c356e26839915a53adf870323053b2eab61a95c8d46",
+      "bytes_min": 2339,
+      "root": "front"
+    },
+    "api/_engine/manse.js": {
+      "sha256": "c6dd99599f1be38d6088c55908ab91159ae3508f7426a3e7f5eb53a1fa29a909",
+      "bytes_min": 780,
+      "root": "front"
+    },
+    "api/_engine/authority.js": {
+      "sha256": "8be32b86213ce984857a75d6f0f763fc5cee1abb8633a68226b18340b761c980",
+      "bytes_min": 5434,
+      "root": "front"
+    },
+    "IP/policy/claim_whitelist.json": {
+      "sha256": "814faaccbadd2ae746ff45944edf7331a368b1dbb3c6fd23507f160948e93bc1",
+      "bytes_min": 23538,
+      "root": "gate"
+    }
+  }
+}

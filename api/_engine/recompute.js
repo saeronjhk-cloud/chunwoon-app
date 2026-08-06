@@ -297,6 +297,41 @@ function recompute(inp) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// ★v7.73 관통 #4 — compat 표시 형식 재현
+// ────────────────────────────────────────────────────────────────────────────
+/**
+ * 궁합 context 의 `pillar1`/`pillar2` 문자열을 **서버에서 재현**한다.
+ *
+ * ★형식은 클라이언트 현행을 그대로 지킨다(계약 v7.73 §2). index.html `analyzeCompat` 의
+ *   생성식이 정본이다:
+ *     `${HS[y.stem]}${EB[y.branch]} ${HS[m…]}${EB[m…]} ${HS[d…]}${EB[d…]} `
+ *     `${p.hour ? HS[h.stem]+EB[h.branch] : '(시간 모름)'}`
+ *   ⟹ 「간지 4개를 공백 1칸으로 이은 문자열, 시주 미상이면 4번째가 `(시간 모름)`」.
+ *   ★형식이 바뀌면 프롬프트 문장이 깨지므로 여기서 임의로 손대지 않는다.
+ *   ★검증: `_v773_work/probe_A/probe_compat_format.js` 가 index.html 의 생성식을
+ *     소스에서 뽑아 같은 입력으로 돌린 뒤 **바이트 일치**를 확인한다.
+ */
+function compatPillarLine(r) {
+  if (!r || !r.ok || !r.pillarStrings) return null;
+  const ps = r.pillarStrings;
+  const hour = (r.pillars && r.pillars.hour) ? ps.hourPillar : '(시간 모름)';
+  return ps.yearPillar + ' ' + ps.monthPillar + ' ' + ps.dayPillar + ' ' + hour;
+}
+
+/**
+ * 궁합 context 의 `ilgan1`/`ilgan2` 문자열을 서버에서 재현한다.
+ * index.html: `HS_CH[p.day.stem] + '(' + (HS_YIN[stem]?'음':'양') + EL[HS_EL[stem]] + ')'`
+ *   예) 戊 → `戊(양토(土))`
+ * ★`EL` 은 `['목(木)','화(火)','토(土)','금(金)','수(水)']` 로 **한자 병기까지 포함**한다
+ *   (index.html:1017). 계약서 예시 `甲(양목)` 은 축약 표기였다 — 실제 소스를 정본으로 삼는다.
+ */
+function compatIlganLabel(r) {
+  if (!r || !r.ok || !r.pillars || !r.pillars.day) return null;
+  const s = r.pillars.day.stem;
+  return HS_CH[s] + '(' + (HS_YIN[s] ? '음' : '양') + EL[HS_EL[s]] + ')';
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // 대조 — 클라이언트가 보낸 context 와 서버 재계산을 비교한다
 // ────────────────────────────────────────────────────────────────────────────
 /** 대조 대상 키와 서버 산출값의 매핑. ★여기 없는 키는 대조하지 않는다(명시적 경계). */
@@ -339,6 +374,7 @@ function compareWithContext(ctx, r) {
 module.exports = {
   recompute, compareWithContext, COMPARE_KEYS,
   parseBirthDate, normHourIdx,
+  compatPillarLine, compatIlganLabel,
   HS, EB, HS_CH, EB_CH, EL, HS_EL, HS_YIN, EB_EL,
   TERM_EDGE_MIN,
 };
