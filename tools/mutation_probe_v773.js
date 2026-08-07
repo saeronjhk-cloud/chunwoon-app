@@ -82,7 +82,72 @@ function runGate(gateRoot, frontRoot, scope) {
   return { status: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
 }
 
-const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js'];
+const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_lunar_ui_dom.js'];
+
+// ══════════════════════════════════════════════════════════════════════════
+// ★v7.74 F 군 — 「음력 UI 조작 → 판독」 게이트(eval_lunar_ui_dom.js)의 유효성 증명
+// ══════════════════════════════════════════════════════════════════════════
+//   v7.73 은 게이트 45종·뮤테이션 26종 전건 통과 후 배포됐고, 그 직후 이 축에서 사고가 났다.
+//   ⟹ 신설 게이트에 대해 **v7.73 의 결함을 한 줄로 되살리는** 뮤턴트를 둔다.
+//     각 뮤턴트는 v7.73 소스에 실재했던 코드로의 **정확한 회귀**다(가상의 약화가 아니다).
+const F_MUTANTS = [
+  {
+    id: 'MF1', axis: '★사고 본체 (윤달 의도 파괴)',
+    what: 'cwSyncLunarDays 가 윤달 없는 년·월에서 체크박스를 다시 `disabled=true; checked=false` 로 되돌린다 (v7.73 원본)',
+    expect: ['U-1', 'U-2', 'U-6', 'U-6b', 'U-8'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "  if(lp)lp.disabled=false;\n  const wantLeap=!!(lp&&lp.checked);",
+      "  if(lp){if(!(y&&m&&lunarLeapMonth(y)===m)){lp.checked=false;lp.disabled=true;}else{lp.disabled=false;}}\n  const wantLeap=!!(lp&&lp.checked&&!lp.disabled);"),
+  },
+  {
+    id: 'MF2', axis: '★조용한 평달 대체',
+    what: '판독에서 `LEAP_NA` 거부를 없앤다 — 윤달 없는 달에 윤달을 체크해도 조용히 평달로 계산한다',
+    expect: ['U-4'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "    if(wantLeap&&lunarLeapMonth(y)!==m)return{ok:false,err:'LEAP_NA',calType:calType,y:y,m:m,d:d};",
+      "    if(wantLeap&&lunarLeapMonth(y)!==m)return{ok:true,calType:'lunar',y:y,m:m,d:d,leap:false};"),
+  },
+  {
+    id: 'MF3', axis: '★「고르지 않음」 표현 소멸',
+    what: '음력 select 의 초기값을 1990/1/1 로 되돌린다 — 미선택 제출이 조용히 1990-01-01 이 된다 (v7.73 원본)',
+    expect: ['U-3', 'U-11'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "  _cwFillSel(ys,CW_LUNAR_MAX_Y,CW_LUNAR_MIN_Y,'년');\n  _cwFillSel(ms,1,12,'월');\n  _cwFillSel(ds,1,30,'일');",
+      "  _cwFillSel(ys,CW_LUNAR_MAX_Y,CW_LUNAR_MIN_Y,'년',1990);\n  _cwFillSel(ms,1,12,'월',1);\n  _cwFillSel(ds,1,30,'일',1);"),
+  },
+  {
+    id: 'MF4', axis: '★조용한 값 대체 폴백',
+    what: '`_cwFillSel` 의 「비운다」를 v7.73 의 「마지막 옵션으로 몰래 채운다」 폴백으로 되돌린다',
+    expect: ['U-5', 'U-6b', 'U-11'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "  sel.value='';          // ★조용히 다른 값으로 바꾸지 않는다\n  return !had;",
+      "  sel.value='';\n  if(sel.value===''&&sel.options.length)sel.selectedIndex=sel.options.length-1;\n  return !had;"),
+  },
+  {
+    id: 'MF5', axis: '★조용한 일자 클램프',
+    what: '판독에서 `DAY_NA` 거부를 없앤다 — 그 달에 없는 일자가 조용히 통과한다',
+    expect: ['U-5'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "    if(!(d>=1&&d<=_dmax))return{ok:false,err:'DAY_NA',calType:calType,y:y,m:m,d:d,dmax:_dmax};",
+      "    if(!(d>=1&&d<=_dmax))return{ok:true,calType:'lunar',y:y,m:m,d:Math.min(d,_dmax),leap:wantLeap};"),
+  },
+  {
+    id: 'MF8', axis: '★일(日) 의도 파괴',
+    what: '일 목록 재구성이 사용자 의도(`ds.dataset.cwWant`)를 잊게 한다 — 중간 단계에서 사라진 일자가 영영 안 돌아온다',
+    expect: ['U-5c'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "  const want=parseInt(ds.value,10)||parseInt(ds.dataset.cwWant||'',10)||null;",
+      "  const want=parseInt(ds.value,10)||null;"),
+  },
+  {
+    id: 'MF6', axis: '★양력→음력 이관 조용한 대체',
+    what: '전환 시 지원 범위 밖 음력 연도를 **경계로 당겨** 옮긴다 — 사용자 입력이 조용히 다른 날짜가 된다',
+    expect: ['U-9b'], evals: ['eval_lunar_ui_dom.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "      if(lun&&lun.year>=CW_LUNAR_MIN_Y&&lun.year<=CW_LUNAR_MAX_Y){\n        ys.value=String(lun.year);",
+      "      if(lun){\n        ys.value=String(Math.min(Math.max(lun.year,CW_LUNAR_MIN_Y),CW_LUNAR_MAX_Y));"),
+  },
+];
 
 // ══════════════════════════════════════════════════════════════════════════
 // 뮤턴트 정의 — 전부 「보호를 없애는 한 줄 변경」
@@ -283,6 +348,17 @@ const MUTANTS = [
       "  if (!CT1_MAIN) return { ok: false, detail: '★판정 불가(통과 아님): ' + CT1_ERR };\n  // ★지문이 비거나",
       "  return { ok: true, detail: 'MUTANT' };\n  // ★지문이 비거나"),
   },
+  // ★v7.74 — 신설 게이트(eval_lunar_ui_dom.js) 자신을 약화시키는 뮤턴트.
+  //   그 게이트의 sha256 이 외부 pin 표에 있으므로 러너가 적발해야 한다.
+  {
+    id: 'MF7', axis: '★신설 게이트 자기 약화',
+    what: 'eval_lunar_ui_dom.js 의 U-1 을 무조건 통과로 바꾼다 (24 순열 검사 무력화)',
+    expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
+    applyGate: (g) => sub1(path.join(g, 'eval', 'eval_lunar_ui_dom.js'),
+      "  return { ok: bad.length === 0, detail: bad.length ? '★' + bad.length + '/72 불일치: '",
+      "  return { ok: true, detail: 'MUTANT' } || { ok: bad.length === 0, detail: bad.length ? '★' + bad.length + '/72 불일치: '"),
+  },
+  ...F_MUTANTS,
 ];
 
 // ══════════════════════════════════════════════════════════════════════════

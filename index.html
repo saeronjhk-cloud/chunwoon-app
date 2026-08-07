@@ -1774,7 +1774,17 @@ function cwReadBirth(birthId){
     const y=parseInt(ys.value,10),m=parseInt(ms.value,10),d=parseInt(ds.value,10);
     if(!y||!m||!d)return{ok:false,err:'EMPTY',calType:calType};
     if(y<CW_LUNAR_MIN_Y||y>CW_LUNAR_MAX_Y)return{ok:false,err:'RANGE',calType:calType};
-    return{ok:true,calType:'lunar',y:y,m:m,d:d,leap:!!(lp&&lp.checked&&!lp.disabled)};
+    // ★★v7.74 F-1 — 윤달 판독은 `disabled` 에 기대지 않는다.
+    //   종전 `lp.checked&&!lp.disabled` 는 「체크박스가 죽어 있으면 사용자 의도를 버린다」였다.
+    //   그런데 죽이는 주체가 cwSyncLunarDays 자신이었으므로(초기 1990년 1월은 윤달이 없다),
+    //   조작 순서에 따라 윤달 의도가 조용히 사라졌다 — 24 순열 중 16 순열에서 30일 오차.
+    //   이제는 **실제 윤달 유무**로만 판정하고, 맞지 않으면 조용히 평달로 바꾸지 않고 거부한다.
+    const wantLeap=!!(lp&&lp.checked);
+    if(wantLeap&&lunarLeapMonth(y)!==m)return{ok:false,err:'LEAP_NA',calType:calType,y:y,m:m,d:d};
+    // 그 달에 실재하지 않는 일자(예: 29일짜리 달의 30일)도 조용히 당기지 않고 거부한다.
+    const _dmax=wantLeap?lunarLeapDays(y):lunarMonthDays(y,m);
+    if(!(d>=1&&d<=_dmax))return{ok:false,err:'DAY_NA',calType:calType,y:y,m:m,d:d,dmax:_dmax};
+    return{ok:true,calType:'lunar',y:y,m:m,d:d,leap:wantLeap};
   }
   const el=document.getElementById(birthId);
   const bs=el?String(el.value||''):'';
@@ -1798,6 +1808,9 @@ function cwBirthErrMsg(r,who){
       ? `${w}음력은 ${CW_LUNAR_MIN_Y}~${CW_LUNAR_MAX_Y}년만 지원합니다.`
       : `${w}${CW_SOLAR_MIN_Y}년부터 ${CW_SOLAR_MAX_Y}년 사이의 생년월일을 입력해주세요.`;
     case 'NOUI':  return `${w}음력 입력 UI를 찾지 못했습니다. 페이지를 새로고침해주세요.`;
+    // ★v7.74 F-1 — 조용히 평달/다른 날로 바꾸지 않고 사용자에게 되묻는다.
+    case 'LEAP_NA':return `${w}${r.y}년에는 윤${r.m}월이 없습니다.\n윤달 체크를 해제하거나 년·월을 다시 골라주세요.`;
+    case 'DAY_NA': return `${w}${r.y}년 ${r.leap?'윤':''}${r.m}월은 ${r.dmax}일까지입니다.\n일(日)을 다시 골라주세요.`;
     default:      return `${w}생년월일을 확인해주세요.`;
   }
 }
@@ -1822,24 +1835,49 @@ function cwToSolar(r){
 // ── 음력 입력 UI (년/월/일 select + 윤달 체크) ──
 // <input type="date"> 는 음력 2월 30일을 브라우저가 거부하므로(음력 달은 대소월 29/30일),
 // 음력 선택 시 select 로 전환한다. 일 목록은 해당 음력 월의 실제 대소월을 반영해 생성한다.
+//
+// ★★v7.74 F-1 구조 수리 — 「조용한 값 대체」 전면 금지 ─────────────────────────
+// 【사고】 프로덕션에서 사용자가 입력했다고 기억하는 날짜와 화면·해석문의 날짜가 달랐다.
+//   ★화면과 해석문은 **서로 일치**한 채 함께 틀렸다 — 그래서 「화면 vs 해석」 대조로는 못 잡는다.
+// 【실측 재현 (_v773_work/probe_F)】 조작 순서 4! = 24 순열 중 **16 순열**에서 윤달 체크가
+//   조용히 무시됐다(음력 2023 윤2/15 → 평2/15 → 양력 30일 오차). 진입 경로 3종 모두 동일.
+//   1900~2050 윤달 보유 56개 연 **전수**에서 「윤달을 먼저 클릭」 시 100% 소실.
+//   또 음력으로 전환만 하고 아무것도 고르지 않아도 판독이 ok / 1990-01-01 이었다(양력은 EMPTY 거부).
+// 【뿌리】 ① 사용자 의도(윤달 여부)를 **스스로 disabled 시키는 컨트롤**에 저장했다.
+//           disabled 는 클릭을 삼키고 checked 를 false 로 덮어써 의도를 파괴한다.
+//         ② 「미선택」이 표현 불가능했다 — select 가 항상 1990/1/1 이라는 유효해 보이는 값을 가졌다.
+//         ③ 선택이 무효가 되면 조용히 다른 값(마지막 옵션·클램프)으로 바꿨다.
+// 【구조 원칙】
+//   ① UI 는 사용자 의도를 파괴하지 않는다 — 윤달 체크박스를 disabled 하지 않는다.
+//   ② 「고르지 않음」은 반드시 표현 가능하다 — placeholder(value='')가 EMPTY 로 판독된다.
+//   ③ 선택이 무효가 되면 **비우고 되묻는다** — 조용한 대체·클램프 금지(판독 단계에서도 거부한다).
+const CW_LUNAR_PH='— 선택 —';
+
+/**
+ * select 옵션 재구성.
+ * @returns {boolean} true = 이전 선택을 보존했거나 보존할 것이 없었다 /
+ *                    false = ★이전 선택이 새 목록에 없어 **비웠다**(호출자가 사용자에게 알린다)
+ */
 function _cwFillSel(sel,from,to,suffix,cur){
-  if(!sel)return;
+  if(!sel)return true;
   const keep=cur!=null?cur:parseInt(sel.value,10);
   sel.innerHTML='';
+  const ph=document.createElement('option');
+  ph.value='';ph.textContent=CW_LUNAR_PH;sel.appendChild(ph);
   const step=from<=to?1:-1;
   for(let v=from;step>0?v<=to:v>=to;v+=step){
-    const o=document.createElement('option');o.value=v;o.textContent=v+suffix;sel.appendChild(o);
+    const o=document.createElement('option');o.value=String(v);o.textContent=v+suffix;sel.appendChild(o);
   }
-  if(keep&&!isNaN(keep)){
+  const had=!!(keep&&!isNaN(keep));
+  if(had){
     const lo=Math.min(from,to),hi=Math.max(from,to);
-    if(keep>=lo&&keep<=hi)sel.value=String(keep);
+    if(keep>=lo&&keep<=hi){sel.value=String(keep);return true}
   }
-  // 목록을 다시 그린 뒤 선택값이 사라지는(빈 문자열) 상태를 남기지 않는다.
-  // 예: 음력 2월 30일 선택 → 윤달 체크 → 윤2월은 29일뿐 → 30일 옵션 소멸.
-  if(sel.value===''&&sel.options.length)sel.selectedIndex=sel.options.length-1;
+  sel.value='';          // ★조용히 다른 값으로 바꾸지 않는다
+  return !had;
 }
 
-/** 년·월 선택에 맞춰 일 목록(29/30)과 윤달 체크박스 활성 여부를 갱신 */
+/** 년·월·윤달 선택에 맞춰 일 목록(29/30)과 안내 문구를 갱신 */
 function cwSyncLunarDays(birthId){
   const ys=document.getElementById(birthId+'_LY'),
         ms=document.getElementById(birthId+'_LM'),
@@ -1848,39 +1886,51 @@ function cwSyncLunarDays(birthId){
         note=document.getElementById(birthId+'_LEAPNOTE');
   if(!ys||!ms||!ds)return;
   const y=parseInt(ys.value,10),m=parseInt(ms.value,10);
-  if(!y||!m)return;
-  const leapM=lunarLeapMonth(y);
-  const hasLeap=(leapM===m);
-  if(lp){
-    if(!hasLeap){lp.checked=false;lp.disabled=true;}
-    else{lp.disabled=false;}
-  }
+  // ★원칙 ① — 체크박스를 절대 disabled 하지 않고, checked 를 코드가 뒤집지도 않는다.
+  //   윤달 여부는 사용자만 바꾼다. 년·월과 맞지 않으면 판독 단계에서 명시적으로 거부한다.
+  if(lp)lp.disabled=false;
+  const wantLeap=!!(lp&&lp.checked);
+  const hasLeap=!!(y&&m&&lunarLeapMonth(y)===m);
+
+  // 일 목록 — 년·월이 정해지기 전에는 그 달의 대소월을 알 수 없다.
+  const dmax=(y&&m)?((wantLeap&&hasLeap)?lunarLeapDays(y):lunarMonthDays(y,m)):30;
+  // ★원칙 ① 을 일(日)에도 적용한다 — 사용자가 고른 일자를 **의도**로 따로 기억한다.
+  //   중간 단계에서 그 달에 없어 잠시 사라져도 다시 유효해지면 되살린다(예: 일30 → 평4월(29일)
+  //   에서 사라짐 → 윤4월(30일) 체크 → 30일 복귀). 되살릴 수 없으면 **비운 채로 둔다**.
+  //   ★되살리는 값은 언제나 사용자가 고른 그 값이다. 다른 값으로 바꾸는 일은 없다.
+  const want=parseInt(ds.value,10)||parseInt(ds.dataset.cwWant||'',10)||null;
+  const kept=_cwFillSel(ds,1,dmax,'일',want);
+
   if(note){
-    note.textContent=hasLeap?`※ ${y}년에는 윤${m}월이 있습니다 — 윤달생이면 체크하세요.`
-                            :`※ ${y}년에는 윤${m}월이 없습니다.`;
-    note.style.color=hasLeap?'var(--gold)':'var(--text2)';
+    let msg,warn=false;
+    if(!y||!m){msg='※ 년·월을 먼저 골라주세요 — 그 달의 실제 일수(29/30일)를 반영합니다.';}
+    else if(hasLeap){msg=`※ ${y}년에는 윤${m}월이 있습니다 — 윤달생이면 체크하세요.`;}
+    else if(wantLeap){msg=`※ ${y}년에는 윤${m}월이 없습니다 — 윤달 체크를 해제하거나 년·월을 다시 골라주세요.`;warn=true;}
+    else{msg=`※ ${y}년에는 윤${m}월이 없습니다.`;}
+    if(!kept){msg+=' ※ 고르셨던 일자가 이 달에는 없습니다 — 일(日)을 다시 골라주세요.';warn=true;}
+    note.textContent=msg;
+    note.style.color=warn?'#e07a7a':(hasLeap?'var(--gold)':'var(--text2)');
   }
-  // 대소월 반영 — 윤달이면 윤달 일수, 아니면 평달 일수 (음력 2월 30일 같은 정상 날짜를 반드시 허용)
-  const useLeap=!!(lp&&lp.checked&&hasLeap);
-  const dmax=useLeap?lunarLeapDays(y):lunarMonthDays(y,m);
-  const curD=parseInt(ds.value,10);
-  _cwFillSel(ds,1,dmax,'일',curD>dmax?dmax:curD);
 }
 
-/** 음력 select 초기 구성 (1회) */
+/** 음력 select 초기 구성 (1회) — ★기본값을 두지 않는다(「미선택」이 초기 상태다) */
 function cwInitLunarUI(birthId){
   const ys=document.getElementById(birthId+'_LY'),
         ms=document.getElementById(birthId+'_LM'),
         ds=document.getElementById(birthId+'_LD'),
         lp=document.getElementById(birthId+'_LEAP');
   if(!ys||!ms||!ds||ys.dataset.cwInit==='1')return;
-  _cwFillSel(ys,CW_LUNAR_MAX_Y,CW_LUNAR_MIN_Y,'년',1990);
-  _cwFillSel(ms,1,12,'월',1);
-  _cwFillSel(ds,1,30,'일',1);
+  ys.value='';ms.value='';ds.value='';
+  _cwFillSel(ys,CW_LUNAR_MAX_Y,CW_LUNAR_MIN_Y,'년');
+  _cwFillSel(ms,1,12,'월');
+  _cwFillSel(ds,1,30,'일');
+  if(lp)lp.disabled=false;
   ys.dataset.cwInit='1';
   const h=function(){cwSyncLunarDays(birthId)};
   ys.addEventListener('change',h);ms.addEventListener('change',h);
   if(lp)lp.addEventListener('change',h);
+  // ★사용자가 **직접 고른** 일자만 의도로 기록한다(프로그램이 채운 값은 기록하지 않는다).
+  ds.addEventListener('change',function(){if(ds.value)ds.dataset.cwWant=ds.value});
   cwSyncLunarDays(birthId);
 }
 
@@ -1910,7 +1960,14 @@ function cwSwitchBirthUI(birthId,type){
         if(lp){lp.checked=!!lun.isLeap;}
         cwSyncLunarDays(birthId);
         ds.value=String(lun.day);
+        // ★v7.74 F-1 — 옮겨 담기지 못했으면(옵션에 없으면) 조용히 다른 날로 두지 않고 비운다.
+        if(ds.value!==String(lun.day))ds.value='';
+        // 이관된 값이 이후 재구성에서 되살아나도록 의도로도 기록한다(낡은 의도가 덮어쓰지 않게).
+        ds.dataset.cwWant=String(lun.day);
       }
+      // ★범위 밖(예: 양력 1900-01-xx → 음력 1899년)이면 아무 것도 옮기지 않는다.
+      //   종전에는 select 가 1990/1/1 기본값을 갖고 있어 **사용자 입력이 통째로 1990-01-27 로 바뀌었다.**
+      //   이제는 미선택으로 남아 판독이 EMPTY 로 거부한다.
     }
     cwSyncLunarDays(birthId);
     solarWrap.style.display='none';
@@ -1919,7 +1976,8 @@ function cwSwitchBirthUI(birthId,type){
     // 음력 선택값이 있으면 양력으로 옮겨 담는다
     const y=parseInt(ys?ys.value:'',10),m=parseInt(ms?ms.value:'',10),d=parseInt(ds?ds.value:'',10);
     if(y&&m&&d&&inp){
-      const s=lunarToSolar(y,m,d,!!(lp&&lp.checked&&!lp.disabled));
+      // ★v7.74 F-1 — `!lp.disabled` 는 의도 파괴 경로였다. 실제 윤달 유무로 판정한다.
+      const s=lunarToSolar(y,m,d,!!(lp&&lp.checked&&lunarLeapMonth(y)===m));
       if(s&&s.year>=CW_SOLAR_MIN_Y&&s.year<=CW_SOLAR_MAX_Y){
         inp.value=`${s.year}-${String(s.month).padStart(2,'0')}-${String(s.day).padStart(2,'0')}`;
       }

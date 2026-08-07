@@ -75,6 +75,7 @@ const REQUIRED = Object.freeze([
   'eval/eval_compat_guard.js',
   'eval/eval_client_port_drift.js',
   'eval/eval_gate_asset_commit.js',
+  'eval/eval_lunar_ui_dom.js',   // ★v7.74 F-1 — 「UI 조작 → 판독」 축. 미커밋이면 무감시다.
   'eval/_gate_pins.json',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
@@ -242,7 +243,9 @@ check('A-9', '★신설 게이트가 외부 pin 표(eval/_gate_pins.json)에 등
   let j = null;
   try { j = JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return { ok: false, detail: 'pin 표 파싱 실패' }; }
   const evals = (j && j.evals) || {};
-  const need = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_gate_asset_commit.js'];
+  // ★v7.74 F-1 — eval_lunar_ui_dom.js 추가. 이 게이트가 사라지면 「UI 조작 → 판독」 축이
+  //   통째로 무감시가 된다(v7.73 이 그 상태로 배포됐고 그것이 이번 사고의 자리였다).
+  const need = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_gate_asset_commit.js', 'eval_lunar_ui_dom.js'];
   const miss = need.filter((f) => !Object.prototype.hasOwnProperty.call(evals, f));
   const noSha = need.filter((f) => evals[f] && (typeof evals[f].sha256 !== 'string' || evals[f].sha256.length !== 64));
   return { ok: miss.length === 0 && noSha.length === 0,
