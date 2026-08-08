@@ -508,12 +508,15 @@ const FIX=JSON.parse(process.env.CW_CT1_FIX);
   try{
     const html=fs.readFileSync(IDX,'utf8');
     const re=/<script(?![^>]*\bsrc=)(?![^>]*type=")[^>]*>([\s\S]*?)<\/script>/g;
-    let m,best='';while((m=re.exec(html)))if(m[1].length>best.length)best=m[1];
-    if(best.length<100000)throw new Error('인라인 스크립트 추출 실패 ('+best.length+'자)');
+    // ★브라우저와 같이 — 인라인 스크립트 **전건을 문서 순서대로** 같은 전역에서 실행한다.
+    //   「가장 큰 1개만」 가정은 반입 블록을 별도 <script> 로 분리하면 깨진다(B3 §6-3 · 결정 98).
+    let m,parts=[];while((m=re.exec(html)))if(m[1].trim())parts.push(m[1]);
+    const _tot=parts.reduce((a,b)=>a+b.length,0);
+    if(_tot<100000)throw new Error('인라인 스크립트 추출 실패 ('+_tot+'자 · '+parts.length+'블록)');
     const win=mkStub();let calls=[];
     win.fetch=function(u,o){calls.push({u:u,o:o});return new Promise(function(){})};
     const ctx=vm.createContext(win);
-    vm.runInContext(best,ctx,{filename:'index.html'});
+    for(const _p of parts) vm.runInContext(_p,ctx,{filename:'index.html'});
     const D=win.document,set=(id,v)=>{D.getElementById(id).value=v};
     const drive=async(expr)=>{calls=[];
       try{vm.runInContext(expr,ctx)}catch(e){return{err:'THROW:'+e.message}}
