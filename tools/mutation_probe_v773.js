@@ -111,8 +111,8 @@ const T_MUTANTS = [
     what: 'eval_tojeong_guard.js 의 T-1 을 무조건 통과로 바꾼다 (평탄화 관측 무력화)',
     expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
     applyGate: (g) => sub1(path.join(g, 'eval', 'eval_tojeong_guard.js'),
-      "      const miss = need.filter((k) => flat.indexOf(k) === -1);",
-      "      const miss = [];"),
+      "    const miss = need.filter((k) => flat.indexOf(k) === -1);",
+      "    const miss = [];"),
   },
 ];
 
