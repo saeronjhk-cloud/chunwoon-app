@@ -441,9 +441,39 @@ const MUTANTS = [
 ];
 
 // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// ★v7.75 — 샤딩(`CW_MUT_SHARD=k/n`) · 지정 실행(`CW_MUT_ONLY=MT1,MT2`)
+// ══════════════════════════════════════════════════════════════════════════
+//   【왜】 뮤턴트가 40종을 넘으면서 전체 실행이 샌드박스의 단일 명령 시간 상한을
+//     넘겼다(백그라운드 프로세스는 세션 간 유지되지 않는다 — 실측).
+//   【★위약 방지 — 이 기능은 「불편한 뮤턴트를 건너뛰는」 문으로 쓰일 수 있다】
+//     · 필터가 걸린 회차는 **머리와 꼬리에 배너**를 찍고 종료 코드와 무관하게
+//       `PARTIAL` 을 선언한다. 「부분 실행이 전체 통과로 읽히는」 경로를 막는다.
+//     · `[mutation] total=` 줄은 **필터가 없을 때만** 출력한다. 부분 회차의 수치가
+//       pin 표(`checks_min`)나 인수인계에 그대로 실리지 못하게 한다.
+//     · 필터 문자열과 제외 건수를 항상 함께 찍는다.
+const MUT_ONLY = (process.env.CW_MUT_ONLY || '').split(',').map((s) => s.trim()).filter(Boolean);
+const MUT_SHARD = (() => {
+  const m = String(process.env.CW_MUT_SHARD || '').match(/^(\d+)\s*\/\s*(\d+)$/);
+  return m ? { k: parseInt(m[1], 10), n: parseInt(m[2], 10) } : null;
+})();
+const MUT_FILTERED = MUT_ONLY.length > 0 || !!MUT_SHARD;
+function mutSelected(id, idx) {
+  if (MUT_ONLY.length) return MUT_ONLY.indexOf(id) !== -1;
+  if (MUT_SHARD) return (idx % MUT_SHARD.n) === (MUT_SHARD.k - 1);
+  return true;
+}
+
 (function main() {
   const rows = [];
   let survived = 0;
+  if (MUT_FILTERED) {
+    console.log('════════════════════════════════════════════════════════════════');
+    console.log('★★ PARTIAL RUN — 필터가 걸려 있습니다. 이 회차는 전체 실행이 아닙니다.');
+    console.log('   CW_MUT_ONLY=' + (MUT_ONLY.join(',') || '(없음)') + ' · CW_MUT_SHARD=' + (MUT_SHARD ? MUT_SHARD.k + '/' + MUT_SHARD.n : '(없음)'));
+    console.log('   ★이 회차의 수치를 인수인계·pin 표에 그대로 쓰지 마십시오.');
+    console.log('════════════════════════════════════════════════════════════════');
+  }
 
   // ── M0 긍정 대조 ─────────────────────────────────────────────────────────
   const base = mkFront();
@@ -454,7 +484,10 @@ const MUTANTS = [
   if (!b0ok) console.log('    ★★하네스 자체가 위약이다 — 무변경 사본이 통과하지 않는다. 이하 결과는 무의미하다.');
   rows.push({ id: 'M0', axis: '긍정 대조', what: '무변경 사본', killed: b0ok, by: b0ok ? '전건 통과(정상)' : '★하네스 이상' });
 
-  for (const m of MUTANTS) {
+  let skipped = 0;
+  for (let mi = 0; mi < MUTANTS.length; mi++) {
+    const m = MUTANTS[mi];
+    if (!mutSelected(m.id, mi)) { skipped++; continue; }
     let killed = false, by = '', err = null;
     try {
       const d = mkFront();
@@ -534,7 +567,9 @@ const MUTANTS = [
       } },
   ];
   console.log('');
-  for (const m of MG) {
+  for (let gi = 0; gi < MG.length; gi++) {
+    const m = MG[gi];
+    if (!mutSelected(m.id, MUTANTS.length + gi)) { skipped++; continue; }
     let ok = null, by = '', err = null;
     try {
       const d = mkGitFront();
@@ -552,7 +587,15 @@ const MUTANTS = [
   }
 
   const N = MUTANTS.length + MG.length;
-  console.log('\n[mutation] 뮤턴트 ' + N + '종(자산 커밋 경로 ' + MG.length + '종 포함) · 적발/정상 ' + (N - survived) + ' · ★생존 ' + survived);
-  console.log('[mutation] total=' + (N + 1) + ' pass=' + (N + 1 - survived - (b0ok ? 0 : 1)) + ' fail=' + (survived + (b0ok ? 0 : 1)));
+  const ran = N - skipped;
+  if (MUT_FILTERED) {
+    // ★부분 회차 — `total=` 을 찍지 않는다. 찍으면 pin 계측기(declaredChecks)와
+    //   인수인계가 부분 수치를 전체로 오독한다.
+    console.log('\n[mutation] ★PARTIAL — 전체 ' + N + '종 중 **' + ran + '종만** 실행 · 제외 ' + skipped + '종 · 실행분 생존 ' + survived);
+    console.log('[mutation] ★이 회차는 전체 실행이 아닙니다. 커밋·인수인계 전에 필터 없이 전건을 돌리십시오.');
+  } else {
+    console.log('\n[mutation] 뮤턴트 ' + N + '종(자산 커밋 경로 ' + MG.length + '종 포함) · 적발/정상 ' + (N - survived) + ' · ★생존 ' + survived);
+    console.log('[mutation] total=' + (N + 1) + ' pass=' + (N + 1 - survived - (b0ok ? 0 : 1)) + ' fail=' + (survived + (b0ok ? 0 : 1)));
+  }
   process.exit(survived === 0 && b0ok ? 0 : 1);
 })();
