@@ -82,7 +82,52 @@ function runGate(gateRoot, frontRoot, scope) {
   return { status: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
 }
 
-const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_lunar_ui_dom.js'];
+const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js'];
+
+// ══════════════════════════════════════════════════════════════════════════
+// ★v7.74 P 군 — 「반입 블록 폭발반경」 게이트(eval_port_isolation.js)의 유효성 증명
+// ══════════════════════════════════════════════════════════════════════════
+//   E-8 수리는 ⑴ 경계 2쌍 ⑵ `CW_PILLAR_RANGE_MSG` 의 typeof 가드 **둘 다**라야 효과가 있다.
+//   어느 한쪽만 되돌리면 정상 경로에서는 **아무 증상도 없고**(V4 == V0), 사고가 났을 때만
+//   폭발반경이 원상 복귀한다. 그러므로 각각을 되돌리는 뮤턴트를 둔다(결정 96).
+const P_MUTANTS = [
+  {
+    id: 'MP1', axis: '★E-8 — typeof 가드 제거 (B3 §5-2 의 V2 로 회귀)',
+    what: '`CW_PILLAR_RANGE_MSG` 를 v7.73 형상(무가드 최상위 CW_ENGINE 참조)으로 되돌린다 — 분리는 남지만 폭발반경은 원상복귀',
+    expect: ['P-3', 'P-3b', 'P-3c'], evals: ['eval_port_isolation.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "const CW_PILLAR_RANGE_MSG=(typeof CW_ENGINE==='undefined')?'생년월일이 지원 범위를 벗어났습니다.'\n  :'생년월일이 지원 범위('+CW_ENGINE.RANGE.minY+'~'+CW_ENGINE.RANGE.maxY+'년)를 벗어났습니다.';",
+      "const CW_PILLAR_RANGE_MSG='생년월일이 지원 범위('+CW_ENGINE.RANGE.minY+'~'+CW_ENGINE.RANGE.maxY+'년)를 벗어났습니다.';"),
+  },
+  {
+    id: 'MP2', axis: '★E-8 — 스크립트 경계 재병합',
+    what: '반입 블록의 <script> 경계를 걷어내 앱 코드와 같은 파싱 단위로 되돌린다 (분리 이전 형상)',
+    expect: ['P-1', 'P-3', 'P-3b'], evals: ['eval_port_isolation.js'],
+    apply: (d) => {
+      const p = path.join(d, 'index.html');
+      const L = rd(p).split('\n');
+      const s = L.findIndex((l) => l.startsWith("const HS=['갑'"));
+      const e = L.findIndex((l) => l.startsWith('function calcElementDistribution'));
+      if (s < 0 || e < 0) throw new Error('경계 탐색 앵커 부재');
+      const out = [];
+      let removed = 0;
+      for (let i = 0; i < L.length; i++) {
+        if (i > s && i < e && /^\s*(<\/script>|<script>)\s*$/.test(L[i])) { removed++; continue; }
+        out.push(L[i]);
+      }
+      if (removed !== 4) throw new Error('경계 줄 ' + removed + '건 (4여야 한다)');
+      wr(p, out.join('\n'));
+    },
+  },
+  {
+    id: 'MP3', axis: '★신설 게이트 자기 약화',
+    what: 'eval_port_isolation.js 의 P-3 을 무조건 통과로 바꾼다 (폭발반경 검사 무력화)',
+    expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
+    applyGate: (g) => sub1(path.join(g, 'eval', 'eval_port_isolation.js'),
+      "  const ok = /^PAYLOAD:/.test(dream) && face !== 'UNDEF' && face !== 'NOCALL';",
+      "  const ok = true;"),
+  },
+];
 
 // ══════════════════════════════════════════════════════════════════════════
 // ★v7.74 F 군 — 「음력 UI 조작 → 판독」 게이트(eval_lunar_ui_dom.js)의 유효성 증명
@@ -359,6 +404,7 @@ const MUTANTS = [
       "  return { ok: true, detail: 'MUTANT' } || { ok: bad.length === 0, detail: bad.length ? '★' + bad.length + '/72 불일치: '"),
   },
   ...F_MUTANTS,
+  ...P_MUTANTS,
 ];
 
 // ══════════════════════════════════════════════════════════════════════════
