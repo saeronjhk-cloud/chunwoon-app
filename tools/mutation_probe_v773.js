@@ -501,6 +501,30 @@ function mutSelected(id, idx) {
   return true;
 }
 
+// ★I-62 — 뮤테이션 회차의 **자식 프로세스** 잔여를 쓸어 담는다.
+//   자기 사본은 `CWTMP` 가 지우지만, 자식(게이트)은 자기 프로세스에서 지운다 —
+//   그런데 `MH1` 은 **정리 훅을 일부러 제거한** 사본으로 게이트를 돌리므로 그 회차의
+//   자식들은 정리하지 못한다(뮤턴트의 정의상 당연하다).
+//   ⟹ 회차 **시작 시점 스냅샷**을 떠 두고, 그 뒤에 새로 생긴 `cw_*` 만 지운다.
+//     ★기존 디렉터리는 절대 건드리지 않는다 — 다른 세션/동시 실행을 죽이지 않기 위해서다.
+const TMP_ROOT = os.tmpdir();
+const TMP_BEFORE = (() => {
+  try { return new Set(fs.readdirSync(TMP_ROOT).filter((f) => /^cw_/.test(f))); }
+  catch (e) { return null; }
+})();
+function sweepChildTmp() {
+  if (!TMP_BEFORE) return 0;
+  let n = 0;
+  let now = [];
+  try { now = fs.readdirSync(TMP_ROOT).filter((f) => /^cw_/.test(f)); } catch (e) { return 0; }
+  for (const f of now) {
+    if (TMP_BEFORE.has(f)) continue;
+    try { fs.rmSync(path.join(TMP_ROOT, f), { recursive: true, force: true }); n++; } catch (e) { /* 무시 */ }
+  }
+  return n;
+}
+process.on('exit', () => { const n = sweepChildTmp(); if (n) console.log('[mutation] 자식 임시 사본 ' + n + '건 정리(I-62)'); });
+
 (function main() {
   const rows = [];
   let survived = 0;
