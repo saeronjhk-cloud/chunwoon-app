@@ -350,9 +350,13 @@ const MUTANTS = [
     id: 'M12', axis: 'compat 12키 재유도',
     what: '`compatPersonInput` 이 항상 「12키 없음」을 반환하게 한다 — 서버 재유도가 사라져 위조 원국이 그대로 쓰인다',
     expect: ['E-3'], evals: ['eval_compat_guard.js'],
+    // ★v7.75 — 앵커를 **한 줄 위까지** 넓혔다. v7.75 에서 `tojeongBirthInput` 이
+    //   같은 `if (!any) return { missing: true };` 줄을 갖게 되면서 앵커가 2건이 됐고,
+    //   `sub1` 이 예외를 던져 이 뮤턴트가 **조용히 무력화**됐다(실측 — 생존으로 보고됨).
+    //   ⟹ 뮤턴트 앵커는 「그 함수에서만 나오는 형태」여야 한다.
     apply: (d) => sub1(path.join(d, 'api', '_engine', 'ctxguard.js'),
-      "  if (!any) return { missing: true };",
-      "  if (true) return { missing: true };"),
+      "  const any = has.call(ctx, kY) || has.call(ctx, kM) || has.call(ctx, kD);\n  if (!any) return { missing: true };",
+      "  const any = has.call(ctx, kY) || has.call(ctx, kM) || has.call(ctx, kD);\n  if (true) return { missing: true };"),
   },
   {
     id: 'M13', axis: 'compat 점수 정의역',
@@ -534,9 +538,13 @@ function mutSelected(id, idx) {
         by = lines.length ? lines[0].trim().slice(0, 150) : '(pin 미발화 — 생존)';
       }
     } catch (e) { err = (e && e.message) || String(e); }
-    if (err) { by = '★뮤테이션 적용 실패: ' + err; killed = false; }
+    // ★v7.75 — 「적용 실패」와 「적발 실패(생존)」를 **절대 같은 라벨로 찍지 않는다**.
+    //   실측 2건(MT3 들여쓰기 · M12 앵커 중복)에서 앵커가 어긋나 뮤턴트가 아예 적용되지
+    //   않았는데 `★SURVIVED` 로 보고돼, 「게이트가 못 잡았다」와 구별되지 않았다.
+    //   ★적용 실패는 **하네스 고장**이며 게이트 평가가 아니다 — 라벨을 분리한다.
+    if (err) { by = '★뮤테이션 적용 실패(하네스 고장 — 게이트 평가 아님): ' + err; killed = false; }
     if (!killed) survived++;
-    console.log((killed ? 'KILL' : '★SURVIVED') + ' ' + m.id + '  [' + m.axis + '] ' + m.what);
+    console.log((killed ? 'KILL' : (err ? '★APPLY-FAIL' : '★SURVIVED')) + ' ' + m.id + '  [' + m.axis + '] ' + m.what);
     console.log('       기대=' + (m.expect || []).join(',') + '  실제→ ' + by);
     rows.push({ id: m.id, axis: m.axis, what: m.what, killed, by });
   }
