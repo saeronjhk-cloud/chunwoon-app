@@ -86,7 +86,7 @@ function done() {
 }
 
 // ── SELF-1 : 외부 pin 자기검사 ──────────────────────────────────────────────
-const EXPECTED_TOTAL_MIN = 8;
+const EXPECTED_TOTAL_MIN = 20;
 check('SELF-1', '★_gate_pins.json 자기검사 — 자기 sha256 · 검사 수 하한', () => {
   const pinPath = path.join(__dirname, '_gate_pins.json');
   if (!fs.existsSync(pinPath)) return { ok: false, detail: '★pin 표 부재 — 판정 불가' };
@@ -166,10 +166,13 @@ const CLEAN_CTX = () => ({
   name: '홍길동', gender: 'male', targetYear: 2026,
   lunarYear: 1990, lunarMonth: 4, lunarDay: 21,
   zodiac: '말띠(午)', ganjiYear: '병오년',
-  upperGua: '건(乾)', taeseNum: 11,
-  middleGua: '감(坎)', wolNum: 4,
-  lowerGua: '진', ilNum: 21,
-  guaCombination: '건(乾) · 감(坎) · 진'
+  // ★이 값들은 **실제 index.html 이 양력 1990-05-15 · targetYear 2026 에서 만드는 값**이다.
+  //   지어내면 T-7b(긍정 대조)가 붉어진다 — 실제로 붉어졌고, 그게 이 검사의 존재 이유다.
+  //   (음력 1990-4-21 · 태세수 10 → 팔괘 2번 · 월건 4 → 육괘 4번 · 일진 21%3=0 → 하괘 3번)
+  upperGua: '태(兌)☱', taeseNum: 10,
+  middleGua: '진(震)☳', wolNum: 4,
+  lowerGua: '하(下)', ilNum: 21,
+  guaCombination: '태(兌)☱ · 진(震)☳ · 하(下)'
 });
 /** 줄 구조를 위조하려는 context — 개행·제어문자·과길이 */
 const EVIL_CTX = () => Object.assign(CLEAN_CTX(), {
@@ -300,6 +303,113 @@ const EVIL_CTX = () => Object.assign(CLEAN_CTX(), {
     const got = m[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
     const miss = TJ_TYPES.filter((t) => got.indexOf(t) === -1);
     return { ok: miss.length === 0, detail: miss.length ? '★누락 ' + miss.join(',') : got.join(',') };
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 1층 — 생년월일 5키(`cal`·`y`·`m`·`d`·`leap`) 서버 재유도 (v7.75)
+  // ══════════════════════════════════════════════════════════════════════════
+  const BIRTH5 = { cal: 'solar', y: 1990, m: 5, d: 15, leap: false };
+  const tjLog = (o) => (o.tj[0] || {});
+
+  const l1clean = await callAndObserve(Object.assign(CLEAN_CTX(), BIRTH5), 'tojeong');
+  await checkA('T-7', '★★1층 — 5키가 오면 서버가 원국을 **재유도**한다 (mode=derived)', async () => {
+    const l = tjLog(l1clean);
+    if (!l.layer1) return { ok: false, detail: '★1층이 돌지 않았다 (reason=' + l.reason + ')' };
+    return { ok: l.mode === 'derived' && l.replaced === 12,
+      detail: 'mode=' + l.mode + ' replaced=' + l.replaced + ' diffs=' + (l.diffs || []).join(',') };
+  });
+
+  await checkA('T-7b', '★★긍정 대조 — 정상 클라 산출과 서버 재유도가 **갈리지 않는다** (diffs 0)', async () => {
+    const l = tjLog(l1clean);
+    if (!l.layer1) return { ok: false, detail: '★1층 부재 — 판정 불가' };
+    // CLEAN_CTX 는 실제 index.html 이 1990-05-15 에서 만드는 값이어야 한다.
+    return { ok: (l.diffs || []).length === 0,
+      detail: (l.diffs || []).length ? '★갈린 키: ' + l.diffs.join(',') + ' — 클라 산출식과 서버 재유도가 어긋났다' : '갈림 0키' };
+  });
+
+  const forged = Object.assign(CLEAN_CTX(), BIRTH5, {
+    upperGua: '위조괘', taeseNum: 999, lunarDay: 1, guaCombination: '위조 · 위조 · 위조'
+  });
+  const l1forge = await callAndObserve(forged, 'tojeong');
+  await checkA('T-8', '★★위조 파생값이 **서버값으로 교체**된다 (프롬프트에 위조 괘가 도달하지 않는다)', async () => {
+    const l = tjLog(l1forge);
+    if (!l.layer1) return { ok: false, detail: '★1층 부재 — 판정 불가' };
+    const need = ['upperGua', 'taeseNum', 'lunarDay', 'guaCombination'];
+    const miss = need.filter((k) => (l.diffs || []).indexOf(k) === -1);
+    return { ok: l.mode === 'derived' && miss.length === 0,
+      detail: miss.length ? '★교체 누락 ' + miss.join(',') + ' (diffs=' + (l.diffs || []).join(',') + ')' : 'mode=derived · 교체 ' + l.diffs.length + '키' };
+  });
+
+  const l1legacy = await callAndObserve(CLEAN_CTX(), 'tojeong');   // 5키 없음 = 구버전 캐시
+  await checkA('T-9', '★하위호환 — 5키 없는 구버전 요청은 `mode:legacy` 이고 **차단하지 않는다**', async () => {
+    const l = tjLog(l1legacy);
+    if (!l.layer1) return { ok: false, detail: '★1층 부재 — 판정 불가' };
+    const blocked = l1legacy.res.statusCode === 400;
+    return { ok: l.mode === 'legacy' && !blocked,
+      detail: 'mode=' + l.mode + ' · status=' + l1legacy.res.statusCode + (blocked ? ' ★구버전 캐시 사용자를 친다' : '') };
+  });
+
+  const l1bad = await callAndObserve(Object.assign(CLEAN_CTX(), { cal: 'solar', y: 9999, m: 5, d: 15 }), 'tojeong');
+  await checkA('T-10', '★★검증 불가 시 **클라값을 채택하지 않는다** — 파생 키를 폐기한다 (M16 회귀 차단)', async () => {
+    const l = tjLog(l1bad);
+    if (!l.layer1) return { ok: false, detail: '★1층 부재 — 판정 불가' };
+    return { ok: l.mode === 'discarded' && l.discarded > 0,
+      detail: 'mode=' + l.mode + ' reason=' + l.reason + ' 폐기 ' + l.discarded + '키' };
+  });
+
+  // ★T-10b — MT5 가 생존해서 찾은 게이트 구멍(v7.75). T-10 은 `BIRTH_OUT_OF_RANGE`
+  //   분기만 밟았고 **`DERIVE_FAILED` 분기는 검사되지 않고 있었다**. 두 분기는 서로
+  //   다른 코드이며, 「형식은 맞는데 실재하지 않는 날짜」가 후자다(윤2월 30일).
+  const l1derr = await callAndObserve(
+    Object.assign(CLEAN_CTX(), { cal: 'lunar', y: 2023, m: 2, d: 30, leap: true }), 'tojeong');
+  await checkA('T-10b', '★★실재하지 않는 음력 날짜(윤2월 30일)도 **폐기**된다 — `DERIVE_FAILED` 분기', async () => {
+    const l = tjLog(l1derr);
+    if (!l.layer1) return { ok: false, detail: '★1층 부재 — 판정 불가' };
+    return { ok: l.mode === 'discarded' && l.reason === 'DERIVE_FAILED' && l.discarded > 0,
+      detail: 'mode=' + l.mode + ' reason=' + l.reason + ' 폐기 ' + l.discarded + '키' };
+  });
+
+  await checkA('T-10c', '★긍정 짝 — 실재하는 음력 평2월 30일(대월)은 **정상 재유도**된다 (「전부 폐기」 위약 차단)', async () => {
+    const r = await callAndObserve(
+      Object.assign(CLEAN_CTX(), { cal: 'lunar', y: 2023, m: 2, d: 30, leap: false }), 'tojeong');
+    const l = tjLog(r);
+    if (!l.layer1) return { ok: false, detail: '★1층 부재 — 판정 불가' };
+    return { ok: l.mode === 'derived' && l.discarded === 0,
+      detail: 'mode=' + l.mode + ' 폐기=' + l.discarded };
+  });
+
+  for (const t of ['tojeong_premium_1', 'tojeong_premium_2']) {
+    const r = await callAndObserve(Object.assign(CLEAN_CTX(), BIRTH5, { upperGua: '위조괘' }), t, mintToken('tojeong', 4900));
+    await checkA('T-11:' + t, '★★유료 `' + t + '` 도 1층이 돈다 (무료만 고치면 유료가 남는 구조 차단)', async () => {
+      const l = tjLog(r);
+      if (!l.layer1) return { ok: false, detail: '★1층 부재 (status=' + r.res.statusCode + ' reason=' + l.reason + ')' };
+      return { ok: l.mode === 'derived' && (l.diffs || []).indexOf('upperGua') !== -1,
+        detail: 'mode=' + l.mode + ' diffs=' + (l.diffs || []).join(',') };
+    });
+  }
+
+  // ── T-12 : ★I-43 유형 — 「서버가 읽는데 클라가 안 싣는」 키를 기계로 잡는다 ──
+  //   v7.73 I-43 은 계약 §3 이 두 파일에 걸쳐 있었는데 그 걸침을 아무도 표로 만들지
+  //   않아 생겼다. **같은 실수를 여기서 반복하지 않는다** — 서버가 재유도에 쓰는 5키를
+  //   클라가 tojeong payload **3계열 전부**에 싣는지 소스에서 열거한다.
+  check('T-12', '★★클라이언트가 5키를 **tojeong payload 3계열 전부**에 싣는다 (I-43 유형 차단)', () => {
+    const idx = path.join(FR, 'index.html');
+    if (!fs.existsSync(idx)) return { ok: false, detail: '★index.html 부재 — 판정 불가' };
+    const src = fs.readFileSync(idx, 'utf8');
+    const sites = [
+      { name: '무료 analyzeTojeong', re: /cal:br\.calType\s*,\s*y:br\.y\s*,\s*m:br\.m\s*,\s*d:br\.d\s*,\s*leap:!!br\.leap/g },
+      { name: '유료(프리미엄·재시도)', re: /cal:\(info\.br&&info\.br\.calType\)\|\|'solar'\s*,\s*y:info\.br&&info\.br\.y/g },
+    ];
+    const counts = sites.map((s) => ({ name: s.name, n: (src.match(s.re) || []).length }));
+    const free = counts[0].n, paid = counts[1].n;
+    // 무료 1곳 + 유료 2곳(unlockTojeongPremium · retryTojeongPremiumAPI) = 3계열
+    if (free !== 1 || paid !== 2)
+      return { ok: false, detail: '★무료 ' + free + '곳(1이어야 한다) · 유료 ' + paid + '곳(2여야 한다) — 서버가 읽는 키를 클라가 안 싣는 경로가 있다' };
+    // 서버가 실제로 요구하는 키 목록과 대조 (두 파일에 걸친 계약을 기계로 잇는다)
+    let need = null;
+    try { need = require(path.join(FR, 'api', '_engine', 'ctxguard.js')).TOJEONG_BIRTH_KEYS; } catch (e) { /* 아래에서 판정 */ }
+    if (!Array.isArray(need)) return { ok: false, detail: '★서버의 TOJEONG_BIRTH_KEYS 를 읽지 못했다 — 판정 불가' };
+    return { ok: need.length === 5, detail: '무료 1곳 · 유료 2곳 · 서버 요구 키 ' + need.join(',') };
   });
 
   done();

@@ -5747,6 +5747,10 @@ async function analyzeTojeong(){
         type:'tojeong',
         context:{
           name,gender,targetYear,
+          // ★v7.75 관통 #9 — 생년월일 **원본 5키**. 서버가 이것으로 음력·띠·간지·상중하괘를
+          //   재유도해 아래 파생 키를 교체한다(compat 12키와 같은 설계).
+          //   ★이 5키가 없으면 서버는 `mode:legacy` 로 아무것도 검증하지 못한다.
+          cal:br.calType,y:br.y,m:br.m,d:br.d,leap:!!br.leap,
           lunarYear:lunar.year,lunarMonth:lunar.month,lunarDay:lunar.day,
           zodiac:`${zodiac.n}띠(${zodiac.h})`,
           ganjiYear:`${ganji}년`,
@@ -5759,11 +5763,11 @@ async function analyzeTojeong(){
     });
     const data=await resp.json();
     if(!data.success||!data.result){throw new Error(data.error||'API 응답 오류')}
-    renderTojeongResult(data.result,{name,gender,targetYear,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
+    renderTojeongResult(data.result,{name,gender,targetYear,br,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
   }catch(err){
     console.error('토정비결 API 오류:',err);
     // 폴백: 기존 로컬 방식
-    renderTojeongFallback({name,gender,targetYear,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
+    renderTojeongFallback({name,gender,targetYear,br,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
   }
 }
 
@@ -5975,6 +5979,8 @@ async function unlockTojeongPremium(){
   try{
     const ctx={
       name:info.name,gender:info.gender,targetYear:info.targetYear,
+      // ★v7.75 관통 #9 — 유료 경로에도 생년월일 원본 5키를 싣는다(무료만 고치면 유료가 남는다).
+      cal:(info.br&&info.br.calType)||'solar',y:info.br&&info.br.y,m:info.br&&info.br.m,d:info.br&&info.br.d,leap:!!(info.br&&info.br.leap),
       lunarYear:info.lunar.year,lunarMonth:info.lunar.month,lunarDay:info.lunar.day,
       zodiac:`${info.zodiac.n}띠(${info.zodiac.h})`,
       ganjiYear:`${info.ganji}년`,
@@ -6057,6 +6063,8 @@ async function retryTojeongPremiumAPI(){
   try{
     const ctx={
       name:info.name,gender:info.gender,targetYear:info.targetYear,
+      // ★v7.75 관통 #9 — 유료 경로에도 생년월일 원본 5키를 싣는다(무료만 고치면 유료가 남는다).
+      cal:(info.br&&info.br.calType)||'solar',y:info.br&&info.br.y,m:info.br&&info.br.m,d:info.br&&info.br.d,leap:!!(info.br&&info.br.leap),
       lunarYear:info.lunar.year,lunarMonth:info.lunar.month,lunarDay:info.lunar.day,
       zodiac:`${info.zodiac.n}띠(${info.zodiac.h})`,
       ganjiYear:`${info.ganji}년`,

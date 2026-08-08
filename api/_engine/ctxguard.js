@@ -736,8 +736,145 @@ function selfCheck() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// ★★v7.75 관통 #9 (1층) — `tojeong` 원국 서버 재유도
+// ══════════════════════════════════════════════════════════════════════════
+//   【먼저 정정 — I-60】 v7.73·v7.74 인수인계는 「토정은 서버 재계산 대상 밖이라
+//     화면과 해석이 함께 틀린다」고 적었으나 **값은 현재 옳다**(양력 전수 50,736건에서
+//     클라 산출 == 서버 엔진 · 불일치 0). I-46 은 v7.73 관통 #7 반입으로 이미 해소됐다.
+//     ⟹ 결정 94 재현. 진짜 결함은 「틀림」이 아니라 **「아무도 검증하지 않음」**이다.
+//
+//   【무엇을 닫는가】 종전 tojeong payload 에는 **생년월일 원본이 없었다** —
+//     클라가 이미 변환한 `lunarYear/lunarMonth/lunarDay` 와 괘 이름만 왔다.
+//     그래서 서버는 재유도할 재료조차 없었다(재유도 키 0/15).
+//   ⟹ compat 12키와 같은 설계로 **5키(`cal`·`y`·`m`·`d`·`leap`)** 를 받아
+//     음력·띠·간지·상중하괘를 **서버가 다시 만들어 교체**한다.
+//
+//   【정책 — 결정 88·E-5】
+//     · 5키가 **없으면**(구버전 캐시) `mode:'legacy'` — 차단하지 않고 아무것도 바꾸지 않는다.
+//       위조와 정상을 바이트로 구별할 수 없는 축이라 「검증」으로 닫을 수 없다(compat 과 동일).
+//     · 5키가 **왔는데 재유도에 실패**하면 파생 12키를 **폐기**한다(빈 문자열).
+//       「검증 불가 시 클라값 채택」은 v7.73 M16 이 적발한 회귀 경로다 — 반복하지 않는다.
+//     · tojeong 은 **400 을 내지 않는다**(관통 #8 재발 방지 · 가용성).
+const LN = require('./lunar.js');
+
+const TJ_PALGUA = ['건(乾)☰', '태(兌)☱', '리(離)☲', '진(震)☳', '손(巽)☴', '감(坎)☵', '간(艮)☶', '곤(坤)☷'];
+const TJ_YUKGUA = ['건(乾)☰', '태(兌)☱', '리(離)☲', '진(震)☳', '손(巽)☴', '감(坎)☵'];
+const TJ_HAGUA = ['상(上)', '중(中)', '하(下)'];
+const TJ_CHEONGAN = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+const TJ_JIJI = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+const TJ_ZODIAC = [
+  { n: '쥐', h: '子' }, { n: '소', h: '丑' }, { n: '호랑이', h: '寅' }, { n: '토끼', h: '卯' },
+  { n: '용', h: '辰' }, { n: '뱀', h: '巳' }, { n: '말', h: '午' }, { n: '양', h: '未' },
+  { n: '원숭이', h: '申' }, { n: '닭', h: '酉' }, { n: '개', h: '戌' }, { n: '돼지', h: '亥' },
+];
+/** 서버가 다시 만들어 **교체**하는 키. 재유도 실패 시 이 키들을 폐기한다. */
+const TOJEONG_REPLACE_KEYS = ['lunarYear', 'lunarMonth', 'lunarDay', 'zodiac', 'ganjiYear',
+  'upperGua', 'taeseNum', 'middleGua', 'wolNum', 'lowerGua', 'ilNum', 'guaCombination'];
+/** 클라이언트가 새로 실어야 하는 생년월일 원본 키 (계약). */
+const TOJEONG_BIRTH_KEYS = ['cal', 'y', 'm', 'd', 'leap'];
+const TOJEONG_YEAR_MIN = 1900, TOJEONG_YEAR_MAX = 2100;
+
+/** 5키 판독. `{missing:true}` | `{bad:CODE}` | `{input:{...}}` */
+function tojeongBirthInput(ctx) {
+  const has = Object.prototype.hasOwnProperty;
+  const any = has.call(ctx, 'y') || has.call(ctx, 'm') || has.call(ctx, 'd');
+  if (!any) return { missing: true };
+  const y = numOrNull(ctx.y), m = numOrNull(ctx.m), d = numOrNull(ctx.d);
+  if (y === null || m === null || d === null) return { bad: 'BIRTH_NOT_INTEGER' };
+  if (m < 1 || m > 12 || d < 1 || d > 31) return { bad: 'BIRTH_OUT_OF_RANGE' };
+  if (y < TOJEONG_YEAR_MIN || y > TOJEONG_YEAR_MAX) return { bad: 'BIRTH_OUT_OF_RANGE' };
+  return { input: { cal: ctx.cal === 'lunar' ? 'lunar' : 'solar', y, m, d, leap: ctx.leap === true } };
+}
+
+/** 상중하괘·띠·간지 재산출. 실패하면 null (판정 불가는 「클라값 채택」이 아니다). */
+function tojeongDerive(inp, targetYear) {
+  const ty = numOrNull(targetYear);
+  if (ty === null || ty < TOJEONG_YEAR_MIN || ty > TOJEONG_YEAR_MAX) return null;
+  let lunar = null;
+  if (inp.cal === 'solar') {
+    lunar = LN.solarToLunar(inp.y, inp.m, inp.d);
+    if (!lunar) return null;
+  } else {
+    // 입력이 이미 음력이면 **실재하는 날짜인지** 양력 왕복으로 검증한다(클라와 같은 성질).
+    if (!LN.lunarToSolar(inp.y, inp.m, inp.d, inp.leap)) return null;
+    lunar = { year: inp.y, month: inp.m, day: inp.d, isLeap: inp.leap };
+  }
+  const ci = (ty - 4) % 10, ji = (ty - 4) % 12;
+  const taeseNum = (ci + 1) + (ji + 1);
+  const upper = TJ_PALGUA[(taeseNum % 8 || 8) - 1];
+  const middle = TJ_YUKGUA[(lunar.month % 6 || 6) - 1];
+  const lower = TJ_HAGUA[(lunar.day % 3 || 3) - 1];
+  const z = TJ_ZODIAC[(lunar.year - 4) % 12];
+  return {
+    lunarYear: lunar.year, lunarMonth: lunar.month, lunarDay: lunar.day,
+    zodiac: z.n + '띠(' + z.h + ')',
+    ganjiYear: TJ_CHEONGAN[ci] + TJ_JIJI[ji] + '년',
+    upperGua: upper, taeseNum,
+    middleGua: middle, wolNum: lunar.month,
+    lowerGua: lower, ilNum: lunar.day,
+    guaCombination: upper + ' · ' + middle + ' · ' + lower,
+  };
+}
+
+/**
+ * ★tojeong 계열 context 가드 — 관통 #9 의 단일 판정점.
+ * @returns {{applied:boolean, context:object, metrics:object}}
+ *   ★`applied` 는 「정규화를 수행했다」는 뜻이며 **차단 판정에 쓰지 않는다**.
+ */
+function guardTojeongContext(ctx) {
+  const metrics = {
+    engine: 'ctxguard/v7.75-tojeong',
+    applied: false,
+    mode: null,          // 'derived' | 'legacy' | 'discarded'
+    reason: null,
+    diffs: [],           // 클라값 != 서버 재유도값 인 키 (관측용 — 조용한 갈림의 유일한 신호)
+    replaced: 0,
+    discarded: 0,
+  };
+  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return { applied: false, context: ctx, metrics };
+  const out = Object.assign({}, ctx);
+
+  const got = tojeongBirthInput(ctx);
+  if (got.missing) {
+    metrics.applied = true; metrics.mode = 'legacy'; metrics.reason = 'NO_BIRTH_KEYS';
+    return { applied: true, context: out, metrics };
+  }
+  if (got.bad) {
+    // 5키를 **주장했는데** 형식이 틀렸다 ⟹ 클라값을 믿을 근거가 없다. 파생 키를 폐기한다.
+    for (const k of TOJEONG_REPLACE_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
+    }
+    metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = got.bad;
+    return { applied: true, context: out, metrics };
+  }
+
+  const derived = tojeongDerive(got.input, ctx.targetYear);
+  if (!derived) {
+    for (const k of TOJEONG_REPLACE_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
+    }
+    metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = 'DERIVE_FAILED';
+    return { applied: true, context: out, metrics };
+  }
+
+  for (const k of TOJEONG_REPLACE_KEYS) {
+    const before = Object.prototype.hasOwnProperty.call(out, k) ? out[k] : undefined;
+    const after = derived[k];
+    if (before !== undefined && String(before) !== String(after)) metrics.diffs.push(k);
+    out[k] = after;
+    metrics.replaced++;
+  }
+  metrics.applied = true; metrics.mode = 'derived';
+  return { applied: true, context: out, metrics };
+}
+
 module.exports = {
   guardContext, inputFromContext, selfCheck, hasGuardedKeys, unverifiable,
+  // ★v7.75 관통 #9 — tojeong 가드
+  guardTojeongContext, tojeongBirthInput, tojeongDerive,
+  TOJEONG_REPLACE_KEYS, TOJEONG_BIRTH_KEYS,
+  TJ_PALGUA, TJ_YUKGUA, TJ_HAGUA,
   CTX_REPLACE_KEYS, CTX_GUARDED_KEYS, CTX_VALUE_OF, HOUR_LABELS,
   // ★v7.73 관통 #4 — compat 가드
   guardCompatContext, compatPersonInput,

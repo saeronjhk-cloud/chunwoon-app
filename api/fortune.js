@@ -1336,6 +1336,21 @@ export default async function handler(req, res) {
     //   ★1층(생년월일 5키 재유도)은 별건이다 — §다음 커밋.
     const CW_TOJEONG_TYPES = ['tojeong', 'tojeong_premium_1', 'tojeong_premium_2'];
     if (CW_TOJEONG_TYPES.indexOf(type) !== -1 && context && typeof context === 'object' && !Array.isArray(context)) {
+      // ── 1층 : 생년월일 5키(`cal`·`y`·`m`·`d`·`leap`)로 원국을 **서버가 재유도** ──
+      //   ★2층(평탄화)보다 **먼저** 돈다. 순서를 바꾸면 서버가 만든 값을 평탄화가
+      //     한 번 더 훑기만 하고, 클라값이 평탄화만 거친 채 살아남는 창이 생긴다.
+      let cwTjM = null, cwTjErr = null;
+      {
+        const mod = await cwCtxguard();
+        if (mod && typeof mod.guardTojeongContext === 'function') {
+          try {
+            const g = mod.guardTojeongContext(context);
+            if (g && g.applied && g.context) { context = g.context; cwTjM = g.metrics; }
+            else cwTjErr = 'NOT_APPLIED';
+          } catch (e) { cwTjErr = 'THREW'; }
+        } else cwTjErr = 'ENGINE_UNAVAILABLE';
+      }
+      // ── 2층 : 엔진 유무와 **무관하게** 항상 도는 평탄화 ──
       const cwTjFlattened = [];
       for (const k of Object.keys(context)) {
         if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
@@ -1347,7 +1362,15 @@ export default async function handler(req, res) {
       // ★관측 — 차단하지 않는 방어는 로그가 유일한 관측점이다(v7.71-b 관통 #5 의 교훈).
       //   게이트 `eval_tojeong_guard.js` 는 **이 로그**로 판정한다(결정 84 — 소스가 아니라 실행 결과).
       try {
-        console.log('[cw:ctxguard]', JSON.stringify({ type, tojeong: true, layer2: true, flattened: cwTjFlattened }));
+        console.log('[cw:ctxguard]', JSON.stringify(Object.assign(
+          { type, tojeong: true, layer2: true, flattened: cwTjFlattened },
+          cwTjM
+            // ★관측 — `mode:legacy` 비율이 0 으로 수렴해야 구버전 캐시가 사라진 것이다.
+            //   `diffs` 가 0 이 아닌 요청은 **클라 산출과 서버 재유도가 갈렸다**는 뜻이며,
+            //   차단하지 않는 방어에서는 이 로그가 유일한 관측점이다(v7.71-b 관통 #5).
+            ? { layer1: true, mode: cwTjM.mode, reason: cwTjM.reason,
+                replaced: cwTjM.replaced, discarded: cwTjM.discarded, diffs: cwTjM.diffs }
+            : { layer1: false, reason: cwTjErr || 'GUARD_MISSING' })));
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
     }
 
