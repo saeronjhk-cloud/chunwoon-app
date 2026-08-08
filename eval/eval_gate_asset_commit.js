@@ -76,6 +76,12 @@ const REQUIRED = Object.freeze([
   'eval/eval_client_port_drift.js',
   'eval/eval_gate_asset_commit.js',
   'eval/eval_lunar_ui_dom.js',   // ★v7.74 F-1 — 「UI 조작 → 판독」 축. 미커밋이면 무감시다.
+  'eval/eval_port_isolation.js', // ★v7.74 E-8 — 반입 블록 폭발반경 축. 미커밋이면 무감시다.
+  // ★v7.74 A-10 이 적발한 누락 3종 — 리포 eval/ 에 실재하는데 이 목록에 없어
+  //   커밋 경로가 **감시되지 않고 있었다**(I-44 계열의 네 번째 형태).
+  'eval/eval_engine_binding.js',
+  'eval/eval_response_scrub.js',
+  'eval/eval_token_roundtrip.js',
   'eval/_gate_pins.json',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
@@ -245,11 +251,37 @@ check('A-9', '★신설 게이트가 외부 pin 표(eval/_gate_pins.json)에 등
   const evals = (j && j.evals) || {};
   // ★v7.74 F-1 — eval_lunar_ui_dom.js 추가. 이 게이트가 사라지면 「UI 조작 → 판독」 축이
   //   통째로 무감시가 된다(v7.73 이 그 상태로 배포됐고 그것이 이번 사고의 자리였다).
-  const need = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_gate_asset_commit.js', 'eval_lunar_ui_dom.js'];
+  const need = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_gate_asset_commit.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js'];
   const miss = need.filter((f) => !Object.prototype.hasOwnProperty.call(evals, f));
   const noSha = need.filter((f) => evals[f] && (typeof evals[f].sha256 !== 'string' || evals[f].sha256.length !== 64));
   return { ok: miss.length === 0 && noSha.length === 0,
     detail: miss.length || noSha.length ? '★미등재 ' + miss.join(',') + ' · sha 결손 ' + noSha.join(',') : need.length + '종 등재 + sha256 pin' };
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// ★A-9 (v7.74 신설) — REQUIRED 는 **손으로 유지하는 목록**이다. 새 게이트 자산을 만들고
+//   목록에 넣는 것을 잊으면 그 파일의 커밋 경로가 감시되지 않는다 = I-44 의 네 번째 형태.
+//   ⟹ front_root 의 `eval/` · `tools/` 에 **실재하는** 게이트 파일을 열거해 REQUIRED 와
+//     대조한다. 목록을 사람이 아니라 파일 시스템이 유지하게 만든다.
+//   ★게이트 패키지(zip 전개본)의 eval/ 이 아니라 **리포(front_root)의 eval/** 을 본다.
+//     zip 쪽에는 리포에 없는 v7.70 자산이 다수 있어 열거 대상이 아니다.
+// ══════════════════════════════════════════════════════════════════════════
+check('A-10', '★★리포의 `eval/`·`tools/` 게이트 파일 **전건**이 REQUIRED 목록에 있다 (목록 갱신 누락 차단)', () => {
+  const found = [];
+  for (const dir of ['eval', 'tools']) {
+    const d = path.join(FR, dir);
+    if (!fs.existsSync(d)) continue;
+    for (const f of fs.readdirSync(d)) {
+      if (!/\.(js|json)$/.test(f)) continue;
+      if (/_MUTANT\.js$/.test(f)) continue;              // 뮤테이션 실행 부산물
+      found.push(dir + '/' + f);
+    }
+  }
+  const missing = found.filter((r) => REQUIRED.indexOf(r) < 0);
+  return { ok: missing.length === 0,
+    detail: missing.length
+      ? '★REQUIRED 누락 ' + missing.length + '건: ' + missing.join(' / ') + ' — 새 게이트 자산은 REQUIRED 에 넣어야 커밋 경로가 감시된다'
+      : found.length + '종 전건 등재(리포 eval/ ' + found.filter((x) => x.startsWith('eval/')).length + ' · tools/ ' + found.filter((x) => x.startsWith('tools/')).length + ')' };
 });
 
 console.log('\n[gate_asset] front_root=' + FR + ' · 게이트 패키지=' + ROOT);
