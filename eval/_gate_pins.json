@@ -9,8 +9,8 @@
   "evals": {
     "eval_response_scrub.js": {
       "checks_min": 69,
-      "sha256": "50e89bbc6ca52c997ea7e517f2f20005fd5ebe40d8f2ccf1b779c1f046ba9b96",
-      "bytes_min": 120637
+      "sha256": "edee0a25abf538d5af861c9e3c992aa1ec0b42bddeb1a8eca166bedd97228526",
+      "bytes_min": 120667
     },
     "eval_prompt_citation_guard.js": {
       "checks_min": 32,
@@ -259,8 +259,8 @@
     },
     "eval_token_roundtrip.js": {
       "checks_min": 51,
-      "sha256": "509aae5c516cf6df05e940215edd1b8fc07908834e037407bd19a1378aa51c8d",
-      "bytes_min": 23673
+      "sha256": "e620f2df7b24eaea386a2d8ad7c9bea5c0e5e748c6c8894a79b8319a902ba194",
+      "bytes_min": 23704
     },
     "eval_p1auth_v767fix.js": {
       "checks_min": null,
@@ -284,23 +284,23 @@
     },
     "eval_ctxguard.js": {
       "checks_min": 56,
-      "sha256": "16d273488d2ce1747f8f4636abafbbeb9bf7d6afe410f170fab13ca2c896a715",
+      "sha256": "59a0a30d9ef0c983bcc5875493b4b1ba9e4d0833cf42a1a6a47aacce9addc2b2",
       "bytes_min": 38688
     },
     "eval_client_port_drift.js": {
       "checks_min": 10,
-      "sha256": "fb77cb9b7f20a67097d34fcf4e218ec9231421f9f83fdce2aebbd7ab7f8720d6",
-      "bytes_min": 7984
+      "sha256": "1a2cce13b63f762d48b96bc121ec8f5d2a844288ab28f62ee6ae51f599581765",
+      "bytes_min": 8015
     },
     "eval_compat_guard.js": {
       "checks_min": 46,
-      "sha256": "6e531d56a75c3bcec70a6c706ec4364a47022432656cd3f908bfa342aaf77123",
-      "bytes_min": 31756
+      "sha256": "b80c69d8d4ff36f443cda8e5c73343f4d1e22995f9f65927905c9139af1e219a",
+      "bytes_min": 31786
     },
     "eval_gate_asset_commit.js": {
       "checks_min": 11,
-      "sha256": "7098c35598da67e908be0eb60a575dce192b946c7dc1df4243ecc65fa8b7f9ef",
-      "bytes_min": 11078
+      "sha256": "ac0867d4ff78315f583955d8d3af6fabc7de6fac6a3df0029cd3d0cee9aeeada",
+      "bytes_min": 11290
     },
     "eval_lunar_ui_dom.js": {
       "checks_min": 21,
@@ -314,11 +314,21 @@
     },
     "eval_tojeong_guard.js": {
       "checks_min": 21,
-      "sha256": "c22ec08182e40feabd7a77883b969a968fb99d2a5070a072f075a00801603d63",
-      "bytes_min": 16276
+      "sha256": "66902fec16617b685b8302a5823b3f33a85ae9c2cadea386ae0450782bfb335b",
+      "bytes_min": 16306
+    },
+    "_tmp.js": {
+      "checks_min": null,
+      "sha256": "5c2c90a5e49f1aecae2149b0f2c915e6f5faf56c63b992b5d286e410f6b7227b",
+      "bytes_min": 2154
+    },
+    "eval_tmp_hygiene.js": {
+      "checks_min": 9,
+      "sha256": "165d639816cc363be0db1ff2dbcc863ef23d62b8876e645a3776e1ff23ca4d3b",
+      "bytes_min": 9347
     }
   },
-  "generated_at": "2026-08-08T03:43:24.769Z",
+  "generated_at": "2026-08-08T05:42:20.664Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",

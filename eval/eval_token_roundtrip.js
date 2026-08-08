@@ -31,6 +31,7 @@
  *   호출은 예외로 되돌린다. A7 이 「화이트리스트 밖 호출 0건」을 실측한다.
  */
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -161,7 +162,7 @@ async function load() {
     process.env.CW_PREMIUM_HMAC_SECRET = GATE_ENV().secret;
     const iss = ISSUER_SRC(), ver = VERIFIER_SRC();
     const apiDir = path.dirname(ver.path);
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_rtrip_'));
+    const dir = CWTMP.mk('cw_rtrip_');
     RT.dir = dir;
     // ★배포 번들 형상 그대로 — api/ 전건을 같은 상대 경로로 복사한다(형제 모듈·상대 import 보존).
     //   .js 확장자를 그대로 두기 위해 CJS/ESM 두 트리를 만들고 package.json 의 type 만 달리 한다.

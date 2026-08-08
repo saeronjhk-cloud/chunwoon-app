@@ -34,6 +34,7 @@
 //   · handler 미적재 · 로그 미관측은 전부 **판정 불가 = FAIL**.
 // ═══════════════════════════════════════════════════════════════════════════
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -185,7 +186,7 @@ const EVIL_CTX = () => Object.assign(CLEAN_CTX(), {
 (async function main() {
   let handler = null, loadErr = null;
   try {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_tjg_'));
+    const dir = CWTMP.mk('cw_tjg_');
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
     const copyTree = (s, d) => {
       fs.mkdirSync(d, { recursive: true });

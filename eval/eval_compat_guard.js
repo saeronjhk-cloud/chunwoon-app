@@ -23,6 +23,7 @@
 // 【결정 83】 픽스처를 손으로 짓지 않는다 — 화이트리스트·형식은 소스에서 읽어 대조한다.
 // ═══════════════════════════════════════════════════════════════════════════
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -92,7 +93,7 @@ function copyTree(s, d) {
   }
 }
 async function loadHandler(mutate, tag) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_cg_' + (tag || '') + '_'));
+  const dir = CWTMP.mk('cw_cg_' + (tag || '') + '_');
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
   copyTree(path.join(FR, 'api'), path.join(dir, 'api'));
   if (typeof mutate === 'function') mutate(dir);

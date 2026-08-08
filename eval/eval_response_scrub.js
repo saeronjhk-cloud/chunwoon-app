@@ -61,6 +61,7 @@
  * front_root 결정 순서: ①CHUNWOON_FRONT_ROOT ②상위 탐색(api/fortune.js + index.html) ③실패 시 전건 FAIL
  */
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 
 const fs = require('fs');
 const os = require('os');
@@ -484,7 +485,7 @@ async function loadHandler() {
     //     type:module 인 package.json 을 심어 .js 그대로 ESM 으로 적재한다.
     //     ⟹ 형제 모듈 · 상대 import 가 배포와 동일하게 해석된다.
     //   ★부수 효과(R11-2): 개명이 사라져 import 경로에서 'fortune_under_test' 지문이 제거된다.
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_scrub_'));
+    const dir = CWTMP.mk('cw_scrub_');
     const bundle = path.join(dir, 'api');
     fs.mkdirSync(bundle);
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');

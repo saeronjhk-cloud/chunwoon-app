@@ -16,6 +16,7 @@
 //   실제로 렌더되는 경로(P-1)와 handler 실구동(H-1~H-4)을 함께 둔다.
 // ═══════════════════════════════════════════════════════════════════════════
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -558,7 +559,7 @@ const FIX=JSON.parse(process.env.CW_CT1_FIX);
 let CT1_WORKER_PATH = null;
 function ct1Worker() {
   if (CT1_WORKER_PATH) return CT1_WORKER_PATH;
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_ct1_'));
+  const d = CWTMP.mk('cw_ct1_');
   CT1_WORKER_PATH = path.join(d, 'ct1_worker.js');
   fs.writeFileSync(CT1_WORKER_PATH, CT1_WORKER_SRC);
   return CT1_WORKER_PATH;
@@ -619,7 +620,7 @@ check('CT-1c', '★★뮤턴트 — 관통 #12 를 한 줄로 재도입하면 CT
   if (hits !== 1) return { ok: false, detail: '★뮤테이션 앵커 ' + hits + '건(1이어야 한다) — 판정 불가는 통과가 아니다' };
   const mutated = INDEX_SRC.replace(rx,
     "const _mb=new Date(bs);const y=_mb.getFullYear(),m=_mb.getMonth()+1,d=_mb.getDate();$1if(y<CW_SOLAR_MIN_Y");
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_ct1m_'));
+  const d = CWTMP.mk('cw_ct1m_');
   const p = path.join(d, 'index.html');
   fs.writeFileSync(p, mutated);
   let r = null, err = null;
@@ -657,7 +658,7 @@ function mkRes() {
   //   그래서 handler 가 항상 엔진 부재 경로를 탔다. 같은 실수를 반복하지 않는다.
   let handler = null, loadErr = null;
   try {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_ctxg_'));
+    const dir = CWTMP.mk('cw_ctxg_');
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
     const copyTree = (s, d) => {
       fs.mkdirSync(d, { recursive: true });
@@ -757,7 +758,7 @@ function mkRes() {
   await checkA('E-4', '★★엔진 모듈이 로드 불가일 때 핸들러가 400 ENGINE_UNAVAILABLE 로 막는다 (배포 사고 · 관통 #5 계열)', async () => {
     let h2 = null, err = null;
     try {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_noeng_'));
+      const dir = CWTMP.mk('cw_noeng_');
       fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
       const cp = (s, d) => {
         fs.mkdirSync(d, { recursive: true });

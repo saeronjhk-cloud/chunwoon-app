@@ -14,6 +14,7 @@
  *   (CW_GATE_ROOT = 게이트 리포 전개 위치. eval/ · tools/ 가 있어야 한다)
  */
 'use strict';
+const CWTMP = require('../eval/_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -37,7 +38,7 @@ function copyTree(s, d) {
 }
 /** front_root 의 「게이트가 보는 표면」만 복제한다. */
 function mkFront() {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_mut_fr_'));
+  const d = CWTMP.mk('cw_mut_fr_');
   copyTree(path.join(FR, 'api'), path.join(d, 'api'));
   fs.copyFileSync(path.join(FR, 'index.html'), path.join(d, 'index.html'));
   // ★v7.73-c(D2) — 드리프트 차단기가 `_v773_work/`(gitignore) 에서 `tools/`(커밋 경로)로 이동했다.
@@ -52,7 +53,7 @@ function mkFront() {
 }
 /** 게이트 리포 사본 — eval/tools 를 고치는 뮤턴트(M-P1)용. */
 function mkGate() {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_mut_gate_'));
+  const d = CWTMP.mk('cw_mut_gate_');
   copyTree(GATE, d);
   return d;
 }
@@ -129,6 +130,14 @@ const T_MUTANTS = [
     apply: (d) => sub1(path.join(d, 'index.html'),
       "          cal:br.calType,y:br.y,m:br.m,d:br.d,leap:!!br.leap,\n",
       ""),
+  },
+  {
+    id: 'MH1', axis: '★I-62 — 임시 사본 정리 훅 제거',
+    what: '`_tmp.js` 의 `process.on(\'exit\', cleanup)` 을 없앤다 — 게이트가 돌 때마다 사본이 쌓여 디스크가 찬다',
+    expect: ['H-3', 'H-4', 'H-7'], evals: [], gateScope: 'eval', mutateGate: true,
+    applyGate: (g) => sub1(path.join(g, 'eval', '_tmp.js'),
+      "  process.on('exit', cleanup);",
+      "  if (false) process.on('exit', cleanup);"),
   },
   {
     id: 'MT3', axis: '★신설 게이트 자기 약화',
@@ -563,7 +572,7 @@ function mutSelected(id, idx) {
   });
   const sh = (cwd, args) => spawnSync('git', args, { cwd, encoding: 'utf8', env: GIT_ENV, timeout: 120000 });
   function mkGitFront() {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_mut_git_'));
+    const d = CWTMP.mk('cw_mut_git_');
     copyTree(path.join(FR, 'api'), path.join(d, 'api'));
     copyTree(path.join(FR, 'eval'), path.join(d, 'eval'));
     copyTree(path.join(FR, 'tools'), path.join(d, 'tools'));

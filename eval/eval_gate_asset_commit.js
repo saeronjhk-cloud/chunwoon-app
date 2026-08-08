@@ -27,6 +27,7 @@
 //   · front_root 가 git 워크트리가 아니면 **판정 불가 = FAIL** 이다(통과 아님).
 // ═══════════════════════════════════════════════════════════════════════════
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -84,6 +85,10 @@ const REQUIRED = Object.freeze([
   'eval/eval_response_scrub.js',
   'eval/eval_token_roundtrip.js',
   'eval/_gate_pins.json',
+  // ★v7.75 I-62 — 전 게이트가 공유하는 임시 디렉터리 헬퍼. `_` 접두라 `--expand`
+  //   자동 확장에서 빠지므로 **여기와 pin 표에 손으로 넣어야** 감시된다.
+  'eval/_tmp.js',
+  'eval/eval_tmp_hygiene.js',    // ★v7.75 I-62 — 임시 사본 누수 축.
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',
@@ -125,7 +130,7 @@ const VI = (() => {
   if (!fs.existsSync(p)) return { err: '.vercelignore 부재 — 배포 배제 규칙 없음(판정 불가)' };
   let d = null;
   try {
-    d = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_vi_'));
+    d = CWTMP.mk('cw_vi_');
     const init = spawnSync('git', ['init', '-q', d], { encoding: 'utf8', timeout: 60000 });
     if (init.status !== 0) return { err: 'git init 실패: ' + String(init.stderr || '').trim() };
     fs.copyFileSync(p, path.join(d, '.gitignore'));

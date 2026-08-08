@@ -24,6 +24,7 @@
 // 【판정 불가 ≠ 통과】 생성기·마커·핀이 없으면 그 자체를 FAIL 로 둔다.
 // ═══════════════════════════════════════════════════════════════════════════
 'use strict';
+const CWTMP = require('./_tmp.js');   // ★I-62 — 임시 사본 자동 정리
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -111,7 +112,7 @@ check('P-2', '★★`gen_client_astro.js --check` 가 통과한다 = 반입 블�
 //   엔진을 고치고 index.html 을 재생성하지 않은 상태를 **실제로 만들어** 본다.
 let MUT_DIR = null, MUT_GEN = null, mutErr = null;
 try {
-  MUT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cw_drift_'));
+  MUT_DIR = CWTMP.mk('cw_drift_');
   const cpFile = (rel) => {
     const dst = path.join(MUT_DIR, rel.split('/').join(path.sep));
     fs.mkdirSync(path.dirname(dst), { recursive: true });
