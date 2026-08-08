@@ -74,13 +74,24 @@ function runEval(gateRoot, frontRoot, file) {
     { cwd: gateRoot, encoding: 'utf8', timeout: 300000,
       env: Object.assign({}, process.env, { CHUNWOON_FRONT_ROOT: frontRoot }) });
   const out = String(r.stdout || '') + String(r.stderr || '');
-  return { status: r.status, out, failed: (out.match(/^FAIL ([A-Za-z0-9-]+)/gm) || []).map((s) => s.slice(5)) };
+  // ★I-61 계열 — 「완주했는가」는 **신호/타임아웃**으로만 판정한다.
+  //   ★출력 마커(`total=`)로 판정하면 안 된다: 뮤턴트가 엔진을 **로드 시점 throw**로
+  //     만드는 경우(M15·ME6)가 정당한 fail-closed 적발인데, 그때는 요약 줄이 안 찍힌다.
+  //     실측으로 확인했다 — 마커 기준으로 바꿨더니 M15 가 INCONCLUSIVE 로 뒤집혔다.
+  return { status: r.status, out, done: !r.signal && !r.error,
+    failed: (out.match(/^FAIL ([A-Za-z0-9-]+)/gm) || []).map((s) => s.slice(5)) };
 }
 function runGate(gateRoot, frontRoot, scope) {
   const r = spawnSync(process.execPath, [path.join(gateRoot, 'tools', 'run_gate.js'), scope || 'eval'],
     { cwd: gateRoot, encoding: 'utf8', timeout: 580000,
       env: Object.assign({}, process.env, { CHUNWOON_FRONT_ROOT: frontRoot }) });
-  return { status: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
+  const out = String(r.stdout || '') + String(r.stderr || '');
+  // ★러너가 신호로 죽었거나 요약 줄(`[gate] scope=…`)을 못 찍었으면 **완주하지 못한 것**이다.
+  //   v7.76 실측: 전체 회차가 샌드박스 시간 벽에 닿자 MT3 가 「생존」으로 보고됐는데,
+  //   단독 실행하면 정상 적발됐다 — 「죽어서 못 잡았다」와 「못 잡았다」의 혼동이다.
+  //   ★러너는 어떤 경우에도 요약 줄을 찍고 끝나므로 여기서는 마커 판정이 안전하다
+  //     (게이트 개별 파일과 달리 로드 시점 throw 로 죽는 경로가 없다).
+  return { status: r.status, out, done: !r.signal && !r.error && /\[gate\] scope=/.test(out) };
 }
 
 const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js', 'eval_tojeong_guard.js'];
@@ -549,7 +560,7 @@ process.on('exit', () => { const n = sweepChildTmp(); if (n) console.log('[mutat
   for (let mi = 0; mi < MUTANTS.length; mi++) {
     const m = MUTANTS[mi];
     if (!mutSelected(m.id, mi)) { skipped++; continue; }
-    let killed = false, by = '', err = null;
+    let killed = false, by = '', err = null, inconclusive = false;
     try {
       const d = mkFront();
       let gateRoot = GATE;
@@ -560,15 +571,21 @@ process.on('exit', () => { const n = sweepChildTmp(); if (n) console.log('[mutat
         const hits = [];
         for (const f of m.evals) {
           const r = runEval(gateRoot, d, f);
+          if (!r.done) { inconclusive = true; by = '★검사가 완주하지 못했다(' + f + ' exit=' + r.status + ')'; break; }
           if (r.status !== 0) hits.push(f.replace('eval_', '').replace('.js', '') + ':' + r.failed.join(','));
         }
-        killed = hits.length > 0;
-        by = hits.join(' | ') || '(전건 통과 — 생존)';
+        if (!inconclusive) {
+          killed = hits.length > 0;
+          by = hits.join(' | ') || '(전건 통과 — 생존)';
+        }
       } else {
         const r = runGate(gateRoot, d, m.gateScope || 'eval');
-        const lines = r.out.split('\n').filter((l) => /FAIL SELF 외부 pin/.test(l));
-        killed = r.status !== 0 && lines.length > 0;
-        by = lines.length ? lines[0].trim().slice(0, 150) : '(pin 미발화 — 생존)';
+        if (!r.done) { inconclusive = true; by = '★러너가 완주하지 못했다(exit=' + r.status + ') — 시간 벽/디스크를 의심하라'; }
+        else {
+          const lines = r.out.split('\n').filter((l) => /FAIL SELF 외부 pin/.test(l));
+          killed = r.status !== 0 && lines.length > 0;
+          by = lines.length ? lines[0].trim().slice(0, 150) : '(pin 미발화 — 생존)';
+        }
       }
     } catch (e) { err = (e && e.message) || String(e); }
     // ★v7.75 — 「적용 실패」와 「적발 실패(생존)」를 **절대 같은 라벨로 찍지 않는다**.
@@ -577,7 +594,10 @@ process.on('exit', () => { const n = sweepChildTmp(); if (n) console.log('[mutat
     //   ★적용 실패는 **하네스 고장**이며 게이트 평가가 아니다 — 라벨을 분리한다.
     if (err) { by = '★뮤테이션 적용 실패(하네스 고장 — 게이트 평가 아님): ' + err; killed = false; }
     if (!killed) survived++;
-    console.log((killed ? 'KILL' : (err ? '★APPLY-FAIL' : '★SURVIVED')) + ' ' + m.id + '  [' + m.axis + '] ' + m.what);
+    // ★라벨 3분리 — 「적용 실패」·「완주 실패」·「적발 실패」는 원인도 대응도 다르다(결정 102).
+    //   셋 다 실패로 **계상**하되(판정 불가는 통과가 아니다) 이름은 절대 섞지 않는다.
+    const label = killed ? 'KILL' : (err ? '★APPLY-FAIL' : (inconclusive ? '★INCONCLUSIVE' : '★SURVIVED'));
+    console.log(label + ' ' + m.id + '  [' + m.axis + '] ' + m.what);
     console.log('       기대=' + (m.expect || []).join(',') + '  실제→ ' + by);
     rows.push({ id: m.id, axis: m.axis, what: m.what, killed, by });
   }
