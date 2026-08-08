@@ -1314,6 +1314,43 @@ export default async function handler(req, res) {
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // ★★v7.75 관통 #9 (2층) — `tojeong` 계열 컨텍스트 평탄화
+    // ══════════════════════════════════════════════════════════════════════
+    //   【먼저 정정】v7.73·v7.74 인수인계는 「토정은 서버 재계산 대상 밖이라 화면과
+    //     해석이 함께 틀린다」고 적었으나, 기계로 다시 재 보니 **값은 현재 옳다**
+    //     (양력 전수 50,736건에서 클라 산출 == 서버 엔진 · 음력변환/중괘/하괘 불일치 0).
+    //     I-46 은 v7.73 관통 #7 의 반입 블록으로 이미 해소됐다 ⟹ I-60 · 결정 94 재현.
+    //
+    //   【그래서 진짜 결함】 `tojeong` 은 **아무도 검증하지 않는다**.
+    //     · `CW_ENGINE_TYPES` 에 없다 ⟹ 400 차단 대상이 아니다.
+    //     · `CW_COMPAT_TYPES` 에 없다 ⟹ 2층 평탄화가 돌지 않았다.
+    //     ⟹ 프롬프트 보간 15자리 중 **14자리가 무방비**였다(`name` 만 `cwNormName`).
+    //       값에 개행을 넣으면 「상괘(태세괘): …」 줄을 위조하거나 새 지시 줄을 만든다.
+    //
+    //   【이 층이 하는 일】 개행·제어문자 제거 + 길이 상한. **엔진 유무와 무관**하게
+    //     항상 돈다(결정 88 — 각 층을 따로 검사한다). 정상값은 이 변환에 불변이다.
+    //   ★`cwCompatFlatten` 은 이제 compat 전용이 아니라 **범용 텍스트 평탄화**다.
+    //     이름을 유지하는 이유는 `eval_compat_guard.js` 와 뮤테이션 M19/ME1 이 이
+    //     식별자를 앵커로 쓰기 때문이다(이름을 바꾸면 그 감시가 조용히 죽는다).
+    //   ★1층(생년월일 5키 재유도)은 별건이다 — §다음 커밋.
+    const CW_TOJEONG_TYPES = ['tojeong', 'tojeong_premium_1', 'tojeong_premium_2'];
+    if (CW_TOJEONG_TYPES.indexOf(type) !== -1 && context && typeof context === 'object' && !Array.isArray(context)) {
+      const cwTjFlattened = [];
+      for (const k of Object.keys(context)) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+        if (typeof context[k] !== 'string') continue;
+        const before = context[k];
+        const after = cwCompatFlatten(before);
+        if (after !== before) { context[k] = after; cwTjFlattened.push(k); }
+      }
+      // ★관측 — 차단하지 않는 방어는 로그가 유일한 관측점이다(v7.71-b 관통 #5 의 교훈).
+      //   게이트 `eval_tojeong_guard.js` 는 **이 로그**로 판정한다(결정 84 — 소스가 아니라 실행 결과).
+      try {
+        console.log('[cw:ctxguard]', JSON.stringify({ type, tojeong: true, layer2: true, flattened: cwTjFlattened }));
+      } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
+    }
+
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
 

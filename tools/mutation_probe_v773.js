@@ -82,7 +82,39 @@ function runGate(gateRoot, frontRoot, scope) {
   return { status: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
 }
 
-const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js'];
+const NEW_EVALS = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js', 'eval_tojeong_guard.js'];
+
+// ══════════════════════════════════════════════════════════════════════════
+// ★v7.75 T 군 — 「tojeong 2층 평탄화」 게이트(eval_tojeong_guard.js)의 유효성 증명
+// ══════════════════════════════════════════════════════════════════════════
+//   tojeong 은 400 차단 대상이 아니므로 이 층이 무력화돼도 **응답은 정상**이다.
+//   즉 정상 경로에서 아무 증상이 없다 ⟹ 뮤턴트가 유일한 감시다(결정 96).
+const T_MUTANTS = [
+  {
+    id: 'MT1', axis: '★관통 #9 — tojeong 평탄화 무력화',
+    what: '`cwCompatFlatten` 호출을 tojeong 루프에서 뺀다 — 개행 주입이 프롬프트 줄을 위조할 수 있게 된다',
+    expect: ['T-1'], evals: ['eval_tojeong_guard.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "        const after = cwCompatFlatten(before);\n        if (after !== before) { context[k] = after; cwTjFlattened.push(k); }",
+      "        const after = before;\n        if (after !== before) { context[k] = after; cwTjFlattened.push(k); }"),
+  },
+  {
+    id: 'MT2', axis: '★관통 #9 — 유료 2종을 범위에서 제거',
+    what: '`CW_TOJEONG_TYPES` 에서 유료 2종(₩4,900 × 2)을 뺀다 — v7.72 M4·v7.73 M3 의 tojeong 판',
+    expect: ['T-4', 'T-6'], evals: ['eval_tojeong_guard.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "const CW_TOJEONG_TYPES = ['tojeong', 'tojeong_premium_1', 'tojeong_premium_2'];",
+      "const CW_TOJEONG_TYPES = ['tojeong'];"),
+  },
+  {
+    id: 'MT3', axis: '★신설 게이트 자기 약화',
+    what: 'eval_tojeong_guard.js 의 T-1 을 무조건 통과로 바꾼다 (평탄화 관측 무력화)',
+    expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
+    applyGate: (g) => sub1(path.join(g, 'eval', 'eval_tojeong_guard.js'),
+      "      const miss = need.filter((k) => flat.indexOf(k) === -1);",
+      "      const miss = [];"),
+  },
+];
 
 // ══════════════════════════════════════════════════════════════════════════
 // ★v7.74 P 군 — 「반입 블록 폭발반경」 게이트(eval_port_isolation.js)의 유효성 증명
@@ -405,6 +437,7 @@ const MUTANTS = [
   },
   ...F_MUTANTS,
   ...P_MUTANTS,
+  ...T_MUTANTS,
 ];
 
 // ══════════════════════════════════════════════════════════════════════════

@@ -77,6 +77,7 @@ const REQUIRED = Object.freeze([
   'eval/eval_gate_asset_commit.js',
   'eval/eval_lunar_ui_dom.js',   // ★v7.74 F-1 — 「UI 조작 → 판독」 축. 미커밋이면 무감시다.
   'eval/eval_port_isolation.js', // ★v7.74 E-8 — 반입 블록 폭발반경 축. 미커밋이면 무감시다.
+  'eval/eval_tojeong_guard.js',  // ★v7.75 관통 #9 — tojeong 2층 평탄화 축. ★A-10 이 이 누락을 실제로 적발했다.
   // ★v7.74 A-10 이 적발한 누락 3종 — 리포 eval/ 에 실재하는데 이 목록에 없어
   //   커밋 경로가 **감시되지 않고 있었다**(I-44 계열의 네 번째 형태).
   'eval/eval_engine_binding.js',
@@ -251,7 +252,7 @@ check('A-9', '★신설 게이트가 외부 pin 표(eval/_gate_pins.json)에 등
   const evals = (j && j.evals) || {};
   // ★v7.74 F-1 — eval_lunar_ui_dom.js 추가. 이 게이트가 사라지면 「UI 조작 → 판독」 축이
   //   통째로 무감시가 된다(v7.73 이 그 상태로 배포됐고 그것이 이번 사고의 자리였다).
-  const need = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_gate_asset_commit.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js'];
+  const need = ['eval_ctxguard.js', 'eval_compat_guard.js', 'eval_client_port_drift.js', 'eval_gate_asset_commit.js', 'eval_lunar_ui_dom.js', 'eval_port_isolation.js', 'eval_tojeong_guard.js'];
   const miss = need.filter((f) => !Object.prototype.hasOwnProperty.call(evals, f));
   const noSha = need.filter((f) => evals[f] && (typeof evals[f].sha256 !== 'string' || evals[f].sha256.length !== 64));
   return { ok: miss.length === 0 && noSha.length === 0,
