@@ -143,6 +143,32 @@ const T_MUTANTS = [
       ""),
   },
   {
+    id: 'MK1', axis: '★★I-43 유형 재현 — 클라만 아는 키를 되살린다',
+    what: '클라 naming ctx 에 서버가 읽지 않는 키를 되살린다 (v7.77 이 실제로 적발한 `hangryeol` 과 같은 형태)',
+    expect: ['K-2'], evals: ['eval_ctx_key_surface.js'],
+    // ★앵커는 **그 사이트에서만 나오는 형태**여야 한다(v7.75 M12 의 교훈).
+    //   `preferred:…` 만 쓰면 `_buildNamingContext` 에도 같은 줄이 있어 2건이 된다.
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      "style:styleName,length:lengthName,preferred:info.preferred||'없음',",
+      "style:styleName,length:lengthName,preferred:info.preferred||'없음',hangryeol:'X',"),
+  },
+  {
+    id: 'MK2', axis: '★결정 90 — 표면 열거기 눈멀게 하기',
+    what: '`isLeap` 상수 false 하드코딩을 되살린다 (E-1 본체) — K-5 가 잡아야 한다',
+    expect: ['K-5'], evals: ['eval_ctx_key_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', '_engine', 'ctxguard.js'),
+      "    isLeap: calType === 'lunar' && ctx.isLeapMonth === true,",
+      "    isLeap: false,"),
+  },
+  {
+    id: 'MK3', axis: '★신설 게이트 자기 약화',
+    what: 'eval_ctx_key_surface.js 의 K-2 를 무조건 통과로 바꾼다',
+    expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
+    applyGate: (g) => sub1(path.join(g, 'eval', 'eval_ctx_key_surface.js'),
+      "  const d = danglingOf(SITES);",
+      "  const d = [];"),
+  },
+  {
     id: 'MH1', axis: '★I-62 — 임시 사본 정리 훅 제거',
     what: '`_tmp.js` 의 `process.on(\'exit\', cleanup)` 을 없앤다 — 게이트가 돌 때마다 사본이 쌓여 디스크가 찬다',
     expect: ['H-3', 'H-4', 'H-7'], evals: [], gateScope: 'eval', mutateGate: true,

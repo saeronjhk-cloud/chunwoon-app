@@ -7175,8 +7175,7 @@ async function analyzeNaming(){
     loadingTitle=`${surname}씨 가문에 어울리는 이름을 찾는 중...`;
     const styleName=NAMING_STYLES.find(s=>s.k===info.style)?.n||'전통 한자';
     const lengthName=NAMING_LENGTHS.find(l=>l.k===info.length)?.n||'3자';
-    const hangryeolStr=info.hangryeolHanja?`${info.hangryeolHanja} (${info.hangryeolPos==='first'?'이름 첫 글자':info.hangryeolPos==='last'?'이름 끝 글자':'위치 미지정'})`:'없음';
-    ctx={surname:info.surname,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',hangryeol:hangryeolStr,hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||''};
+    ctx={surname:info.surname,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',/* ★v7.77 K-2 — `hangryeol`(사람이 읽는 조합 문자열)은 서버가 한 번도 읽지 않는다. 서버는 `hangryeolHanja`·`hangryeolPos` 만 보간한다. 클라만 아는 사실은 표면이므로 제거한다(I-43 유형). */hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||''};
   }
   else if(ntype==='company'){
     const industryK=document.querySelector('[data-kind="nind"].selected')?.dataset.k;

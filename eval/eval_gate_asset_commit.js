@@ -89,6 +89,7 @@ const REQUIRED = Object.freeze([
   //   자동 확장에서 빠지므로 **여기와 pin 표에 손으로 넣어야** 감시된다.
   'eval/_tmp.js',
   'eval/eval_tmp_hygiene.js',    // ★v7.75 I-62 — 임시 사본 누수 축.
+  'eval/eval_ctx_key_surface.js', // ★v7.77 결정 90 — I-43 유형(클라만 아는 키)을 사고 전에 잡는 축.
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',
