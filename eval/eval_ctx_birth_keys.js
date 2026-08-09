@@ -56,12 +56,43 @@
 //     Q5 nosaju        `_sajuResultData` **없음**        6 슬롯  ← 전건 6키 0개여야
 //     전수 = 6+6+6+5+6 = **29 payload**
 //
+// ═══ v7.79 파 ⓒ 증축 — `naming_company`(3) (B-16 ~ B-21) ══════════════════
+//   【파 ⓐ·ⓑ 와 무엇이 다른가】
+//     ① 키 이름에 **접두 `ceo`** 가 붙는다(계약 §2-2) — `ceoCal`·`ceoY`·`ceoM`·`ceoD`·
+//        `ceoH`·`ceoLeap`. 접두 없는 6키(`cal`…)와 **섞이면 안 된다**.
+//     ② `namingCEOBirth` 는 **양력 전용 UI** 다(`CW_BIRTH_UI.namingCEOBirth={cal:null}`).
+//        ⟹ `ceoCal` 은 항상 `'solar'` · `ceoLeap` 은 항상 `false` — **상수**여야 한다.
+//        음력 경로가 없으므로 파 ⓐ 의 P3·P4(음력 윤달)에 해당하는 경로가 **분모에 없다**.
+//     ③ CEO 사주는 **옵션**이다. 미입력이 정상 상태로 존재하며, 그때 6키를 만들어 내면
+//        없는 사실의 날조다(계약 §6 `legacy`). ⟹ B-19 가 **미적재**를 적재만큼 엄격히 못박는다.
+//        ★`_collectSajuFromUI('namingCEOBirth',…)` 에는 `_sajuResultData` 폴백이 **없다**.
+//          사주 탭을 돌린 뒤에도 CEO 칸이 비면 6키는 0개여야 한다 — B-19 가 그 상태로 잰다.
+//
+//   【적재 지점 — 전수 2곳 · payload 사이트 5곳 (분모를 먼저 못박는다)】
+//     ① `analyzeNaming()` 회사 분기 ctx 리터럴(`if(ceo)` 쪽)  → `naming_company`   (사이트 1)
+//        ★`else`(CEO 미입력) 쪽에는 **일부러 안 싣는다**.
+//     ② `_buildNamingContext(info)` 회사 분기 return 리터럴
+//          → `naming_company_premium_1`·`_2`                                       (사이트 2·3)
+//        ★그리고 **`retryNamingPremiumAPI()` 도 같은 빌더를 쓴다**                  (사이트 4·5).
+//          파 ⓑ `_buildDreamContext` 와 같은 형태 — 재시도를 안 세면 **결제 후 1회 실패한
+//          사용자만** 조용히 legacy 로 떨어진다.
+//     ★프리미엄은 `_sajuResultData` 도 폼도 다시 읽지 않고 `info`(=`window._namingResultData`)
+//       가 운반한 값을 쓴다. 그래서 ①이 안 실으면 ②도 못 싣는다 — MUT-E 가 그 사슬을 잰다.
+//
+//   【경로 3종】
+//     R1 c_direct   CEO 생년월일 **입력**(양력 · 시각 있음)   5 슬롯
+//     R2 c_nohour   CEO **시간 모름**(`ceoH:-1`)              5 슬롯
+//     R3 c_absent   CEO **미입력**(★사주 탭은 돌린 상태)      5 슬롯 ← 6키 0개여야
+//     전수 = 5+5+5 = **15 payload**
+//
 // 【자기 유효성 — 0건이 아무것도 증명하지 않는 것을 막는다】
 //   · B-0 커버리지 하한(경로 4종 · type 7종 · payload 22벌) — ★분모 없는 통과는 측정이 아니다
 //   · B-6 자기 뮤턴트 2종(직접 경로 적재 제거 · `_sajuResultData.leap` 제거)
 //   · B-7 긍정 짝(무변경 사본에서는 안 잡힌다)
 //   · B-4 ★역방향 대조군(계약 §8) — 이미 닫힌 `saju`·`compat`·`tojeong` payload 무변경
 //   · B-5 ★하위호환(계약 §6) — 사주 없는 요청은 6키가 **한 개도** 없다(부분 적재 금지)
+//   · B-16 파 ⓒ 커버리지 하한 · B-20 자기 뮤턴트 2종(무료 적재 제거 · 빌더 적재 제거) ·
+//     B-21 긍정 짝
 //
 // 【임시 파일】
 //   ★디스크에 사본을 **만들지 않는다**(결정 109). jsdom 은 HTML 문자열을 직접 받는다.
@@ -108,7 +139,7 @@ function done() {
   process.exit(fail ? 1 : 0);
 }
 
-const EXPECTED_TOTAL_MIN = 17;   // ★v7.79 파 ⓑ 증축(11 → 18). 래칫이므로 내리지 말 것.
+const EXPECTED_TOTAL_MIN = 23;   // ★v7.79 파 ⓒ 증축(18 → 24). 래칫이므로 내리지 말 것.
 check('SELF-1', '★_gate_pins.json 자기검사 — 자기 sha256 · 검사 수 하한', () => {
   const p = path.join(__dirname, '_gate_pins.json');
   if (!fs.existsSync(p)) return { ok: false, detail: '★pin 표 부재 — 판정 불가' };
@@ -173,6 +204,15 @@ const WAVE_B_SLOTS = Object.freeze(['dream', 'dream_premium_1', 'dream_premium_2
 const WAVE_B_DREAM_SLOTS = Object.freeze(['dream', 'dream_premium_1', 'dream_premium_2',
   'dream_premium_1@retry', 'dream_premium_2@retry']);
 
+// ── 파 ⓒ (계약 §2-2) ────────────────────────────────────────────────────────
+/** ★접두 `ceo` 6키. **명시 배열**이다 — `'ceo'+k` 같은 조립을 만들지 않는다(§2-3 · I-61). */
+const CEO_KEYS = Object.freeze(['ceoCal', 'ceoY', 'ceoM', 'ceoD', 'ceoH', 'ceoLeap']);
+/** 파 ⓒ 분모(계약 §9 ⓒ) — 무가드 17종의 **마지막** 3 type. */
+const WAVE_C_TYPES = Object.freeze(['naming_company', 'naming_company_premium_1', 'naming_company_premium_2']);
+/** ★type 3종이지만 사이트는 5곳이다 — 프리미엄 2종은 최초 호출과 **재시도**가 서로 다른 사이트다. */
+const WAVE_C_SLOTS = Object.freeze(['naming_company', 'naming_company_premium_1', 'naming_company_premium_2',
+  'naming_company_premium_1@retry', 'naming_company_premium_2@retry']);
+
 // 검체 — 세 벌이 서로 다른 값을 내야 「UI 조작이 실제로 먹었다」가 증명된다
 const FX_SAJU = { bs: '1990-05-15', y: 1990, m: 5, d: 15, h: 3, g: 'male' };  // 사주 탭(폴백 출처)
 const FX_FORM = { bs: '1988-11-03', y: 1988, m: 11, d: 3, h: 5, g: 'male' };  // 상품 폼 직접 입력
@@ -189,6 +229,16 @@ const WANT = {
   // ★「시간 모름」 — `h:-1` 이 **실려야** 한다. 키를 빼면 6키가 전부 무너져 legacy 가 된다.
   nohour: { cal: 'solar', y: FX_SAJU.y, m: FX_SAJU.m, d: FX_SAJU.d, h: -1, leap: false },
 };
+
+/**
+ * 파 ⓒ 기대값 — ★`ceoCal:'solar'`·`ceoLeap:false` 는 **상수**다(양력 전용 UI · 계약 §2-2).
+ *   검체는 `FX_FORM`(1988-11-03)을 쓴다. 사주 탭 검체(`FX_SAJU`)와 **다른 값**이어야
+ *   「CEO 칸을 실제로 읽었다」와 「사주 탭이 새어 들어왔다」가 구분된다.
+ */
+const WANT_C = Object.freeze({
+  c_direct: { ceoCal: 'solar', ceoY: FX_FORM.y, ceoM: FX_FORM.m, ceoD: FX_FORM.d, ceoH: FX_FORM.h, ceoLeap: false },
+  c_nohour: { ceoCal: 'solar', ceoY: FX_FORM.y, ceoM: FX_FORM.m, ceoD: FX_FORM.d, ceoH: -1, ceoLeap: false },
+});
 
 // ══════════════════════════════════════════════════════════════════════════
 // ⑵ 역방향 대조군 핀 (계약 §8) — 이미 닫힌 3종 payload 의 정규화 sha256
@@ -464,6 +514,57 @@ async function scenarioB(html, kind, chatSrc) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// ⑷-c 파 ⓒ 시나리오 — `naming_company`(3)
+//     ★상품 폼이 **대표 생년월일을 직접 받는다**(`namingCEOBirth` · 양력 전용).
+//       그러나 프리미엄은 폼을 다시 읽지 않고 `window._namingResultData` 가 운반한 값을 쓴다 —
+//       무료 적재가 죽으면 유료도 함께 죽는다(MUT-E 가 그 사슬을 실측한다).
+// ══════════════════════════════════════════════════════════════════════════
+/**
+ * @param {string} html
+ * @param {'c_direct'|'c_nohour'|'c_absent'} kind
+ */
+async function scenarioC(html, kind) {
+  const w = await boot(html);
+  const out = { kind, got: {}, errs: [], trail: [] };
+
+  // ★사주 탭을 **먼저 돌린다**. CEO 경로에는 `_sajuResultData` 폴백이 없으므로,
+  //   `c_absent` 에서 6키가 나오면 그것은 「어딘가에서 새어 들어온 날조」다.
+  setv(w, 'sajuName', '검사'); setv(w, 'sajuGender', FX_SAJU.g);
+  setSajuCal(w, 'solar'); setv(w, 'sajuBirth', FX_SAJU.bs); setv(w, 'sajuHour', String(FX_SAJU.h));
+  const rs = await drive(w, 'analyzeSaju()');
+  if (rs.err) out.errs.push('analyzeSaju:' + rs.err);
+  else if (!w._sajuResultData) out.errs.push('analyzeSaju:NO_GLOBAL');
+
+  // ── 회사 작명 폼 ────────────────────────────────────────────────────────
+  out.trail.push('chips:' + [chip(w, 'ntype', 'company'), chip(w, 'nind', 'tech'), chip(w, 'market', 'domestic')].join(','));
+  setv(w, 'namingBizModel', 'B2B SaaS');
+  setv(w, 'namingBizKeyword', '신뢰');
+  setv(w, 'namingCompanyRegion', '서울특별시');
+  setv(w, 'namingCEOName', '김대표');
+  if (kind === 'c_absent') {
+    setv(w, 'namingCEOBirth', ''); setv(w, 'namingCEOHour', '-1');
+  } else {
+    setv(w, 'namingCEOBirth', FX_FORM.bs);
+    setv(w, 'namingCEOHour', kind === 'c_nohour' ? '-1' : String(FX_FORM.h));
+  }
+
+  const rn = await drive(w, 'analyzeNaming()');
+  if (rn.err) out.errs.push('naming_company:' + rn.err); else out.got.naming_company = rn.bodies[0].context;
+
+  const rp = await drive(w, 'unlockNamingPremium()');
+  if (rp.err) out.errs.push('naming_company_premium:' + rp.err);
+  else for (const b of rp.bodies) { if (WAVE_C_TYPES.indexOf(b.type) >= 0) out.got[b.type] = b.context; }
+
+  // ★재시도 경로 — 결제 후 1회 실패한 사용자만 밟는다. 안 세면 조용히 legacy 로 떨어진다.
+  const rr = await drive(w, 'retryNamingPremiumAPI()');
+  if (rr.err) out.errs.push('naming_company_retry:' + rr.err);
+  else for (const b of rr.bodies) { if (WAVE_C_TYPES.indexOf(b.type) >= 0) out.got[b.type + '@retry'] = b.context; }
+
+  try { w.close(); } catch (e) { /* 정리 실패가 판정을 바꾸지 않는다 */ }
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // ⑸ 판정기
 // ══════════════════════════════════════════════════════════════════════════
 function isInt(v) { return typeof v === 'number' && Number.isInteger(v); }
@@ -519,6 +620,47 @@ function leakedB(sc, slots) {
   return bad;
 }
 
+// ── 파 ⓒ 판정기 (접두 `ceo` · 계약 §2-2) ────────────────────────────────────
+/** `ceo` 6키가 계약 §2-2 의 형·범위를 지키는가. ★`ceoCal`·`ceoLeap` 은 **상수**여야 한다. */
+function shapeErrCeo(o) {
+  const e = [];
+  for (const k of CEO_KEYS) if (!Object.prototype.hasOwnProperty.call(o, k)) e.push('missing:' + k);
+  if (e.length) return e;
+  // ★양력 전용 UI — `'lunar'` 는 형식상 유효해 보여도 **이 상품군에서는 결함**이다.
+  if (o.ceoCal !== 'solar') e.push('ceoCal=' + JSON.stringify(o.ceoCal) + ' (양력 전용 UI 인데 solar 가 아니다)');
+  if (o.ceoLeap !== false) e.push('ceoLeap=' + JSON.stringify(o.ceoLeap) + ' (양력 전용 UI 인데 false 가 아니다)');
+  if (!isInt(o.ceoY) || o.ceoY < 1900 || o.ceoY > 2050) e.push('ceoY=' + JSON.stringify(o.ceoY));
+  if (!isInt(o.ceoM) || o.ceoM < 1 || o.ceoM > 12) e.push('ceoM=' + JSON.stringify(o.ceoM));
+  if (!isInt(o.ceoD) || o.ceoD < 1 || o.ceoD > 31) e.push('ceoD=' + JSON.stringify(o.ceoD));
+  if (!isInt(o.ceoH) || o.ceoH < -1 || o.ceoH > 11) e.push('ceoH=' + JSON.stringify(o.ceoH));
+  return e;
+}
+/** 파 ⓒ — 슬롯 목록 기준 위반 */
+function violationsC(sc, slots, want) {
+  const bad = [];
+  for (const s of slots) {
+    const ctx = sc.got[s];
+    if (!ctx) { bad.push(sc.kind + '/' + s + ':미채집'); continue; }
+    const se = shapeErrCeo(ctx);
+    if (se.length) { bad.push(sc.kind + '/' + s + ':' + se.join('|')); continue; }
+    const ve = [];
+    for (const k of CEO_KEYS) if (ctx[k] !== want[k]) ve.push(k + '=' + JSON.stringify(ctx[k]) + '!=' + JSON.stringify(want[k]));
+    if (ve.length) bad.push(sc.kind + '/' + s + ':' + ve.join('|'));
+  }
+  return bad;
+}
+/** ★파 ⓒ — `ceo` 6키가 **한 개도** 없어야 하는 경로의 위반(부분 적재·날조 금지) */
+function leakedC(sc, slots) {
+  const bad = [];
+  for (const s of slots) {
+    const ctx = sc.got[s];
+    if (!ctx) { bad.push(sc.kind + '/' + s + ':미채집'); continue; }
+    const has = CEO_KEYS.filter((k) => Object.prototype.hasOwnProperty.call(ctx, k));
+    if (has.length) bad.push(sc.kind + '/' + s + ':' + has.join(',') + '=' + has.map((k) => JSON.stringify(ctx[k])).join(','));
+  }
+  return bad;
+}
+
 /** 시나리오 하나의 위반 목록 */
 function violations(sc, types) {
   const bad = [];
@@ -545,10 +687,19 @@ const MUT_B = { anchor: 'leap:(calType===\'lunar\'?!!br.leap:false),hi', to: 'le
 //   그 비대칭 자체가 「적재 지점이 둘」이라는 사실의 증거다.
 const MUT_C = { anchor: 'cal:_bkDr.cal,y:_bkDr.y,m:_bkDr.m,d:_bkDr.d,h:_bkDr.h,leap:_bkDr.leap', to: '', slots: ['dream'] };
 const MUT_D = { anchor: 'cal:_bkC.cal,y:_bkC.y,m:_bkC.m,d:_bkC.d,h:_bkC.h,leap:_bkC.leap', to: '', slots: ['daily_message'] };
+// ★파 ⓒ 뮤턴트 — ⒠ `analyzeNaming` 회사 분기 적재 제거 ⒡ `_buildNamingContext` 회사 분기 적재 제거.
+//   ★★실측으로 정정한 사실(첫 기대는 틀렸다): ⒠ 는 **`naming_company` 1슬롯만** 죽인다.
+//     프리미엄으로의 운반은 ctx 리터럴이 아니라 **별개 문장**(`info.ceoY=…`)이 하기 때문이다.
+//     ⟹ 두 적재 지점은 서로 **독립**이며, 그 비대칭이 「적재 지점이 둘」의 증거다(B-14 와 같은 성질).
+//     ★한쪽을 지웠을 때 다른 쪽이 같이 죽는다면 적재가 한 곳뿐이라는 뜻이고,
+//       그러면 「재시도 포함 5사이트」라는 분모가 거짓이 된다 — 그래서 **양방향**으로 잰다.
+const MUT_E = { anchor: 'ceoCal:_bkCeo.cal,ceoY:_bkCeo.y,ceoM:_bkCeo.m,ceoD:_bkCeo.d,ceoH:_bkCeo.h,ceoLeap:_bkCeo.leap', to: '', slots: ['naming_company'] };
+const MUT_F = { anchor: 'ceoCal:_bkCeoP.cal,ceoY:_bkCeoP.y,ceoM:_bkCeoP.m,ceoD:_bkCeoP.d,ceoH:_bkCeoP.h,ceoLeap:_bkCeoP.leap', to: '', slots: ['naming_company_premium_1', 'naming_company_premium_2', 'naming_company_premium_1@retry', 'naming_company_premium_2@retry'] };
 
 (async function main() {
   let SC = {}, LEGACY = null, FATAL = null, MUTA = null, MUTB = null, CTL = null;
   let SB = {}, MUTC = null, MUTD = null, CTLB = null;
+  let SCC = {}, MUTE = null, MUTF = null, CTLC = null;
   try {
     SC.direct = await scenario(HTML, 'direct', false);
     SC.fallback = await scenario(HTML, 'fallback', true);      // ★역방향 대조군은 여기서 같이 채집
@@ -567,6 +718,13 @@ const MUT_D = { anchor: 'cal:_bkC.cal,y:_bkC.y,m:_bkC.m,d:_bkC.d,h:_bkC.h,leap:_
     if (HTML.split(MUT_C.anchor).length - 1 === 1) MUTC = await scenarioB(HTML.replace(MUT_C.anchor, MUT_C.to), 'linked');
     if (CHAT_SRC.split(MUT_D.anchor).length - 1 === 1) MUTD = await scenarioB(HTML, 'linked', CHAT_SRC.replace(MUT_D.anchor, MUT_D.to));
     CTLB = await scenarioB(HTML, 'linked');
+    // ── 파 ⓒ ──
+    SCC.c_direct = await scenarioC(HTML, 'c_direct');
+    SCC.c_nohour = await scenarioC(HTML, 'c_nohour');
+    SCC.c_absent = await scenarioC(HTML, 'c_absent');
+    if (HTML.split(MUT_E.anchor).length - 1 === 1) MUTE = await scenarioC(HTML.replace(MUT_E.anchor, MUT_E.to), 'c_direct');
+    if (HTML.split(MUT_F.anchor).length - 1 === 1) MUTF = await scenarioC(HTML.replace(MUT_F.anchor, MUT_F.to), 'c_direct');
+    CTLC = await scenarioC(HTML, 'c_direct');
   } catch (e) { FATAL = (e && e.stack) ? String(e.stack).slice(0, 500) : String(e); }
 
   if (FATAL) { check('B-0', '★런타임 채집', () => ({ ok: false, detail: '★판정 불가(통과 아님): ' + FATAL })); done(); }
@@ -654,7 +812,7 @@ const MUT_D = { anchor: 'cal:_bkC.cal,y:_bkC.y,m:_bkC.m,d:_bkC.d,h:_bkC.h,leap:_
     return { ok: bad.length === 0, detail: bad.length ? '★무변경본에서도 ' + bad.length + '건 잡힌다 — B-6 은 위약이다: ' + bad.join(' / ') : '무변경본 위반 0' };
   });
 
-  check('B-8', '★단일 출처(결정 99·113) — 산출식 `cwBirthKeys` 1개 · 적재 지점 8곳이 **명시 리터럴**이다', () => {
+  check('B-8', '★단일 출처(결정 99·113) — 산출식 `cwBirthKeys` 1개 · 적재 지점 10곳이 **명시 리터럴**이다', () => {
     const defs = (HTML.match(/function\s+cwBirthKeys\s*\(/g) || []).length;
     if (defs !== 1) return { ok: false, detail: '★`cwBirthKeys` 정의 ' + defs + '개 — 0 이면 미구현, 2 이상이면 사본이 갈린다' };
     // ★적재는 payload **리터럴**로만 한다(§2-3 명시 맵 · `eval_ctx_key_surface.js` 표면 추출기 보존).
@@ -665,11 +823,17 @@ const MUT_D = { anchor: 'cal:_bkC.cal,y:_bkC.y,m:_bkC.m,d:_bkC.d,h:_bkC.h,leap:_
     const inChat = (CHAT_SRC.match(LIT) || []).length;    // ★파 ⓑ `_gatherChatContext`
     if (inHtml !== 5 || inTarot !== 2 || inChat !== 1)
       return { ok: false, detail: '★적재 리터럴 index.html ' + inHtml + '(기대 5) · js/tarot.js ' + inTarot + '(기대 2) · js/chat.js ' + inChat + '(기대 1) — 파 ⓐ 5곳 + 파 ⓑ 3곳 = 8곳이다' };
+    // ★파 ⓒ — 접두 `ceo` 6키(계약 §2-2). 접두 없는 6키와 **다른 리터럴**이므로 따로 센다.
+    //   `analyzeNaming` 회사 분기 1 + `_buildNamingContext` 회사 분기 1 = 2곳.
+    const LIT_CEO = /ceoCal:_bk[A-Za-z]*\.cal,\s*ceoY:_bk[A-Za-z]*\.y,\s*ceoM:_bk[A-Za-z]*\.m,\s*ceoD:_bk[A-Za-z]*\.d,\s*ceoH:_bk[A-Za-z]*\.h,\s*ceoLeap:_bk[A-Za-z]*\.leap/g;
+    const ceoLit = (HTML.match(LIT_CEO) || []).length;
+    if (ceoLit !== 2)
+      return { ok: false, detail: '★`ceo` 적재 리터럴 index.html ' + ceoLit + '(기대 2) — 회사 무료 1 + `_buildNamingContext` 1 이다' };
     // 반입 블록 안에 들어가면 안 된다(양쪽 다 못 건드리는 구역)
     const bi = HTML.indexOf('CW_ENGINE_PORT BEGIN'), ei = HTML.indexOf('CW_ENGINE_PORT END');
     const at = HTML.indexOf('function cwBirthKeys');
     if (bi >= 0 && ei > bi && at > bi && at < ei) return { ok: false, detail: '★`cwBirthKeys` 가 반입 블록 안에 있다 — 블록은 생성물이다' };
-    return { ok: true, detail: '산출식 1개 · 적재 리터럴 8곳(index.html 5 + js/tarot.js 2 + js/chat.js 1) · 반입 블록 밖' };
+    return { ok: true, detail: '산출식 1개 · 적재 리터럴 10곳(index.html 5+ceo 2 · js/tarot.js 2 · js/chat.js 1) · 반입 블록 밖' };
   });
 
   // ══════════════════════════════════════════════════════════════════════
@@ -755,6 +919,90 @@ const MUT_D = { anchor: 'cal:_bkC.cal,y:_bkC.y,m:_bkC.m,d:_bkC.d,h:_bkC.h,leap:_
     if (CTLB.errs.length) return { ok: false, detail: '★대조 사본 구동 실패: ' + CTLB.errs.join(' / ') };
     const bad = violationsB(CTLB, WAVE_B_SLOTS, WANT.linked);
     return { ok: bad.length === 0, detail: bad.length ? '★무변경본에서도 ' + bad.length + '건 잡힌다 — B-14 는 위약이다: ' + bad.join(' / ') : '무변경본 위반 0' };
+  });
+
+  // ══════════════════════════════════════════════════════════════════════
+  // 파 ⓒ — `naming_company`(3) · 무가드 17종의 **마지막**
+  // ══════════════════════════════════════════════════════════════════════
+  const C_PLAN = [['c_direct', WAVE_C_SLOTS], ['c_nohour', WAVE_C_SLOTS], ['c_absent', WAVE_C_SLOTS]];
+  const C_SAMPLES_MIN = C_PLAN.reduce((n, [, s]) => n + s.length, 0);   // 5+5+5 = 15
+
+  check('B-16', '★커버리지 — 경로 3종 × 파 ⓒ 사이트(★재시도 포함 5곳) = payload ' + C_SAMPLES_MIN + '벌 **전건**', () => {
+    const errs = [], missing = [];
+    let n = 0;
+    for (const [k, slots] of C_PLAN) {
+      const sc = SCC[k];
+      if (!sc) { errs.push(k + ':미구동'); continue; }
+      if (sc.errs.length) errs.push(k + ':' + sc.errs.join(','));
+      for (const s of slots) { if (sc.got[s]) n++; else missing.push(k + '/' + s); }
+    }
+    if (errs.length) return { ok: false, detail: '★구동 실패: ' + errs.slice(0, 8).join(' / ') };
+    if (missing.length) return { ok: false, detail: '★미채집 ' + missing.length + ': ' + missing.slice(0, 10).join(',') };
+    if (n !== C_SAMPLES_MIN) return { ok: false, detail: '★payload ' + n + ' != ' + C_SAMPLES_MIN };
+    // ★재시도가 정말로 **별개 사이트**인지 — 같은 객체를 두 번 센 것이면 측정이 아니다
+    if (!SCC.c_direct.got.naming_company_premium_1 || !SCC.c_direct.got['naming_company_premium_1@retry'])
+      return { ok: false, detail: '★재시도 슬롯 미채집' };
+    // ★분모 자체의 유효성 — 회사 payload 는 자유 입력이 도달해 있어야 한다(구동이 죽은 것과 구분)
+    if (SCC.c_direct.got.naming_company.bizModel !== 'B2B SaaS')
+      return { ok: false, detail: '★회사 payload 에 자유 입력(`bizModel`)이 없다 — 구동이 죽은 것이지 측정이 아니다' };
+    return { ok: true, detail: 'payload ' + n + '벌 (CEO입력 5 · 시간모름 5 · CEO미입력 5)' };
+  });
+
+  check('B-17', '★★CEO 사주 **입력** — `ceo` 6키가 `naming_company`(3, ★재시도 포함 ' + WAVE_C_SLOTS.length + '곳)에 전건 도달한다', () => {
+    const bad = violationsC(SCC.c_direct, WAVE_C_SLOTS, WANT_C.c_direct);
+    if (bad.length) return { ok: false, detail: '★' + bad.length + '/' + WAVE_C_SLOTS.length + ': ' + bad.join(' / ') };
+    // ★접두 없는 6키(`cal`·`y`…)가 섞여 들어오면 서버 판독기가 1인 상품으로 오인한다
+    const leak = BIRTH_KEYS.filter((k) => Object.prototype.hasOwnProperty.call(SCC.c_direct.got.naming_company, k));
+    if (leak.length) return { ok: false, detail: '★접두 없는 6키가 회사 payload 에 섞였다: ' + leak.join(',') };
+    return { ok: true, detail: WAVE_C_SLOTS.length + '곳 전건 ' + JSON.stringify(WANT_C.c_direct) };
+  });
+
+  check('B-18', '★★CEO **시간 모름** — `ceoH:-1` 이 실리고 나머지 5키는 그대로다 (키를 빼면 6키가 통째로 무너진다)', () => {
+    const bad = violationsC(SCC.c_nohour, WAVE_C_SLOTS, WANT_C.c_nohour);
+    if (bad.length) return { ok: false, detail: '★' + bad.length + '건: ' + bad.join(' / ') };
+    // 대조: 시각이 있는 경로와 `ceoH` 가 실제로 달라야 「시간 모름을 읽었다」가 증명된다
+    if (SCC.c_direct.got.naming_company.ceoH === SCC.c_nohour.got.naming_company.ceoH)
+      return { ok: false, detail: '★시각 있음/모름의 `ceoH` 가 같다 — UI 조작이 안 먹은 것이다' };
+    return { ok: true, detail: WAVE_C_SLOTS.length + '곳 전건 ceoH:-1 (시각 있는 경로는 ' + JSON.stringify(SCC.c_direct.got.naming_company.ceoH) + ')' };
+  });
+
+  check('B-19', '★★CEO 사주 **미입력** — `ceo` 6키를 **한 개도** 만들지 않는다 (★사주 탭은 돌아간 상태 · 날조 금지)', () => {
+    const bad = leakedC(SCC.c_absent, WAVE_C_SLOTS);
+    if (bad.length) return { ok: false, detail: '★' + bad.length + '/' + WAVE_C_SLOTS.length + ': ' + bad.join(' / ') };
+    // ★그 경로가 「그냥 아무것도 안 보낸 것」이 아님을 확인한다
+    const c = SCC.c_absent.got.naming_company;
+    if (!c || !c.bizModel) return { ok: false, detail: '★미입력 payload 에 자유 입력(`bizModel`)조차 없다 — 구동이 죽은 것이지 미적재가 아니다' };
+    // ★`_sajuResultData` 가 살아 있는데도 안 샜는가 — CEO 경로에는 폴백이 없다는 사실의 못
+    if (SCC.c_absent.errs.length) return { ok: false, detail: '★구동 오류: ' + SCC.c_absent.errs.join(' / ') };
+    return { ok: true, detail: WAVE_C_SLOTS.length + '곳 전부 `ceo` 6키 0개 (사주 탭은 정상 구동 · 폴백 없음 확인) · 자유 입력은 정상 도달' };
+  });
+
+  check('B-20', '★★자기 뮤턴트 2종 — ⒠ `analyzeNaming` 회사 적재 제거 ⒡ `_buildNamingContext` 회사 적재 제거를 B-17 이 적발한다', () => {
+    const msg = [];
+    if (!MUTE) return { ok: false, detail: '★MUT-E 앵커가 1건이 아니다 — 판정 불가는 통과가 아니다 (앵커: ' + MUT_E.anchor + ')' };
+    if (!MUTF) return { ok: false, detail: '★MUT-F 앵커가 1건이 아니다 — 판정 불가는 통과가 아니다 (앵커: ' + MUT_F.anchor + ')' };
+    const e = violationsC(MUTE, MUT_E.slots, WANT_C.c_direct);
+    if (e.length !== MUT_E.slots.length)
+      return { ok: false, detail: '★MUT-E(무료 적재 제거) 적발 ' + e.length + '/' + MUT_E.slots.length + ' — B-17 의 통과는 아무것도 증명하지 않는다' };
+    // ★비대칭 ①: 프리미엄 4슬롯은 **다른 적재 지점**이므로 살아 있어야 한다.
+    const eAlive = violationsC(MUTE, MUT_F.slots, WANT_C.c_direct);
+    if (eAlive.length) return { ok: false, detail: '★MUT-E 가 프리미엄까지 죽였다 — 적재 지점이 2곳이라는 분모가 틀렸다: ' + eAlive.join(' / ') };
+    msg.push('MUT-E 적발 ' + e.length + '건(무료만 · 프리미엄 4슬롯 생존)');
+    const f = violationsC(MUTF, MUT_F.slots, WANT_C.c_direct);
+    if (f.length !== MUT_F.slots.length)
+      return { ok: false, detail: '★MUT-F(빌더 적재 제거) 적발 ' + f.length + '/' + MUT_F.slots.length + ' — ★재시도 2슬롯이 빠졌다면 재시도 경로가 감시되지 않는 것이다: ' + f.join(' / ') };
+    // ★비대칭 ②: 무료는 **다른 적재 지점**이므로 살아 있어야 한다.
+    const fAlive = violationsC(MUTF, ['naming_company'], WANT_C.c_direct);
+    if (fAlive.length) return { ok: false, detail: '★MUT-F 가 무료까지 죽였다 — 적재 지점이 2곳이라는 분모가 틀렸다: ' + fAlive.join(' / ') };
+    msg.push('MUT-F 적발 ' + f.length + '건(★재시도 2슬롯 포함 · 무료 생존 — 적재 지점 2곳 독립 확인)');
+    return { ok: true, detail: msg.join(' · ') };
+  });
+
+  check('B-21', '★긍정 짝 — **무변경** 사본에서는 파 ⓒ 위반이 0 이다 (B-20 이 항상-적발인 위약 차단)', () => {
+    if (!CTLC) return { ok: false, detail: '★대조 사본 미구동 — 판정 불가' };
+    if (CTLC.errs.length) return { ok: false, detail: '★대조 사본 구동 실패: ' + CTLC.errs.join(' / ') };
+    const bad = violationsC(CTLC, WAVE_C_SLOTS, WANT_C.c_direct);
+    return { ok: bad.length === 0, detail: bad.length ? '★무변경본에서도 ' + bad.length + '건 잡힌다 — B-20 은 위약이다: ' + bad.join(' / ') : '무변경본 위반 0' };
   });
 
   done();

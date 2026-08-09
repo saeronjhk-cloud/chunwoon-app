@@ -1006,6 +1006,16 @@ const NT_VALUE_OF = Object.freeze({
    *   ★`hourIdx` 는 시주의 지지 인덱스와 같다(`recompute` 가 `pill(hourStem, hourIdx)`).
    */
   hourBranch: (r) => ((r.pillars && r.pillars.hour) ? HOUR_BRANCH_LABELS[r.pillars.hour.branch] : undefined),
+  // ── ★v7.79 파 ⓒ — naming_company(3) 「대표(CEO) 원국」 ──────────────────────
+  //   ★산출식은 1인 상품과 **완전히 같다**. 접두사만 다르다(계약 §2-2·§3).
+  //     ⟹ 사본을 만들지 않고 **위 산출기에 그대로 위임**한다. 값이 갈릴 표면이 0이다
+  //       (결정 99 「사본은 반드시 갈린다」). 게이트 D-2·D-3·E-2·E-3 이 위임을 전수로 못박는다.
+  //   ★★`ceoIlgan` 도 **한자**다. `r.ilgan`(한글 `계`)을 쓰면 프롬프트의 일간 표기가
+  //     통째로 달라진다 — 파 ⓐ 가 이미 다룬 함정이며, 위임이 그 함정을 자동으로 피한다.
+  ceoPillar: (r) => NT_VALUE_OF.pillar(r),
+  ceoIlgan: (r) => NT_VALUE_OF.ilgan(r),
+  ceoIlganElement: (r) => NT_VALUE_OF.ilganElement(r),
+  ceoLacking: (r) => NT_VALUE_OF.lacking(r),
 });
 
 /**
@@ -1060,17 +1070,72 @@ const DAILY_CTX_KEYS = Object.freeze({
  *   ★이 목록에 없는 키의 `undefined`/`''` 는 종전대로 **렌더 실패 = 전건 폐기**다.
  */
 const DAILY_OMITTABLE_KEYS = Object.freeze(['hourBranch']);
+/**
+ * ★v7.79 파 ⓒ — 회사명 작명 계열. 값 출처는 대표(CEO) 1인의 생년월일이다.
+ *   ★`naming_company_premium_2` 는 프롬프트가 `ceoPillar`·`ceoIlgan` **2키만** 보간한다
+ *     (`api/fortune.js` 의 `naming_company_premium_2` 분기 — `사장 사주: ${c.ceoPillar} /
+ *      일간 ${c.ceoIlgan||''}`). 계약 §3 표와 일치하며, 게이트 C-3b 가 프롬프트 소스에서
+ *     `ceo*` 보간 키를 **직접 세어** 이 표와 대조한다(계약도 틀릴 수 있다 — 파 ⓑ 에서
+ *     실제로 계약 §6 이 틀렸다).
+ *   ★클라는 premium_2 에도 `ceoIlganElement`·`ceoLacking` 을 싣지만(공용 빌더
+ *     `_buildNamingContext`) 서버가 안 읽으므로 교체 표에 넣지 않는다. 여기 없는 키는
+ *     어떤 경로로도 서버가 손대지 않는다 — 명시 경계다(파 ⓑ `dream_premium_2` 와 같은 규약).
+ */
+const COMPANY_CTX_KEYS = Object.freeze({
+  naming_company: Object.freeze(['ceoPillar', 'ceoIlgan', 'ceoIlganElement', 'ceoLacking']),
+  naming_company_premium_1: Object.freeze(['ceoPillar', 'ceoIlgan', 'ceoIlganElement', 'ceoLacking']),
+  naming_company_premium_2: Object.freeze(['ceoPillar', 'ceoIlgan']),
+});
 /** 클라이언트가 실어야 하는 생년월일 원본 키 (계약 §2-1). `compatPersonInput(ctx,'')` 가 읽는 6키. */
 const PERSON_BIRTH_KEYS = Object.freeze(['cal', 'y', 'm', 'd', 'h', 'leap']);
+/**
+ * ★v7.79 파 ⓒ — 회사 상품의 생년월일 원본 키 (계약 §2-2). 접두사 `ceo`.
+ *   ★계약 §2-3 — **명시 리터럴**이다. `'ceo' + X` 문자열 조립을 만들지 않는다
+ *     (I-61: 뮤턴트 앵커가 중복되면 그 뮤턴트가 조용히 죽는다).
+ */
+const CEO_BIRTH_KEYS = Object.freeze(['ceoCal', 'ceoY', 'ceoM', 'ceoD', 'ceoH', 'ceoLeap']);
+
+/**
+ * ★★계약 §2-2 — `ceo` 접두 6키를 recompute 입력으로 환원한다.
+ *
+ * 【판독기를 새로 만들지 않는다 — 결정 99】
+ *   접두사만 다를 뿐 의미는 계약 §2-1 의 6키와 **완전히 같다**. 그래서 이 함수는
+ *   판독 로직을 한 줄도 갖지 않고, **키 이름만 무접두로 사상(map)한 그림자 객체**를
+ *   만들어 파 ⓐ·ⓑ 가 쓰는 `compatPersonInput(ctx, '')` 에 **그대로 넘긴다**.
+ *   ⟹ 정수 정규화(`numOrNull`) · 월일 범위 · `calType` 정규화 · `isLeap` · 시진 클램프가
+ *     전부 **한 벌**이다. 게이트 N-1 이 「ceo 판독 == 무접두 판독」을 7종 입력으로 못박는다.
+ *
+ * ★★`namingCEOBirth` 는 **양력 전용 UI** 라 클라가 `ceoCal:'solar'`·`ceoLeap:false` 를
+ *   상수로 싣는다(계약 §2-2). 그래도 **서버는 그 값을 전제로 삼지 않는다** — 위 위임이
+ *   `ceoCal==='lunar'` 를 정상 존중하고 규격 밖은 `solar` 로 정규화한다. 나중에 음력 UI 가
+ *   생겨도 안 깨진다(게이트 L-3c 가 solar/lunar 산출이 실제로 갈리는지 실측한다).
+ *
+ * ★키 이름은 **리터럴**이다(계약 §2-3). 조립하지 않는다.
+ * @returns {{input:object}|{missing:true}|{bad:string}}
+ */
+function ceoBirthInput(ctx) {
+  const has = Object.prototype.hasOwnProperty;
+  const shadow = {};
+  if (has.call(ctx, 'ceoCal')) shadow.cal = ctx['ceoCal'];
+  if (has.call(ctx, 'ceoY')) shadow.y = ctx['ceoY'];
+  if (has.call(ctx, 'ceoM')) shadow.m = ctx['ceoM'];
+  if (has.call(ctx, 'ceoD')) shadow.d = ctx['ceoD'];
+  if (has.call(ctx, 'ceoH')) shadow.h = ctx['ceoH'];
+  if (has.call(ctx, 'ceoLeap')) shadow.leap = ctx['ceoLeap'];
+  return compatPersonInput(shadow, '');
+}
 
 /**
  * ★1인 상품 공용 가드 — naming/tarot 계열의 단일 판정점.
  * @param {object} ctx  클라이언트가 보낸 context
  * @param {string[]} keys 이 상품에서 교체할 §3 키 목록
  * @param {string} engineTag metrics.engine 라벨
- * @param {{omittable?:string[]}} [opts] ★`omittable` — 산출기가 `undefined` 를 주면
- *        「그 키는 **없는 것이 정답**」인 키(계약 §5-2 `hourBranch`). 그 경우 렌더 실패로
- *        보지 않고 키를 **삭제**한다. 넘기지 않으면 v7.79 파 ⓐ 와 **동작이 동일**하다.
+ * @param {{omittable?:string[], readBirth?:function}} [opts]
+ *        ★`omittable` — 산출기가 `undefined` 를 주면 「그 키는 **없는 것이 정답**」인
+ *        키(계약 §5-2 `hourBranch`). 그 경우 렌더 실패로 보지 않고 키를 **삭제**한다.
+ *        ★`readBirth` — 생년월일 원본 키의 **이름만** 다른 상품군을 위한 판독 어댑터
+ *        (v7.79 파 ⓒ 의 `ceo` 접두 6키). 반환 규약은 `compatPersonInput` 과 같다.
+ *        ★넘기지 않으면 v7.79 파 ⓐ·ⓑ 와 **동작이 동일**하다.
  * @returns {{applied:boolean, context:object, metrics:object}}
  *   ★`applied` 는 「정규화를 수행했다」는 뜻이며 **차단 판정에 쓰지 않는다**(400 금지).
  */
@@ -1097,7 +1162,10 @@ function guardPersonContext(ctx, keys, engineTag, opts) {
   const out = Object.assign({}, ctx);
 
   // ── ① 6키 판독 — ★`compatPersonInput(ctx, '')` 재사용 (계약 §2-1) ──────────
-  const got = compatPersonInput(ctx, '');
+  //   ★파 ⓒ(회사 상품)만 `readBirth` 로 **키 이름 사상**을 끼운다. 그 어댑터도 결국
+  //     같은 `compatPersonInput` 을 부르므로 판독 로직은 여전히 **한 벌**이다(결정 99).
+  const readBirth = (opts && typeof opts.readBirth === 'function') ? opts.readBirth : null;
+  const got = readBirth ? readBirth(ctx) : compatPersonInput(ctx, '');
   if (got.missing) {
     metrics.applied = true; metrics.mode = 'legacy'; metrics.reason = 'NO_BIRTH_KEYS';
     return { applied: true, context: out, metrics };
@@ -1169,10 +1237,20 @@ function guardDailyContext(ctx, type) {
     { omittable: DAILY_OMITTABLE_KEYS });
 }
 
+/**
+ * ★v7.79 파 ⓒ — 회사명 작명(`naming_company`·`naming_company_premium_1/2`) 가드.
+ *   ★`ceo` 접두 6키(계약 §2-2)라 **판독기만** 어댑터로 바꾼다. 나머지(재유도·폐기·
+ *     교체·관측)는 파 ⓐ·ⓑ 와 **완전히 같은 경로**를 탄다 — 새 설계를 만들지 않는다.
+ */
+function guardCompanyContext(ctx, type) {
+  return guardPersonContext(ctx, COMPANY_CTX_KEYS[type], 'ctxguard/v7.79-company',
+    { readBirth: ceoBirthInput });
+}
+
 // ★상수 정합 자기검사 — 상품별 표의 모든 키에 산출기가 있어야 한다. 없으면 그 키는
 //   조용히 무검증으로 프롬프트에 들어간다(= 관통 #4 의 재발). 로드 시점에 즉시 드러낸다.
 {
-  const tables = [NAMING_CTX_KEYS, TAROT_CTX_KEYS, DREAM_CTX_KEYS, DAILY_CTX_KEYS];
+  const tables = [NAMING_CTX_KEYS, TAROT_CTX_KEYS, DREAM_CTX_KEYS, DAILY_CTX_KEYS, COMPANY_CTX_KEYS];
   const uncovered = [];
   for (const t of tables) for (const ty of Object.keys(t)) {
     for (const k of t[ty]) if (typeof NT_VALUE_OF[k] !== 'function') uncovered.push(ty + '.' + k);
@@ -1196,6 +1274,8 @@ module.exports = {
   // ★v7.79 파 ⓑ — dream(3)·daily_message 가드
   guardDreamContext, guardDailyContext, elExtremes,
   DREAM_CTX_KEYS, DAILY_CTX_KEYS, DAILY_OMITTABLE_KEYS, HOUR_BRANCH_LABELS,
+  // ★v7.79 파 ⓒ — naming_company(3) 가드 (무가드 17종의 마지막)
+  guardCompanyContext, ceoBirthInput, COMPANY_CTX_KEYS, CEO_BIRTH_KEYS,
   // ★v7.75 관통 #9 — tojeong 가드
   guardTojeongContext, tojeongBirthInput, tojeongDerive,
   TOJEONG_REPLACE_KEYS, TOJEONG_BIRTH_KEYS,

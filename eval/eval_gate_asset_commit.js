@@ -104,6 +104,10 @@ const REQUIRED = Object.freeze([
   //   ★계약 §5 의 함정 3개(`weakElement`≠`lacking` 전수 대조 · `hourBranch` 키 부재 ·
   //     `birth` 양력 변환)를 이 게이트만 본다. 미커밋이면 그 셋이 통째로 무감시다.
   'eval/eval_dream_daily_guard.js',
+  // ★v7.79 파 ⓒ — naming_company(3) 대표 원국 재유도 축 (무가드 17종의 마지막).
+  //   ★`ceo` 접두 6키 판독기가 파 ⓐ·ⓑ 와 **같은 함수**로 환원되는지(N-1)와
+  //     `ceoIlgan` **한자** 10천간 전수(E-1)를 이 게이트만 본다. 미커밋이면 통째로 무감시다.
+  'eval/eval_naming_company_guard.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',

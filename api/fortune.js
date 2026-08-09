@@ -1398,8 +1398,11 @@ export default async function handler(req, res) {
     //   ★`cwCompatFlatten` 은 범용 텍스트 평탄화이며 **이름을 바꾸지 않는다** —
     //     `eval_compat_guard.js` 와 뮤테이션 M19/ME1 이 이 식별자를 앵커로 쓴다(계약 §6 금지 ③).
     //   ★400 을 내지 않는다(관통 #8). 6키가 없으면 `mode:'legacy'` 로 통과시킨다.
-    //   ★★`dream`·`daily_message`·`naming_company` 는 **이번 파 밖**이다(계약 §9 ⓑ·ⓒ).
-    //     여기에 성급히 추가하지 말 것 — 그 상품들의 §3 키 형식은 계약 §5 에서 아직 미확정이다.
+    //   ★★`dream`·`daily_message`(파 ⓑ) · `naming_company`(파 ⓒ)는 **이 블록의 대상이
+    //     아니다.** 여기에 추가하지 말 것 — 각자 아래의 **별도 블록**에서 닫혔다.
+    //   ★주석에 다른 블록의 type 집합 상수 **이름을 쓰지 말 것**: 그 이름을 앵커로 삼는
+    //     게이트(`eval_dream_daily_guard.js` O-1 등)가 이 주석을 블록 시작으로 오인해
+    //     「2층이 1층보다 먼저」로 오적발한다(이번 파에서 실제로 겪었다).
     const CW_NAMING_TYPES = ['naming', 'naming_premium_1', 'naming_premium_2', 'naming_nickname'];
     const CW_TAROT_TYPES = ['tarot', 'tarot_premium_1', 'tarot_premium_2'];
     const cwNtFamily = CW_NAMING_TYPES.indexOf(type) !== -1 ? 'naming'
@@ -1462,8 +1465,9 @@ export default async function handler(req, res) {
     //   ★★계약 §5 의 함정 3개는 전부 `ctxguard.js` 의 `NT_VALUE_OF` 주석에 적어 두었다:
     //     ① `weakElement != domLack().lacking`  ② `hourBranch` 는 시각 미상이면 **키 삭제**
     //     ③ `birth` 는 **양력 변환 후**(원본 y/m/d 로 찍으면 형식이 깨진다)
-    //   ★★`naming_company`(3)는 **이번 파 밖**이다(계약 §9 ⓒ). 여기 추가하지 말 것 —
-    //     `ceo*` 접두 6키라 판독기가 다르다.
+    //   ★★`naming_company`(3)는 **이 블록의 대상이 아니다**. 여기 추가하지 말 것 —
+    //     `ceo*` 접두 6키라 판독기 어댑터가 다르다. v7.79 파 ⓒ 가 **아래 별도 블록**에서
+    //     닫았다(상수 이름은 적지 않는다 — 게이트 앵커를 가로채기 때문이다).
     const CW_DREAM_TYPES = ['dream', 'dream_premium_1', 'dream_premium_2'];
     const CW_DAILY_TYPES = ['daily_message'];
     const cwDdFamily = CW_DREAM_TYPES.indexOf(type) !== -1 ? 'dream'
@@ -1517,6 +1521,74 @@ export default async function handler(req, res) {
             ? { layer1: true, mode: cwDdM.mode, reason: cwDdM.reason,
                 replaced: cwDdM.replaced, discarded: cwDdM.discarded, diffs: cwDdM.diffs }
             : { layer1: false, reason: cwDdErr || 'GUARD_MISSING' })));
+      } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ★★v7.79 파 ⓒ — `naming_company`(3) 대표 원국 가드 (무가드 17종의 **마지막**)
+    // ══════════════════════════════════════════════════════════════════════
+    //   【무엇을 닫는가 — 계약 v7.79 §0 · §9 파 ⓒ】 이 3종도 파 ⓐ·ⓑ 이전과 **같은 상태**였다:
+    //     `CW_ENGINE_TYPES`·`CW_COMPAT_TYPES`·`CW_TOJEONG_TYPES`·`CW_NAMING_TYPES`·
+    //     `CW_TAROT_TYPES`·`CW_DREAM_TYPES`·`CW_DAILY_TYPES` 어디에도 없어 **1층도 2층도
+    //     안 돌았다**. ⟹ 클라가 보낸 `ceoPillar`·`ceoIlgan`·`ceoIlganElement`·`ceoLacking`
+    //     이 무검증으로 프롬프트에 갔다(수리 전 실측: 위조 4기둥 `갑자 갑자 갑자 갑자` 가
+    //     **3종 전건에서 200 으로 프롬프트까지 도달** — `eval/eval_naming_company_guard.js` MAIN-1).
+    //
+    //   【구조 — 파 ⓐ·ⓑ(v7.79)·tojeong(v7.75)과 **동일**. 새로 설계하지 않았다】
+    //     1층 `guardCompanyContext` : `ceo` 접두 6키로 원국을 **재유도**해 교체
+    //     2층 `cwCompatFlatten`     : 엔진 유무와 **무관하게** 도는 평탄화
+    //   ★1층이 2층보다 **먼저** 돈다(계약 §6 금지 ④) · `cwCompatFlatten` 이름 유지(금지 ③)
+    //   ★400 을 내지 않는다(금지 ①) · 검증 불가 시 **폐기**(금지 ② · M16 회귀 방지)
+    //
+    //   ★★파 ⓒ 고유의 함정 2개는 `ctxguard.js` 에 적어 두었다:
+    //     ① `ceoIlgan` 은 **한자**다(`r.ilgan` 은 한글) — 산출기를 파 ⓐ 의 `ilgan` 에 **위임**해
+    //        사본을 만들지 않았다(게이트 E-1·E-2 가 10천간 전수로 못박는다).
+    //     ② `namingCEOBirth` 는 **양력 전용 UI** 라 클라가 `ceoCal:'solar'`·`ceoLeap:false` 를
+    //        상수로 싣지만, **서버는 그 값을 전제로 삼지 않는다**(게이트 L-3c).
+    //
+    //   【2층 길이 상한 — ★파 ⓑ 의 `story` 와 **다른 판단**을 한 자리다】
+    //     파 ⓑ 는 `story`(꿈 줄거리)를 상한에서 뺐다 — 자유 서술이 상품 기능인데 상한이
+    //     그것을 말없이 잘랐기 때문이다(위 :1069 의 기존 정책). ★여기는 그 상황이 **아니다**:
+    //       · `industry`(칩 · `COMPANY_INDUSTRIES` 폐쇄 어휘) · `market`(칩 3종을 표로 사상) ·
+    //         `companyRegion`(`<select>` 폐쇄 목록 · index.html:704) — **자유 입력이 아니다**
+    //       · `bizModel`·`bizKeyword` — 자유 입력이지만 `<input maxlength="40">`
+    //         (index.html:687·691) 이라 **400자 상한이 정상 입력에 절대 닿지 않는다**
+    //     ⟹ 상한이 아무것도 자르지 않으므로 `noLenCap` 면제를 두지 않는다. 그 판단을
+    //       게이트 P-5 가 **성질 2개**(㉠ UI 상한 이내 무손실 ㉡ ★개행 제거 유지)로 고정해,
+    //       `bizModel` 이 자유 서술로 바뀌면 붉어져 의식적인 결정을 강제한다.
+    const CW_COMPANY_TYPES = ['naming_company', 'naming_company_premium_1', 'naming_company_premium_2'];
+    if (CW_COMPANY_TYPES.indexOf(type) !== -1 && context && typeof context === 'object' && !Array.isArray(context)) {
+      // ── 1층 : `ceo` 접두 6키(`ceoCal`·`ceoY`·`ceoM`·`ceoD`·`ceoH`·`ceoLeap`)로 재유도 ──
+      let cwCoM = null, cwCoErr = null;
+      {
+        const mod = await cwCtxguard();
+        const fn = mod && mod.guardCompanyContext;
+        if (typeof fn === 'function') {
+          try {
+            const g = fn(context, type);
+            if (g && g.applied && g.context) { context = g.context; cwCoM = g.metrics; }
+            else cwCoErr = (g && g.metrics && g.metrics.reason) || 'NOT_APPLIED';
+          } catch (e) { cwCoErr = 'THREW'; }
+        } else cwCoErr = 'ENGINE_UNAVAILABLE';
+      }
+      // ── 2층 : 엔진 유무와 **무관하게** 항상 도는 평탄화 (§3 밖 전 문자열) ──
+      const cwCoFlattened = [];
+      for (const k of Object.keys(context)) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+        if (typeof context[k] !== 'string') continue;
+        const before = context[k];
+        const after = cwCompatFlatten(before);
+        if (after !== before) { context[k] = after; cwCoFlattened.push(k); }
+      }
+      // ★관측 — 차단하지 않는 방어는 로그가 유일한 관측점이다(v7.71-b 관통 #5 의 교훈).
+      //   게이트 `eval_naming_company_guard.js` 는 **이 로그와 프롬프트 바이트**로 판정한다(결정 84).
+      try {
+        console.log('[cw:ctxguard]', JSON.stringify(Object.assign(
+          { type, company: true, layer2: true, flattened: cwCoFlattened },
+          cwCoM
+            ? { layer1: true, mode: cwCoM.mode, reason: cwCoM.reason,
+                replaced: cwCoM.replaced, discarded: cwCoM.discarded, diffs: cwCoM.diffs }
+            : { layer1: false, reason: cwCoErr || 'GUARD_MISSING' })));
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
     }
 

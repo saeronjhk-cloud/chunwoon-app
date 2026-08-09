@@ -7310,7 +7310,16 @@ async function analyzeNaming(){
     if(ceo){
       info.ceoPillars=ceo.pillars;info.ceoEls=ceo.els;
       info.ceoIlgan=ceo.ilgan;info.ceoIlganElement=ceo.ilganElement;info.ceoLacking=ceo.lacking;
-      ctx={industry,bizModel,bizKeyword:bizKeyword||'없음',market:marketName,companyRegion:companyRegion||'미선택',ceoName:ceoName||'미입력',ceoPillar:ceo.pillarStr,ceoIlgan:ceo.ilgan,ceoIlganElement:ceo.ilganElement,ceoLacking:ceo.lacking};
+      // ★v7.79 계약 §2-2 (파 ⓒ) — 대표(CEO) 생년월일 **원본 6키**. 접두는 `ceo`.
+      //   ★`namingCEOBirth` 는 **양력 전용 UI** 다(`CW_BIRTH_UI.namingCEOBirth={cal:null}`)
+      //     ⟹ `'solar'`·`false` 를 **상수로** 넘긴다(계약 §2-2). 음력 UI 가 생기면 그때 바꾼다.
+      //   ★산출식은 `cwBirthKeys` 한 곳뿐이다(결정 99·113) — 여기서 사본을 만들지 않는다.
+      //   ★`info` 에 실어 **프리미엄으로 운반**한다(`_buildNamingContext`). 파 ⓑ 와 같은 형태 —
+      //     결제 사이에 폼을 지워도 무료/유료가 갈리지 않는다.
+      const _bkCeo=cwBirthKeys('solar',ceo.y,ceo.m,ceo.d,ceo.h,false)||{};
+      info.ceoCal=_bkCeo.cal;info.ceoY=_bkCeo.y;info.ceoM=_bkCeo.m;info.ceoD=_bkCeo.d;info.ceoH=_bkCeo.h;info.ceoLeap=_bkCeo.leap;
+      ctx={industry,bizModel,bizKeyword:bizKeyword||'없음',market:marketName,companyRegion:companyRegion||'미선택',ceoName:ceoName||'미입력',ceoPillar:ceo.pillarStr,ceoIlgan:ceo.ilgan,ceoIlganElement:ceo.ilganElement,ceoLacking:ceo.lacking,
+        ceoCal:_bkCeo.cal,ceoY:_bkCeo.y,ceoM:_bkCeo.m,ceoD:_bkCeo.d,ceoH:_bkCeo.h,ceoLeap:_bkCeo.leap};
     } else {
       ctx={industry,bizModel,bizKeyword:bizKeyword||'없음',market:marketName,companyRegion:companyRegion||'미선택',ceoName:ceoName||'미입력',ceoPillar:'',ceoIlgan:'',ceoIlganElement:'',ceoLacking:''};
     }
@@ -7921,11 +7930,20 @@ function _buildNamingContext(info){
   // 회사명: 사장 사주 + 업종 + 등록 지역 컨텍스트
   if(info.ntype==='company'){
     const ceoPillar=info.ceoPillars?`${HS[info.ceoPillars.year.stem]}${EB[info.ceoPillars.year.branch]} ${HS[info.ceoPillars.month.stem]}${EB[info.ceoPillars.month.branch]} ${HS[info.ceoPillars.day.stem]}${EB[info.ceoPillars.day.branch]} ${info.ceoPillars.hour?HS[info.ceoPillars.hour.stem]+EB[info.ceoPillars.hour.branch]:'(시간 모름)'}`:'';
+    // ★v7.79 계약 §2-2 (파 ⓒ) — 프리미엄 회사명(1·2단계 2회 호출 · ★재시도 경로 포함)도 같은 6키를 싣는다.
+    //   ★결정 90 — 「무료만 고치면 유료가 남는다」. 무료 ctx 와 **같은 출처**(`info`)에서 싣는다.
+    //   ★`retryNamingPremiumAPI()` 가 이 빌더를 그대로 쓰므로 payload 사이트는 4곳이다
+    //     (최초 api1·api2 + 재시도 api1·api2). 여기 한 곳을 빠뜨리면 **결제 후 1회 실패한
+    //     사용자만** 조용히 `mode:'legacy'` 로 떨어진다.
+    //   ★CEO 미입력이면 `info.ceoY` 가 없어 `cwBirthKeys` 가 `null` → 6키 전부 `undefined` →
+    //     `JSON.stringify` 가 통째로 떨어뜨린다(전부 또는 전무 · 계약 §5-4).
+    const _bkCeoP=cwBirthKeys('solar',info.ceoY,info.ceoM,info.ceoD,info.ceoH,false)||{};
     return {
       industry:info.industry||'',bizModel:info.bizModel||'',bizKeyword:info.bizKeyword||'없음',market:info.market||'',
       companyRegion:info.companyRegion||'미선택',ceoName:info.ceoName||'미입력',
       ceoPillar:ceoPillar,
-      ceoIlgan:info.ceoIlgan||'',ceoIlganElement:info.ceoIlganElement||'',ceoLacking:info.ceoLacking||''
+      ceoIlgan:info.ceoIlgan||'',ceoIlganElement:info.ceoIlganElement||'',ceoLacking:info.ceoLacking||'',
+      ceoCal:_bkCeoP.cal,ceoY:_bkCeoP.y,ceoM:_bkCeoP.m,ceoD:_bkCeoP.d,ceoH:_bkCeoP.h,ceoLeap:_bkCeoP.leap
     };
   }
   // 제품명: 카테고리 + 상표 등록 검토 범위

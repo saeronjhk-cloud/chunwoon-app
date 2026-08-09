@@ -299,8 +299,8 @@
     },
     "eval_gate_asset_commit.js": {
       "checks_min": 11,
-      "sha256": "defcf213cc976dba9aa36f9d9f03a50706450a0e327f1532a5f1e2a37e70045b",
-      "bytes_min": 12100
+      "sha256": "f274077031954c7536b88ef76f805e1888d3762102322c4c80180df93fd5a72a",
+      "bytes_min": 12319
     },
     "eval_lunar_ui_dom.js": {
       "checks_min": 21,
@@ -338,9 +338,9 @@
       "bytes_min": 18163
     },
     "eval_ctx_birth_keys.js": {
-      "checks_min": 18,
-      "sha256": "2011a1a54848be1ed83f1d1e65b49ef308fd9f6fe3b401b81548a58481c49667",
-      "bytes_min": 31269
+      "checks_min": 24,
+      "sha256": "6f35d9b811f45d19620cd0736a62dadd37c0c952a81f8161033f988540e84547",
+      "bytes_min": 43106
     },
     "eval_naming_tarot_guard.js": {
       "checks_min": 39,
@@ -351,9 +351,14 @@
       "checks_min": 48,
       "sha256": "ef96a43429f71a66446b5c6cd32943a26f8fc0abae06c740ebf0fbcbc005a61e",
       "bytes_min": 39662
+    },
+    "eval_naming_company_guard.js": {
+      "checks_min": 42,
+      "sha256": "7bc5c78644e132af8d1186c9ea5c1f11e9bf876ed1d2d05452d30183a084e144",
+      "bytes_min": 39877
     }
   },
-  "generated_at": "2026-08-09T11:29:50.925Z",
+  "generated_at": "2026-08-09T12:05:27.355Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",
@@ -361,8 +366,8 @@
   },
   "sources": {
     "api/fortune.js": {
-      "sha256": "f79db061e8f82820c513e23f880150e52df63757ecebc6bd304eca10f505171c",
-      "bytes_min": 109194,
+      "sha256": "e8cd43f70b2c31b6ef3b5bb51585f319c7f80d29670572a6de1df068dd551374",
+      "bytes_min": 112746,
       "root": "front"
     },
     "api/_engine/package.json": {
@@ -376,8 +381,8 @@
       "root": "front"
     },
     "api/_engine/ctxguard.js": {
-      "sha256": "d2bdb90e67a2d2c0dedfd3333a8556c10f340c2b1c80070969dc532c2b0ca25b",
-      "bytes_min": 42600,
+      "sha256": "e95d510b24a6e2061ebc2daedd1394387f56aa1643f8cf720d84d3ef8fbe6454",
+      "bytes_min": 45943,
       "root": "front"
     },
     "api/_engine/recompute.js": {
