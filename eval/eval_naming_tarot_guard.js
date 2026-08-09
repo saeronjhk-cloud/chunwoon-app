@@ -91,7 +91,7 @@ function done() {
 }
 
 // ── SELF-1 : 외부 pin 자기검사 ──────────────────────────────────────────────
-const EXPECTED_TOTAL_MIN = 51;
+const EXPECTED_TOTAL_MIN = 57;
 check('SELF-1', '★_gate_pins.json 자기검사 — 자기 sha256 · 검사 수 하한', () => {
   const pinPath = path.join(__dirname, '_gate_pins.json');
   if (!fs.existsSync(pinPath)) return { ok: false, detail: '★pin 표 부재 — 판정 불가' };
@@ -442,6 +442,182 @@ check('T-8', '★★길이 상한 판단 — 카드 어휘는 **앱이 만드는
   return { ok: ctrl.length === 0 && maxLen < 400 && VOCAB.strings.length >= 90,
     detail: ctrl.length ? '★평탄화가 바꿔 버리는 어휘 ' + ctrl.length + '건: ' + ctrl.slice(0, 3).map(JSON.stringify).join(' | ')
       : '폐쇄 어휘 ' + VOCAB.strings.length + '항목(메이저 22×4 + 수트 4×2 + 코트 4) · 최장 ' + maxLen + '자 < 400 ⟹ 상한이 아무것도 자르지 않는다' };
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// N — ★★I-84 : 서버가 **읽는** 카드 키 ↔ 클라가 **싣는** 카드 키
+// ══════════════════════════════════════════════════════════════════════════
+//   【무엇을 닫는가 — 프로덕션 실측】
+//     서버 프롬프트는 카드 이름을 **대체값 없는 단독 보간**으로 읽는데, 클라 카드
+//     원소는 표시용 이름을 다른 키에 실었다. 그래서 타로 도입 이후 프로덕션
+//     프롬프트가 실제로 이렇게 나갔다:
+//         [과거] undefined(정방향) — 키워드: 시작·자유·순수·모험
+//     ⟹ LLM 이 **키워드는 받는데 카드 이름을 못 받는다**. v7.77 I-68·v7.78 I-70 과
+//       같은 계열(표면은 정상 · 값만 죽는다)이다. 최상위 표면 게이트로는 안 잡힌다 —
+//       `cards` 라는 키 자체는 멀쩡히 존재하고 **배열 안쪽**에서만 어긋나기 때문이다.
+//   【판정 주체 — 결정 84】 로그가 아니라 **프롬프트 바이트**다. N-3 은 클라 소스가
+//     **실제로 만드는 카드 객체**를 그대로 handler 에 먹여 프롬프트를 본다.
+//   【손목록 금지 — 결정 99】 서버가 읽는 키도, 클라가 싣는 키도 **소스에서 뽑는다**.
+//     나중에 서버가 카드 원소에서 키를 하나 더 읽으면 N-0 이 자동으로 세고 N-2 가
+//     클라 제공 여부를 대조한다 — 이 파일을 손대지 않아도 적발된다.
+//   【위약 방지】 MUT-6(무변경 사본에서 무적발) · MUT-5(클라 카드에서 그 키를 다시
+//     없애면 N-3 이 적발)가 짝이다. 추출 실패·지점 0건은 전부 **판정 불가 = FAIL**.
+
+/**
+ * 서버가 카드 원소에서 읽는 키를 `api/fortune.js` **소스에서 열거**한다.
+ * 콜백 매개변수 이름조차 손으로 적지 않고 `(c.cards||[])…map(<param>` 에서 뽑는다.
+ * · `all`      — 읽는 키 전건
+ * · `unguarded`— `${<param>.X}` 단독 보간이면서 `?`·`||` 로 보호되지 **않는** 키.
+ *                값이 없으면 프롬프트에 `undefined` 가 그대로 찍히는 자리다.
+ */
+function serverCardReads() {
+  const all = new Set(), bare = new Set(), guarded = new Set();
+  const params = new Set();
+  let sites = 0;
+  for (const raw of FORTUNE_SRC.split('\n')) {
+    const code = raw.replace(/^\s*\/\/.*$/, '');           // ★주석 줄은 판독이 아니다(I-82 성질)
+    const hit = code.match(/\(\s*c\.cards\s*\|\|\s*\[\]\s*\)[^\n]*?\.map\(\s*\(?\s*([A-Za-z_$][\w$]*)/);
+    if (!hit) continue;
+    const p = hit[1];
+    params.add(p); sites++;
+    const esc = p.replace(/\$/g, '\\$');
+    let g;
+    const rAll = new RegExp('(?<![\\w$.])' + esc + '\\.([A-Za-z0-9_]+)', 'g');
+    while ((g = rAll.exec(code))) all.add(g[1]);
+    const rBare = new RegExp('\\$\\{' + esc + '\\.([A-Za-z0-9_]+)\\}', 'g');
+    while ((g = rBare.exec(code))) bare.add(g[1]);
+    const rGuard = new RegExp('(?<![\\w$.])' + esc + '\\.([A-Za-z0-9_]+)\\s*(?:\\?|\\|\\|)', 'g');
+    while ((g = rGuard.exec(code))) guarded.add(g[1]);
+  }
+  if (!sites) return { err: '카드 배열을 푸는 자리를 api/fortune.js 에서 하나도 못 찾았다 — 열거기가 죽었다' };
+  return { all: [...all].sort(), unguarded: [...bare].filter((k) => !guarded.has(k)).sort(),
+    guarded: [...guarded].sort(), sites, params: [...params] };
+}
+const SRV_CARD = serverCardReads();
+
+/** index.html 의 카드 덱 선언 구간을 **통째로 평가**해 실제 덱 배열을 얻는다. */
+function clientDecks() {
+  const s = INDEX_SRC.indexOf('const TAROT_MAJOR = [');
+  const d = INDEX_SRC.indexOf('const TAROT_DECK = [');
+  if (s === -1 || d === -1 || d < s) return { err: '카드 덱 선언 구간을 index.html 에서 못 찾았다' };
+  const open = INDEX_SRC.indexOf('[', d);
+  let depth = 0, end = -1;
+  for (let p = open; p < INDEX_SRC.length; p++) {
+    const ch = INDEX_SRC[p];
+    if (ch === '[') depth++;
+    else if (ch === ']') { depth--; if (depth === 0) { end = p + 1; break; } }
+  }
+  if (end === -1) return { err: '풀덱 선언의 닫는 대괄호를 못 찾았다' };
+  let v = null;
+  try { v = new Function(INDEX_SRC.slice(s, end) + ';\nreturn {TAROT_MAJOR,TAROT_DECK};')(); }
+  catch (e) { return { err: '덱 구간 평가 실패: ' + ((e && e.message) || String(e)) }; }
+  if (!Array.isArray(v.TAROT_MAJOR) || !Array.isArray(v.TAROT_DECK) || v.TAROT_MAJOR.length !== 22 || v.TAROT_DECK.length !== 78)
+    return { err: '덱 크기가 다르다: major=' + (v.TAROT_MAJOR || []).length + ' full=' + (v.TAROT_DECK || []).length };
+  return v;
+}
+const DECKS = clientDecks();
+
+/**
+ * 클라가 카드를 **API 형상으로 만드는 적재 지점 전수**를 js/tarot.js 에서 열거한다.
+ * 각 지점의 변환식(콜백)을 **그 파일 스코프 안에서 그대로 평가**하므로, 인라인이든
+ * 공용 헬퍼든 **구현 형태를 못박지 않는다**(결정 99·113: 사본을 하나로 묶어도 산다).
+ * 먹이는 덱과 장수는 같은 문장의 `[...<덱>]`·`slice(0,N)` 에서 읽는다 — 손목록 없음.
+ */
+function clientCardSites() {
+  if (!TAROT_SRC) return { err: 'js/tarot.js 를 읽지 못했다' };
+  if (DECKS.err) return { err: DECKS.err };
+  const out = [];
+  const rx = /(?:const|let|var)\s+cards\s*=\s*[A-Za-z_$][\w$]*\s*\.map\(/g;
+  let m;
+  while ((m = rx.exec(TAROT_SRC))) {
+    const open = TAROT_SRC.lastIndexOf('(', rx.lastIndex - 1);
+    let depth = 0, end = -1;
+    for (let p = open; p < TAROT_SRC.length; p++) {
+      const ch = TAROT_SRC[p];
+      if (ch === '(') depth++;
+      else if (ch === ')') { depth--; if (depth === 0) { end = p; break; } }
+    }
+    if (end === -1) return { err: '변환식의 닫는 괄호를 못 찾았다 (js/tarot.js 오프셋 ' + open + ')' };
+    const cb = TAROT_SRC.slice(open + 1, end);
+    const before = TAROT_SRC.slice(0, m.index);
+    const dm = [...before.matchAll(/\[\s*\.\.\.\s*([A-Za-z_$][\w$]*)\s*\]/g)].pop();
+    if (!dm) return { err: '적재 지점에 먹이는 덱(`[...<덱>]`)을 못 찾았다' };
+    const ls = before.lastIndexOf('\n', dm.index) + 1;
+    const le = TAROT_SRC.indexOf('\n', dm.index);
+    const deckLine = TAROT_SRC.slice(ls, le === -1 ? TAROT_SRC.length : le);
+    const sm = deckLine.match(/\.slice\(\s*0\s*,\s*(\d+)\s*\)/);
+    let fn = null;
+    try { fn = new Function(TAROT_SRC + '\n;return (' + cb + ');')(); }
+    catch (e) { return { err: '변환식 평가 실패: ' + ((e && e.message) || String(e)) }; }
+    if (typeof fn !== 'function') return { err: '변환식이 함수가 아니다' };
+    out.push({ line: before.split('\n').length, deck: dm[1], cap: sm ? +sm[1] : null, fn, cb });
+  }
+  if (!out.length) return { err: '카드 적재 지점을 js/tarot.js 에서 하나도 못 찾았다 — 열거기가 죽었다' };
+  return { sites: out };
+}
+const CSITES = clientCardSites();
+
+/** ★정·역방향을 교대로 강제해 두 분기를 전건 돌린다(무작위 = 재현 불가 = 판정 오염). */
+function produceCards(site, list) {
+  const orig = Math.random;
+  let i = 0;
+  Math.random = () => ((i++ % 2) ? 0.1 : 0.9);
+  try { return list.map((c, idx) => site.fn(c, idx, list)); }
+  finally { Math.random = orig; }
+}
+const has = (o, k) => o && Object.prototype.hasOwnProperty.call(o, k) && o[k] !== undefined && o[k] !== '';
+
+check('N-0', '★★서버가 카드 원소에서 읽는 키를 `api/fortune.js` **소스에서 열거**한다 (손목록 금지 · 추출 실패 = 판정 불가)', () => {
+  if (SRV_CARD.err) return { ok: false, detail: '★' + SRV_CARD.err };
+  if (SRV_CARD.sites < TAROT_TYPES.length)
+    return { ok: false, detail: '★카드 배열을 푸는 자리 ' + SRV_CARD.sites + ' < tarot ' + TAROT_TYPES.length + '종 — 덜 보고 0건' };
+  if (!SRV_CARD.all.length) return { ok: false, detail: '★읽는 키 0개 — 추출기가 죽었다' };
+  if (!SRV_CARD.unguarded.length)
+    return { ok: false, detail: '★무보호 단독 보간 0개 — 분류기가 죽었다(전부 `?`·`||` 로 보호될 리 없다)' };
+  return { ok: true, detail: SRV_CARD.sites + '분기 · 매개변수 [' + SRV_CARD.params.join(',') + '] · 읽는 키 ' + SRV_CARD.all.length
+    + '개 [' + SRV_CARD.all.join(',') + '] · ★무보호 [' + SRV_CARD.unguarded.join(',') + ']' };
+});
+
+check('N-1', '★★클라 카드 **적재 지점 전수**를 js/tarot.js 에서 열거하고 각 지점이 실제 덱으로 카드를 만든다 (분모 · 결정 105)', () => {
+  if (CSITES.err) return { ok: false, detail: '★' + CSITES.err + ' — 판정 불가' };
+  const bad = [];
+  for (const s of CSITES.sites) {
+    const deck = DECKS[s.deck];
+    if (!Array.isArray(deck)) { bad.push(':' + s.line + ' 덱 `' + s.deck + '` 미해석'); continue; }
+    if (s.cap === null) { bad.push(':' + s.line + ' 장수(`slice(0,N)`)를 못 읽었다'); continue; }
+    if (!TAROT_TYPES.some((t) => !CLIENT_CAPS.err && CLIENT_CAPS[t] === s.cap))
+      bad.push(':' + s.line + ' 장수 ' + s.cap + ' 가 어느 tarot type 상한과도 안 맞는다');
+    let made = null;
+    try { made = produceCards(s, deck); } catch (e) { bad.push(':' + s.line + ' 카드 생산 예외 ' + ((e && e.message) || e)); continue; }
+    if (made.length !== deck.length || made.some((c) => !c || typeof c !== 'object'))
+      bad.push(':' + s.line + ' 카드 객체를 못 만들었다');
+  }
+  return { ok: bad.length === 0 && CSITES.sites.length >= 2,
+    detail: bad.length ? '★' + bad.join(' / ')
+      : (CSITES.sites.length < 2 ? '★적재 지점 ' + CSITES.sites.length + ' < 2 — 지점이 사라졌다'
+        : '분모 ' + CSITES.sites.length + '곳: ' + CSITES.sites.map((s) => ':' + s.line + '(' + s.deck + ' ' + s.cap + '장)').join(' · ')) };
+});
+
+check('N-2', '★★대조 — 서버가 읽는 카드 키를 클라가 **전건 제공**한다 (무보호 보간 키는 **전 지점·전 카드**)', () => {
+  if (SRV_CARD.err) return { ok: false, detail: '★서버 판독 키 열거 실패 — 판정 불가' };
+  if (CSITES.err) return { ok: false, detail: '★클라 적재 지점 열거 실패 — 판정 불가' };
+  const made = CSITES.sites.map((s) => ({ s, cards: produceCards(s, DECKS[s.deck]) }));
+  const bad = [], table = [];
+  for (const k of SRV_CARD.all) {
+    const per = made.map((mk) => mk.cards.filter((c) => has(c, k)).length);
+    const union = per.some((n) => n > 0);
+    if (SRV_CARD.unguarded.indexOf(k) !== -1) {
+      // ★대체값이 없는 자리다 — 한 장이라도 비면 프롬프트에 `undefined` 가 찍힌다.
+      const short = made.filter((mk, i) => per[i] !== mk.cards.length);
+      if (short.length) bad.push('★무보호 `' + k + '` 미제공: ' + short.map((mk, i) => ':' + mk.s.line + ' ' + per[made.indexOf(mk)] + '/' + mk.cards.length).join(' · '));
+      table.push(k + '=' + per.map((n, i) => n + '/' + made[i].cards.length).join('|') + '(무보호)');
+    } else {
+      if (!union) bad.push('`' + k + '` 를 어느 적재 지점도 싣지 않는다 — 서버 판독이 dangling');
+      table.push(k + '=' + per.map((n, i) => n + '/' + made[i].cards.length).join('|'));
+    }
+  }
+  return { ok: bad.length === 0,
+    detail: bad.length ? '★' + bad.join(' / ') : SRV_CARD.all.length + '키 전건 제공 · ' + table.join(' ') };
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1056,6 +1232,92 @@ async function mainVerdict(handler) {
       if (l && l.cards) bad.push(t + ': ★없는 `cards` 를 서버가 만들었다(' + JSON.stringify(l.cards) + ')');
     }
     return { ok: bad.length === 0, detail: bad.length ? '★' + bad.join(' / ') : '3종 전건 200 · 프롬프트 바이트 동일 · `cards` 관측 0건' };
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // N-3 · MUT-5 · MUT-6 — ★★I-84 본체 : 클라가 **실제로 만드는 카드**의 프롬프트 도달
+  // ══════════════════════════════════════════════════════════════════════════
+  /** 타입 ↔ 적재 지점 잇기 — 손목록이 아니라 **장수**(`slice(0,N)`)로 잇는다. */
+  const siteFor = (t) => ((CSITES.err || CLIENT_CAPS.err) ? null
+    : CSITES.sites.filter((s) => s.cap === CLIENT_CAPS[t])[0] || null);
+  /** 덱에서 `kind` 를 라운드로빈해 n장 — 메이저·마이너·코트 분기를 전건 태운다. */
+  function pickByKind(deck, n) {
+    const g = new Map();
+    for (const c of deck) { const k = String(c.kind || 'major'); if (!g.has(k)) g.set(k, []); g.get(k).push(c); }
+    const gs = [...g.values()], out = [];
+    for (let i = 0; out.length < n; i++) {
+      let moved = false;
+      for (const arr of gs) { if (out.length >= n) break; if (arr[i]) { out.push(arr[i]); moved = true; } }
+      if (!moved) break;
+    }
+    return out;
+  }
+  /** 덱 원소가 스스로 들고 있는 문자열 값 전건 — 「이름이 카드 자신에게서 왔는가」의 근거. */
+  const ownStrings = (el) => Object.keys(el || {}).map((k) => el[k]).filter((v) => typeof v === 'string' && v);
+
+  /**
+   * ★I-84 본체 판정기 — 클라 적재 지점이 만든 카드를 **그대로** handler 에 먹여
+   *   ⑴ 프롬프트에 `undefined` 가 **없고** ⑵ 무보호 보간 키의 값이 **바이트 그대로
+   *   도달**하며 ⑶ 그 값이 카드마다 **다르고** ⑷ **카드 자신의 값**에서 온다는 것을 본다.
+   *   ⑶⑷ 가 없으면 상수 하나(`name:'x'`)를 박아도 통과하는 위약이 남는다(결정 103).
+   */
+  async function cardNameVerdict(handler, mutate) {
+    const bad = [], seen = [], sample = [];
+    if (SRV_CARD.err) return { bad: ['★서버 판독 키 열거 실패 — 판정 불가'], seen, sample };
+    if (CSITES.err) return { bad: ['★클라 적재 지점 열거 실패 — 판정 불가'], seen, sample };
+    for (const t of TAROT_TYPES) {
+      const site = siteFor(t);
+      if (!site) { bad.push(t + ': 적재 지점 미해석 — 판정 불가'); continue; }
+      const picked = pickByKind(DECKS[site.deck], capOf(t));
+      const made = produceCards(site, picked).map((c) => (mutate ? mutate(Object.assign({}, c)) : c));
+      const r = await runOn(handler, t, tctx(JSON.parse(JSON.stringify(made))));
+      seen.push(t);
+      if (!r.prompt) { bad.push(t + ': 프롬프트 미포착(status=' + r.res.statusCode + ')'); continue; }
+      const un = r.prompt.split('\n').filter((l) => l.indexOf('undefined') !== -1);
+      if (un.length) bad.push(t + ': ★프롬프트에 `undefined` — ' + JSON.stringify(un[0].slice(0, 60)));
+      const idx = TAROT_TYPES.indexOf(t);
+      const winSrc = renderWindow(t, picked), winMade = renderWindow(t, made);
+      if (!winSrc.length) { bad.push(t + ': 렌더 창 0장 — 검사가 공회전한다'); continue; }
+      for (const k of SRV_CARD.unguarded) {
+        const vals = [];
+        for (let i = 0; i < winMade.length; i++) {
+          const v = winMade[i][k];
+          if (typeof v !== 'string' || !v) { bad.push(t + ': 카드 ' + (i + 1) + ' 의 무보호 키 `' + k + '` 가 값이 없다'); continue; }
+          if (r.prompt.indexOf(v) === -1) bad.push(t + ': 무보호 키 `' + k + '` 값 「' + v + '」 미도달');
+          if (ownStrings(winSrc[i]).indexOf(v) === -1) bad.push(t + ': `' + k + '` 값 「' + v + '」 가 그 카드의 값이 아니다');
+          vals.push(v);
+        }
+        if (vals.length && new Set(vals).size !== vals.length)
+          bad.push(t + ': 무보호 키 `' + k + '` 가 카드마다 같은 값이다 — 상수 위약');
+      }
+      if (idx === 0 && r.prompt) sample.push(String(r.prompt.split('\n').filter((l) => /^\[/.test(l))[0] || '').slice(0, 70));
+    }
+    return { bad, seen, sample };
+  }
+
+  const nameOrig = await cardNameVerdict(H.orig, null);
+  await checkA('N-3', '★★I-84 본체 — 클라가 **실제로 만드는 카드**가 tarot 3종 프롬프트에 온전히 도달한다 (`undefined` 0 · 카드 이름 도달)', async () => {
+    const miss = TAROT_TYPES.filter((t) => nameOrig.seen.indexOf(t) === -1);
+    if (miss.length) return { ok: false, detail: '★미검사 ' + miss.join(',') + ' — 분모 미달' };
+    return { ok: nameOrig.bad.length === 0,
+      detail: nameOrig.bad.length ? '★' + nameOrig.bad.slice(0, 5).join(' / ') + (nameOrig.bad.length > 5 ? ' … 총 ' + nameOrig.bad.length + '건' : '')
+        : '분모 ' + nameOrig.seen.length + '/3 · 무보호 키 [' + SRV_CARD.unguarded.join(',') + '] 전건 도달 · 예: ' + nameOrig.sample[0] };
+  });
+
+  await checkA('MUT-5', '★★자기 뮤턴트 — 클라 카드에서 무보호 보간 키를 다시 없애면 N-3 이 **적발**한다', async () => {
+    if (SRV_CARD.err) return { ok: false, detail: '★서버 판독 키 열거 실패 — 죽은 뮤턴트는 INCONCLUSIVE' };
+    const v = await cardNameVerdict(H.orig, (c) => { for (const k of SRV_CARD.unguarded) delete c[k]; return c; });
+    const hasUndef = v.bad.some((s) => s.indexOf('`undefined`') !== -1);
+    return { ok: v.bad.length > 0 && hasUndef,
+      detail: v.bad.length ? (hasUndef ? '적발 ' + v.bad.length + '건 (예: ' + v.bad[0] + ')' : '★적발은 됐으나 `undefined` 를 못 봤다: ' + v.bad[0])
+        : '★뮤턴트가 통과했다 — 본체가 아무것도 안 보고 있다' };
+  });
+
+  await checkA('MUT-6', '★★긍정 짝 — 무변경 사본에서 N-3 이 **가짜로 붉어지지 않는다**', async () => {
+    if (typeof H.ctl !== 'function') return { ok: false, detail: '★무변경 사본 미적재 — 판정 불가' };
+    const v = await cardNameVerdict(H.ctl, null);
+    return { ok: v.bad.length === 0 && v.seen.length === TAROT_TYPES.length,
+      detail: v.bad.length ? '★무변경 사본이 붉다: ' + v.bad.slice(0, 3).join(' / ') : '3종 전건 통과' };
   });
 
   await checkA('MUT-3', '★★자기 뮤턴트 — 가드를 무력화한 사본에서 `cards` 방어(I-83·I-80)가 **적발**된다', async () => {

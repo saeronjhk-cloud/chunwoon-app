@@ -2,6 +2,19 @@
 // 의존: TAROT_MAJOR, TAROT_DECK, CELTIC_POS, TAROT_CATEGORIES, tarotSt, _collectSajuFromUI, addBotMsg, burstConfetti, showToast (index.html의 전역)
 
 // ============================================================
+//  ★I-84 — 뽑은 카드를 서버로 보낼 형상으로 만든다
+// ============================================================
+//   서버 프롬프트는 카드 이름을 `name` 으로 읽는데, 그 자리는 **대체값이 없는 단독
+//   보간**이다. 클라 카드 원소는 표시용 이름을 `n` 으로만 실었기 때문에 프롬프트가
+//   실제로는 「undefined(정방향) — 키워드: …」 로 나갔다 — LLM 이 키워드는 받고
+//   **카드 이름을 못 받는** 상태가 타로 도입 이후 계속됐다(표면은 정상 · 값만 죽음).
+//   ⟹ `n` 은 **그대로 둔다**(화면 렌더가 쓴다). `name` 을 **더하기만** 한다.
+//   ★무료·프리미엄 두 적재 지점이 같은 변환을 하므로 여기 하나로 묶는다(사본 0).
+function _tarotCardForApi(c, extra){
+  return Object.assign({}, c, {name: c.n}, extra || {});
+}
+
+// ============================================================
 //  타로 무료 — 입력 검증 + 메이저 3장 + 정/역방향 결정
 // ============================================================
 async function analyzeTarot(){
@@ -15,7 +28,7 @@ async function analyzeTarot(){
   }
   // 메이저 22장 중 3장 무작위 + 정/역방향 (45% 역방향)
   const shuffled = [...TAROT_MAJOR].sort(()=>Math.random()-.5).slice(0,3);
-  const cards = shuffled.map(c => ({...c, reversed: Math.random() < 0.45, kind:'major'}));
+  const cards = shuffled.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45, kind:'major'}));
   tarotSt.cards = cards;
   tarotSt.rev = 0;
   tarotSt.category = category;
@@ -215,7 +228,7 @@ async function unlockTarotPremium(){
 
   // 78장 풀덱에서 10장 무작위 + 정/역방향
   const sh = [...TAROT_DECK].sort(()=>Math.random()-.5).slice(0,10);
-  const cards = sh.map(c => ({...c, reversed: Math.random() < 0.45}));
+  const cards = sh.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45}));
   info.premCards = cards;
 
   const ctx = {
