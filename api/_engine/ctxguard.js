@@ -869,8 +869,189 @@ function guardTojeongContext(ctx) {
   return { applied: true, context: out, metrics };
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// ★★v7.79 파 ⓐ — `naming`(3)·`naming_nickname`·`tarot`(3) 원국 서버 재유도
+// ══════════════════════════════════════════════════════════════════════════
+//   【무엇을 닫는가 — 계약 v7.79 §0】 `saju`·`compat`·`tojeong` 밖 상품은 **클라가
+//     산출한 원국을 서버가 무검증으로 프롬프트에 보간**한다. v7.78 실측 54/137.
+//     이번 파는 그중 UI 가 생년월일을 직접 받는 7종을 닫는다(계약 §9 파 ⓐ).
+//
+//   【설계 — 새로 만들지 않는다】 v7.75 `guardTojeongContext` 를 본으로 삼는다.
+//     · 판독기는 **`compatPersonInput(ctx, '')`** 를 그대로 쓴다. 그 함수의 키 조립이
+//       `'y'+i` 이므로 `i=''` 이면 정확히 계약 §2-1 의 6키
+//       (`cal`·`y`·`m`·`d`·`h`·`leap`)가 된다(계약 §2-1 이 명시). **새 판독기를
+//       만들지 않는다** — 판독기가 두 벌이 되면 반드시 갈린다(결정 99).
+//     · 재유도는 `RC.recompute(inp)` · `pillar` 는 `RC.compatPillarLine(r)`.
+//
+//   ★★`ilgan` 은 **한자**다(계약 §3). `r.ilgan` 은 한글(`계`)이고 이 상품군의
+//     클라 산출은 `HS_CH[dayStem]`(`癸`)이다(index.html `_collectSajuFromUI`).
+//     그대로 쓰면 프롬프트의 일간이 통째로 다른 표기가 된다 — 혼동 금지.
+//
+//   【정책 — 계약 §6. tojeong 과 **동일**하다】
+//     · 6키 없음 → `mode:'legacy'` · 차단도 변경도 없다(구버전 캐시 하위호환).
+//     · 6키 + 형식 불량/재유도 실패 → 파생 키 **폐기**. 「검증 불가 시 클라값
+//       채택」은 v7.73 M16 이 적발한 회귀다 — 반복하지 않는다.
+//     · **400 을 내지 않는다**(관통 #8 재발 방지 · 가용성).
+
+/**
+ * ★계약 §4 — `dominant`/`lacking` 산출식. **클라 `index.html:cwDomLack` 의 사본**이다.
+ *
+ * ★★두 벌이 되는 유일한 식이다(결정 99: 「사본은 반드시 갈린다」). 그래서
+ *   `eval/eval_naming_tarot_guard.js` 의 D-2·D-3 이 **클라 소스에서 본문을 뽑아**
+ *   `els` 전 조합(합 8 = 495 · 합 0~8 = 1,287)을 **전수 바이트 비교**한다.
+ *   ⟹ 한쪽만 고치면 게이트가 즉시 붉어진다. 고칠 때는 반드시 양쪽을 함께 고칠 것.
+ *
+ * ★어휘는 `EL_NAMES`(이 파일이 이미 가진 상수)를 재사용한다 — 배열을 또 한 벌
+ *   만들면 갈릴 표면이 하나 더 늘어난다. 값은 클라 `EL` 과 동일하며 D-1 이 대조한다.
+ * ★구분자는 **가운뎃점 `·`(U+00B7)** 다. `', '` 가 아니다(D-5 가 못박는다).
+ * ★`indexOf` 이므로 **동점이면 가장 앞 오행**이다(D-6).
+ *
+ * @param {number[]} els 목·화·토·금·수 개수 5칸
+ * @returns {{dominant:string,lacking:string}}
+ */
+function domLack(els) {
+  const a = (Array.isArray(els) && els.length === 5) ? els : [0, 0, 0, 0, 0];
+  const max = Math.max.apply(null, a), min = Math.min.apply(null, a);
+  const dominant = EL_NAMES[a.indexOf(max)];
+  const lackingArr = [];
+  for (let i = 0; i < 5; i++) { if (a[i] === 0) lackingArr.push(EL_NAMES[i]); }
+  // 0인 오행이 하나도 없으면 「가장 적은 오행」을 부족으로 본다(클라와 동일).
+  if (lackingArr.length === 0) lackingArr.push(EL_NAMES[a.indexOf(min)]);
+  return { dominant, lacking: lackingArr.join('·') };
+}
+
+/**
+ * ★계약 §3 — 재유도 산출 `r` 에서 context 값을 만드는 표. **형식은 클라 현행을
+ *   바이트로 지킨다**(형식이 바뀌면 프롬프트 문장이 깨진다).
+ *   ★키 이름은 아래 상품별 표에 **명시**한다. 문자열 조립을 새로 만들지 않는다(계약 §2-3).
+ */
+const NT_VALUE_OF = Object.freeze({
+  pillar: (r) => RC.compatPillarLine(r),
+  // ★★한자다. `r.ilgan`(한글)이 아니다 — 계약 §3.
+  ilgan: (r) => RC.HS_CH[r.pillars.day.stem],
+  ilganElement: (r) => r.ilganElement,
+  dominant: (r) => domLack(r.els).dominant,
+  lacking: (r) => domLack(r.els).lacking,
+});
+
+/**
+ * 상품별 **교체 키 표**. 계약 §3 의 「쓰는 상품」 열을 상품 기준으로 뒤집은 것이며,
+ * 각 키는 그 상품의 프롬프트가 **실제로 보간하는** 키여야 한다
+ * (`eval_naming_tarot_guard.js` C-3 이 fortune.js 소스와 1:1 대조한다).
+ * ★여기 없는 키는 어떤 경로로도 서버가 손대지 않는다 — 명시 경계다.
+ */
+const NAMING_CTX_KEYS = Object.freeze({
+  naming: Object.freeze(['pillar', 'ilgan', 'ilganElement', 'dominant', 'lacking']),
+  naming_premium_1: Object.freeze(['pillar', 'ilgan', 'ilganElement', 'dominant', 'lacking']),
+  naming_premium_2: Object.freeze(['pillar', 'ilgan', 'lacking']),
+  naming_nickname: Object.freeze(['ilgan', 'ilganElement', 'lacking']),
+});
+const TAROT_CTX_KEYS = Object.freeze({
+  tarot: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
+  tarot_premium_1: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
+  tarot_premium_2: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
+});
+/** 클라이언트가 실어야 하는 생년월일 원본 키 (계약 §2-1). `compatPersonInput(ctx,'')` 가 읽는 6키. */
+const PERSON_BIRTH_KEYS = Object.freeze(['cal', 'y', 'm', 'd', 'h', 'leap']);
+
+/**
+ * ★1인 상품 공용 가드 — naming/tarot 계열의 단일 판정점.
+ * @param {object} ctx  클라이언트가 보낸 context
+ * @param {string[]} keys 이 상품에서 교체할 §3 키 목록
+ * @param {string} engineTag metrics.engine 라벨
+ * @returns {{applied:boolean, context:object, metrics:object}}
+ *   ★`applied` 는 「정규화를 수행했다」는 뜻이며 **차단 판정에 쓰지 않는다**(400 금지).
+ */
+function guardPersonContext(ctx, keys, engineTag) {
+  const metrics = {
+    engine: engineTag,
+    applied: false,
+    mode: null,          // 'derived' | 'legacy' | 'discarded'
+    reason: null,
+    diffs: [],           // 클라값 != 서버 재유도값 인 키 (관측용 — 조용한 갈림의 유일한 신호)
+    replaced: 0,
+    discarded: 0,
+  };
+  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return { applied: false, context: ctx, metrics };
+  if (!Array.isArray(keys) || keys.length === 0) {
+    // 표에 없는 type — 호출부(`CW_NAMING_TYPES`/`CW_TAROT_TYPES`)와 이 표가 어긋났다는 뜻이다.
+    // ★조용히 통과시키지 않는다. 로그에 남겨 즉시 드러낸다.
+    metrics.reason = 'NO_KEY_TABLE';
+    return { applied: false, context: ctx, metrics };
+  }
+  const has = Object.prototype.hasOwnProperty;
+  const out = Object.assign({}, ctx);
+
+  // ── ① 6키 판독 — ★`compatPersonInput(ctx, '')` 재사용 (계약 §2-1) ──────────
+  const got = compatPersonInput(ctx, '');
+  if (got.missing) {
+    metrics.applied = true; metrics.mode = 'legacy'; metrics.reason = 'NO_BIRTH_KEYS';
+    return { applied: true, context: out, metrics };
+  }
+  const discardAll = (reason) => {
+    for (const k of keys) {
+      if (has.call(out, k)) { out[k] = ''; metrics.discarded++; }
+    }
+    metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = reason;
+    return { applied: true, context: out, metrics };
+  };
+  if (got.bad) return discardAll(got.bad);
+
+  // ── ② 재유도 ────────────────────────────────────────────────────────────
+  let r = null;
+  try { r = RC.recompute(got.input); } catch (e) { r = null; }
+  if (!r || !r.ok) return discardAll('DERIVE_FAILED');
+
+  let vals = null;
+  try {
+    vals = {};
+    for (const k of keys) vals[k] = NT_VALUE_OF[k](r);
+  } catch (e) { vals = null; }
+  // ★렌더가 하나라도 성립하지 않으면 **전부 폐기**한다. 절반만 서버값인 프롬프트는
+  //   「검증됐다」고 말할 수 없다(M16 의 교훈 — 판정 못 하면 채택이 아니라 폐기다).
+  if (!vals || keys.some((k) => vals[k] === null || vals[k] === undefined || vals[k] === '')) {
+    return discardAll('DERIVE_FAILED');
+  }
+
+  // ── ③ 교체 + 갈림 관측 ───────────────────────────────────────────────────
+  for (const k of keys) {
+    const before = has.call(out, k) ? out[k] : undefined;
+    const after = vals[k];
+    if (before !== undefined && String(before) !== String(after)) metrics.diffs.push(k);
+    out[k] = after;
+    metrics.replaced++;
+  }
+  metrics.applied = true; metrics.mode = 'derived';
+  return { applied: true, context: out, metrics };
+}
+
+/** 작명 계열(`naming`·`naming_premium_1/2`·`naming_nickname`) 가드. */
+function guardNamingContext(ctx, type) {
+  return guardPersonContext(ctx, NAMING_CTX_KEYS[type], 'ctxguard/v7.79-naming');
+}
+/** 타로 계열(`tarot`·`tarot_premium_1/2`) 가드. */
+function guardTarotContext(ctx, type) {
+  return guardPersonContext(ctx, TAROT_CTX_KEYS[type], 'ctxguard/v7.79-tarot');
+}
+
+// ★상수 정합 자기검사 — 상품별 표의 모든 키에 산출기가 있어야 한다. 없으면 그 키는
+//   조용히 무검증으로 프롬프트에 들어간다(= 관통 #4 의 재발). 로드 시점에 즉시 드러낸다.
+{
+  const tables = [NAMING_CTX_KEYS, TAROT_CTX_KEYS];
+  const uncovered = [];
+  for (const t of tables) for (const ty of Object.keys(t)) {
+    for (const k of t[ty]) if (typeof NT_VALUE_OF[k] !== 'function') uncovered.push(ty + '.' + k);
+  }
+  if (uncovered.length) {
+    throw new Error('[ctxguard] selfCheck failed: NT_VALUE_OF 미정의 키 ' + uncovered.join(','));
+  }
+}
+
 module.exports = {
   guardContext, inputFromContext, selfCheck, hasGuardedKeys, unverifiable,
+  // ★v7.79 파 ⓐ — naming·tarot 1인 상품 가드
+  guardNamingContext, guardTarotContext, guardPersonContext, domLack,
+  NAMING_CTX_KEYS, TAROT_CTX_KEYS, PERSON_BIRTH_KEYS, NT_VALUE_OF,
   // ★v7.75 관통 #9 — tojeong 가드
   guardTojeongContext, tojeongBirthInput, tojeongDerive,
   TOJEONG_REPLACE_KEYS, TOJEONG_BIRTH_KEYS,

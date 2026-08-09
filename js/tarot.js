@@ -56,11 +56,17 @@ async function showTarotReading(){
     cards: tarotSt.cards
   };
   if(tarotSt.saju){
+    // ★v7.79 계약 §2-1 — 생년월일 **원본 6키**. `tarotSt.saju` 는 `_collectSajuFromUI` 의
+    //   반환이며 6키를 이미 들고 있다. 산출식은 `cwBirthKeys` 한 곳뿐이다(결정 99·113).
+    //   ★타로는 `_sajuResultData` 폴백이 **없다** — 사주 토글을 안 열면 6키도 없고
+    //     서버는 `mode:'legacy'` 로 아무것도 바꾸지 않는다(§6).
+    const _bk = cwBirthKeys(tarotSt.saju.cal, tarotSt.saju.y, tarotSt.saju.m, tarotSt.saju.d, tarotSt.saju.h, tarotSt.saju.leap) || {};
     Object.assign(ctx, {
       ilgan: tarotSt.saju.ilgan || '',
       ilganElement: tarotSt.saju.ilganElement || '',
       dominant: tarotSt.saju.dominant || '',
-      lacking: tarotSt.saju.lacking || ''
+      lacking: tarotSt.saju.lacking || '',
+      cal:_bk.cal,y:_bk.y,m:_bk.m,d:_bk.d,h:_bk.h,leap:_bk.leap
     });
   }
   try {
@@ -218,11 +224,14 @@ async function unlockTarotPremium(){
     cards: cards
   };
   if(info.saju){
+    // ★v7.79 계약 §2-1 — 프리미엄(1·2단계 2회 호출 · 재시도 경로 포함)도 같은 6키를 싣는다(결정 90).
+    const _bk = cwBirthKeys(info.saju.cal, info.saju.y, info.saju.m, info.saju.d, info.saju.h, info.saju.leap) || {};
     Object.assign(ctx, {
       ilgan: info.saju.ilgan || '',
       ilganElement: info.saju.ilganElement || '',
       dominant: info.saju.dominant || '',
-      lacking: info.saju.lacking || ''
+      lacking: info.saju.lacking || '',
+      cal:_bk.cal,y:_bk.y,m:_bk.m,d:_bk.d,h:_bk.h,leap:_bk.leap
     });
   }
 

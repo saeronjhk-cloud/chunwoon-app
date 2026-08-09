@@ -1374,6 +1374,68 @@ export default async function handler(req, res) {
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // ★★v7.79 파 ⓐ — `naming`(3)·`naming_nickname`·`tarot`(3) 원국 가드
+    // ══════════════════════════════════════════════════════════════════════
+    //   【무엇을 닫는가 — 계약 v7.79 §0】 이 7종은 지금까지 **아무도 검증하지 않았다**.
+    //     · `CW_ENGINE_TYPES` 밖 ⟹ 400 차단 대상이 아니다.
+    //     · `CW_COMPAT_TYPES`·`CW_TOJEONG_TYPES` 밖 ⟹ 2층 평탄화조차 돌지 않았다.
+    //     ⟹ 클라가 보낸 `pillar`·`ilgan`·`ilganElement`·`dominant`·`lacking` 이
+    //       무검증으로 프롬프트에 보간됐다(위조 4기둥 `갑자 갑자 갑자 갑자` 가 200 통과 —
+    //       `eval/eval_naming_tarot_guard.js` 가 수리 전에 실측했다).
+    //
+    //   【구조 — tojeong(v7.75)과 **동일**하다. 새로 설계하지 않았다】
+    //     1층 `guardNamingContext`/`guardTarotContext` : 생년월일 6키로 원국을 **재유도**해 교체
+    //     2층 `cwCompatFlatten`                        : 엔진 유무와 **무관하게** 도는 평탄화
+    //   ★1층이 2층보다 **먼저** 돈다(계약 §6 금지 ④). 순서를 바꾸면 서버가 만든 값을
+    //     평탄화가 한 번 더 훑기만 하고, 클라값이 평탄화만 거친 채 살아남는 창이 생긴다.
+    //   ★`cwCompatFlatten` 은 범용 텍스트 평탄화이며 **이름을 바꾸지 않는다** —
+    //     `eval_compat_guard.js` 와 뮤테이션 M19/ME1 이 이 식별자를 앵커로 쓴다(계약 §6 금지 ③).
+    //   ★400 을 내지 않는다(관통 #8). 6키가 없으면 `mode:'legacy'` 로 통과시킨다.
+    //   ★★`dream`·`daily_message`·`naming_company` 는 **이번 파 밖**이다(계약 §9 ⓑ·ⓒ).
+    //     여기에 성급히 추가하지 말 것 — 그 상품들의 §3 키 형식은 계약 §5 에서 아직 미확정이다.
+    const CW_NAMING_TYPES = ['naming', 'naming_premium_1', 'naming_premium_2', 'naming_nickname'];
+    const CW_TAROT_TYPES = ['tarot', 'tarot_premium_1', 'tarot_premium_2'];
+    const cwNtFamily = CW_NAMING_TYPES.indexOf(type) !== -1 ? 'naming'
+      : CW_TAROT_TYPES.indexOf(type) !== -1 ? 'tarot' : null;
+    if (cwNtFamily && context && typeof context === 'object' && !Array.isArray(context)) {
+      // ── 1층 : 생년월일 6키(`cal`·`y`·`m`·`d`·`h`·`leap`)로 원국을 **서버가 재유도** ──
+      let cwNtM = null, cwNtErr = null;
+      {
+        const mod = await cwCtxguard();
+        const fn = mod && (cwNtFamily === 'naming' ? mod.guardNamingContext : mod.guardTarotContext);
+        if (typeof fn === 'function') {
+          try {
+            const g = fn(context, type);
+            if (g && g.applied && g.context) { context = g.context; cwNtM = g.metrics; }
+            else cwNtErr = (g && g.metrics && g.metrics.reason) || 'NOT_APPLIED';
+          } catch (e) { cwNtErr = 'THREW'; }
+        } else cwNtErr = 'ENGINE_UNAVAILABLE';
+      }
+      // ── 2층 : 엔진 유무와 **무관하게** 항상 도는 평탄화 (§3 밖 전 문자열) ──
+      const cwNtFlattened = [];
+      for (const k of Object.keys(context)) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+        if (typeof context[k] !== 'string') continue;
+        const before = context[k];
+        const after = cwCompatFlatten(before);
+        if (after !== before) { context[k] = after; cwNtFlattened.push(k); }
+      }
+      // ★관측 — 차단하지 않는 방어는 로그가 유일한 관측점이다(v7.71-b 관통 #5 의 교훈).
+      //   게이트 `eval_naming_tarot_guard.js` 는 **이 로그와 프롬프트 바이트**로 판정한다(결정 84).
+      //   `mode:legacy` 비율이 0 으로 수렴해야 구버전 캐시가 사라진 것이고,
+      //   `diffs` 가 0 이 아닌 요청은 클라 산출과 서버 재유도가 갈렸다는 뜻이다.
+      try {
+        const cwNtBase = { type, layer2: true, flattened: cwNtFlattened };
+        cwNtBase[cwNtFamily] = true;
+        console.log('[cw:ctxguard]', JSON.stringify(Object.assign(cwNtBase,
+          cwNtM
+            ? { layer1: true, mode: cwNtM.mode, reason: cwNtM.reason,
+                replaced: cwNtM.replaced, discarded: cwNtM.discarded, diffs: cwNtM.diffs }
+            : { layer1: false, reason: cwNtErr || 'GUARD_MISSING' })));
+      } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
+    }
+
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
 

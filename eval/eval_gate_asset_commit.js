@@ -93,6 +93,13 @@ const REQUIRED = Object.freeze([
   // ★v7.78 I-70 — 제3의 범주: 클라가 싣기는 하는데 **값이 구조적으로 항상 비는 키**(dead value).
   //   키 표면 검사(K-2·K-3)는 원리적으로 못 본다. 런타임(jsdom)으로 payload 를 직접 본다.
   'eval/eval_ctx_dead_value.js',
+  // ★v7.79 파 ⓐ — naming(3)·naming_nickname·tarot(3) 원국 재유도 축.
+  //   ★`domLack` 클·서버 전수 대조가 여기 들어 있다. 미커밋이면 그 대조가 통째로 무감시다.
+  'eval/eval_naming_tarot_guard.js',
+  // ★v7.79 파 ⓐ 클라 축 — 생년월일 **원본 6키**(계약 §2-1)가 payload 에 실제로 도달하는지를
+  //   jsdom 으로 본다. 6키가 없으면 서버 가드가 `mode:'legacy'` 로 **조용히 사문화**되므로,
+  //   이 게이트가 없으면 어디도 붉어지지 않은 채 재유도가 통째로 안 돈다.
+  'eval/eval_ctx_birth_keys.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',

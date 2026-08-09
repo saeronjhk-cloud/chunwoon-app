@@ -127,7 +127,12 @@ function guardReadKeys() {
   while ((m = r2.exec(GUARD_SRC))) keys.add(m[1]);
   const g = GUARD_MOD || {};
   // 동적 조립(`'y' + i`)·상수 배열은 모듈에서 직접 읽는다 — 정규식으로는 안 잡힌다.
+  // ★v7.79 파 ⓐ — `PERSON_BIRTH_KEYS`(`cal`·`y`·`m`·`d`·`h`·`leap`). 판독기는
+  //   `compatPersonInput(ctx,'')` 라 키가 `'h'+i` 로 조립되고, 그중 `h` 는 리터럴로
+  //   한 번도 안 나타난다 ⟹ 정규식이 못 본다. **계약 §2-3 이 요구한 「명시 키 배열」**을
+  //   여기에 등재해 「클라는 싣는데 서버가 안 읽는다」 오탐을 막는다(I-43 유형의 역방향).
   for (const arr of ['COMPAT_BIRTH_KEYS', 'TOJEONG_BIRTH_KEYS', 'TOJEONG_REPLACE_KEYS',
+    'PERSON_BIRTH_KEYS',
     'CTX_REPLACE_KEYS', 'CTX_GUARDED_KEYS', 'COMPAT_GUARDED_KEYS', 'COMPAT_REPLACE_KEYS']) {
     for (const k of (g[arr] || [])) keys.add(k);
   }

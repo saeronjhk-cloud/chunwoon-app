@@ -1810,6 +1810,52 @@ function cwReadBirth(birthId){
   return{ok:true,calType:'solar',y:y,m:m,d:d,leap:false};
 }
 
+/**
+ * 계약 v7.79 §2-1 — 서버가 원국을 **재유도**하기 위해 받아야 하는 생년월일 **원본 6키**.
+ *
+ * ★★단일 출처(결정 99·113). 적재 지점이 5곳(작명 사람 무료 · 닉네임 · `_buildNamingContext`
+ *   프리미엄 · 타로 무료 · 타로 프리미엄)이고 값 출처가 4곳(`_collectSajuFromUI` ·
+ *   작명 폴백 · 닉네임 폴백 · `analyzeSaju` 의 `_sajuResultData`)이다.
+ *   식을 복사하면 반드시 갈린다 — 정규화는 **이 함수 하나**만 한다.
+ *
+ * ★`h` 는 **시진 인덱스 0~11**이고 모르면 `-1` 이다(계약 §2-1). `<select>` 의
+ *   「모름」 값이 `-1` 이므로 `parseInt` 결과를 그대로 쓰되, NaN·범위 밖은 전부 `-1` 로 접는다.
+ *   ★서버는 6키가 「없으면」 `mode:'legacy'` 로 아무것도 안 바꾸지만(§6),
+ *     「있는데 형식 불량」이면 원국을 **폐기**한다. 그러므로 부분 적재·NaN 적재는 금물이다.
+ * ★`leap` 은 양력이면 **항상 false**(계약 §2-1). 음력일 때만 사용자 의도를 싣는다.
+ *
+ * @param {'solar'|'lunar'} calType
+ * @param {number} y 생년(원본. 음력 입력이면 음력 년)
+ * @param {number} m 생월 1~12 (원본)
+ * @param {number} d 생일 1~31 (원본)
+ * @param {number} hi 시진 인덱스 0~11 · 모르면 -1
+ * @param {boolean} leap 윤달 여부
+ * @returns {{cal:string,y:number,m:number,d:number,h:number,leap:boolean}|null}
+ *   판독 불가(y·m·d 중 하나라도 정수가 아님)면 **null** — 부분 적재보다 미적재가 안전하다.
+ */
+function cwBirthKeys(calType,y,m,d,hi,leap){
+  const _y=parseInt(y,10),_m=parseInt(m,10),_d=parseInt(d,10);
+  if(!Number.isInteger(_y)||!Number.isInteger(_m)||!Number.isInteger(_d))return null;
+  const _hn=parseInt(hi,10);
+  const cal=(calType==='lunar')?'lunar':'solar';
+  return{cal:cal,y:_y,m:_m,d:_d,
+    h:(Number.isInteger(_hn)&&_hn>=0&&_hn<=11)?_hn:-1,
+    leap:(cal==='lunar')?!!leap:false};
+}
+
+/**
+ * ★적재 규약 — 6키는 **payload 리터럴에 이름 그대로** 쓴다.
+ *   `cal:_bk.cal` · `y:_bk.y` · `m:_bk.m` · `d:_bk.d` · `h:_bk.h` · `leap:_bk.leap`
+ *   (`_bk` 는 `cwBirthKeys(...)||{}` 의 결과. 지역명은 `_bkP`·`_bkN` 처럼 접미가 붙을 수 있다.)
+ *   ① 계약 §2-3 — 키 이름은 **명시**한다. `'y'+i` 같은 조립을 만들지 않는다(I-61).
+ *   ② `eval_ctx_key_surface.js` 의 표면 추출기는 **객체 리터럴의 최상위 키만** 읽는다.
+ *      대입 헬퍼로 감싸면 이 상품군의 context 표면이 통째로 그 게이트에서 사라진다 —
+ *      「가드를 피해 조용해지는 것」은 수리가 아니다. 리터럴을 유지한다.
+ *   ③ **전부 또는 전무** — 판독 불가면 `cwBirthKeys` 가 `null` 을 주고 6키가 전부
+ *      `undefined` 가 되어 `JSON.stringify` 가 통째로 떨어뜨린다. 서버는 6키가 없으면
+ *      `mode:'legacy'` 로 **아무것도 바꾸지 않는다**(§6). 부분 적재는 원국 폐기를 부른다.
+ */
+
 /** 판독 실패 사유 → 사용자 문구 */
 function cwBirthErrMsg(r,who){
   const w=who?who+'님의 ':'';
@@ -2564,7 +2610,12 @@ async function analyzeSaju(){
   //   이 두 키가 없어서 소비자 4곳(js/chat.js daily_message · 작명 사람/닉네임 폴백 ·
   //   `_buildNamingContext` 프리미엄)이 전부 빈 값을 프롬프트에 넣고 있었다.
   //   ★`_buildSajuContext` 는 info 를 구조분해로 **명시 선택**하므로 saju payload 는 안 변한다(D-7).
-  const info={name,gender:g,calType,inputYear,inputMonth,inputDay,hi,solarY,solarM,solarD,lunarInfo,pillars,els,sipsung,...cwDomLack(els)};
+  // ★v7.79 계약 §2-1 — `leap`(윤달) 을 **여기서** 실어야 폴백 경로가 6키를 복원할 수 있다.
+  //   종전 `_sajuResultData` 에는 `calType,inputYear,inputMonth,inputDay,hi` 만 있고 윤달이 없었다.
+  //   그래서 「사주 탭에 음력 윤달 생일을 넣은 사용자」가 작명 폼을 비운 채 넘어가면
+  //   윤달 의도를 **원리적으로 복원할 수 없었다** — I-70 과 정확히 같은 형태의 결손이다.
+  //   ★saju payload 는 안 변한다: 아래 `ctx` 도 `_buildSajuContext` 도 키를 **명시 선택**한다(D-7).
+  const info={name,gender:g,calType,inputYear,inputMonth,inputDay,leap:(calType==='lunar'?!!br.leap:false),hi,solarY,solarM,solarD,lunarInfo,pillars,els,sipsung,...cwDomLack(els)};
   window._sajuResultData=info;
 
   // 로딩 UI
@@ -7168,7 +7219,10 @@ function _collectSajuFromUI(birthId, hourId, _genderId, calTypeId){
   const dStem=pillars.day.stem;
   // ★v7.78 I-70 — 산출식은 `cwDomLack` 한 곳에만 둔다(결정 99: 사본은 반드시 갈린다).
   const {dominant,lacking}=cwDomLack(els);
-  return {pillars,els,
+  // ★v7.79 계약 §2-1 — 생년월일 **원본 6키**. `br` 은 이미 사용자가 입력한 원본(양력 변환 전)이고
+  //   `hi` 는 시진 인덱스다. 종전에는 이 함수가 그것들을 **반환값에 안 담아서** payload 에 없었을 뿐,
+  //   UI 는 이미 다 받고 있었다. 산출식은 `cwBirthKeys` 한 곳뿐이다(결정 99·113).
+  return {pillars,els,...cwBirthKeys(br.calType,br.y,br.m,br.d,hi,br.leap),
     ilgan:HS_CH[dStem],ilganElement:EL[HS_EL[dStem]],
     dayPillar:HS[dStem]+EB[pillars.day.branch],
     pillarStr:`${HS[pillars.year.stem]}${EB[pillars.year.branch]} ${HS[pillars.month.stem]}${EB[pillars.month.branch]} ${HS[pillars.day.stem]}${EB[pillars.day.branch]} ${pillars.hour?HS[pillars.hour.stem]+EB[pillars.hour.branch]:'(시간 모름)'}`,
@@ -7196,7 +7250,8 @@ async function analyzeNaming(){
     let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender','namingCalType');
     if(!saju&&window._sajuResultData){
       const s=window._sajuResultData;
-      saju={pillars:s.pillars,els:s.els,ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],dayPillar:HS[s.pillars.day.stem]+EB[s.pillars.day.branch],pillarStr:`${HS[s.pillars.year.stem]}${EB[s.pillars.year.branch]} ${HS[s.pillars.month.stem]}${EB[s.pillars.month.branch]} ${HS[s.pillars.day.stem]}${EB[s.pillars.day.branch]} ${s.pillars.hour?HS[s.pillars.hour.stem]+EB[s.pillars.hour.branch]:'(시간 모름)'}`,dominant:s.dominant||'',lacking:s.lacking||''};
+      // ★v7.79 §2-1 — 폴백 경로에도 6키를 싣는다. v7.78 I-70 이 정확히 이 자리에서 났다.
+      saju={pillars:s.pillars,els:s.els,...cwBirthKeys(s.calType,s.inputYear,s.inputMonth,s.inputDay,s.hi,s.leap),ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],dayPillar:HS[s.pillars.day.stem]+EB[s.pillars.day.branch],pillarStr:`${HS[s.pillars.year.stem]}${EB[s.pillars.year.branch]} ${HS[s.pillars.month.stem]}${EB[s.pillars.month.branch]} ${HS[s.pillars.day.stem]}${EB[s.pillars.day.branch]} ${s.pillars.hour?HS[s.pillars.hour.stem]+EB[s.pillars.hour.branch]:'(시간 모름)'}`,dominant:s.dominant||'',lacking:s.lacking||''};
     }
     if(!saju){
       if(!confirm('사주 정보 없이 작명할까요?\n사주 정보가 있으면 부족한 오행을 보완하는 더 풍부한 작명이 가능해요.'))return;
@@ -7206,7 +7261,10 @@ async function analyzeNaming(){
     loadingTitle=`${surname}씨 가문에 어울리는 이름을 찾는 중...`;
     const styleName=NAMING_STYLES.find(s=>s.k===info.style)?.n||'전통 한자';
     const lengthName=NAMING_LENGTHS.find(l=>l.k===info.length)?.n||'3자';
-    ctx={surname:info.surname,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',/* ★v7.77 K-2 — `hangryeol`(사람이 읽는 조합 문자열)은 서버가 한 번도 읽지 않는다. 서버는 `hangryeolHanja`·`hangryeolPos` 만 보간한다. 클라만 아는 사실은 표면이므로 제거한다(I-43 유형). */hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||''};
+    const _bkP=cwBirthKeys(info.cal,info.y,info.m,info.d,info.h,info.leap)||{};
+    ctx={surname:info.surname,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',/* ★v7.77 K-2 — `hangryeol`(사람이 읽는 조합 문자열)은 서버가 한 번도 읽지 않는다. 서버는 `hangryeolHanja`·`hangryeolPos` 만 보간한다. 클라만 아는 사실은 표면이므로 제거한다(I-43 유형). */hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||'',
+      // ★v7.79 계약 §2-1 — 생년월일 **원본 6키**(직접 입력·`_sajuResultData` 폴백 공통)
+      cal:_bkP.cal,y:_bkP.y,m:_bkP.m,d:_bkP.d,h:_bkP.h,leap:_bkP.leap};
   }
   else if(ntype==='company'){
     const industryK=document.querySelector('[data-kind="nind"].selected')?.dataset.k;
@@ -7270,10 +7328,14 @@ async function analyzeNaming(){
     let saju=_collectSajuFromUI('namingBirth','namingHour','namingGender','namingCalType');
     if(!saju&&window._sajuResultData){
       const s=window._sajuResultData;
-      saju={ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],lacking:s.lacking||''};
+      // ★v7.79 §2-1 — 폴백 경로에도 6키를 싣는다(I-70 형태 재발 차단).
+      saju={...cwBirthKeys(s.calType,s.inputYear,s.inputMonth,s.inputDay,s.hi,s.leap),ilgan:HS_CH[s.pillars.day.stem],ilganElement:EL[HS_EL[s.pillars.day.stem]],lacking:s.lacking||''};
     }
     if(saju){Object.assign(info,saju);}
-    ctx={nickPlatform,nickVibe,nickLang:nickLang||'자유',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',lacking:info.lacking||''};
+    const _bkN=cwBirthKeys(info.cal,info.y,info.m,info.d,info.h,info.leap)||{};
+    ctx={nickPlatform,nickVibe,nickLang:nickLang||'자유',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',lacking:info.lacking||'',
+      // ★v7.79 계약 §2-1 — 생년월일 원본 6키
+      cal:_bkN.cal,y:_bkN.y,m:_bkN.m,d:_bkN.d,h:_bkN.h,leap:_bkN.leap};
     apiType='naming_nickname';
     loadingTitle=`${nickPlatform}에 어울리는 닉네임을 찾는 중...`;
   }
@@ -7851,6 +7913,9 @@ function _buildNamingContext(info){
   // 사람 (default)
   const styleName=NAMING_STYLES.find(s=>s.k===info.style)?.n||'전통 한자';
   const lengthName=NAMING_LENGTHS.find(l=>l.k===info.length)?.n||'3자';
+  // ★v7.79 §2-1 — 프리미엄 작명(1·2단계 2회 호출 · 재시도 경로 포함)도 같은 6키를 싣는다.
+  //   ★결정 90 — 「무료만 고치면 유료가 남는다」. 무료 ctx 와 **같은 출처**(`info`)에서 싣는다.
+  const _bk=cwBirthKeys(info.cal,info.y,info.m,info.d,info.h,info.leap)||{};
   return {
     surname:info.surname,surnameHanja:info.surnameHanja||'',
     pillar:info.pillars?`${HS[info.pillars.year.stem]}${EB[info.pillars.year.branch]} ${HS[info.pillars.month.stem]}${EB[info.pillars.month.branch]} ${HS[info.pillars.day.stem]}${EB[info.pillars.day.branch]} ${info.pillars.hour?HS[info.pillars.hour.stem]+EB[info.pillars.hour.branch]:'(시간 모름)'}`:'(미입력)',
@@ -7860,7 +7925,8 @@ function _buildNamingContext(info){
     style:styleName,length:lengthName,
     preferred:info.preferred||'없음',
     hangryeolHanja:info.hangryeolHanja||'',
-    hangryeolPos:info.hangryeolPos||''
+    hangryeolPos:info.hangryeolPos||'',
+    cal:_bk.cal,y:_bk.y,m:_bk.m,d:_bk.d,h:_bk.h,leap:_bk.leap
   };
 }
 
