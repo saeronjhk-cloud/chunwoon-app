@@ -375,28 +375,46 @@ const KNOWN_SOFT = Object.freeze(['compat.lacking']);
   });
 
   check('D-5', '★★I-70 회귀 못 — `_sajuResultData` 재사용 경로에서 `dominant`·`lacking` 이 **실제 오행값**을 갖는다', () => {
-    const NEED = [
-      { site: 'naming', keys: ['dominant', 'lacking'] },
-      { site: 'naming_nickname', keys: ['lacking'] },
-      { site: 'daily_message', keys: ['dominant', 'lacking'] },   // ★js/chat.js 경로
-    ];
+    // ★v7.79 파 ⓑ 정정 — 종전에는 (site,key) 를 **손으로 유지하는 목록**(NEED)이었다.
+    //   `daily_message.dominant` 를 제거하자(서버가 0회 읽는 dangling — I-68 형태)
+    //   이 검사가 붉어졌다. 그 붉음은 **기대값 사문화**다(결정 100 ⑵).
+    //   ★그런데 목록을 손으로 지우면 **다음에 진짜로 죽었을 때도 지우면 그만**이 된다
+    //     — 결정 99 가 경고한 「손으로 유지하는 목록」이다.
+    //   ⟹ 목록을 없애고 **성질**로 바꾼다:
+    //       ㉠ 클라가 **싣는** `dominant`/`lacking` 자리는 **전부 실값**이어야 한다
+    //          (안 싣는 자리는 이 검사의 대상이 아니다 — K-2 가 dangling 을 따로 본다)
+    //       ㉡ ★그 자리의 **개수가 하한 아래로 떨어지면 실패**한다 — ㉠만 두면
+    //          전 키를 지워서 「0건 중 0건 통과」로 위약할 수 있다(결정 105: 분모를 세라)
+    const WATCH = ['dominant', 'lacking'];
+    const PAIRS_MIN = 4;   // 현행 실측: naming{dominant,lacking} · nickname{lacking} · daily{lacking}
+    // ★★D-5 와 D-6 의 경계 — 이 둘을 섞으면 서로를 위약으로 만든다.
+    //   `compat.lacking` 은 **자리표시자 `'없음'` 이 정상**이다(두 사람 16글자라 0인 오행이
+    //   드물다 — 산출은 살아 있다). 그 자리는 **D-6 의 래칫**이 본다.
+    //   반대로 `naming.lacking = '없음'` 은 **I-70 그 자체**였다(값이 죽어 폴백이 메꾼 것).
+    //   ⟹ D-6 이 이미 선언한 `KNOWN_SOFT`(자리표시자가 정상인 자리)를 **그대로 재사용해**
+    //     제외한다. 사이트 목록을 여기서 다시 손으로 적지 않는다(결정 99).
     const bad = [];
-    for (const n of NEED) {
-      const arr = MAIN.samples.filter((s) => s.site === n.site);
-      if (!arr.length) { bad.push(n.site + ':미채집'); continue; }
-      for (const k of n.keys) {
-        for (const s of arr) {
-          if (!isElementValue(s.ctx[k])) bad.push(n.site + '.' + k + '@' + s.fx + '=' + JSON.stringify(s.ctx[k]));
-        }
+    const seenPairs = new Set();
+    if (!MAIN.samples.length) bad.push('★표본 0 — 판정 불가');
+    for (const s of MAIN.samples) {
+      for (const k of WATCH) {
+        if (!Object.prototype.hasOwnProperty.call(s.ctx, k)) continue;   // 안 싣는 자리
+        const pair = s.site + '.' + k;
+        if (KNOWN_SOFT.indexOf(pair) !== -1) continue;                   // D-6 관할
+        seenPairs.add(pair);
+        if (!isElementValue(s.ctx[k])) bad.push(pair + '@' + s.fx + '=' + JSON.stringify(s.ctx[k]));
       }
     }
+    if (seenPairs.size < PAIRS_MIN)
+      bad.push('★감시 자리 ' + seenPairs.size + '/' + PAIRS_MIN + ' — 키가 사라져 검사가 비었다(하한 미달)');
     // 단일 출처 실측 — window._sajuResultData 자체가 값을 들고 있는가
     const srcBad = MAIN.srcVals.filter((v) => !isElementValue(v.dominant) || !isElementValue(v.lacking));
     if (srcBad.length)
       bad.push('_sajuResultData@' + srcBad.map((v) => v.fx + '{dominant=' + JSON.stringify(v.dominant) + ',lacking=' + JSON.stringify(v.lacking) + '}').join(' '));
     return { ok: bad.length === 0,
       detail: bad.length ? '★' + bad.length + '건: ' + bad.slice(0, 6).join(' / ')
-        : '소비자 3경로 × 검체 ' + FIX.length + '종 전부 실값 · 출처 `_sajuResultData` 도 실값 (예: ' +
+        : '감시 자리 ' + seenPairs.size + '개(하한 ' + PAIRS_MIN + ') × 검체 ' + FIX.length + '종 전부 실값 [' +
+          [...seenPairs].sort().join(' ') + '] · 출처 `_sajuResultData` 도 실값 (예: ' +
           MAIN.srcVals[0].dominant + ' / ' + MAIN.srcVals[0].lacking + ')' };
   });
 

@@ -334,8 +334,8 @@
     },
     "eval_ctx_dead_value.js": {
       "checks_min": 10,
-      "sha256": "5d76eaa39973d13cd5ecbb92d044874389ce50b5fe06655f3535b865aed4cd4d",
-      "bytes_min": 16956
+      "sha256": "e427b64c1dbd4d7e8de1a8976f397e8bb292c626131d9597e2545432c8e7e057",
+      "bytes_min": 18163
     },
     "eval_ctx_birth_keys.js": {
       "checks_min": 18,
@@ -353,7 +353,7 @@
       "bytes_min": 39662
     }
   },
-  "generated_at": "2026-08-09T11:25:51.034Z",
+  "generated_at": "2026-08-09T11:29:50.925Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",
