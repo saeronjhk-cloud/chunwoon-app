@@ -6371,6 +6371,14 @@ async function analyzeDream(){
 
   // 사주 연계 정보 추출
   let sajuLinked=false, ilgan='', ilganElement='', dayPillar='', dominantElement='', weakElement='';
+  // ★v7.79 계약 §2-1 (파 ⓑ) — 생년월일 **원본 6키**.
+  //   ★값 출처는 `window._sajuResultData` **하나뿐**이다 — 꿈해몽 UI 는 생년월일을 직접 받지 않는다.
+  //     (파 ⓐ 의 작명·타로는 폼이 직접 받았다. 여기는 폴백만 있는 구조다.)
+  //   ★산출식은 `cwBirthKeys` 한 곳뿐이다(결정 99·113). 사본을 만들지 않는다.
+  //   ★★사주 미연동(`linkSaju` 꺼짐 · 전역 부재)이면 **6키를 만들지 않는다.**
+  //     없는 생년월일을 지어내면 서버가 그것을 참으로 믿고 원국을 재유도한다(계약 §6 `derived`).
+  //     미적재면 서버는 `mode:'legacy'` 로 **아무것도 바꾸지 않는다** — 그것이 정상 동작이다.
+  let _bkDr={};
   if(linkSaju&&window._sajuResultData){
     const sd=window._sajuResultData;
     const dStem=sd.pillars.day.stem;
@@ -6384,9 +6392,14 @@ async function analyzeDream(){
       dominantElement=EL[els.indexOf(max)];
       weakElement=EL[els.indexOf(min)];
     }
+    // ★`leap` 은 v7.79 파 ⓐ(I-77)가 `_sajuResultData` 에 신설한 키다. 이것이 없으면
+    //   음력 윤달 생일이 평달로 재유도돼 화면≠해석이 된다(I-43 과 같은 형태).
+    _bkDr=cwBirthKeys(sd.calType,sd.inputYear,sd.inputMonth,sd.inputDay,sd.hi,sd.leap)||{};
   }
 
-  const info={time,timeName,cats,catNames,emo,emoName,story,sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement};
+  // ★`birthKeys` 는 프리미엄·재시도 경로(`_buildDreamContext`)가 같은 값을 쓰기 위한 운반이다.
+  //   서버로 나가는 것은 아래 `ctx` 의 **명시 리터럴 6키**이지 이 객체가 아니다.
+  const info={time,timeName,cats,catNames,emo,emoName,story,sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,birthKeys:_bkDr};
   window._dreamResultData=info;
 
   // 로딩 UI
@@ -6402,12 +6415,17 @@ async function analyzeDream(){
   r.scrollIntoView({behavior:'smooth',block:'start'});
 
   // LLM 컨텍스트
+  // ★적재는 **명시 리터럴**로 한다(계약 §2-3). 대입 헬퍼로 감싸면
+  //   `eval_ctx_key_surface.js` 의 표면 추출기가 못 읽어 이 상품군 표면이 통째로 사라진다.
+  //   ★전부 또는 전무 — 판독 불가면 `cwBirthKeys` 가 `null` 을 줘 6키가 전부 `undefined` 가 되고
+  //   `JSON.stringify` 가 통째로 떨어뜨린다. 부분 적재는 서버의 원국 폐기를 부른다(계약 §6).
   const ctx={
     time:timeName||'미선택',
     categories:catNames||'미선택',
     emotion:emoName||'미선택',
     story:story||'(미입력 — 모티브만)',
-    sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement
+    sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,
+    cal:_bkDr.cal,y:_bkDr.y,m:_bkDr.m,d:_bkDr.d,h:_bkDr.h,leap:_bkDr.leap
   };
 
   try{
@@ -6663,7 +6681,14 @@ async function retryDreamPremiumAPI(){
   }
 }
 
+// ★이 빌더는 **최초 프리미엄 호출(`unlockDreamPremium`)과 재시도(`retryDreamPremiumAPI`) 양쪽**이
+//   쓴다 — payload 사이트로는 4곳(1·2단계 × 2경로)이다. 재시도 경로를 빼먹으면
+//   결제 후 1회 실패한 사용자만 조용히 `mode:'legacy'` 로 떨어진다(v7.78 결정 106 과 같은 형태).
 function _buildDreamContext(info){
+  // ★6키는 `analyzeDream` 이 이미 산출해 `info.birthKeys` 로 운반한 것을 **그대로** 쓴다.
+  //   여기서 다시 `_sajuResultData` 를 읽으면 사본이 갈린다(결정 99·113) — 사용자가 결제 사이에
+  //   사주 탭을 다시 돌리면 무료 해몽과 프리미엄이 서로 다른 생년월일로 갈릴 수 있다.
+  const _bkDp=(info&&info.birthKeys)||{};
   return {
     time:info.timeName||'미선택',
     categories:info.catNames||'미선택',
@@ -6671,7 +6696,8 @@ function _buildDreamContext(info){
     story:info.story||'(미입력)',
     sajuLinked:info.sajuLinked,
     ilgan:info.ilgan,ilganElement:info.ilganElement,dayPillar:info.dayPillar,
-    dominantElement:info.dominantElement,weakElement:info.weakElement
+    dominantElement:info.dominantElement,weakElement:info.weakElement,
+    cal:_bkDp.cal,y:_bkDp.y,m:_bkDp.m,d:_bkDp.d,h:_bkDp.h,leap:_bkDp.leap
   };
 }
 

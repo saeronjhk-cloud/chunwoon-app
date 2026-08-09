@@ -180,8 +180,24 @@ function _gatherChatContext(){
         ctx.gender = s.gender || '';
       } catch(e) {}
     }
-    ctx.dominant = s.dominant || '';
+    // ★v7.79 파 ⓑ — `dominant` 는 서버가 **한 번도 읽지 않는다**(daily_message 분기의 `c.dominant` 0건).
+    //   v7.77 I-68(`naming.hangryeol`)과 같은 형태의 dangling 키이므로 제거한다.
+    //   바로 아래 `lacking` 은 서버가 쓴다 — 남긴다. 검증: `eval_ctx_key_surface.js` K-2.
     ctx.lacking = s.lacking || '';
+    // ★v7.79 계약 §2-1 (파 ⓑ) — 생년월일 **원본 6키**. 서버가 원국을 재유도해 교체한다(§3).
+    //   ★값 출처는 `window._sajuResultData` 하나뿐이다 — 데일리 한 마디는 UI 가 생년월일을 안 받는다.
+    //   ★산출식은 `index.html` 의 `cwBirthKeys` **한 곳뿐**이다(결정 99·113). 여기에 사본을 만들지 않는다.
+    //     `js/chat.js` 는 별도 파일이라 이 함수보다 늦게 로드될 수 있으므로 존재를 확인하고 부른다
+    //     (이 파일이 `HS`·`EB` 를 다루는 방식과 같다). 못 부르면 **6키를 아예 안 싣는다** —
+    //     그때 서버는 `mode:'legacy'` 로 아무것도 안 바꾼다(계약 §6). 부분 적재가 최악이다.
+    //   ★★사주가 없으면(`window._sajuResultData` 부재) 이 블록 자체가 안 돌아 6키가 0개다.
+    //     없는 생년월일을 지어내지 않는다.
+    var _bkC = (typeof cwBirthKeys === 'function')
+      ? (cwBirthKeys(s.calType, s.inputYear, s.inputMonth, s.inputDay, s.hi, s.leap) || {}) : {};
+    // ★적재는 **명시 리터럴**로 한다(계약 §2-3). 대입 헬퍼로 감싸면
+    //   `eval_ctx_key_surface.js` 의 표면 추출기가 못 읽어 이 상품 표면이 통째로 사라진다.
+    //   ★값이 `undefined` 면 `JSON.stringify` 가 키째 떨어뜨린다 — 전부 또는 전무.
+    Object.assign(ctx, {cal:_bkC.cal,y:_bkC.y,m:_bkC.m,d:_bkC.d,h:_bkC.h,leap:_bkC.leap});
   }
   if(window._tarotResultData){
     const t = window._tarotResultData;

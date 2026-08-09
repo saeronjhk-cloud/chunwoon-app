@@ -921,6 +921,51 @@ function domLack(els) {
 }
 
 /**
+ * ★★계약 §5-1 — dream 계열의 `dominantElement`·`weakElement`. **클라
+ *   `index.html:analyzeDream()` 산출식의 사본**이다(정본):
+ *   ```js
+ *   const max=Math.max(...els),min=Math.min(...els);
+ *   dominantElement=EL[els.indexOf(max)];   // ← EL 원소 1개
+ *   weakElement=EL[els.indexOf(min)];       // ← EL 원소 1개
+ *   ```
+ *
+ * ★★`domLack` 과 **다른 함수다.** 헷갈리면 해석이 통째로 깨진다:
+ *   · `dominantElement` == `domLack(els).dominant`  — **항상 같다**(둘 다 indexOf(max))
+ *   · `weakElement`     != `domLack(els).lacking`   — **0인 오행이 2개 이상이면 갈린다**
+ *     실측 반례 `els=[0,2,1,3,0]` → weakElement `목(木)` vs lacking `목(木)·수(水)`.
+ *     0인 오행이 1개일 때만 우연히 같으므로 **1표본 확인은 오판을 만든다**.
+ *   ⟹ 그래서 `domLack` 을 재사용하지 않고 **별도 산출**로 둔다. 게이트
+ *     `eval/eval_dream_daily_guard.js` 의 W-1(클·서버 전수 1,287조합 바이트 일치)·
+ *     W-2(두 식이 갈리는 조합이 실재함을 분모와 함께)가 이 분리를 못박는다.
+ *
+ * ★어휘는 `EL_NAMES`(이 파일이 이미 가진 상수)를 재사용한다 — 배열 사본을 늘리지 않는다(결정 99).
+ * ★`indexOf` 이므로 **동점이면 가장 앞 오행**이다(클라와 같은 성질).
+ * ★클라는 `if(els.length)` 안에서만 산출하므로 빈 배열이면 둘 다 `''` 다. 같은 규약으로 맞춘다.
+ *
+ * @param {number[]} els 목·화·토·금·수 개수 5칸
+ * @returns {{dominantElement:string,weakElement:string}}
+ */
+function elExtremes(els) {
+  if (!Array.isArray(els) || els.length === 0) return { dominantElement: '', weakElement: '' };
+  const a = (els.length === 5) ? els : [0, 0, 0, 0, 0];
+  const max = Math.max.apply(null, a), min = Math.min.apply(null, a);
+  return { dominantElement: EL_NAMES[a.indexOf(max)], weakElement: EL_NAMES[a.indexOf(min)] };
+}
+
+/**
+ * ★★계약 §5-2 — `daily_message` 의 `hourBranch` 표시 문자열 12칸.
+ *   정본은 클라 `js/chat.js:176` 의 `hourLabels` 리터럴이며, **인덱스는 지지 순서**
+ *   (자·축·인·묘·진·사·오·미·신·유·술·해)로 시진 인덱스 `h`(0~11)와 1:1 이다.
+ *   ★공백 1칸 · 반각 괄호 · `~`(U+007E) · 시각은 2자리 zero-pad. 바이트가 형식이다.
+ *   ★두 벌이 되는 표이므로 게이트 H-0 이 클라 리터럴을 소스에서 뽑아 12칸 전수 대조한다.
+ */
+const HOUR_BRANCH_LABELS = Object.freeze([
+  '자시 (23:00~00:59)', '축시 (01:00~02:59)', '인시 (03:00~04:59)', '묘시 (05:00~06:59)',
+  '진시 (07:00~08:59)', '사시 (09:00~10:59)', '오시 (11:00~12:59)', '미시 (13:00~14:59)',
+  '신시 (15:00~16:59)', '유시 (17:00~18:59)', '술시 (19:00~20:59)', '해시 (21:00~22:59)',
+]);
+
+/**
  * ★계약 §3 — 재유도 산출 `r` 에서 context 값을 만드는 표. **형식은 클라 현행을
  *   바이트로 지킨다**(형식이 바뀌면 프롬프트 문장이 깨진다).
  *   ★키 이름은 아래 상품별 표에 **명시**한다. 문자열 조립을 새로 만들지 않는다(계약 §2-3).
@@ -932,6 +977,35 @@ const NT_VALUE_OF = Object.freeze({
   ilganElement: (r) => r.ilganElement,
   dominant: (r) => domLack(r.els).dominant,
   lacking: (r) => domLack(r.els).lacking,
+  // ── ★v7.79 파 ⓑ — dream(3) · daily_message ────────────────────────────────
+  //   ★형식은 계약 §5 의 **런타임 실측**이 정본이다. 아래 세 개가 함정이다.
+  /** 일주 — 클라 `HS[dStem]+EB[dBranch]`(한글 2글자). `pillarStrings.dayPillar` 와 동일 형식. */
+  dayPillar: (r) => r.pillarStrings.dayPillar,
+  /** ★`EL` 원소 **1개**. `·` 로 잇지 않는다 — `dominant` 와 항상 같다(계약 §5-1). */
+  dominantElement: (r) => elExtremes(r.els).dominantElement,
+  /**
+   * ★★`EL` 원소 **1개** = 「가장 적은 오행」. **`lacking` 이 아니다.**
+   *   `lacking` 은 「0인 오행 **전부**를 `·` 로 이은 것」이므로 0인 오행이 2개 이상이면
+   *   갈린다(계약 §5-1 실측 반례 `els=[0,2,1,3,0]` → `목(木)` vs `목(木)·수(水)`).
+   *   0인 오행이 **1개일 때만 우연히 같다** — 1표본으로 「같다」고 결론내면 틀린다.
+   *   ⟹ 절대 `domLack().lacking` 으로 대체하지 말 것. 게이트 W-1~W-4 가 전수로 못박는다.
+   */
+  weakElement: (r) => elExtremes(r.els).weakElement,
+  /**
+   * ★★「양력 변환 후」다(계약 §5-3). 음력 윤달 입력에서도 `(음력)` 접미가 **안 붙는다**
+   *   (클라 `js/chat.js:179` 의 분기 ②가 항상 선점한다 — 분기 ③은 도달 불가).
+   *   ⟹ 6키의 **원본** `y/m/d` 로 찍으면 형식이 깨진다. 반드시 `r.solar` 를 쓴다.
+   *   ★zero-pad 없음 · `년`·`월` 뒤 공백 1칸 · 마지막 `일` 뒤 공백 없음.
+   */
+  birth: (r) => r.solar.y + '년 ' + r.solar.m + '월 ' + r.solar.d + '일',
+  /**
+   * ★★「시간 모름」이면 **`undefined` 를 돌려준다** = 「이 키를 만들지 않는다」.
+   *   클라(`js/chat.js:174`)는 `if(s.pillars.hour)` 안에서만 `ctx.hourBranch` 를 만들므로
+   *   시각 미상 payload 에는 **키 자체가 없다**(빈 문자열이 아니라 `hasOwnProperty`=false).
+   *   ⟹ `h:-1` 인데 값을 만들어 넣으면 **없던 사실을 지어내는 것**이다.
+   *   ★`hourIdx` 는 시주의 지지 인덱스와 같다(`recompute` 가 `pill(hourStem, hourIdx)`).
+   */
+  hourBranch: (r) => ((r.pillars && r.pillars.hour) ? HOUR_BRANCH_LABELS[r.pillars.hour.branch] : undefined),
 });
 
 /**
@@ -951,6 +1025,41 @@ const TAROT_CTX_KEYS = Object.freeze({
   tarot_premium_1: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
   tarot_premium_2: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
 });
+/**
+ * ★v7.79 파 ⓑ — 꿈해몽 계열. 값 출처는 `window._sajuResultData`(클라 `analyzeDream`).
+ *   ★`dream` 과 `dream_premium_1` 은 같은 `info` 를 공유하므로 값이 항상 같다(계약 §5-1).
+ *   ★`dream_premium_2` 는 프롬프트가 `ilgan`·`ilganElement` 만 보간한다 —
+ *     클라는 `dayPillar`·`dominantElement`·`weakElement` 도 싣지만(공용 빌더
+ *     `_buildDreamContext`) 서버가 안 읽으므로 교체 표에 넣지 않는다. 여기 없는 키는
+ *     어떤 경로로도 서버가 손대지 않는다(명시 경계 · C-3 이 프롬프트와 1:1 로 못박는다).
+ */
+const DREAM_CTX_KEYS = Object.freeze({
+  dream: Object.freeze(['ilgan', 'ilganElement', 'dayPillar', 'dominantElement']),
+  dream_premium_1: Object.freeze(['ilgan', 'ilganElement', 'dayPillar', 'dominantElement', 'weakElement']),
+  dream_premium_2: Object.freeze(['ilgan', 'ilganElement']),
+});
+/**
+ * ★v7.79 파 ⓑ — 데일리 한 마디. 값 출처는 `js/chat.js:_gatherChatContext()`.
+ *   ★★`lacking` 은 계약 §3 표의 「쓰는 상품」 열에서 **빠져 있다**(표는 naming·nickname·
+ *     tarot 만 적었다). 그러나 `api/fortune.js:2094` 가 `부족 오행: ${c.lacking}` 로
+ *     **실제로 보간**하고 `js/chat.js:184` 가 **실제로 싣는다** ⟹ 계약 §3 의 누락으로
+ *     판단해 편입한다. 빼면 그 키만 무검증으로 남는다(관통 #4 의 재발 형태).
+ *   ★`dominant`(클라가 `js/chat.js:183` 에서 싣는 키)는 **서버가 한 번도 읽지 않는
+ *     dangling** 이라 여기 없다. 서버가 안 읽는 키를 서버가 덮어쓰는 것은 죽은 코드이며,
+ *     정리는 소유자(B · 클라)가 제거하는 쪽이 맞다. 게이트 K-1 이 「보간이 생기면
+ *     즉시 붉어지도록」 래칫으로 잡아 둔다.
+ */
+const DAILY_CTX_KEYS = Object.freeze({
+  daily_message: Object.freeze(['ilgan', 'ilganElement', 'dayPillar', 'lacking', 'birth', 'hourBranch']),
+});
+/**
+ * ★★「값이 없는 것이 정답」인 키 (계약 §5-2).
+ *   `hourBranch` 는 시각 미상이면 클라 payload 에 **키 자체가 없다**. 서버도 같아야 한다:
+ *   빈 문자열로 두면 「빈 값이 왔다」가 되고, 값을 만들어 넣으면 **없던 사실을 지어내는 것**이다.
+ *   ⟹ 산출기가 `undefined` 를 주면 그 키를 **삭제**한다(아래 `guardPersonContext`).
+ *   ★이 목록에 없는 키의 `undefined`/`''` 는 종전대로 **렌더 실패 = 전건 폐기**다.
+ */
+const DAILY_OMITTABLE_KEYS = Object.freeze(['hourBranch']);
 /** 클라이언트가 실어야 하는 생년월일 원본 키 (계약 §2-1). `compatPersonInput(ctx,'')` 가 읽는 6키. */
 const PERSON_BIRTH_KEYS = Object.freeze(['cal', 'y', 'm', 'd', 'h', 'leap']);
 
@@ -959,10 +1068,13 @@ const PERSON_BIRTH_KEYS = Object.freeze(['cal', 'y', 'm', 'd', 'h', 'leap']);
  * @param {object} ctx  클라이언트가 보낸 context
  * @param {string[]} keys 이 상품에서 교체할 §3 키 목록
  * @param {string} engineTag metrics.engine 라벨
+ * @param {{omittable?:string[]}} [opts] ★`omittable` — 산출기가 `undefined` 를 주면
+ *        「그 키는 **없는 것이 정답**」인 키(계약 §5-2 `hourBranch`). 그 경우 렌더 실패로
+ *        보지 않고 키를 **삭제**한다. 넘기지 않으면 v7.79 파 ⓐ 와 **동작이 동일**하다.
  * @returns {{applied:boolean, context:object, metrics:object}}
  *   ★`applied` 는 「정규화를 수행했다」는 뜻이며 **차단 판정에 쓰지 않는다**(400 금지).
  */
-function guardPersonContext(ctx, keys, engineTag) {
+function guardPersonContext(ctx, keys, engineTag, opts) {
   const metrics = {
     engine: engineTag,
     applied: false,
@@ -980,6 +1092,8 @@ function guardPersonContext(ctx, keys, engineTag) {
     return { applied: false, context: ctx, metrics };
   }
   const has = Object.prototype.hasOwnProperty;
+  const omittable = (opts && Array.isArray(opts.omittable)) ? opts.omittable : [];
+  const isOmittable = (k) => omittable.indexOf(k) !== -1;
   const out = Object.assign({}, ctx);
 
   // ── ① 6키 판독 — ★`compatPersonInput(ctx, '')` 재사용 (계약 §2-1) ──────────
@@ -1009,14 +1123,23 @@ function guardPersonContext(ctx, keys, engineTag) {
   } catch (e) { vals = null; }
   // ★렌더가 하나라도 성립하지 않으면 **전부 폐기**한다. 절반만 서버값인 프롬프트는
   //   「검증됐다」고 말할 수 없다(M16 의 교훈 — 판정 못 하면 채택이 아니라 폐기다).
-  if (!vals || keys.some((k) => vals[k] === null || vals[k] === undefined || vals[k] === '')) {
-    return discardAll('DERIVE_FAILED');
-  }
+  //   ★단 `omittable` 키의 `undefined` 는 **실패가 아니라 「키 없음」이라는 산출**이다
+  //     (계약 §5-2 — 시각 미상의 `hourBranch`). 그 밖의 빈 값('' · null)은 여전히 실패다.
+  const renderFailed = !vals || keys.some((k) => (isOmittable(k)
+    ? (vals[k] !== undefined && (vals[k] === null || vals[k] === ''))
+    : (vals[k] === null || vals[k] === undefined || vals[k] === '')));
+  if (renderFailed) return discardAll('DERIVE_FAILED');
 
   // ── ③ 교체 + 갈림 관측 ───────────────────────────────────────────────────
   for (const k of keys) {
     const before = has.call(out, k) ? out[k] : undefined;
     const after = vals[k];
+    // ★「없으면 없는 대로」 — 값을 지어내지 않는다. 클라가 위조로 실어 보냈으면 **삭제**한다
+    //   (빈 문자열로 두면 「빈 값이 왔다」가 되어 클라 payload 형상과 갈린다).
+    if (after === undefined) {
+      if (before !== undefined) { delete out[k]; metrics.discarded++; metrics.diffs.push(k); }
+      continue;
+    }
     if (before !== undefined && String(before) !== String(after)) metrics.diffs.push(k);
     out[k] = after;
     metrics.replaced++;
@@ -1033,14 +1156,32 @@ function guardNamingContext(ctx, type) {
 function guardTarotContext(ctx, type) {
   return guardPersonContext(ctx, TAROT_CTX_KEYS[type], 'ctxguard/v7.79-tarot');
 }
+/** ★v7.79 파 ⓑ — 꿈해몽 계열(`dream`·`dream_premium_1/2`) 가드. */
+function guardDreamContext(ctx, type) {
+  return guardPersonContext(ctx, DREAM_CTX_KEYS[type], 'ctxguard/v7.79-dream');
+}
+/**
+ * ★v7.79 파 ⓑ — 데일리 한 마디(`daily_message`) 가드.
+ *   ★`hourBranch` 만 `omittable` 이다 — 시각 미상이면 **키를 만들지 않는 것**이 정답이다.
+ */
+function guardDailyContext(ctx, type) {
+  return guardPersonContext(ctx, DAILY_CTX_KEYS[type], 'ctxguard/v7.79-daily',
+    { omittable: DAILY_OMITTABLE_KEYS });
+}
 
 // ★상수 정합 자기검사 — 상품별 표의 모든 키에 산출기가 있어야 한다. 없으면 그 키는
 //   조용히 무검증으로 프롬프트에 들어간다(= 관통 #4 의 재발). 로드 시점에 즉시 드러낸다.
 {
-  const tables = [NAMING_CTX_KEYS, TAROT_CTX_KEYS];
+  const tables = [NAMING_CTX_KEYS, TAROT_CTX_KEYS, DREAM_CTX_KEYS, DAILY_CTX_KEYS];
   const uncovered = [];
   for (const t of tables) for (const ty of Object.keys(t)) {
     for (const k of t[ty]) if (typeof NT_VALUE_OF[k] !== 'function') uncovered.push(ty + '.' + k);
+  }
+  // ★`omittable` 은 실제 교체 표에 있는 키여야 한다. 표에 없는 키를 면제하면
+  //   「면제한 줄 알았는데 아무 효과가 없는」 죽은 상수가 된다(I-43 유형).
+  for (const k of DAILY_OMITTABLE_KEYS) {
+    const inTable = Object.keys(DAILY_CTX_KEYS).some((ty) => DAILY_CTX_KEYS[ty].indexOf(k) !== -1);
+    if (!inTable) uncovered.push('DAILY_OMITTABLE_KEYS.' + k + '(표에 없음)');
   }
   if (uncovered.length) {
     throw new Error('[ctxguard] selfCheck failed: NT_VALUE_OF 미정의 키 ' + uncovered.join(','));
@@ -1052,6 +1193,9 @@ module.exports = {
   // ★v7.79 파 ⓐ — naming·tarot 1인 상품 가드
   guardNamingContext, guardTarotContext, guardPersonContext, domLack,
   NAMING_CTX_KEYS, TAROT_CTX_KEYS, PERSON_BIRTH_KEYS, NT_VALUE_OF,
+  // ★v7.79 파 ⓑ — dream(3)·daily_message 가드
+  guardDreamContext, guardDailyContext, elExtremes,
+  DREAM_CTX_KEYS, DAILY_CTX_KEYS, DAILY_OMITTABLE_KEYS, HOUR_BRANCH_LABELS,
   // ★v7.75 관통 #9 — tojeong 가드
   guardTojeongContext, tojeongBirthInput, tojeongDerive,
   TOJEONG_REPLACE_KEYS, TOJEONG_BIRTH_KEYS,

@@ -299,8 +299,8 @@
     },
     "eval_gate_asset_commit.js": {
       "checks_min": 11,
-      "sha256": "17f9f6935da1ee8f14e8c00a3a1b76cf6aad3d74ac91c16fee4a6fdbb3034a16",
-      "bytes_min": 11904
+      "sha256": "defcf213cc976dba9aa36f9d9f03a50706450a0e327f1532a5f1e2a37e70045b",
+      "bytes_min": 12100
     },
     "eval_lunar_ui_dom.js": {
       "checks_min": 21,
@@ -328,9 +328,9 @@
       "bytes_min": 9347
     },
     "eval_ctx_key_surface.js": {
-      "checks_min": 10,
-      "sha256": "a7aaad412b04e9ff08455fc0496939194cd78dc4d0c1053609c052ba77f08b37",
-      "bytes_min": 14281
+      "checks_min": 11,
+      "sha256": "026455db07cf0c9a28abacab392db81d26deb5ba958e82c2f095a23c2aa3b03e",
+      "bytes_min": 23340
     },
     "eval_ctx_dead_value.js": {
       "checks_min": 10,
@@ -338,17 +338,22 @@
       "bytes_min": 16956
     },
     "eval_ctx_birth_keys.js": {
-      "checks_min": 11,
-      "sha256": "67e5c0a795ff888f0279f3ef7effcd562088942a3f5eb5f40a37b9fee86db7bd",
-      "bytes_min": 20329
+      "checks_min": 18,
+      "sha256": "2011a1a54848be1ed83f1d1e65b49ef308fd9f6fe3b401b81548a58481c49667",
+      "bytes_min": 31269
     },
     "eval_naming_tarot_guard.js": {
       "checks_min": 39,
       "sha256": "9aa9f8367ffad9cf55487cf46bacc340d6db347d64e55acd31b58a9cce5676b2",
       "bytes_min": 30027
+    },
+    "eval_dream_daily_guard.js": {
+      "checks_min": 48,
+      "sha256": "ef96a43429f71a66446b5c6cd32943a26f8fc0abae06c740ebf0fbcbc005a61e",
+      "bytes_min": 39662
     }
   },
-  "generated_at": "2026-08-09T07:49:00.535Z",
+  "generated_at": "2026-08-09T11:25:51.034Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",
@@ -356,8 +361,8 @@
   },
   "sources": {
     "api/fortune.js": {
-      "sha256": "0ff5a2471e467328fab525c92ac4666245b665640c779eed5612ffb7cfc1e527",
-      "bytes_min": 105155,
+      "sha256": "f79db061e8f82820c513e23f880150e52df63757ecebc6bd304eca10f505171c",
+      "bytes_min": 109194,
       "root": "front"
     },
     "api/_engine/package.json": {
@@ -371,8 +376,8 @@
       "root": "front"
     },
     "api/_engine/ctxguard.js": {
-      "sha256": "1cb69d978b8404f624ecfc2495acba7ce15a834b262998b9c08a8b725ff85d17",
-      "bytes_min": 36441,
+      "sha256": "d2bdb90e67a2d2c0dedfd3333a8556c10f340c2b1c80070969dc532c2b0ca25b",
+      "bytes_min": 42600,
       "root": "front"
     },
     "api/_engine/recompute.js": {

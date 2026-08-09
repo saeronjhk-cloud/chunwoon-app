@@ -100,6 +100,10 @@ const REQUIRED = Object.freeze([
   //   jsdom 으로 본다. 6키가 없으면 서버 가드가 `mode:'legacy'` 로 **조용히 사문화**되므로,
   //   이 게이트가 없으면 어디도 붉어지지 않은 채 재유도가 통째로 안 돈다.
   'eval/eval_ctx_birth_keys.js',
+  // ★v7.79 파 ⓑ — dream(3)·daily_message 원국 재유도 축.
+  //   ★계약 §5 의 함정 3개(`weakElement`≠`lacking` 전수 대조 · `hourBranch` 키 부재 ·
+  //     `birth` 양력 변환)를 이 게이트만 본다. 미커밋이면 그 셋이 통째로 무감시다.
+  'eval/eval_dream_daily_guard.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',
