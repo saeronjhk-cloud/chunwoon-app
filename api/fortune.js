@@ -1421,7 +1421,65 @@ export default async function handler(req, res) {
           } catch (e) { cwNtErr = 'THREW'; }
         } else cwNtErr = 'ENGINE_UNAVAILABLE';
       }
-      // ── 2층 : 엔진 유무와 **무관하게** 항상 도는 평탄화 (§3 밖 전 문자열) ──
+      // ── 2층-a : ★★`cards` **배열** 방어 (타로 3종 전용 · I-83 · I-80) ──
+      //   ★I-83 — 프로덕션 실측: `context.cards` 가 문자열·숫자·객체이면
+      //     `(c.cards || []).map(...)` 이 `TypeError` 로 죽어 **500** 이 나갔다
+      //     (`(c.cards || []).map is not a function`). `|| []` 는 `null`/`undefined`
+      //     만 막고 나머지 형은 통과시킨다. 배열 안에 `null` 원소가 있어도 같다
+      //     (`card.name` 이 던진다). ★400 을 내지 않는 것과 마찬가지로 **500 도 내지
+      //     않는다** — 500 은 가용성 손실이자 내부 메시지 노출이라 더 나쁘다.
+      //     ⟹ 규격 밖은 차단이 아니라 **무해화**다: 배열이 아니면 `[]`, 원소가 객체가
+      //       아니면 버린다. 프롬프트는 `(c.cards||[])` 라 문장이 깨지지 않는다.
+      //   ★I-80 — 아래 2층-b(평탄화)는 **최상위 문자열만** 훑는다(비문자열은 건너뛴다).
+      //     배열은 건너뛰므로 그 안의 `name`·`up`·`rev`·`kind`·`suit`·`suitName`·
+      //     `court`·`theme` 가 **무제한 자유 문자열**로 프롬프트에 보간됐다 —
+      //     v7.72 관통 #5(`name` 무제한)와 같은 형태다. ⟹ 원소의 문자열 필드에도
+      //     같은 평탄화를 건다. 값이 원시형이 아니면(객체·배열·함수) **버린다** —
+      //     `${card.up}` 이 배열이면 join 결과에 개행이 그대로 실려 줄이 갈라진다.
+      //   【길이 상한 — ★파 ⓑ 의 `story` 와 **다른 판단**을 한 자리다】
+      //     `story` 는 사용자가 문장을 쓰는 **자유 서술**이라 상한이 상품 기능을 말없이
+      //     잘랐다(위 :1069 의 기존 정책). 카드 필드는 그 상황이 **아니다** — 값은
+      //     사용자가 아니라 **앱이 만든다**(`TAROT_MAJOR`·`TAROT_MINOR` 리터럴 표 ·
+      //     index.html:964·998). 실측 최장 18자로 400자 상한이 **아무것도 자르지 않는다**.
+      //     ⟹ 면제를 두지 않는다. 어휘가 자유 서술로 바뀌면 게이트 T-8 이 붉어져
+      //       의식적인 결정을 강제한다(파 ⓒ P-5 와 같은 성질).
+      //   【개수 상한】 클라 실제 상한과 **같은 수**다 — 무료 3장(js/tarot.js:17
+      //     `slice(0,3)`) · 프리미엄 10장(:217 `slice(0,10)`). ★무료 분기는 `slice` 없이
+      //     전건을 렌더하므로, 상한이 없으면 무료 요청 하나로 프롬프트가 무한히 늘어난다.
+      //     게이트 T-0 이 이 수치를 **클라 소스에서 다시 읽어** 갈림을 막는다.
+      const CW_TAROT_CARDS_MAX = { tarot: 3, tarot_premium_1: 10, tarot_premium_2: 10 };
+      const CW_TAROT_CARDS_HARD_MAX = 10;   // 표에 없는 type 이 생겨도 무한이 되지 않는다
+      /** 카드 원소 1개를 무해화한다. 객체가 아니면 `null`(=버림). */
+      const cwNtCardSafe = (el) => {
+        if (!el || typeof el !== 'object' || Array.isArray(el)) return null;
+        const out = {};
+        for (const k of Object.keys(el)) {
+          if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+          const v = el[k];
+          if (typeof v === 'string') out[k] = cwCompatFlatten(v);
+          else if (typeof v === 'boolean') out[k] = v;
+          else if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+          // 그 밖(객체·배열·함수·null)은 버린다 — 보간이 `[object Object]` 이거나
+          // 배열 join 으로 **개행을 실어 나른다**. 없는 것과 같아진다.
+        }
+        return out;
+      };
+      let cwNtCards = null;
+      if (cwNtFamily === 'tarot' && Object.prototype.hasOwnProperty.call(context, 'cards')) {
+        const raw = context.cards;
+        const max = Object.prototype.hasOwnProperty.call(CW_TAROT_CARDS_MAX, type)
+          ? CW_TAROT_CARDS_MAX[type] : CW_TAROT_CARDS_HARD_MAX;
+        const src = Array.isArray(raw) ? raw.slice(0, max) : [];
+        const kept = [];
+        for (const el of src) { const c = cwNtCardSafe(el); if (c) kept.push(c); }
+        cwNtCards = {
+          in: Array.isArray(raw) ? raw.length : (raw === null ? 'null' : typeof raw),
+          kept: kept.length, dropped: src.length - kept.length,
+          cut: Array.isArray(raw) ? Math.max(0, raw.length - max) : 0,
+        };
+        context.cards = kept;
+      }
+      // ── 2층-b : 엔진 유무와 **무관하게** 항상 도는 평탄화 (§3 밖 전 문자열) ──
       const cwNtFlattened = [];
       for (const k of Object.keys(context)) {
         if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
@@ -1434,9 +1492,11 @@ export default async function handler(req, res) {
       //   게이트 `eval_naming_tarot_guard.js` 는 **이 로그와 프롬프트 바이트**로 판정한다(결정 84).
       //   `mode:legacy` 비율이 0 으로 수렴해야 구버전 캐시가 사라진 것이고,
       //   `diffs` 가 0 이 아닌 요청은 클라 산출과 서버 재유도가 갈렸다는 뜻이다.
+      //   ★`cards` 는 **키가 온 요청에서만** 관측된다 — 없는 사실을 지어내지 않는다.
       try {
         const cwNtBase = { type, layer2: true, flattened: cwNtFlattened };
         cwNtBase[cwNtFamily] = true;
+        if (cwNtCards) cwNtBase.cards = cwNtCards;
         console.log('[cw:ctxguard]', JSON.stringify(Object.assign(cwNtBase,
           cwNtM
             ? { layer1: true, mode: cwNtM.mode, reason: cwNtM.reason,

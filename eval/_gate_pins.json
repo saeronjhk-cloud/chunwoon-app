@@ -343,9 +343,9 @@
       "bytes_min": 43106
     },
     "eval_naming_tarot_guard.js": {
-      "checks_min": 39,
-      "sha256": "9aa9f8367ffad9cf55487cf46bacc340d6db347d64e55acd31b58a9cce5676b2",
-      "bytes_min": 30027
+      "checks_min": 51,
+      "sha256": "d3a60a1f500d62ff7fe046e7748d3d4269dcc38111d0c89489e261fddeb53991",
+      "bytes_min": 44571
     },
     "eval_dream_daily_guard.js": {
       "checks_min": 48,
@@ -358,7 +358,7 @@
       "bytes_min": 39877
     }
   },
-  "generated_at": "2026-08-09T12:05:27.355Z",
+  "generated_at": "2026-08-09T12:43:15.567Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",
@@ -366,8 +366,8 @@
   },
   "sources": {
     "api/fortune.js": {
-      "sha256": "e8cd43f70b2c31b6ef3b5bb51585f319c7f80d29670572a6de1df068dd551374",
-      "bytes_min": 112746,
+      "sha256": "6570c88d3368cb13a52fddabf5977c986a77b3f904667844718f85d409b8efab",
+      "bytes_min": 115549,
       "root": "front"
     },
     "api/_engine/package.json": {
