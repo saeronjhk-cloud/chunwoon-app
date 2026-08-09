@@ -299,8 +299,8 @@
     },
     "eval_gate_asset_commit.js": {
       "checks_min": 11,
-      "sha256": "61cba5893485d53f5a9be8f50e7456b7073483a33f6179a9ccc22d4555749430",
-      "bytes_min": 11364
+      "sha256": "fb01fb3c8ca01e70a009b30d60364bca3e1c03ffcf29ccd18a99fc119663521e",
+      "bytes_min": 11530
     },
     "eval_lunar_ui_dom.js": {
       "checks_min": 21,
@@ -331,9 +331,14 @@
       "checks_min": 10,
       "sha256": "02f30841f8811e0eda65f9abc224c1df4779450d547536dbf870586a11862514",
       "bytes_min": 14001
+    },
+    "eval_ctx_dead_value.js": {
+      "checks_min": 10,
+      "sha256": "5d76eaa39973d13cd5ecbb92d044874389ce50b5fe06655f3535b865aed4cd4d",
+      "bytes_min": 16956
     }
   },
-  "generated_at": "2026-08-08T22:30:08.785Z",
+  "generated_at": "2026-08-09T00:15:19.201Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",

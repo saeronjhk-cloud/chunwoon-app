@@ -90,6 +90,9 @@ const REQUIRED = Object.freeze([
   'eval/_tmp.js',
   'eval/eval_tmp_hygiene.js',    // ★v7.75 I-62 — 임시 사본 누수 축.
   'eval/eval_ctx_key_surface.js', // ★v7.77 결정 90 — I-43 유형(클라만 아는 키)을 사고 전에 잡는 축.
+  // ★v7.78 I-70 — 제3의 범주: 클라가 싣기는 하는데 **값이 구조적으로 항상 비는 키**(dead value).
+  //   키 표면 검사(K-2·K-3)는 원리적으로 못 본다. 런타임(jsdom)으로 payload 를 직접 본다.
+  'eval/eval_ctx_dead_value.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',

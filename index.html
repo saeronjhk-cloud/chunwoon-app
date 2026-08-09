@@ -2095,6 +2095,36 @@ function calcElementDistribution(pillars){
 }
 
 /**
+ * 오행 분포 → **강한 오행(dominant) · 부족한 오행(lacking)**. ★v7.78 신설 (I-70)
+ *
+ * ★단일 출처. 종전에는 이 산출식이 `_collectSajuFromUI` 안에만 있었고
+ *   `window._sajuResultData` 에는 **아예 없었다**. 그래서 사용자가 작명 폼에
+ *   생년월일을 넣지 않고 「이미 본 사주 결과」를 재사용하는 경로에서
+ *   `dominant`·`lacking` 이 조용히 `''` / `'없음'` 으로 나갔다.
+ *   소비자 4곳(js/chat.js 의 daily_message · 작명 사람 폴백 · 닉네임 폴백 ·
+ *   `_buildNamingContext` 의 프리미엄 작명)이 전부 같은 결손을 물려받았다.
+ *   UI 는 「사주 정보가 있으면 **부족한 오행을 보완하는** 더 풍부한 작명이 가능해요」라고
+ *   약속하는데 정작 부족 오행이 비어 나갔다 — 작명 품질에 직결된다.
+ *
+ * ★★산출식을 **두 번째로 복사하지 말 것.** 같은 식이 두 벌이 되면 반드시 갈린다(결정 99).
+ *   `_collectSajuFromUI`(폼 직접 입력)와 `analyzeSaju`(사주 결과)가 **이 함수 하나**를 부른다.
+ *   검증: `node eval/eval_ctx_dead_value.js` 의 D-1·D-5.
+ *
+ * @param {number[]} els 목·화·토·금·수 개수 5칸
+ * @returns {{dominant:string,lacking:string}} lacking 은 여러 개면 `·` 로 잇는다
+ */
+function cwDomLack(els){
+  const a=(Array.isArray(els)&&els.length===5)?els:[0,0,0,0,0];
+  const max=Math.max(...a),min=Math.min(...a);
+  const dominant=EL[a.indexOf(max)];
+  const lackingArr=[];
+  for(let i=0;i<5;i++){if(a[i]===0)lackingArr.push(EL[i])}
+  // 0인 오행이 하나도 없으면 「가장 적은 오행」을 부족으로 본다(종전 동작 그대로).
+  if(lackingArr.length===0)lackingArr.push(EL[a.indexOf(min)]);
+  return {dominant,lacking:lackingArr.join('·')};
+}
+
+/**
  * 십성(十星) 판정 — 일간 기준 다른 천간의 관계.
  * 동일오행=비견/겁재, 내가 생하는=식신/상관, 내가 극하는=정재/편재,
  * 나를 극하는=정관/편관, 나를 생하는=정인/편인.
@@ -2530,7 +2560,11 @@ async function analyzeSaju(){
     hour:pillars.hour?calcSipsung(dStem,pillars.hour.stem):''
   };
 
-  const info={name,gender:g,calType,inputYear,inputMonth,inputDay,hi,solarY,solarM,solarD,lunarInfo,pillars,els,sipsung};
+  // ★v7.78 I-70 — `dominant`·`lacking` 을 **여기서** 실어 `window._sajuResultData` 를 단일 출처로 만든다.
+  //   이 두 키가 없어서 소비자 4곳(js/chat.js daily_message · 작명 사람/닉네임 폴백 ·
+  //   `_buildNamingContext` 프리미엄)이 전부 빈 값을 프롬프트에 넣고 있었다.
+  //   ★`_buildSajuContext` 는 info 를 구조분해로 **명시 선택**하므로 saju payload 는 안 변한다(D-7).
+  const info={name,gender:g,calType,inputYear,inputMonth,inputDay,hi,solarY,solarM,solarD,lunarInfo,pillars,els,sipsung,...cwDomLack(els)};
   window._sajuResultData=info;
 
   // 로딩 UI
@@ -7132,16 +7166,13 @@ function _collectSajuFromUI(birthId, hourId, _genderId, calTypeId){
   if(!pillars)return null;
   const els=calcElementDistribution(pillars);
   const dStem=pillars.day.stem;
-  const max=Math.max(...els),min=Math.min(...els);
-  const dominant=EL[els.indexOf(max)];
-  const lackingArr=[];
-  for(let i=0;i<5;i++){if(els[i]===0)lackingArr.push(EL[i])}
-  if(lackingArr.length===0)lackingArr.push(EL[els.indexOf(min)]);
+  // ★v7.78 I-70 — 산출식은 `cwDomLack` 한 곳에만 둔다(결정 99: 사본은 반드시 갈린다).
+  const {dominant,lacking}=cwDomLack(els);
   return {pillars,els,
     ilgan:HS_CH[dStem],ilganElement:EL[HS_EL[dStem]],
     dayPillar:HS[dStem]+EB[pillars.day.branch],
     pillarStr:`${HS[pillars.year.stem]}${EB[pillars.year.branch]} ${HS[pillars.month.stem]}${EB[pillars.month.branch]} ${HS[pillars.day.stem]}${EB[pillars.day.branch]} ${pillars.hour?HS[pillars.hour.stem]+EB[pillars.hour.branch]:'(시간 모름)'}`,
-    dominant,lacking:lackingArr.join('·')};
+    dominant,lacking};
 }
 
 async function analyzeNaming(){
