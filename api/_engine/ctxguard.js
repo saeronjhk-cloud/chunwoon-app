@@ -689,8 +689,20 @@ function guardCompatContext(ctx) {
     derivedAny = true;
   }
 
+  // ★v7.80 §5 — 관측 구멍 1건 수리. 「6키를 **주장**했는데 재유도가 실패」한 경로는
+  //   `metrics.discarded` 에 키가 쌓이는데 `mode` 는 `'undeducible'` 이었다.
+  //   ⟹ 로그의 `mode` 만으로는 **폐기율을 셀 수 없었다**. tojeong·파 ⓐⓑⓒ 는 전부
+  //     같은 사건을 `'discarded'` 로 부르므로, 상품 간 어휘가 갈려 집계가 불가능했다.
+  //   ★`missingAny` 를 먼저 본다 — legacy(주장 안 함)와 폐기(주장했는데 검증 불가)는
+  //     **다른 사건**이다. 순서를 바꾸면 legacy 비율(strict 전환 판단의 분모)이 오염된다.
+  //   ★마지막 `'undeducible'` 은 죽은 가지가 아니라 **카나리아**다. 현행 루프에서는
+  //     「missing 도 아니고 derived 도 아니면 반드시 discarded 에 쌓인다」가 성립하므로
+  //     도달하지 않지만, 나중에 셋 중 어디에도 안 드는 경로가 생기면 `'discarded'` 라고
+  //     **거짓 단언**하는 대신 이 값으로 즉시 드러난다.
   metrics.mode = (metrics.derived.p1 && metrics.derived.p2) ? 'derived'
-    : (derivedAny ? 'partial' : (missingAny ? 'legacy' : 'undeducible'));
+    : (derivedAny ? 'partial'
+      : (missingAny ? 'legacy'
+        : (metrics.discarded.length > 0 ? 'discarded' : 'undeducible')));
   metrics.applied = true;
   metrics.strictLegacy = strictLegacy;
   metrics.coercedCount = metrics.coerced.length;
@@ -818,6 +830,30 @@ function tojeongDerive(inp, targetYear) {
 }
 
 /**
+ * ★★v7.80 §5 — 하위호환(5키 **미전송**) tojeong 요청의 파생 12키를 폐기할 것인가.
+ *
+ * 【`compatStrictLegacy()` 와 동형이다 — 그런데 환경변수는 **별개**다】
+ *   원리는 compat 과 같다(위 `compatStrictLegacy` 주석): 5키가 아예 없는 요청에서는
+ *   「정상 구버전 클라이언트가 보낸 진짜 값」과 「공격자가 심은 남의 진짜 값」이
+ *   **바이트 수준에서 구별 불가능**하다. 이 축은 「검증」이 아니라 **5키가 오는 것**으로만 닫힌다.
+ *
+ * ★★그래서 스위치를 `CW_COMPAT_STRICT` 하나로 묶지 않는다:
+ *   compat 의 12키와 tojeong 의 5키는 **클라 배포 시점이 다르고**, 따라서 캐시된
+ *   구버전 페이지가 사라지는 시점(= 로그의 `mode:'legacy'` 비율이 0 으로 수렴하는 시점)도
+ *   **각각 다르다**. 하나의 변수로 묶으면 한쪽의 legacy 잔량 때문에 다른 쪽을 못 켜거나,
+ *   반대로 한쪽을 켜려다 아직 legacy 가 남은 쪽의 정상 사용자 값을 함께 날린다.
+ *   ⟹ **전환 단위 = 클라 배포 단위**여야 한다. 계약 v7.80 §7 이 두 축의 전환 기준을
+ *     따로 적은 것과 같은 이유다(compat: 12키 배포 +7일 / tojeong: 5키 배포 +7일).
+ *
+ * ★★기본값은 **OFF** 다. 이번 세션은 코드만 넣고 전환하지 않는다(계약 §5-4 · §7).
+ *   전환은 환경변수 1개(`CW_TOJEONG_STRICT=1`)로 끝나며 코드 변경이 필요 없다 —
+ *   다음 세션이 「구현부터 다시」 하지 않게 하려는 것이 이 함수의 존재 이유다.
+ */
+function tojeongStrictLegacy() {
+  return process.env.CW_TOJEONG_STRICT === '1';
+}
+
+/**
  * ★tojeong 계열 context 가드 — 관통 #9 의 단일 판정점.
  * @returns {{applied:boolean, context:object, metrics:object}}
  *   ★`applied` 는 「정규화를 수행했다」는 뜻이며 **차단 판정에 쓰지 않는다**.
@@ -831,12 +867,34 @@ function guardTojeongContext(ctx) {
     diffs: [],           // 클라값 != 서버 재유도값 인 키 (관측용 — 조용한 갈림의 유일한 신호)
     replaced: 0,
     discarded: 0,
+    // ★v7.80 §5-3 — compat metrics 와 **관측 형식을 통일**한다. 스위치가 꺼져 있어도
+    //   항상 실어야 「그 요청이 어느 정책으로 판정됐는가」를 로그만으로 재구성할 수 있다
+    //   (값이 없는 것과 false 인 것은 다르다 — 전환 전후 로그를 비교할 때 이 차이가 분모다).
+    strictLegacy: false,
   };
   if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return { applied: false, context: ctx, metrics };
   const out = Object.assign({}, ctx);
 
+  const strictLegacy = tojeongStrictLegacy();
+  metrics.strictLegacy = strictLegacy;
+
   const got = tojeongBirthInput(ctx);
   if (got.missing) {
+    // ── 5키를 **주장하지 않았다**(구버전 캐시) ──────────────────────────────
+    //   ★기본값(스위치 OFF)은 종전과 **완전히 동일**하다 — 아무것도 바꾸지 않고
+    //     `mode:'legacy'` 로 통과시킨다(계약 §5-2 「1바이트도 바뀌면 안 된다」).
+    //   ★`CW_TOJEONG_STRICT=1` 이면 파생 12키를 **폐기**한다. 검증할 재료가 없는
+    //     값을 채택하는 것이 곧 「검증 불가 시 클라값 채택」(v7.73 M16 회귀)이기 때문이다.
+    //   ★차단(400)이 아니라 폐기다 — tojeong 은 어떤 경우에도 막지 않는다(관통 #8).
+    //   ★`reason` 을 `NO_BIRTH_KEYS` 와 **다른 문자열**로 둔다. 같은 값을 쓰면
+    //     「키가 없어서 통과」와 「키가 없어서 폐기」가 로그에서 구별되지 않는다.
+    if (strictLegacy) {
+      for (const k of TOJEONG_REPLACE_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
+      }
+      metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = 'NO_BIRTH_KEYS_STRICT';
+      return { applied: true, context: out, metrics };
+    }
     metrics.applied = true; metrics.mode = 'legacy'; metrics.reason = 'NO_BIRTH_KEYS';
     return { applied: true, context: out, metrics };
   }
