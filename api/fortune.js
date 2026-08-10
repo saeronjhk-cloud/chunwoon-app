@@ -1374,7 +1374,11 @@ export default async function handler(req, res) {
             // ★관측 — `mode:legacy` 비율이 0 으로 수렴해야 구버전 캐시가 사라진 것이다.
             //   `diffs` 가 0 이 아닌 요청은 **클라 산출과 서버 재유도가 갈렸다**는 뜻이며,
             //   차단하지 않는 방어에서는 이 로그가 유일한 관측점이다(v7.71-b 관통 #5).
+            // ★v7.80 — `strictLegacy` 를 함께 싣는다. compat(:1316)은 이미 싣고 있었는데
+            //   tojeong 만 빠져 있어, `CW_TOJEONG_STRICT` 를 켠 뒤에도 **로그만 보고는
+            //   스위치가 실제로 적용됐는지 확인할 수 없었다**(관측 비대칭).
             ? { layer1: true, mode: cwTjM.mode, reason: cwTjM.reason,
+                strictLegacy: cwTjM.strictLegacy,
                 replaced: cwTjM.replaced, discarded: cwTjM.discarded, diffs: cwTjM.diffs }
             : { layer1: false, reason: cwTjErr || 'GUARD_MISSING' })));
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
@@ -1759,7 +1763,7 @@ candidates 정확히 10개.` + JSON_FORCE;
 업종: ${c.industry||''} / 비즈니스: ${c.bizModel||''} / 키워드: ${c.bizKeyword||''} / 시장: ${c.market||''}
 회사 등록 예정 지역: ${c.companyRegion||'미선택'}
 대표 이름: ${c.ceoName||'미입력'}
-${c.ceoPillar?`사장 사주: ${c.ceoPillar} / 일간: ${c.ceoIlgan||''}(${c.ceoIlganElement||''}) / 부족: ${c.ceoLacking||''}`:'사장 사주: 없음'}
+${c.ceoPillar?`사장 사주: ${c.ceoPillar} / 일간: ${c.ceoIlgan||''}(${c.ceoIlganElement||''}) / 부족: ${c.ceoLacking||''}`:'사장 사주: 미입력'}
 한자기반·한글기반·외래어/합성어 다양하게 10개 추천하고 각 이름의 등록 가능성을 평가해주세요.`;
 
     } else if (type === 'naming_company_premium_2') {
@@ -1885,8 +1889,8 @@ candidates 5개. 각 candidates의 hanjaDetail은 이름 글자 수만큼 (2~3�
       const givenLen = parseInt(lenNum,10)-1;
       userPrompt = `작명 의뢰
 성씨: ${c.surname||''}${c.surnameHanja?` (${c.surnameHanja})`:''}
-사주: ${c.pillar||''} / 일간 ${c.ilgan||''}(${c.ilganElement||''})
-부족한 오행: ${c.lacking||'없음'} / 강한 오행: ${c.dominant||''}
+${c.pillar?`사주: ${c.pillar} / 일간 ${c.ilgan||''}(${c.ilganElement||''})`:'사주: 미입력'}
+${c.lacking?`부족한 오행: ${c.lacking} / 강한 오행: ${c.dominant||''}`:'부족한 오행: 미입력'}
 성별: ${c.gender||''}
 작명 스타일: ${c.style||'전통한자'}
 ⚠️ 이름 글자 수: ${c.length||'3자'} → 성씨 1자 + 이름 ${givenLen}자. hangul/hanja 필드는 정확히 ${givenLen}글자. 한국 관습이 3자라도 사용자 요청을 우선.
@@ -1918,8 +1922,8 @@ candidates 정확히 10개, sajuMatchScore 내림차순 정렬. 한글전용은 
       const c = context || {};
       userPrompt = `작명 프리미엄 1단계 (10개 후보)
 성씨: ${c.surname||''}${c.surnameHanja?`(${c.surnameHanja})`:''}
-사주 4기둥: ${c.pillar||''}
-일간: ${c.ilgan||''}(${c.ilganElement||''}) / 강함: ${c.dominant||''} / 부족: ${c.lacking||'없음'}
+${c.pillar?`사주 4기둥: ${c.pillar}`:'사주 4기둥: 미입력'}
+${c.ilgan?`일간: ${c.ilgan}(${c.ilganElement||''}) / 강함: ${c.dominant||''} / 부족: ${c.lacking||''}`:'일간: 미입력'}
 성별: ${c.gender||''}, 작명 스타일: ${c.style||''}, 글자수: ${c.length||''}
 선호: ${c.preferred||'없음'}
 ${c.hangryeolHanja?`⚠️ 항렬자(行列字): ${c.hangryeolHanja} — 위치: ${c.hangryeolPos==='first'?'이름 첫 글자':c.hangryeolPos==='last'?'이름 끝 글자':'위치 미지정 (가문 관습 따라)'}. 모든 candidates는 이 정확한 한자(${c.hangryeolHanja})를 지정 위치에 반드시 포함. 다른 한자로 변경 절대 금지. hanjaDetail에도 이 한자가 그대로 들어가야 함.`:'항렬자: 없음'}
@@ -1952,8 +1956,9 @@ bestThree 정확히 3개.` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `작명 프리미엄 2단계 (베스트 3 인생 풀이)
-성씨: ${c.surname||''} / 사주: ${c.pillar||''}
-일간 ${c.ilgan||''} / 부족 ${c.lacking||''}
+성씨: ${c.surname||''}
+${c.pillar?`사주: ${c.pillar}`:'사주: 미입력'}
+${c.ilgan?`일간 ${c.ilgan} / 부족 ${c.lacking||''}`:'일간: 미입력'}
 성별: ${c.gender||''}
 ${c.hangryeolHanja?`⚠️ 항렬자: ${c.hangryeolHanja} (${c.hangryeolPos==='first'?'첫 글자':c.hangryeolPos==='last'?'끝 글자':'위치 미지정'}) — bestThree 모두 이 한자 포함 필수.`:''}
 
@@ -1978,7 +1983,7 @@ keySymbols 배열에 꿈의 핵심 상징 3개.` + JSON_FORCE;
 핵심 모티브: ${c.categories||'미선택'}
 정서: ${c.emotion||'미선택'}
 줄거리: ${c.story||'(미입력)'}
-${c.sajuLinked?`사주 연계 정보 — 일간: ${c.ilgan||''}(${c.ilganElement||''}), 일주: ${c.dayPillar||''}, 강한 오행: ${c.dominantElement||''}`:''}
+${c.sajuLinked?(c.ilgan?`사주 연계 정보 — 일간: ${c.ilgan}(${c.ilganElement||''}), 일주: ${c.dayPillar||''}, 강한 오행: ${c.dominantElement||''}`:'사주 연계 정보: 미입력'):''}
 
 이 꿈을 한국 전통 해몽 + 융 심리학 두 관점으로 풀이해주세요.`;
 
@@ -2001,7 +2006,7 @@ ${c.sajuLinked?`사주 연계 정보 — 일간: ${c.ilgan||''}(${c.ilganElement
 핵심 모티브: ${c.categories||''}
 정서: ${c.emotion||''}
 줄거리: ${c.story||''}
-${c.sajuLinked?`사주 일간: ${c.ilgan||''}(${c.ilganElement||''}), 일주: ${c.dayPillar||''}, 강한 오행: ${c.dominantElement||''}, 약한 오행: ${c.weakElement||''}`:'사주 연계: 없음'}
+${c.sajuLinked?(c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''}), 일주: ${c.dayPillar||''}, 강한 오행: ${c.dominantElement||''}, 약한 오행: ${c.weakElement||''}`:'사주 일간: 미입력'):'사주 연계: 없음'}
 
 전통·융·사주(있을 시)·무의식 4관점 심층 풀이를 해주세요.`;
 
@@ -2024,7 +2029,7 @@ symbolsDetail 4~5개.` + JSON_FORCE;
 모티브: ${c.categories||''}
 정서: ${c.emotion||''}
 줄거리: ${c.story||''}
-${c.sajuLinked?`사주 일간: ${c.ilgan||''}(${c.ilganElement||''})`:'사주 연계: 없음'}
+${c.sajuLinked?(c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''})`:'사주 일간: 미입력'):'사주 연계: 없음'}
 
 핵심 상징 4~5개 정밀 분석, 화몽법, 시기별 영향, 행운 정보를 풀이해주세요.`;
 
@@ -2062,8 +2067,8 @@ scores 4영역은 관계 유형별로 가중치 조정:
       userPrompt = `궁합 분석 의뢰
 ★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이)
 
-${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1||''} / 일간 ${c.ilgan1||''}
-${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2||''} / 일간 ${c.ilgan2||''}
+${c.pillar1?`${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1} / 일간 ${c.ilgan1||''}`:`${c.name1||'A'}님(${c.gender1||''}): 사주 미입력`}
+${c.pillar2?`${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2} / 일간 ${c.ilgan2||''}`:`${c.name2||'B'}님(${c.gender2||''}): 사주 미입력`}
 
 일간 관계: ${c.ilganRelation||''}
 일지(배우자궁) 관계: ${c.iljiRelation||''}
@@ -2106,8 +2111,8 @@ ${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2||''} / 일간 ${c.ilgan2||''}
       userPrompt = `궁합 프리미엄 1단계 (정밀 매치·합충·영역 심층)
 ★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이)
 
-${c.name1||'A'}님: ${c.pillar1||''} / 일간 ${c.ilgan1||''}
-${c.name2||'B'}님: ${c.pillar2||''} / 일간 ${c.ilgan2||''}
+${c.pillar1?`${c.name1||'A'}님: ${c.pillar1} / 일간 ${c.ilgan1||''}`:`${c.name1||'A'}님: 사주 미입력`}
+${c.pillar2?`${c.name2||'B'}님: ${c.pillar2} / 일간 ${c.ilgan2||''}`:`${c.name2||'B'}님: 사주 미입력`}
 일간 관계: ${c.ilganRelation||''} / 일지 관계: ${c.iljiRelation||''}
 천간합: ${c.hsHabs||''} / 천간충: ${c.hsChungs||''}
 지지 육합: ${c.ebHabs||''} / 육충: ${c.ebChungs||''} / 육해: ${c.ebHaes||''}
@@ -2142,8 +2147,8 @@ daewoonAlignment 8단계 모두, scenarios 3~4개.` + JSON_FORCE;
       userPrompt = `궁합 프리미엄 2단계 (대운 동행·시나리오·길흉일·개운)
 ★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이 — 결혼 표현 일률 적용 X)
 
-${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1||''}
-${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2||''}
+${c.pillar1?`${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1}`:`${c.name1||'A'}님(${c.gender1||''}): 사주 미입력`}
+${c.pillar2?`${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2}`:`${c.name2||'B'}님(${c.gender2||''}): 사주 미입력`}
 일간/일지 관계: ${c.ilganRelation||''} / ${c.iljiRelation||''}
 합충 요약: 합 ${c.hsHabs||''} ${c.ebHabs||''} / 충 ${c.hsChungs||''} ${c.ebChungs||''} / 해 ${c.ebHaes||''}
 
@@ -2235,12 +2240,12 @@ monthlyScores는 1~12월 각 달의 종합 점수(0-100)로, 12개 정수 배열
       const c = context || {};
       userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 해석 요청
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
-음력 생년월일: ${c.lunarYear||''}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일
-띠: ${c.zodiac||''}, 천간지지: ${c.ganjiYear||''}
-상괘(태세괘): ${c.upperGua||''} (태세수 ${c.taeseNum||''})
-중괘(월건괘): ${c.middleGua||''} (월건수 ${c.wolNum||''})
-하괘(일진괘): ${c.lowerGua||''} (일진수 ${c.ilNum||''})
-괘 조합: ${c.guaCombination||''}
+${c.lunarYear?`음력 생년월일: ${c.lunarYear}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일`:'음력 생년월일: 미입력'}
+${c.zodiac?`띠: ${c.zodiac}, 천간지지: ${c.ganjiYear||''}`:'띠: 미입력, 천간지지: 미입력'}
+${c.upperGua?`상괘(태세괘): ${c.upperGua} (태세수 ${c.taeseNum||''})`:'상괘(태세괘): 미입력'}
+${c.middleGua?`중괘(월건괘): ${c.middleGua} (월건수 ${c.wolNum||''})`:'중괘(월건괘): 미입력'}
+${c.lowerGua?`하괘(일진괘): ${c.lowerGua} (일진수 ${c.ilNum||''})`:'하괘(일진괘): 미입력'}
+${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
 이 괘 조합에 맞는 ${c.targetYear||new Date().getFullYear()}년 운세를 토정비결 형식으로 해석해주세요.`;
 
     } else if (type === 'tojeong_premium_1') {
@@ -2254,12 +2259,12 @@ monthlyScores는 1~12월 각 달의 종합 점수(0-100)로, 12개 정수 배열
       const c = context || {};
       userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 1단계 (총운+괘+영역별)
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
-음력 생년월일: ${c.lunarYear||''}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일
-띠: ${c.zodiac||''}, 천간지지: ${c.ganjiYear||''}
-상괘: ${c.upperGua||''} (태세수 ${c.taeseNum||''})
-중괘: ${c.middleGua||''} (월건수 ${c.wolNum||''})
-하괘: ${c.lowerGua||''} (일진수 ${c.ilNum||''})
-괘 조합: ${c.guaCombination||''}
+${c.lunarYear?`음력 생년월일: ${c.lunarYear}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일`:'음력 생년월일: 미입력'}
+${c.zodiac?`띠: ${c.zodiac}, 천간지지: ${c.ganjiYear||''}`:'띠: 미입력, 천간지지: 미입력'}
+${c.upperGua?`상괘: ${c.upperGua} (태세수 ${c.taeseNum||''})`:'상괘: 미입력'}
+${c.middleGua?`중괘: ${c.middleGua} (월건수 ${c.wolNum||''})`:'중괘: 미입력'}
+${c.lowerGua?`하괘: ${c.lowerGua} (일진수 ${c.ilNum||''})`:'하괘: 미입력'}
+${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
 이 괘 조합을 기준으로 한 해 총운, 괘 심층 풀이, 재물·직업·건강·연애 4영역 심층 분석을 해주세요.`;
 
     } else if (type === 'tojeong_premium_2') {
@@ -2275,9 +2280,9 @@ monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. �
       const c = context || {};
       userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 2단계 (12개월+개운법+행운)
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
-음력 생년월일: ${c.lunarYear||''}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일
-띠: ${c.zodiac||''}, 천간지지: ${c.ganjiYear||''}
-괘 조합: ${c.guaCombination||''}
+${c.lunarYear?`음력 생년월일: ${c.lunarYear}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일`:'음력 생년월일: 미입력'}
+${c.zodiac?`띠: ${c.zodiac}, 천간지지: ${c.ganjiYear||''}`:'띠: 미입력, 천간지지: 미입력'}
+${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
 1년 12개월 각 달의 흐름과 길일·주의일, 영역별 한 줄 풀이, 그리고 개운법 2~3개와 행운 정보를 알려주세요.`;
 
     // P1-R1: chat 타입 분기 삭제 (프런트 호출부 0건 · 사용자 입력 원문을 무필터로 프롬프트에 삽입하던 경로)
