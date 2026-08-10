@@ -127,7 +127,7 @@ function done() {
 // ── SELF-1 : 외부 pin 자기검사 ──────────────────────────────────────────────
 //   ★`tools/regen_gate_pins.js --expand` 전에는 **정상 FAIL** 이다(계약 §1-6 · ★5).
 //     사문화로 오해하지 말 것 — 미등재 게이트는 침식이 안 잡힌다.
-const EXPECTED_TOTAL_MIN = 33;
+const EXPECTED_TOTAL_MIN = 35;
 check('SELF-1', '★_gate_pins.json 자기검사 — 자기 sha256 · 검사 수 하한', () => {
   const pinPath = path.join(__dirname, '_gate_pins.json');
   if (!fs.existsSync(pinPath)) return { ok: false, detail: '★pin 표 부재 — 판정 불가' };
@@ -766,6 +766,124 @@ const modeOf = (r) => (r.logs.length ? (r.logs[r.logs.length - 1].mode || null) 
     }
     return { ok: bad.length === 0,
       detail: bad.length ? '★' + bad.slice(0, 6).join(' / ') : 'tojeong 3종 ' + seen.join(' · ') + ' · 빈 슬롯 0' };
+  });
+
+  // ── E-10 : ★★`CW_COMPAT_STRICT` 실동작 (v7.81 · 결정 118 을 **먼저 있던 스위치**에) ──
+  //   【왜 v7.81 인가】 v7.80 은 `CW_TOJEONG_STRICT` 를 **신설하면서** E-9 를 함께 만들었다.
+  //     그런데 `CW_COMPAT_STRICT` 는 v7.73-b 부터 있었는데 **아무 검사도 보지 않았다.**
+  //     결정 118(「새 스위치는 검사와 함께 태어나야 한다」)의 짝은 「★이미 있는 스위치도
+  //     전환 **전에** 검사를 갖춰야 한다」이다 — 전환은 코드 변경 없이 환경변수 1개로
+  //     일어나므로, 검사가 없으면 **전환 자체가 미검증 주장**이 된다(v7.80 §10 1순위 선결).
+  //   【★v7.81 실측이 뒤집은 것 — 결정 114 의 재현】
+  //     v7.80 §3-4 는 「`missingAny` 를 먼저 보는 **순서는 유지**했다 — legacy 비율이
+  //     strict 전환 판단의 분모다」라고 적었다. ★그 서술은 **strict OFF 를 전제**한다.
+  //     런타임 실측(`_v781_work/probe/probe_compat_strict.js`)은 이렇게 나왔다:
+  //       ON  → {"mode":"legacy","reasons":{"p1":"NO_BIRTH_KEYS",…},
+  //              "discarded":["pillar1","ilgan1","pillar2","ilgan2"],"strictLegacy":true}
+  //     ⟹ **폐기해 놓고 `mode` 는 `legacy` 라고 보고한다.** I-89(「로그로 폐기율을 셀 수
+  //       없었다」)와 **정확히 같은 형태**가 strict 경로에 남아 있었다(I-94).
+  //   【판정 — 소스가 아니라 런타임】 E-9 와 같다. 환경변수를 실제로 켜고 로그와
+  //     프롬프트 바이트가 함께 바뀌는지 본다. 프롬프트 표면은 E-1 과 **같은 분류기**로.
+  const cRun = {};
+  await checkA('E-10', '★★`CW_COMPAT_STRICT` 실동작 — 켜면 legacy 가 폐기로 전이하고(로그가 그렇게 **말하고**), 그때도 빈 슬롯이 아니라 **명시**다', async () => {
+    const prev = process.env.CW_COMPAT_STRICT;
+    const bad = [], seen = [];
+    try {
+      for (const t of FAM.compat.types) {
+        const mk = () => Object.assign({}, FAM.compat.base());
+        delete process.env.CW_COMPAT_STRICT;
+        const rOk = await runOn(H.orig, t, Object.assign(mk(), FAM.compat.birth(OK)));
+        const rOff = await runOn(H.orig, t, mk());
+        process.env.CW_COMPAT_STRICT = '1';
+        const rOn = await runOn(H.orig, t, mk());
+        delete process.env.CW_COMPAT_STRICT;
+        cRun[t] = { ok: rOk, off: rOff, on: rOn };
+
+        const lOff = rOff.logs.length ? rOff.logs[rOff.logs.length - 1] : null;
+        const lOn = rOn.logs.length ? rOn.logs[rOn.logs.length - 1] : null;
+        const mOff = lOff && lOff.mode, mOn = lOn && lOn.mode;
+        seen.push(t + ':' + mOff + '→' + mOn);
+        if (!rOk.prompt || !rOff.prompt || !rOn.prompt) { bad.push(t + ': 프롬프트 미포착 — 판정 불가'); continue; }
+        if (mOff !== 'legacy') bad.push(t + ': ★OFF 인데 mode=' + mOff + ' (legacy 기대 — 기본 동작이 바뀌었다)');
+        if (mOn !== 'discarded') bad.push(t + ': ★★ON 인데 mode=' + mOn + ' — **로그가 폐기를 폐기라 부르지 않는다**(I-94 · 전환 후 폐기율 집계 불가)');
+        if (!lOn || lOn.strictLegacy !== true) bad.push(t + ': ★ON 인데 strictLegacy=' + (lOn && lOn.strictLegacy) + ' — 스위치 적용 여부가 로그에 안 남는다');
+        // ★폐기 **사실** 자체 — mode 어휘와 별개로 키가 실제로 비워졌는가.
+        const dn = lOn && (Array.isArray(lOn.discarded) ? lOn.discarded.length : lOn.discarded);
+        if (!dn) bad.push(t + ': ★★ON 인데 discarded=' + JSON.stringify(lOn && lOn.discarded) + ' — **스위치가 무력하다**(우회로가 안 닫힌다)');
+        const doff = lOff && (Array.isArray(lOff.discarded) ? lOff.discarded.length : lOff.discarded);
+        if (doff) bad.push(t + ': ★OFF 인데 discarded=' + doff + ' — 하위호환이 깨졌다(계약 §2)');
+        if (rOn.prompt === rOff.prompt) bad.push(t + ': ★★ON/OFF 프롬프트가 바이트 동일 — 스위치가 프롬프트에 아무 영향이 없다');
+        if (rOn.res.statusCode !== 200) bad.push(t + ': ★strict 가 ' + rOn.res.statusCode + ' 를 냈다 (400 금지 · 관통 #8)');
+        for (const c of diffPrompts(rOk.prompt, rOn.prompt).bad) {
+          bad.push(t + ': ★strict 폐기가 ' + c.cls + ' 를 남겼다 → ' + JSON.stringify(c.bad));
+        }
+      }
+    } finally {
+      if (prev === undefined) delete process.env.CW_COMPAT_STRICT; else process.env.CW_COMPAT_STRICT = prev;
+    }
+    return { ok: bad.length === 0,
+      detail: bad.length ? '★' + bad.slice(0, 6).join(' / ') : 'compat 3종 ' + seen.join(' · ') + ' · 빈 슬롯 0' };
+  });
+
+  // ── E-11 : ★★두 스위치의 **관측 어휘 정합** (I-89 의 일반형) ─────────────────
+  //   【왜 필요한가】 I-89 는 「상품 간 어휘가 갈리면 집계가 불가능하다」였다. 그 수리는
+  //     compat 의 **정상 폐기 경로**만 고쳤고, **strict 폐기 경로**는 그대로 남았다(I-94).
+  //     ⟹ 한 상품씩 고치는 한 같은 사건이 또 갈린다. **관계로 못박는다.**
+  //   【★형태를 열거하지 않는다 (결정 117)】 「reason 이 `NO_BIRTH_KEYS_STRICT` 여야 한다」로
+  //     적으면 그 문자열이 곧 미검증 주장이 된다. 대신 **두 실행의 관계**로 본다:
+  //       ㉠ 같은 사건(키 미전송 + strict ON)에서 두 가드의 `mode` 가 **서로 같다**
+  //       ㉡ 각 가드에서 strict 의 reason 이 OFF 의 reason 과 **다르다**
+  //          (같으면 로그에서 「키 없어서 **통과**」와 「키 없어서 **폐기**」가 구별 불가)
+  //       ㉢ 두 가드의 strict reason 이 **서로 같다** (상품 간 어휘 통일 = 집계 가능)
+  await checkA('E-11', '★★관측 어휘 정합 — compat 과 tojeong 이 **같은 사건**(키 미전송 + strict)을 **같은 이름**으로 부른다 (I-89 의 일반형)', async () => {
+    const prevC = process.env.CW_COMPAT_STRICT, prevT = process.env.CW_TOJEONG_STRICT;
+    const bad = [];
+    /** compat 은 사람별 `reasons{p1,p2}`, tojeong 은 단일 `reason` — 문자열 집합으로 정규화. */
+    const reasonSet = (log) => {
+      if (!log) return [];
+      const s = new Set();
+      if (log.reason) s.add(String(log.reason));
+      if (log.reasons && typeof log.reasons === 'object') for (const v of Object.values(log.reasons)) if (v) s.add(String(v));
+      return [...s].sort();
+    };
+    const last = (r) => (r.logs.length ? r.logs[r.logs.length - 1] : null);
+    let obs = null;
+    try {
+      const fams = [['compat', FAM.compat, 'CW_COMPAT_STRICT'], ['tojeong', FAM.tojeong, 'CW_TOJEONG_STRICT']];
+      const got = {};
+      for (const [nm, fm, envk] of fams) {
+        const t = fm.types[0];
+        delete process.env[envk];
+        const off = last(await runOn(H.orig, t, Object.assign({}, fm.base())));
+        process.env[envk] = '1';
+        const on = last(await runOn(H.orig, t, Object.assign({}, fm.base())));
+        delete process.env[envk];
+        if (!off || !on) { bad.push(nm + ': 로그 미포착 — 판정 불가'); continue; }
+        got[nm] = { offMode: off.mode, onMode: on.mode, offR: reasonSet(off), onR: reasonSet(on) };
+        // ㉡ strict 의 reason 이 OFF 와 구별되는가
+        if (got[nm].onR.join('|') === got[nm].offR.join('|'))
+          bad.push(nm + ': ★strict reason 이 OFF 와 동일 [' + got[nm].onR.join(',') + '] — 로그에서 「통과」와 「폐기」가 구별 불가');
+        if (!got[nm].onR.length) bad.push(nm + ': ★strict reason 이 비었다 — 폐기 사유가 로그에 없다');
+      }
+      if (got.compat && got.tojeong) {
+        obs = JSON.stringify(got);
+        // ㉠ 같은 사건 → 같은 mode
+        if (got.compat.onMode !== got.tojeong.onMode)
+          bad.push('★strict mode 가 갈린다 — compat=' + got.compat.onMode + ' vs tojeong=' + got.tojeong.onMode + ' (집계 불가 · I-89 재발)');
+        if (got.compat.offMode !== got.tojeong.offMode)
+          bad.push('★OFF mode 가 갈린다 — compat=' + got.compat.offMode + ' vs tojeong=' + got.tojeong.offMode);
+        // ㉢ 같은 사건 → 같은 reason 어휘
+        if (got.compat.onR.join('|') !== got.tojeong.onR.join('|'))
+          bad.push('★strict reason 어휘가 갈린다 — compat=[' + got.compat.onR.join(',') + '] vs tojeong=[' + got.tojeong.onR.join(',') + ']');
+        if (got.compat.offR.join('|') !== got.tojeong.offR.join('|'))
+          bad.push('★OFF reason 어휘가 갈린다 — compat=[' + got.compat.offR.join(',') + '] vs tojeong=[' + got.tojeong.offR.join(',') + ']');
+      }
+    } finally {
+      if (prevC === undefined) delete process.env.CW_COMPAT_STRICT; else process.env.CW_COMPAT_STRICT = prevC;
+      if (prevT === undefined) delete process.env.CW_TOJEONG_STRICT; else process.env.CW_TOJEONG_STRICT = prevT;
+    }
+    return { ok: bad.length === 0,
+      detail: bad.length ? '★' + bad.slice(0, 4).join(' / ') : '두 가드 동형: ' + obs };
   });
 
   done();
