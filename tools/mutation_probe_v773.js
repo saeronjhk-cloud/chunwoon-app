@@ -551,6 +551,35 @@ const MUTANTS = [
       "  return process.env.CW_TOJEONG_STRICT === '1';",
       "  return false;"),
   },
+  // ★★v7.81 — `CW_COMPAT_STRICT` 축. v7.80 은 **신설한** tojeong 스위치에만 감시를
+  //   붙였고(M24/E-9), **먼저 있던** compat 스위치는 뮤턴트도 검사도 없었다. 전환은
+  //   코드 변경 없이 환경변수 1개로 일어나므로, 감시가 없으면 전환 자체가 미검증 주장이다.
+  {
+    id: 'M25', axis: '★★I-94 — compat strict 스위치 무력화',
+    what: 'compat strict 을 상수 false 로 고정한다 — 08-13 전환을 켜도 legacy 우회로가 안 닫힌다',
+    expect: ['E-10', 'E-11'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', '_engine', 'ctxguard.js'),
+      "  return process.env.CW_COMPAT_STRICT === '1';",
+      "  return false;"),
+  },
+  {
+    id: 'M26', axis: '★★I-94 — 폐기를 `legacy` 로 거짓 보고 (관측)',
+    what: 'strict 로 **폐기해 놓고도** `missingAny` 를 켜서 `mode` 사다리가 `legacy` 를 집게 한다. '
+      + '★프롬프트는 1바이트도 안 바뀐다 — **로그만 거짓말한다.** 하필 전환 기준 지표(`mode:legacy` 비율)를 오염시킨다',
+    expect: ['E-10', 'E-11'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', '_engine', 'ctxguard.js'),
+      "      else missingAny = true;",
+      "      missingAny = true;"),
+  },
+  {
+    id: 'M27', axis: '★I-94 — strict 폐기 사유를 통과 사유와 합친다 (어휘)',
+    what: "`NO_BIRTH_KEYS_STRICT` 를 `NO_BIRTH_KEYS` 로 되돌린다 — 로그에서 「키 없어서 **통과**」와 "
+      + '「키 없어서 **폐기**」가 구별 불가가 된다(I-89 의 재발 형태)',
+    expect: ['E-11'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', '_engine', 'ctxguard.js'),
+      "      metrics.reasons[pk] = strictLegacy ? 'NO_BIRTH_KEYS_STRICT' : 'NO_BIRTH_KEYS';",
+      "      metrics.reasons[pk] = 'NO_BIRTH_KEYS';"),
+  },
   {
     id: 'MF9', axis: '★신설 게이트 자기 약화 — 폐기 표면',
     what: 'eval_ctx_discard_surface.js 의 E-1 본체를 무조건 통과로 바꾼다',
