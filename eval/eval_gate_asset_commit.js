@@ -108,6 +108,11 @@ const REQUIRED = Object.freeze([
   //   ★`ceo` 접두 6키 판독기가 파 ⓐ·ⓑ 와 **같은 함수**로 환원되는지(N-1)와
   //     `ceoIlgan` **한자** 10천간 전수(E-1)를 이 게이트만 본다. 미커밋이면 통째로 무감시다.
   'eval/eval_naming_company_guard.js',
+  // ★v7.80 I-85 — 「폐기 모드 빈 슬롯」 축. 재유도가 실패하면 프롬프트에 라벨만 남고
+  //   값이 사라지는데, 그것을 보는 게이트가 하나도 없었다(가드 20종 중 12종 · 30줄 실측).
+  //   ★키 표면(K-2·K-3)도 dead value(D-1)도 이 축을 못 본다 — 둘 다 **정상 경로**를 보기
+  //     때문이다. 이 게이트만 **폐기 경로**의 프롬프트 바이트를 본다. 미커밋이면 통째로 무감시다.
+  'eval/eval_ctx_discard_surface.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',
