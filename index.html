@@ -17,12 +17,23 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 
-<!-- Open Graph (Facebook, KakaoTalk) -->
+<!-- ★정본 URL — Vercel 이 apex(chunwoon.app) → www 로 301 한다(2026-08-10 실측).
+     canonical 은 **리다이렉트 도착지**를 가리켜야 한다. 출발지를 가리키면 검색엔진이
+     「canonical 이 301 되는 URL」로 보고 신호가 갈린다. -->
+<link rel="canonical" href="https://www.chunwoon.app/">
+
+<!-- Open Graph (Facebook, KakaoTalk)
+     ★og:image 는 ⑴절대 URL 이어야 하고 ⑵SVG 가 지원되지 않는다(카카오·페북·트위터 전건).
+       종전에는 `/icons/icon-512.svg` 라 **공유 썸네일이 뜨지 않았다**(v7.81 실측). -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="天運 - 종합 운세 앱">
 <meta property="og:description" content="오늘의 운세, 타로, 사주, 궁합, 관상, 꿈해몽, AI 운세채팅까지! 당신의 운명을 엽니다 ✦">
-<meta property="og:image" content="/icons/icon-512.svg">
-<meta property="og:url" content="https://chunwoon.app">
+<meta property="og:image" content="https://www.chunwoon.app/icons/og-1200x630.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="天運 — 사주 · 궁합 · 타로 · 토정비결 · 꿈해몽 · 관상 · 작명">
+<meta property="og:url" content="https://www.chunwoon.app/">
 <meta property="og:site_name" content="天運">
 <meta property="og:locale" content="ko_KR">
 
@@ -30,12 +41,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="天運 - 종합 운세 앱">
 <meta name="twitter:description" content="오늘의 운세, 타로, 사주, 궁합, 관상, 꿈해몽, AI 운세채팅까지!">
-<meta name="twitter:image" content="/icons/icon-512.svg">
+<meta name="twitter:image" content="https://www.chunwoon.app/icons/og-1200x630.png">
 
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
-<link rel="apple-touch-icon" href="/icons/icon-192.svg">
+<!-- ★apple-touch-icon 은 iOS 가 SVG 를 지원하지 않는다 — PNG 여야 홈 화면 아이콘이 나온다. -->
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
 
 <!-- Kakao SDK (배포 시 본인의 JavaScript 키로 교체) -->
 <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
@@ -65,7 +77,7 @@
   "@type": "WebApplication",
   "name": "天運 - 종합 운세",
   "alternateName": "천운",
-  "url": "https://chunwoon.app",
+  "url": "https://www.chunwoon.app/",
   "description": "오늘의 운세, 타로, 사주, 궁합, 관상, 토정비결, 꿈해몽, AI 운세채팅, 작명",
   "applicationCategory": "EntertainmentApplication",
   "operatingSystem": "Web",
