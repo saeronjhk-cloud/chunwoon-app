@@ -632,8 +632,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
       <!-- 4) 줄거리 -->
       <div class="input-group">
-        <label>4. 꿈의 줄거리 <span style="color:var(--text2);font-weight:400;font-size:11px">(50~200자 권장)</span></label>
-        <textarea id="dreamStory" rows="4" placeholder="예: 큰 호랑이가 산에서 나타나 나를 향해 달려왔는데, 무서웠지만 결국 친근하게 다가와 함께 산을 내려갔다." style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-family:inherit;font-size:13px;line-height:1.7;resize:vertical;min-height:80px"></textarea>
+        <label>4. 꿈의 줄거리 <span style="color:var(--text2);font-weight:400;font-size:11px">(50~200자 권장 · 최대 1000자)</span></label>
+        <textarea id="dreamStory" rows="4" maxlength="1000" oninput="updateDreamStoryCount()" placeholder="예: 큰 호랑이가 산에서 나타나 나를 향해 달려왔는데, 무서웠지만 결국 친근하게 다가와 함께 산을 내려갔다." style="width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-family:inherit;font-size:13px;line-height:1.7;resize:vertical;min-height:80px"></textarea>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6;display:flex;justify-content:space-between;gap:8px">
+          <span>50~200자면 충분히 풀립니다. 길게 쓰셔도 잘리지 않습니다.</span>
+          <span id="dreamStoryCount" style="white-space:nowrap">0 / 1000</span>
+        </div>
       </div>
 
       <!-- 5) 사주 연계 -->
@@ -6351,6 +6355,24 @@ function renderDreamUI(){
     lk.onchange=updateStatus;
     updateStatus();
   }
+  updateDreamStoryCount();
+}
+
+// ★v7.80 story 입력 정책 — 「UI 에 maxlength + 카운터」
+// 서버는 story 를 길이 상한에서 면제한다(P-5 · noLenCap): 자유 서술은 방어축이 아니므로
+// 잘라서 무손실을 깨지 않는다. 그래서 방어가 아니라 **비용**이 문제이고, 비용은 서버에서
+// 자르는 것이 아니라 **입력 단계에서 보이게** 해서 다룬다. ⟹ 이 카운터는 UI 전용이며
+// 서버측 상한을 재도입하지 않는다.
+// ★「50~200자 권장」과 「최대 1000자」는 서로 다른 축이다 — 앞은 해몽 품질 권장치이고
+//   뒤는 입력 상한이다. 라벨에 둘을 함께 적어 혼동을 막는다.
+const DREAM_STORY_MAX=1000;
+function updateDreamStoryCount(){
+  const ta=document.getElementById('dreamStory'),el=document.getElementById('dreamStoryCount');
+  if(!ta||!el)return;
+  const n=ta.value.length;
+  el.textContent=`${n} / ${DREAM_STORY_MAX}`;
+  el.style.color = n>=DREAM_STORY_MAX ? '#e85a4f'
+    : (n>=DREAM_STORY_MAX*0.9 ? 'var(--gold)' : 'var(--text2)');
 }
 
 async function analyzeDream(){
