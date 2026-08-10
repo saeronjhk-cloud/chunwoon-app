@@ -509,6 +509,49 @@ const MUTANTS = [
       "  return { ok: bad.length === 0, detail: bad.length ? '★' + bad.length + '/72 불일치: '",
       "  return { ok: true, detail: 'MUTANT' } || { ok: bad.length === 0, detail: bad.length ? '★' + bad.length + '/72 불일치: '"),
   },
+  // ★★v7.80 I-85 — 「폐기 모드 빈 슬롯」 축. 게이트 `eval_ctx_discard_surface.js` 신설분.
+  //   ★이 축의 뮤턴트는 **정상 경로에서 무증상**이다 — 재유도가 성공하는 요청은
+  //     프롬프트가 1바이트도 안 바뀐다. 그래서 기존 47종 중 어느 것도 이 회귀를
+  //     못 잡았고, 실제로 30줄이 커밋 7건을 통과해 살아 있었다(I-85).
+  {
+    id: 'M21', axis: '★★I-85 — 폐기 시 빈 슬롯 복원 (naming)',
+    what: '`사주: 미입력` 명시를 빈 슬롯으로 되돌린다 — 폐기된 원국이 라벨만 남기고 사라진다',
+    expect: ['E-1', 'E-1:naming'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "${c.pillar?`사주: ${c.pillar} / 일간 ${c.ilgan||''}(${c.ilganElement||''})`:'사주: 미입력'}",
+      "사주: ${c.pillar||''} / 일간 ${c.ilgan||''}(${c.ilganElement||''})"),
+  },
+  {
+    id: 'M22', axis: '★★I-85 — `mixed`(거짓 단언) 복원 (naming)',
+    what: "`||'없음'` 폴백을 되살린다 — 폐기해 놓고 「부족한 오행: 없음」이라 **단언**한다. "
+      + '빈 칸은 LLM 이 「모른다」로 읽지만 「없음」은 틀린 사실로 읽는다 ⟹ 빈 슬롯보다 나쁘다',
+    expect: ['E-1', 'E-1:naming'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "${c.lacking?`부족한 오행: ${c.lacking} / 강한 오행: ${c.dominant||''}`:'부족한 오행: 미입력'}",
+      "부족한 오행: ${c.lacking||'없음'} / 강한 오행: ${c.dominant||''}"),
+  },
+  {
+    id: 'M23', axis: '★I-85 — tojeong 폐기 시 빈 슬롯 복원',
+    what: '괘 조합 명시를 빈 슬롯으로 되돌린다 — 12키 폐기가 `괘 조합: ` 한 줄로 새어 나간다',
+    expect: ['E-1', 'E-1:tojeong'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}",
+      "괘 조합: ${c.guaCombination||''}"),
+  },
+  {
+    id: 'M24', axis: '★I-85 — tojeong strict 스위치 무력화',
+    what: 'tojeong strict 을 상수 false 로 고정한다 — 켜도 legacy 우회로가 안 닫힌다',
+    expect: ['E-9'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', '_engine', 'ctxguard.js'),
+      "  return process.env.CW_TOJEONG_STRICT === '1';",
+      "  return false;"),
+  },
+  {
+    id: 'MF8', axis: '★신설 게이트 자기 약화 — 폐기 표면',
+    what: 'eval_ctx_discard_surface.js 의 E-1 본체를 무조건 통과로 바꾼다',
+    expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
+    applyGate: (g) => { const p = path.join(g, 'eval', 'eval_ctx_discard_surface.js'); wr(p, rd(p) + '\n// mutant\n'); },
+  },
   ...F_MUTANTS,
   ...P_MUTANTS,
   ...T_MUTANTS,

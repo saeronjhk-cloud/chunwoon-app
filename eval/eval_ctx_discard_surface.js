@@ -127,7 +127,7 @@ function done() {
 // ── SELF-1 : 외부 pin 자기검사 ──────────────────────────────────────────────
 //   ★`tools/regen_gate_pins.js --expand` 전에는 **정상 FAIL** 이다(계약 §1-6 · ★5).
 //     사문화로 오해하지 말 것 — 미등재 게이트는 침식이 안 잡힌다.
-const EXPECTED_TOTAL_MIN = 32;
+const EXPECTED_TOTAL_MIN = 33;
 check('SELF-1', '★_gate_pins.json 자기검사 — 자기 sha256 · 검사 수 하한', () => {
   const pinPath = path.join(__dirname, '_gate_pins.json');
   if (!fs.existsSync(pinPath)) return { ok: false, detail: '★pin 표 부재 — 판정 불가' };
@@ -723,6 +723,49 @@ const modeOf = (r) => (r.logs.length ? (r.logs[r.logs.length - 1].mode || null) 
     return { ok: bad.length === 0,
       detail: bad.length ? '★' + bad.slice(0, 6).join(' / ') : '자리 ' + sites.length + '개 × ①②③ 전부 원문 도달 (' +
         [...new Set(sites.map((s) => s.split('.')[1]))].sort().join(',') + ')' };
+  });
+
+  // ── E-9 : ★tojeong strict 스위치가 **실제로 동작**한다 (v7.80 §5 · 결정 108) ──
+  //   【왜 필요한가】 `CW_TOJEONG_STRICT` 는 v7.80 에 신설된 코드인데 **아무 게이트도
+  //     보지 않았다.** 스위치가 상수 `false` 로 바뀌어도(= legacy 우회로가 영영 안 닫혀도)
+  //     리포 어디도 붉어지지 않는다. legacy 는 「구버전 호환」이 아니라 **가드 우회로**다.
+  //   【판정 — 소스가 아니라 런타임】 「`process.env` 를 읽는 줄이 있다」로는 부족하다.
+  //     환경변수를 실제로 켜고 **프롬프트 바이트와 로그**가 함께 바뀌는지 본다.
+  //   【★스위치가 켜졌을 때도 빈 슬롯이면 안 된다】 — 그것이 §7 전환의 선결 조건이었다.
+  //     그래서 E-1 과 **같은 분류기**로 판정한다(수리가 strict 경로에도 미쳤는가).
+  await checkA('E-9', '★★`CW_TOJEONG_STRICT` 실동작 — 켜면 legacy 가 폐기로 전이하고, 그때도 빈 슬롯이 아니라 **명시**다', async () => {
+    const prev = process.env.CW_TOJEONG_STRICT;
+    const bad = [], seen = [];
+    try {
+      for (const t of FAM.tojeong.types) {
+        const mk = () => Object.assign({}, FAM.tojeong.base());
+        // ① 정상(6키 재유도 성공) — 미분의 기준선
+        delete process.env.CW_TOJEONG_STRICT;
+        const rOk = await runOn(H.orig, t, Object.assign(mk(), FAM.tojeong.birth(OK)));
+        // ② strict OFF + 5키 미전송 ⟹ legacy (아무것도 안 바뀐다)
+        const rOff = await runOn(H.orig, t, mk());
+        // ③ strict ON + 5키 미전송 ⟹ discarded (폐기하되 명시)
+        process.env.CW_TOJEONG_STRICT = '1';
+        const rOn = await runOn(H.orig, t, mk());
+        delete process.env.CW_TOJEONG_STRICT;
+
+        const mOff = modeOf(rOff), mOn = modeOf(rOn);
+        seen.push(t + ':' + mOff + '→' + mOn);
+        if (!rOk.prompt || !rOff.prompt || !rOn.prompt) { bad.push(t + ': 프롬프트 미포착 — 판정 불가'); continue; }
+        if (mOff !== 'legacy') bad.push(t + ': ★OFF 인데 mode=' + mOff + ' (legacy 기대 — 기본 동작이 바뀌었다)');
+        if (mOn !== 'discarded') bad.push(t + ': ★★ON 인데 mode=' + mOn + ' — **스위치가 무력하다**(우회로가 안 닫힌다)');
+        if (rOn.prompt === rOff.prompt) bad.push(t + ': ★★ON/OFF 프롬프트가 바이트 동일 — 스위치가 프롬프트에 아무 영향이 없다');
+        if (rOn.res.statusCode !== 200) bad.push(t + ': ★strict 가 ' + rOn.res.statusCode + ' 를 냈다 (400 금지 · 관통 #8)');
+        // ★strict 폐기 경로도 빈 슬롯이면 안 된다 — E-1 과 같은 분류기로 본다.
+        for (const c of diffPrompts(rOk.prompt, rOn.prompt).bad) {
+          bad.push(t + ': ★strict 폐기가 ' + c.cls + ' 를 남겼다 → ' + JSON.stringify(c.bad));
+        }
+      }
+    } finally {
+      if (prev === undefined) delete process.env.CW_TOJEONG_STRICT; else process.env.CW_TOJEONG_STRICT = prev;
+    }
+    return { ok: bad.length === 0,
+      detail: bad.length ? '★' + bad.slice(0, 6).join(' / ') : 'tojeong 3종 ' + seen.join(' · ') + ' · 빈 슬롯 0' };
   });
 
   done();
