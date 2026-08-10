@@ -534,9 +534,14 @@ const MUTANTS = [
     id: 'M23', axis: '★I-85 — tojeong 폐기 시 빈 슬롯 복원',
     what: '괘 조합 명시를 빈 슬롯으로 되돌린다 — 12키 폐기가 `괘 조합: ` 한 줄로 새어 나간다',
     expect: ['E-1', 'E-1:tojeong'], evals: ['eval_ctx_discard_surface.js'],
+    // ★앵커는 **그 사이트에서만 나오는 형태**여야 한다(v7.75 M12 의 교훈).
+    //   `괘 조합:` 줄만 쓰면 tojeong 3종에 동일해 앵커 3건이 된다 ⟹ 앞줄(무료판만
+    //   `하괘(일진괘)` 라벨을 쓴다)을 함께 묶어 유일화한다.
     apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
-      "${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}",
-      "괘 조합: ${c.guaCombination||''}"),
+      "${c.lowerGua?`하괘(일진괘): ${c.lowerGua} (일진수 ${c.ilNum||''})`:'하괘(일진괘): 미입력'}\n"
+      + "${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}",
+      "${c.lowerGua?`하괘(일진괘): ${c.lowerGua} (일진수 ${c.ilNum||''})`:'하괘(일진괘): 미입력'}\n"
+      + "괘 조합: ${c.guaCombination||''}"),
   },
   {
     id: 'M24', axis: '★I-85 — tojeong strict 스위치 무력화',
@@ -547,7 +552,7 @@ const MUTANTS = [
       "  return false;"),
   },
   {
-    id: 'MF8', axis: '★신설 게이트 자기 약화 — 폐기 표면',
+    id: 'MF9', axis: '★신설 게이트 자기 약화 — 폐기 표면',
     what: 'eval_ctx_discard_surface.js 의 E-1 본체를 무조건 통과로 바꾼다',
     expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,
     applyGate: (g) => { const p = path.join(g, 'eval', 'eval_ctx_discard_surface.js'); wr(p, rd(p) + '\n// mutant\n'); },
