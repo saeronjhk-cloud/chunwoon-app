@@ -629,6 +629,9 @@ function guardCompatContext(ctx) {
 
   // ── ① 신규 12키로 pillar/ilgan 재유도 ────────────────────────────────────
   const strictLegacy = compatStrictLegacy();
+  // ★`missingAny` 의 뜻은 「12키를 주장하지 않았다」가 **아니라** 「주장하지 않아서
+  //   **폐기하지 않고 그대로 통과시켰다**」이다(= 진짜 legacy). strict 로 폐기한 건은
+  //   여기 세지 않는다 — 그러면 `mode` 가 폐기를 `'legacy'` 라 **거짓 보고**한다(I-94).
   let derivedAny = false, missingAny = false;
   for (const i of [1, 2]) {
     const pk = 'p' + i;
@@ -639,10 +642,21 @@ function guardCompatContext(ctx) {
     //   계약 §2 의 하위호환 요구 대상이다. 서버는 검증할 대상 자체가 없다.
     //   ★기본값은 통과(형상 + 구조 정합만 강제). `CW_COMPAT_STRICT=1` 이면 폐기한다 —
     //     B 배포 후 로그의 `mode:legacy` 비율이 0 으로 수렴하면 그때 켠다(아래 주석).
+    //
+    //   ★★v7.81 I-94 수리 — 종전에는 strict 로 **폐기해 놓고도** `missingAny` 를 켜서
+    //     아래 `mode` 사다리가 `'legacy'` 를 먼저 집었다. 실측(런타임):
+    //       ON → {"mode":"legacy","reasons":{"p1":"NO_BIRTH_KEYS"},
+    //             "discarded":["pillar1","ilgan1","pillar2","ilgan2"],"strictLegacy":true}
+    //     ⟹ 폐기가 로그에서 legacy 로 보였다. 이것은 I-89(「로그로 폐기율을 셀 수 없다」)와
+    //       **같은 형태**이며, 하필 **전환 판단의 지표 자체**를 오염시킨다 — 전환 기준이
+    //       「`mode:legacy` 비율이 0 으로 수렴」인데, 켜고 나면 그 비율이 0 이 되지 않는다.
+    //   ★`reason` 도 tojeong 과 같이 갈라 둔다(`NO_BIRTH_KEYS_STRICT`). 같은 문자열이면
+    //     로그에서 「키 없어서 **통과**」와 「키 없어서 **폐기**」가 구별되지 않는다.
+    //   ★OFF 경로는 **한 바이트도 바뀌지 않는다** — legacy 비율(분모)은 그대로다.
     if (got.missing) {
-      missingAny = true;
-      metrics.reasons[pk] = 'NO_BIRTH_KEYS';
+      metrics.reasons[pk] = strictLegacy ? 'NO_BIRTH_KEYS_STRICT' : 'NO_BIRTH_KEYS';
       if (strictLegacy) { out[kPil] = ''; out[kIlg] = ''; metrics.discarded.push(kPil, kIlg); }
+      else missingAny = true;
       continue;
     }
 
@@ -695,6 +709,10 @@ function guardCompatContext(ctx) {
   //     같은 사건을 `'discarded'` 로 부르므로, 상품 간 어휘가 갈려 집계가 불가능했다.
   //   ★`missingAny` 를 먼저 본다 — legacy(주장 안 함)와 폐기(주장했는데 검증 불가)는
   //     **다른 사건**이다. 순서를 바꾸면 legacy 비율(strict 전환 판단의 분모)이 오염된다.
+  //   ★★v7.81 정정 — 위 서술은 **strict OFF 를 전제**한 것이었다(결정 114: 인수인계의
+  //     「조건」도 미검증 주장이다). strict ON 에서는 「주장 안 함」이 곧 **폐기**이므로
+  //     `missingAny` 를 켜면 안 된다. ⟹ 순서는 그대로 두되 `missingAny` 의 **정의**를
+  //     「폐기하지 않고 통과시킨 legacy」로 좁혔다(위 ⓐ). 사다리는 손대지 않았다.
   //   ★마지막 `'undeducible'` 은 죽은 가지가 아니라 **카나리아**다. 현행 루프에서는
   //     「missing 도 아니고 derived 도 아니면 반드시 discarded 에 쌓인다」가 성립하므로
   //     도달하지 않지만, 나중에 셋 중 어디에도 안 드는 경로가 생기면 `'discarded'` 라고
