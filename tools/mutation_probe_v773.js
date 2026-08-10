@@ -580,6 +580,27 @@ const MUTANTS = [
       "      metrics.reasons[pk] = strictLegacy ? 'NO_BIRTH_KEYS_STRICT' : 'NO_BIRTH_KEYS';",
       "      metrics.reasons[pk] = 'NO_BIRTH_KEYS';"),
   },
+  // ★★v7.81 Q-3 — `daily_message` 의 **의도적 예외**를 지키는 뮤턴트 2종.
+  //   이 상품만 폐기 시 절을 삭제한다(다른 11종은 `미입력` 명시). 그것이 옳은 이유는
+  //   systemPrompt 가 「사주 없음」 분기를 갖기 때문이다 — ★근거와 결과를 각각 노린다.
+  {
+    id: 'M28', axis: '★★Q-3 — 절 삭제를 정당화하던 **근거**를 지운다',
+    what: 'systemPrompt 의 「사주 없으면 …」 분기를 제거한다. ★프롬프트 표면은 **아무것도 안 바뀐다** — '
+      + '폐기 시 절이 사라지는 것은 그대로다. 그런데 그것을 옳게 만들던 근거가 없어진다',
+    expect: ['E-12'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      '- 사주 없으면 따뜻한 일반 메시지 + "생년월일을 알려주시면 더 정확..." 권유 한 줄\n',
+      ''),
+  },
+  {
+    id: 'M29', axis: '★Q-3 — 「다른 상품과 통일하자」는 회귀',
+    what: '원국 절의 조건(`if(c.ilgan)`)을 없앤다 — 폐기해도 절이 남아 빈 슬롯이 된다. '
+      + '★이 상품에서는 `미입력` 명시조차 해롭다(systemPrompt 가 「있으면 정확히 인용」이라 LLM 이 추정한다)',
+    expect: ['E-1', 'E-1:daily_message', 'E-12'], evals: ['eval_ctx_discard_surface.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      '      if(c.ilgan){\n        const sajuParts = [];',
+      '      if(true){\n        const sajuParts = [];'),
+  },
   {
     id: 'MF9', axis: '★신설 게이트 자기 약화 — 폐기 표면',
     what: 'eval_ctx_discard_surface.js 의 E-1 본체를 무조건 통과로 바꾼다',

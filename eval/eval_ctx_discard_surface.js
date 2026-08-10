@@ -127,7 +127,7 @@ function done() {
 // ── SELF-1 : 외부 pin 자기검사 ──────────────────────────────────────────────
 //   ★`tools/regen_gate_pins.js --expand` 전에는 **정상 FAIL** 이다(계약 §1-6 · ★5).
 //     사문화로 오해하지 말 것 — 미등재 게이트는 침식이 안 잡힌다.
-const EXPECTED_TOTAL_MIN = 35;
+const EXPECTED_TOTAL_MIN = 36;
 check('SELF-1', '★_gate_pins.json 자기검사 — 자기 sha256 · 검사 수 하한', () => {
   const pinPath = path.join(__dirname, '_gate_pins.json');
   if (!fs.existsSync(pinPath)) return { ok: false, detail: '★pin 표 부재 — 판정 불가' };
@@ -446,6 +446,9 @@ async function runOn(handler, type, ctx) {
   return { res, logs, ctx,
     status: res.statusCode,
     error: (res.body && res.body.error) || null,
+    // ★v7.81 E-12 — `system` 도 포착한다. 「사주 없음」 분기가 **systemPrompt 에** 있어서,
+    //   그 분기의 생사를 런타임으로 보려면 user 프롬프트만으로는 부족하다.
+    system: body && body.system ? String(body.system) : null,
     prompt: body && body.messages && body.messages[0] ? String(body.messages[0].content) : null };
 }
 
@@ -884,6 +887,78 @@ const modeOf = (r) => (r.logs.length ? (r.logs[r.logs.length - 1].mode || null) 
     }
     return { ok: bad.length === 0,
       detail: bad.length ? '★' + bad.slice(0, 4).join(' / ') : '두 가드 동형: ' + obs };
+  });
+
+  // ── E-12 : ★★`daily_message` 의 **의도적 예외**를 근거와 함께 고정한다 (v7.81 Q-3) ──
+  //   【배경】 v7.80 은 `daily_message` 가 폐기 시 `dropped`(절 삭제)로 PASS 한 것을 보고
+  //     「상품 의도에 맞는지는 **판정하지 않았다**」고 남겼다(§10-3). v7.81 이 판정한다.
+  //
+  //   【판정 — 현행 `dropped` 가 **옳다**. 바꾸면 안 된다】 근거는 셋이다:
+  //     ㉠ 이 상품의 systemPrompt 는 「사주 **없으면** 따뜻한 일반 메시지 + 생년월일 권유」라는
+  //        **분기를 이미 갖고 있다.** 원국은 이 상품에서 전제가 아니라 **선택**이다.
+  //     ㉡ 폐기 시 `사용자 정보:` 블록이 통째로 사라져 LLM 이 그 분기를 정확히 탄다(실측).
+  //     ㉢ ★★`미입력` 을 넣으면 **오히려 나빠진다** — 같은 systemPrompt 가 「사주 컨텍스트가
+  //        **있으면** 일간·시·생년월일을 **정확히 인용**(임의 추정 금지)」이라고 지시하므로,
+  //        `일간: 미입력` 이 들어가면 LLM 은 「컨텍스트가 있다」고 읽고 그 값을 인용하거나
+  //        추정하려 든다. 빈 슬롯도 거짓 단언도 아닌 **제3의 해악**이다.
+  //
+  //   【★일반 규칙 — 결정 123】 폐기 표면의 옳은 형태는 「빈 슬롯인가」가 아니라
+  //     **「사용자의 기대가 있었는가」**로 갈린다:
+  //       · 사용자가 **요청했는데** 못 줬다  ⟹ **미입력 명시** (예: `dream` 의 `sajuLinked:true`)
+  //       · 애초에 **선택**이고 상품이 부재를 다룬다 ⟹ **절 삭제** (예: `daily_message`)
+  //     그래서 `dream` 은 `사주 연계 정보: 미입력`, `daily_message` 는 삭제가 **둘 다 옳다**.
+  //
+  //   【★이 검사가 없으면 무슨 일이 나나】 둘 중 하나다:
+  //     ⑴ 다음 세션이 「daily 만 미입력을 안 쓰네, 통일하자」 하고 회귀시킨다.
+  //     ⑵ 누군가 systemPrompt 의 「사주 없으면」 줄을 지운다 — 그 순간 `dropped` 를
+  //        정당화하던 **근거가 사라지는데** 아무 데도 붉어지지 않는다.
+  //     ⟹ ㉠(근거)과 ㉡(결과)을 **함께** 본다. 결과만 보면 근거 소멸이 무증상이다.
+  await checkA('E-12', '★★`daily_message` 의 의도적 예외 — 폐기 시 절을 **삭제**하는 것이 옳고(명시가 오히려 해롭다), 그 **근거**인 systemPrompt 분기가 살아 있다 (결정 123)', async () => {
+    const bad = [], note = [];
+    const T = 'daily_message';
+    const r = R[T];
+    if (!r || !r.ok.prompt || !r.bad.prompt) return { ok: false, detail: '★프롬프트 미포착 — 판정 불가' };
+
+    // ㉠ 근거 — systemPrompt 에 「사주 **있으면** 인용 / **없으면** 일반 메시지」 두 분기가 산다.
+    //    ★문구 전체를 열거하지 않는다. 「조건 분기가 둘 다 있다」는 **성질**만 본다.
+    const sys = r.ok.system;
+    if (!sys) bad.push('★systemPrompt 미포착 — 근거를 확인할 수 없다(판정 불가)');
+    else {
+      const lines = sys.split('\n').filter((L) => L.indexOf('사주') !== -1);
+      const hasPresent = lines.some((L) => /있으면|인용/.test(L));
+      const hasAbsent = lines.some((L) => /없으면|없을|미입력/.test(L));
+      note.push('system 사주 관련 ' + lines.length + '줄(있음분기=' + hasPresent + ' 없음분기=' + hasAbsent + ')');
+      if (!hasPresent) bad.push('★systemPrompt 에 「사주가 **있을 때**」 지시가 없다');
+      if (!hasAbsent) bad.push('★★systemPrompt 에 「사주가 **없을 때**」 분기가 없다 — '
+        + '절 삭제를 정당화하던 근거가 사라졌다. 근거가 없으면 삭제도 더는 옳지 않다');
+    }
+
+    // ㉡ 결과 — 폐기 시 원국 절이 **사라진다**. `empty`·`mixed` 는 물론 `explicit` 도 아니어야 한다.
+    const d = diffPrompts(r.ok.prompt, r.bad.prompt);
+    const cls = {};
+    for (const c of d.changed) cls[c.cls] = (cls[c.cls] || 0) + 1;
+    note.push('①vs③ ' + JSON.stringify(cls));
+    if (!d.changed.length) bad.push('★폐기했는데 프롬프트가 그대로다 — 가드가 안 걸렸다');
+    for (const c of d.changed) {
+      if (c.cls === 'empty' || c.cls === 'mixed') bad.push('★' + c.cls + ': ' + JSON.stringify(c.bad));
+      if (c.cls === 'explicit' && c.bad && /미입력/.test(c.bad))
+        bad.push('★★`미입력` 명시가 들어왔다 — 이 상품에서는 **해롭다**(㉢). '
+          + 'systemPrompt 가 「있으면 정확히 인용」이라 LLM 이 미입력을 인용·추정한다 → ' + JSON.stringify(c.bad));
+    }
+    // ③ 에서 원국 블록 자체가 없어야 한다 — 라벨만 남는 형태를 성질로 배제한다.
+    if (/일간|일주|부족 오행/.test(r.bad.prompt))
+      bad.push('★폐기본에 원국 라벨이 남아 있다: ' + JSON.stringify(
+        r.bad.prompt.split('\n').find((L) => /일간|일주|부족 오행/.test(L))));
+    if (!/일간/.test(r.ok.prompt)) bad.push('★정상본에 원국이 없다 — 대조가 성립하지 않는다(검체 오류)');
+
+    // ㉢ 대비 — `dream` 은 같은 폐기에서 **명시**한다. 두 처리가 공존하는 것이 의도다.
+    const rd = R['dream'];
+    if (rd && rd.bad.prompt && !/미입력/.test(rd.bad.prompt))
+      bad.push('★대비 붕괴 — `dream` 은 `sajuLinked` 를 켠 요청이라 **명시**해야 하는데 안 한다');
+
+    return { ok: bad.length === 0,
+      detail: bad.length ? '★' + bad.slice(0, 4).join(' / ')
+        : note.join(' · ') + ' · dream 은 명시 / daily 는 삭제 — 둘 다 의도대로' };
   });
 
   done();
