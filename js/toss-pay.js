@@ -5,7 +5,16 @@
 // ============================================================
 //  설정
 // ============================================================
-// 클라이언트 키 (Toss Payments 발급, 새론 비즈 MID: fihubscj0k)
+// ★★v7.82 B-11 — **결제 계약 명의가 사이트 표기와 갈립니다.**
+//   현재 값은 토스 **공용 테스트 키**(`test_ck_…`)라 실제 결제가 일어나지 않으므로
+//   당장 문제는 없습니다. 그러나 종전 MID `fihubscj0k` 는 ★**개인사업자 「새론 비즈」
+//   (470-54-00648)** 명의로 발급된 것이고, v7.82 에서 사이트 표기·처리방침·이용약관을
+//   전부 ★**주식회사 새론미디어(606-86-65033)** 로 바꿨습니다.
+//   ⟹ ★**라이브 키는 반드시 새론미디어 명의로 새로 발급**받으십시오. 구 명의 키로 열면
+//     「사이트가 고지한 사업자」와 「실제 정산·환불 주체」가 달라져, 전자상거래법상
+//     사업자 표시 위반이자 환불 분쟁 시 책임 주체가 불명확해집니다.
+//   ★함께 바꿔야 하는 것: `TOSS_SECRET_KEY`(Vercel 환경변수) · 구매안전서비스 이용
+//     확인증(통신판매업 신고에 필요) · 정산 계좌.
 // 테스트 키 — 라이브 키 발급시 교체
 const TOSS_CLIENT_KEY = window.__TOSS_CLIENT_KEY__ || 'test_ck_DpexMgkW36wKXn24okn4VGbR5ozO';
 
@@ -215,6 +224,86 @@ function _loadTossSDK(){
 }
 
 // ============================================================
+//  ★★v7.82 B-7 — 청약철회 제한 **사전 동의** (전자상거래법 §17②5)
+// ============================================================
+// 【왜 필요한가】
+//   프리미엄 리포트는 「결과가 생성·열람되면 제공이 완료되는 디지털 콘텐츠」다.
+//   전자상거래법 §17②5 는 그런 재화의 청약철회를 제한할 수 있게 하지만,
+//   ★**그 사실을 사전에 고지하고 동의를 받은 경우에만** 제한이 유효하다.
+//   동의 없이 이용약관에 「열람 후 환불 불가」라고만 적으면 **그 조항이 무효**이고,
+//   7일 이내 청약철회를 전부 받아줘야 한다. ⟹ 약관 문구만으로는 닫히지 않는다.
+//
+// 【★단일 관문 — 호출부를 열거하지 않는다 (결정 127)】
+//   `payWithToss` 는 결제로 가는 **유일한 경로**다(실측: index.html 6곳 + js/tarot.js 1곳,
+//   전부 `window.payWithToss(...)`). ⟹ 여기 한 곳에 걸면 **전 상품이 자동으로 덮인다.**
+//   상품별 결제 버튼에 각각 붙이면 새 상품을 추가할 때 조용히 빠진다(v7.73 관통 #4 의 형태).
+//
+// 【★거래마다 받는다 — 기억하지 않는다】
+//   `localStorage` 에 「동의함」을 저장하면 **다음 결제는 동의 없이 지나간다.**
+//   청약철회 제한은 **거래별 사전 동의**가 있어야 유효하므로 매번 묻는다.
+//   ★이것은 UX 손해가 아니라 **조항을 유효하게 만드는 조건**이다.
+//
+// 【기본값】 체크박스는 **해제 상태**로 시작하고, 체크 전에는 결제 버튼이 비활성이다.
+//   미리 체크해 두면 「동의를 받았다」고 보기 어렵다.
+function _confirmPurchaseTerms(productKey, p){
+  return new Promise(function(resolve){
+    const prev = document.getElementById('cwPurchaseConsent');
+    if(prev) prev.remove();
+    const won = (p.amount || 0).toLocaleString('ko-KR');
+    const ov = document.createElement('div');
+    ov.id = 'cwPurchaseConsent';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px';
+    let done = false;
+    const finish = function(v){ if(done) return; done = true; ov.remove(); resolve(v); };
+    ov.onclick = function(e){ if(e.target === ov) finish(false); };
+    ov.innerHTML =
+      '<div style="width:100%;max-width:400px;max-height:86vh;overflow-y:auto;background:#12121e;border:1px solid rgba(201,165,78,.25);border-radius:16px;padding:22px">' +
+        '<div style="font-size:15px;color:#c9a54e;font-family:\'Noto Serif KR\',serif;margin-bottom:14px">구매 확인</div>' +
+        '<div style="background:rgba(201,165,78,.07);border:1px solid rgba(201,165,78,.15);border-radius:10px;padding:12px;margin-bottom:14px">' +
+          '<div style="font-size:13px;color:#e8e6e0;margin-bottom:4px">' + _esc(p.orderName || productKey) + '</div>' +
+          '<div style="font-size:17px;color:#c9a54e;font-weight:600">' + won + '원</div>' +
+        '</div>' +
+        '<div style="font-size:11.5px;line-height:1.85;color:#9a9890;margin-bottom:14px">' +
+          '본 상품은 <strong style="color:#e8e6e0">결과가 생성·열람되면 제공이 완료되는 디지털 콘텐츠</strong>입니다.<br>' +
+          '이에 따라 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항 제5호에 따라 ' +
+          '<strong style="color:#e85a4f">결과를 열람하신 이후에는 청약철회(환불)가 제한</strong>됩니다.<br>' +
+          '<span style="color:rgba(154,152,144,.85)">다만 결과가 생성되지 않았거나 서비스 장애로 열람하지 못하신 경우에는 <strong>전액 환불</strong>해 드립니다.</span>' +
+        '</div>' +
+        '<label for="cwConsentChk" style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:11px;background:rgba(255,255,255,.03);border:1px solid rgba(201,165,78,.18);border-radius:9px;margin-bottom:14px">' +
+          '<input type="checkbox" id="cwConsentChk" style="margin-top:2px;width:16px;height:16px;flex-shrink:0;accent-color:#c9a54e;cursor:pointer" />' +
+          '<span style="font-size:12px;line-height:1.6;color:#e8e6e0">위 내용을 확인했으며, <strong>열람 후 청약철회가 제한</strong>되는 것에 동의합니다.</span>' +
+        '</label>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button type="button" id="cwConsentCancel" style="flex:1;padding:12px;background:none;border:1px solid rgba(154,152,144,.3);border-radius:9px;color:#9a9890;font-size:13px;font-family:inherit;cursor:pointer">취소</button>' +
+          '<button type="button" id="cwConsentOk" disabled style="flex:1.4;padding:12px;background:rgba(201,165,78,.18);border:1px solid rgba(201,165,78,.25);border-radius:9px;color:rgba(201,165,78,.45);font-size:13px;font-family:inherit;cursor:not-allowed">동의하고 결제</button>' +
+        '</div>' +
+        '<div style="font-size:10px;color:rgba(154,152,144,.5);margin-top:10px;line-height:1.6;text-align:center">' +
+          '주식회사 새론미디어 · 문의 chunwoon.help@gmail.com' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    const chk = ov.querySelector('#cwConsentChk');
+    const ok = ov.querySelector('#cwConsentOk');
+    chk.addEventListener('change', function(){
+      ok.disabled = !chk.checked;
+      ok.style.background = chk.checked ? 'rgba(201,165,78,.9)' : 'rgba(201,165,78,.18)';
+      ok.style.color = chk.checked ? '#12121e' : 'rgba(201,165,78,.45)';
+      ok.style.cursor = chk.checked ? 'pointer' : 'not-allowed';
+      ok.style.fontWeight = chk.checked ? '600' : '400';
+    });
+    ok.addEventListener('click', function(){ if(chk.checked) finish(true); });
+    ov.querySelector('#cwConsentCancel').addEventListener('click', function(){ finish(false); });
+  });
+}
+// ★상품명은 카탈로그 상수라 자유 입력이 아니지만, 문자열을 innerHTML 에 넣는 자리이므로
+//   형상을 좁혀 둔다(카탈로그가 나중에 외부 값으로 바뀌어도 이 자리가 안 열린다).
+function _esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ============================================================
 //  결제 요청 (메인 API)
 // ============================================================
 async function payWithToss(productKey){
@@ -229,6 +318,12 @@ async function payWithToss(productKey){
     if(typeof showToast === 'function') showToast('이미 결제하신 프리미엄입니다 — 바로 분석을 받습니다');
     return true;
   }
+
+  // ★★v7.82 B-7 — 청약철회 제한 사전 동의. 여기가 **결제로 가는 유일한 관문**이다.
+  //   ★테스트 모드 분기보다 **위**에 둔다 — 아래에 두면 키 미설정 환경에서 동의 없이 열린다.
+  //   ★미동의는 `false` 반환 = 「결제 안 함」이며, 호출부는 이미 그 경로를 다룬다(취소와 동일).
+  const _agreed = await _confirmPurchaseTerms(productKey, p);
+  if(!_agreed) return false;
 
   // 키 미설정시 fallback
   if(TOSS_CLIENT_KEY.indexOf('PLACEHOLDER') >= 0){
