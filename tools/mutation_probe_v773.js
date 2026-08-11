@@ -601,6 +601,28 @@ const MUTANTS = [
       '      if(c.ilgan){\n        const sajuParts = [];',
       '      if(true){\n        const sajuParts = [];'),
   },
+  // ★★v7.82 H-4 — 이름 입력 상한의 **클라·서버 결속**을 지키는 뮤턴트 2종.
+  //   ★두 뮤턴트 모두 **보안을 뚫지 않는다** — 서버 `cwNormName` 이 어차피 자르기 때문이다.
+  //   깨지는 것은 「사용자가 상한을 **볼 수 있는가**」와 「두 값이 **같은가**」다.
+  //   v7.80 P-5(story) 가 세운 축이며, 이 축에는 v7.81 까지 뮤턴트가 **0** 이었다(결정 121).
+  {
+    id: 'M30', axis: '★H-4 — 이름 입력의 `maxlength` 를 되돌린다 (조용한 절단 재현)',
+    what: '`sajuName` 의 `maxlength` 를 제거한다. ★서버는 여전히 20자로 자르므로 **방어는 안 뚫린다** — '
+      + '깨지는 것은 UX 다: 21자째부터 입력이 아무 표시 없이 사라진다. ★이것이 v7.82 이전의 실제 상태였다',
+    expect: ['E-7e'], evals: ['eval_ctxguard.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      '<input id="sajuName" placeholder="이름 입력" maxlength="20" />',
+      '<input id="sajuName" placeholder="이름 입력" />'),
+  },
+  {
+    id: 'M31', axis: '★★H-4 — 서버 상한만 바꾸고 클라를 안 바꾼다 (드리프트)',
+    what: '`CW_NAME_MAX` 를 20 → 30 으로 올린다. ★클라 `maxlength` 는 20 인 채로 남아 **역방향 절단**이 된다 — '
+      + '서버는 30 을 허용하는데 사용자는 20 자밖에 못 넣는다. 어느 쪽도 오류를 내지 않아 **무증상**이다',
+    expect: ['E-7e'], evals: ['eval_ctxguard.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      'const CW_NAME_MAX = 20;          // 클라이언트 이름 입력 `maxlength` 와 동일해야 한다',
+      'const CW_NAME_MAX = 30;          // 클라이언트 이름 입력 `maxlength` 와 동일해야 한다'),
+  },
   {
     id: 'MF9', axis: '★신설 게이트 자기 약화 — 폐기 표면',
     what: 'eval_ctx_discard_surface.js 의 E-1 본체를 무조건 통과로 바꾼다',

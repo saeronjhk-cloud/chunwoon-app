@@ -872,6 +872,88 @@ function mkRes() {
     return { ok: bad.length === 0, detail: bad.length ? '★갈림 ' + bad.length + '건: ' + bad.slice(0, 3).join(' / ') : CORPUS.length + '표본 바이트 동일' };
   });
 
+  // ═════════════════════════════════════════════════════════════════════════
+  // ★★v7.82 H-4 — E-7e · 클라 `maxlength` 와 서버 `CW_NAME_MAX` 의 **결속**
+  // ═════════════════════════════════════════════════════════════════════════
+  // 【무엇이 잘못돼 있었나 — 실측】
+  //   `fortune.js` 의 상수에 이렇게 적혀 있었다:
+  //     `const CW_NAME_MAX = 20;  // 클라이언트 이름 입력의 최장 상한(index.html:822 maxlength="20")`
+  //   ★그 줄에는 이름 입력이 없다(`namingBirth` 날짜 입력이다). **근거가 썩어 있었다.**
+  //   그리고 더 나쁜 것: `userName`·`sajuName`·`cName1`·`cName2`·`tjName` **5개 필드에
+  //   `maxlength` 가 아예 없었다.** 서버는 20자로 잘라 왔으므로 **방어는 서 있었으나**,
+  //   사용자에게는 21자째부터 입력이 **조용히 사라지는** 동작이었다.
+  //   ⟹ v7.80 P-5(story)가 세운 원칙과 **같은 축**이다: 「상한이 있으면 입력에서 보이게 한다」.
+  //
+  // 【왜 게이트가 필요한가 — 결정 124】
+  //   `maxlength` 를 지금 넣어도 **다음 세션이 새 이름 입력을 추가하면 다시 벌어진다.**
+  //   그리고 `CW_NAME_MAX` 를 20 → 30 으로 바꾸면 클라는 20 인 채로 남아 **역방향 절단**이
+  //   생긴다. 「이래서 괜찮다」를 인수인계에만 적으면 다음 세션이 지운다 — 검사로 만든다.
+  //
+  // 【★형태를 열거하지 않는다 — 결정 117】
+  //   「`userName` 은 maxlength 20 이어야 한다」로 적으면 그 id 목록이 곧 미검증 주장이고,
+  //   목록에 없는 새 필드는 조용히 빠진다(I-97·결정 119 가 정확히 그 형태였다).
+  //   ⟹ 대상을 **DOM 에서 기계 추출**한다: 「`<label>` 에 `이름` 이 있는 `<input>`」.
+  //     이것이 **사용자가 이름 입력이라고 인지하는 필드의 정의**이며, 새 필드를 추가하면
+  //     열거에 **자동으로 들어온다**. 손으로 적은 목록이 아니다.
+  //   ⟹ 판정은 **세 관계**뿐이다(값을 하드코딩하지 않는다):
+  //     ㉠ 열거된 필드 **전건**이 `maxlength` 를 갖는다        ← 「조용한 절단」 차단
+  //     ㉡ 그 값이 **전부 서로 같다**                          ← 필드마다 갈리는 것 차단
+  //     ㉢ 그 값이 서버 `CW_NAME_MAX` 와 **같다**              ← 클라/서버 드리프트 차단
+  //   ★`20` 이라는 숫자는 이 검사 어디에도 없다. 두 곳을 함께 바꾸면 통과하고,
+  //     한 곳만 바꾸면 붉어진다 — 그것이 결속의 정의다.
+  //
+  // 【판정 불가 ≠ 통과】 열거가 0건이면 FAIL 이다(「못 뽑아서 위반 0건」을 통과로 접지 않는다).
+  const NAME_INPUTS = (() => {
+    const re = /<label[^>]*>([\s\S]{0,80}?)<\/label>\s*<input\b([^>]*)>/g;
+    const out = []; let m;
+    while ((m = re.exec(INDEX_SRC))) {
+      const label = m[1].replace(/<[^>]*>/g, '').trim();
+      if (!/이름/.test(label)) continue;
+      const attrs = m[2];
+      const id = (/id="([^"]+)"/.exec(attrs) || [])[1] || '(id없음)';
+      const ml = (/maxlength="(\d+)"/.exec(attrs) || [])[1];
+      out.push({ id, label, max: ml === undefined ? null : Number(ml) });
+    }
+    return out;
+  })();
+
+  const SERVER_NAME_MAX = (() => {
+    const m = /const\s+CW_NAME_MAX\s*=\s*(\d+)\s*;/.exec(FORTUNE_SRC);
+    return m ? Number(m[1]) : null;
+  })();
+
+  check('E-7e', '★★이름 입력 `maxlength` 가 **전건 존재**하고 서버 `CW_NAME_MAX` 와 **같다** (조용한 절단 · 클라/서버 드리프트 차단 · 값은 하드코딩하지 않는다)', () => {
+    if (NAME_INPUTS.length === 0) return { ok: false, detail: '★이름 입력 열거 0건 — 판정 불가는 통과가 아니다 (라벨 형식이 바뀌었는가?)' };
+    if (SERVER_NAME_MAX === null) return { ok: false, detail: '★fortune.js 에서 CW_NAME_MAX 를 읽지 못했다 — 판정 불가' };
+    const bad = [];
+    // ㉠ 전건 존재
+    const missing = NAME_INPUTS.filter((x) => x.max === null);
+    if (missing.length) bad.push('maxlength 부재 ' + missing.length + '건: ' + missing.map((x) => x.id).join(','));
+    // ㉡ 서로 같다
+    const vals = Array.from(new Set(NAME_INPUTS.filter((x) => x.max !== null).map((x) => x.max)));
+    if (vals.length > 1) bad.push('필드 간 상한 갈림: ' + vals.join('/'));
+    // ㉢ 서버와 같다
+    if (vals.length === 1 && vals[0] !== SERVER_NAME_MAX) {
+      bad.push('클라(' + vals[0] + ') != 서버 CW_NAME_MAX(' + SERVER_NAME_MAX + ')');
+    }
+    return { ok: bad.length === 0,
+      detail: bad.length ? '★' + bad.join(' / ')
+        : NAME_INPUTS.length + '필드(' + NAME_INPUTS.map((x) => x.id).join(',') + ') 전건 maxlength=' + vals[0] + ' == 서버 CW_NAME_MAX' };
+  });
+
+  check('E-7f', '★긍정 짝 — 열거기가 **실제로 이름 필드를 잡는다** (하한 + 무관한 필드 미포함 · 「0건이라 녹색」 위약 차단)', () => {
+    // ★하한: 무료 오늘의운세 · 사주 · 궁합 2인 · 토정비결 = 최소 5필드가 이름을 받는다.
+    //   새 상품이 늘면 하한은 그대로 두고 열거만 늘어난다(하한은 침식 감시용이다).
+    const MIN = 5;
+    const bad = [];
+    if (NAME_INPUTS.length < MIN) bad.push('열거 ' + NAME_INPUTS.length + '건 < 하한 ' + MIN + ' — 열거기가 침식됐다');
+    // ★오탐 대조 — 이름이 아닌 입력(성씨 2자·한자 2자 등)이 섞이면 ㉡ 이 오작동한다.
+    const intruder = NAME_INPUTS.filter((x) => x.max !== null && x.max < 5).map((x) => x.id + '(' + x.max + ')');
+    if (intruder.length) bad.push('★이름이 아닌 짧은 상한 필드 혼입: ' + intruder.join(','));
+    return { ok: bad.length === 0,
+      detail: bad.length ? '★' + bad.join(' / ') : '열거 ' + NAME_INPUTS.length + '건 ≥ 하한 ' + MIN + ' · 혼입 0' };
+  });
+
   await checkA('E-2', '정상 payload 는 CONTEXT_UNVERIFIABLE 로 막히지 않는다 (오탐 방지)', async () => {
     if (typeof handler !== 'function') return { ok: false, detail: 'handler 미적재' };
     const r = await callFor(CLIENT_CTX, 'saju');
