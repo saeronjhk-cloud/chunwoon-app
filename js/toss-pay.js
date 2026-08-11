@@ -554,6 +554,12 @@ if(typeof window !== 'undefined'){
   window.getTossReceipts = getReceipts;
   // v7.66 P1-AUTH — 토큰 접근자 공개(다른 모듈이 UI 판정에 쓸 수 있게)
   window.cwGetPremiumToken = cwGetPremiumToken;
+  // ★v7.83 — 저장기 공개. `js/admin.js` 가 관리자 토큰을 넣을 때 쓴다.
+  //   ★공개해도 안전하다: **서명된 토큰이 없으면 저장해 봐야 서버가 403 으로 거부**한다.
+  //     서명에는 `CW_PREMIUM_HMAC_SECRET` 이 필요하고 그 값은 서버에만 있다.
+  //   ★공개하는 이유는 **저장소 소유자를 이 파일 하나로 유지**하기 위해서다 —
+  //     admin.js 가 `localStorage` 를 직접 쓰면 스키마가 두 곳으로 갈린다(드리프트).
+  window.cwSavePremiumToken = _cwSavePremiumToken;
   window.cwBootstrapLegacyReceipts = cwBootstrapLegacyReceipts;
   const _cwInit = function(){
     _handleTossSuccessCallback();
