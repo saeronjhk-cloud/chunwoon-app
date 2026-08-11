@@ -1089,7 +1089,17 @@ export default async function handler(req, res) {
      *     (E-6 payload 의 `score 100 grade` 가 여기서 무너진다).
      */
     const CW_NAME_DROP_RE = /[^A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ々〆\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF·'\u2019\-. ]/g;
-    const CW_NAME_MAX = 20;          // 클라이언트 이름 입력의 최장 상한(index.html:822 maxlength="20")
+    // ★★v7.82 H-4 — 이 주석은 「`index.html:822` 의 `maxlength="20"` 과 같다」고 적고 있었다.
+    //   ★그 줄에는 이름 입력이 없다(실측: `namingBirth` 날짜 입력이다). 근거가 썩어 있었다.
+    //   그리고 더 중요한 것: `userName`·`sajuName`·`cName1`·`cName2`·`tjName` **5개 필드에는
+    //   `maxlength` 가 아예 없었다.** 서버는 20자로 잘라 왔으므로 **방어는 서 있었으나**,
+    //   사용자에게는 21자째부터 **조용히 사라지는** 동작이었다(v7.80 P-5 story 와 같은 축).
+    //   ⟹ v7.82 에서 5개 필드에 `maxlength="20"` 을 넣었다. 이 상수와 **같은 값**이어야 한다.
+    //   ★근거를 줄번호로 적지 않는다 — 줄번호는 썩는다(결정 125). 대신 `eval_ctxguard.js`
+    //     의 **`E-7e`** 가 「`<label>` 에 `이름` 이 있는 `<input>`」을 index.html 에서 기계
+    //     열거해 ㉠전건 maxlength 존재 ㉡값이 서로 같음 ㉢이 상수와 같음 을 매 실행 대조한다.
+    //     ★이 값을 바꾸려면 **클라와 함께** 바꿔야 한다. 한쪽만 바꾸면 E-7e 가 붉어진다.
+    const CW_NAME_MAX = 20;          // 클라이언트 이름 입력 `maxlength` 와 동일해야 한다
     const CW_NAME_TOKENS_MAX = 2;    // "John Smith" 까지. 한국 이름은 1토큰이다
     const CW_NAME_TOKEN_MAX = 12;    // 토큰 1개 길이 상한
     /**
