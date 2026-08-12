@@ -624,6 +624,35 @@ const MUTANTS = [
       'const CW_NAME_MAX = 30;          // 클라이언트 이름 입력 `maxlength` 와 동일해야 한다'),
   },
   {
+    id: 'M32', axis: '★★E-13 — 기본 LLM 모델을 Covered Model 로 바꾼다 (처리방침이 그날로 거짓이 된다)',
+    what: '`CW_LLM_MODEL` 기본값을 `claude-sonnet-5` → `claude-fable-5` 로. ★Covered Model 은 프롬프트·응답이 '
+      + '**30일 의무 보존**이므로 처리방침 §5-1 의 「기본적으로 보관하지 않습니다」가 거짓이 된다. '
+      + '★코드는 정상 동작하고 어떤 오류도 나지 않는다 — **법적으로만 깨지는 무증상 변경**이다',
+    expect: ['E-13b'], evals: ['eval_policy_binding.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "? v : 'claude-sonnet-5';",
+      "? v : 'claude-fable-5';"),
+  },
+  {
+    id: 'M33', axis: '★★E-14 — 새 제3자 API 를 붙이고 처리방침에 고지하지 않는다',
+    what: '`api/fortune.js` 에 미고지 외부 호출을 하나 추가한다. ★현실의 형태다 — 기능을 붙일 때 '
+      + '처리방침 제4조 수탁자 명단을 같이 고치는 것을 잊는다. 사용자 데이터가 고지 없이 제3자로 나간다',
+    expect: ['E-14b'], evals: ['eval_policy_binding.js'],
+    apply: (d) => sub1(path.join(d, 'api', 'fortune.js'),
+      "const response = await fetch('https://api.anthropic.com/v1/messages', {",
+      "await fetch('https://api.openai.com/v1/moderations');\n    const response = await fetch('https://api.anthropic.com/v1/messages', {"),
+  },
+  {
+    id: 'M34', axis: '★★E-15 — 추적 스크립트를 켜고 처리방침 제8조는 그대로 둔다 (거짓 고지)',
+    what: 'Google Analytics 스크립트의 주석을 해제한다. 처리방침 제8조는 「사용하지 않습니다」인 채로 남는다. '
+      + '★v7.82 I-112 의 **정확한 역방향**이다 — 그때는 안 쓰는데 쓴다고 적혀 있었고, 이쪽은 쓰는데 안 쓴다고 적혀 있다. '
+      + '★후자가 훨씬 위험하다(결정 128): 부정확이 아니라 **거짓 고지**이고 쿠키 동의 의무도 함께 발생한다',
+    expect: ['E-15c'], evals: ['eval_policy_binding.js'],
+    apply: (d) => sub1(path.join(d, 'index.html'),
+      '<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR_ID"></script>',
+      '<script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR_ID"></script>'),
+  },
+  {
     id: 'MF9', axis: '★신설 게이트 자기 약화 — 폐기 표면',
     what: 'eval_ctx_discard_surface.js 의 E-1 본체를 무조건 통과로 바꾼다',
     expect: ['SELF 외부 pin'], evals: [], gateScope: 'eval', mutateGate: true,

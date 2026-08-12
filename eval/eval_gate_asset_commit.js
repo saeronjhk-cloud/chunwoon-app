@@ -118,6 +118,9 @@ const REQUIRED = Object.freeze([
   //   아무도 못 봤다(`!` 줄 통삭 · `/*` 죽은 패턴). ★A-10 이 이 편입을 **실제로 요구했다**.
   //   ⟹ 리포 사본이 zip 사본을 덮으므로, 앞으로 이 축의 변경은 커밋 경로로 감시된다.
   'eval/eval_prompt_citation_guard.js',
+  // ★★v7.83 E-13·E-14·E-15 — 처리방침 결속 축. 처리방침은 **코드와 함께 썩는데**
+  //   그것을 보는 검사가 하나도 없었다(v7.82 §6 제안분). 미커밋이면 통째로 무감시다.
+  'eval/eval_policy_binding.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',
