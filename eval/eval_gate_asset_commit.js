@@ -113,6 +113,11 @@ const REQUIRED = Object.freeze([
   //   ★키 표면(K-2·K-3)도 dead value(D-1)도 이 축을 못 본다 — 둘 다 **정상 경로**를 보기
   //     때문이다. 이 게이트만 **폐기 경로**의 프롬프트 바이트를 본다. 미커밋이면 통째로 무감시다.
   'eval/eval_ctx_discard_surface.js',
+  // ★★v7.83 H-3 부분 편입 (I-126) — 「배포 원문 노출」 축. 종전에는 **zip 안에만** 있어
+  //   리포에서 버전 관리되지 않았고, 그래서 매처가 v7.62 블랙리스트 모델에 멈춰 있는 것을
+  //   아무도 못 봤다(`!` 줄 통삭 · `/*` 죽은 패턴). ★A-10 이 이 편입을 **실제로 요구했다**.
+  //   ⟹ 리포 사본이 zip 사본을 덮으므로, 앞으로 이 축의 변경은 커밋 경로로 감시된다.
+  'eval/eval_prompt_citation_guard.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
   'tools/gen_client_astro.js',

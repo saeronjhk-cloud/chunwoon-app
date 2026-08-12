@@ -61,7 +61,7 @@ const EVAL_DIR = path.join(ROOT, 'eval');
 //     ★러너 자신의 sha 를 pin 파일에 넣는 것은 상호 해시가 되어(각자가 상대의 해시를 담음) 정당한
 //       갱신조차 불가능해지므로 의도적으로 하지 않는다. 그 한 칸이 남는 위험이다.
 const GATE_PINS_FILE = path.join(EVAL_DIR, '_gate_pins.json');
-const GATE_PINS_SHA256 = '48701c789fa889df8d4a71f2b8923cc8ec041326096530d005d7f149053f140b';
+const GATE_PINS_SHA256 = '5a6ff8716d3cfc69759d13c1a79b6060f16ca69d0891819508999d4d36400423';
 
 function readPins() {
   if (!fs.existsSync(GATE_PINS_FILE)) return { err: '외부 pin 파일 부재: eval/_gate_pins.json — 판정 불가(통과 아님)' };
