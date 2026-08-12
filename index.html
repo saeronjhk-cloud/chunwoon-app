@@ -267,6 +267,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .tarot-front .t-emoji{font-size:34px;margin-bottom:4px}
 .tarot-front .t-name{font-size:9px;color:var(--gold);font-family:'Noto Serif KR',serif}
 .tarot-card.glow{animation:cardGlow 2s ease-in-out infinite}
+/* ★★v7.84 — 사용자가 직접 뽑는 카드 픽커. 카드 뒷면만 보인다(앞면을 보여주면 「운」이 사라진다). */
+.cw-tp-ov{position:fixed;inset:0;z-index:9500;background:rgba(6,4,14,.92);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.cw-tp-box{width:100%;max-width:560px;background:linear-gradient(160deg,#141029,#0b0818);border:1px solid var(--gold);border-radius:16px;padding:20px 14px 16px;text-align:center;box-shadow:0 0 40px rgba(201,165,78,.15)}
+.cw-tp-title{font-family:'Noto Serif KR',serif;color:var(--gold);font-size:17px;margin-bottom:6px}
+.cw-tp-sub{font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:14px}
+.cw-tp-fans{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.cw-tp-fan{position:relative;height:104px;display:flex;align-items:flex-start;justify-content:center}
+.cw-tp-card{position:absolute;top:0;width:54px;height:86px;padding:0;border-radius:8px;cursor:pointer;
+  background:linear-gradient(135deg,#1a1035,#0d0820);border:1px solid rgba(201,165,78,.55);
+  box-shadow:0 2px 8px rgba(0,0,0,.5);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.cw-tp-card::after{content:'☯';font-size:22px;color:var(--gold);opacity:.55;display:block;line-height:86px}
+.cw-tp-card:hover{border-color:var(--gold)}
+.cw-tp-card.on{border-color:var(--gold);box-shadow:0 0 16px rgba(201,165,78,.6);z-index:400!important}
+.cw-tp-badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);min-width:19px;height:19px;line-height:19px;
+  border-radius:10px;background:var(--gold);color:#000;font-size:11px;font-weight:700;display:block}
+.cw-tp-card:not(.on) .cw-tp-badge{display:none}
+.cw-tp-count{font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:12px}
+.cw-tp-btns{display:flex;gap:8px;justify-content:center}
+.cw-tp-btns button{padding:11px 20px;border-radius:9px;font-size:13px;cursor:pointer;font-family:inherit}
+.cw-tp-cancel{background:var(--card);border:1px solid rgba(201,165,78,.3);color:var(--text2)}
+.cw-tp-ok{background:var(--gold);border:1px solid var(--gold);color:#000;font-weight:600}
+.cw-tp-ok:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:420px){.cw-tp-card{width:46px;height:74px}.cw-tp-card::after{line-height:74px;font-size:19px}.cw-tp-fan{height:92px}}
 @keyframes cardGlow{0%,100%{filter:drop-shadow(0 0 5px rgba(201,165,78,.2))}50%{filter:drop-shadow(0 0 15px rgba(201,165,78,.5))}}
 
 /* Pillars */

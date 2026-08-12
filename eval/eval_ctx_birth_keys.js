@@ -331,9 +331,39 @@ const setSajuCal = (w, x) => { try { w.setSajuCal(x); return 'ok'; } catch (e) {
 const setNamingCal = (w, x) => { try { w.setNamingCal(x); return 'ok'; } catch (e) { return 'ERR'; } };
 const setTarotCal = (w, x) => { try { w.setTarotCal(x); return 'ok'; } catch (e) { return 'ERR'; } };
 
+/**
+ * ★★v7.84 — 타로가 「클라 무작위」에서 「사용자가 직접 뽑기」로 바뀌었다.
+ *   이제 카드 선택 모달이 열리고 **사용자가 누를 때까지** 흐름이 진행되지 않는다.
+ *   ⟹ 게이트는 그 모달을 **사용자처럼 눌러서** 통과시킨다.
+ *
+ * ★★프로덕션 코드에 테스트용 뒷문(`window.__autoPick` 같은 전역 스위치)을 만들지 **않는다**.
+ *   그런 문은 라이브에도 존재하게 되고, B-4 가 확인한 「결제 우회 뒷문 0건」과 같은 성질이
+ *   깨진다(결정 130 — 「이 기능을 지우면 프로덕션 코드가 몇 줄 바뀌는가」가 0이어야 한다).
+ *   ⟹ DOM 을 누른다. 실제 사용자와 **같은 경로**이므로 검사가 보는 것도 진짜 경로다.
+ *
+ * ★뽑을 장수를 손으로 적지 않는다 — 모달이 스스로 표시하는 `x / N` 에서 읽는다(결정 127).
+ *   장수가 바뀌어도 이 함수는 고칠 필요가 없다.
+ * @returns {boolean} 픽커를 실제로 통과시켰으면 true (안 열렸으면 false)
+ */
+function settlePicker(w) {
+  const ov = w.document.getElementById('cwTarotPicker');
+  if (!ov) return false;
+  const cnt = ov.querySelector('.cw-tp-count');
+  const need = cnt ? parseInt(String(cnt.textContent).split('/')[1], 10) : 0;
+  const cards = [...ov.querySelectorAll('.cw-tp-card')];
+  if (!need || cards.length < need) return false;
+  for (let i = 0; i < need; i++) cards[i].click();
+  const ok = ov.querySelector('.cw-tp-ok');
+  if (!ok || ok.disabled) return false;      // 상한 판정이 깨졌다 — 조용히 넘기지 않는다
+  ok.click();
+  return true;
+}
+
 async function drive(w, expr) {
   w.__calls = [];
   try { w.eval(expr); } catch (e) { return { err: 'THROW:' + ((e && e.message) || String(e)) }; }
+  // ★픽커가 열렸으면 눌러서 통과시킨다. 안 열리는 상품(작명·꿈 등)에서는 아무 일도 없다.
+  for (let i = 0; i < 4; i++) { await sleep(60); if (settlePicker(w)) break; }
   await sleep(220);
   const bodies = w.__calls.filter(Boolean);
   if (!bodies.length) return { err: 'NOCALL' };

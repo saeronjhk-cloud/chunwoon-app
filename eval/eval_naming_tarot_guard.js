@@ -400,10 +400,23 @@ const VOCAB = extractTarotVocab();
 /** 클라가 **실제로** 싣는 카드 장수 — js/tarot.js 의 `slice` 에서 뽑는다(손으로 안 적는다). */
 function clientCardCaps() {
   if (!TAROT_SRC) return { err: 'js/tarot.js 를 읽지 못했다' };
-  const free = TAROT_SRC.match(/TAROT_MAJOR\][^\n]*?\.slice\(0,\s*(\d+)\)/);
-  const prem = TAROT_SRC.match(/TAROT_DECK\][^\n]*?\.slice\(0,\s*(\d+)\)/);
-  if (!free || !prem) return { err: '클라 실제 상한(`slice(0,N)`)을 js/tarot.js 에서 못 읽었다' };
-  return { tarot: +free[1], tarot_premium_1: +prem[1], tarot_premium_2: +prem[1] };
+  // ★★v7.84 — 뽑기 방식이 「클라가 혼자 무작위로 정함」에서 「사용자가 직접 고름」으로
+  //   바뀌면서 형상이 `[...덱].slice(0,N)` → `_tarotPickCards(덱, N, …)` 이 됐다.
+  //   ★두 형상을 **모두** 읽는다 — 이 검사가 못박는 것은 「클라 상한 == 서버 상한」이지
+  //     **어떤 문법으로 뽑는가**가 아니다. 구현 형태를 못박으면 정당한 UX 변경이
+  //     보안 게이트를 붉히고, 그러면 사람이 게이트를 끄게 된다(결정 138).
+  //   ★어느 형상도 못 읽으면 **판정 불가 = FAIL** 이다(공허 통과 차단).
+  const capOf = (deck) => {
+    const a = TAROT_SRC.match(new RegExp(deck + '\\][^\\n]*?\\.slice\\(0,\\s*(\\d+)\\)'));
+    if (a) return +a[1];
+    const b = TAROT_SRC.match(new RegExp('_tarotPickCards\\(\\s*' + deck + '\\s*,\\s*(\\d+)'));
+    if (b) return +b[1];
+    return null;
+  };
+  const free = capOf('TAROT_MAJOR'), prem = capOf('TAROT_DECK');
+  if (free === null || prem === null)
+    return { err: '클라 실제 상한을 js/tarot.js 에서 못 읽었다 — `[...덱].slice(0,N)` 도 `_tarotPickCards(덱, N)` 도 없다' };
+  return { tarot: free, tarot_premium_1: prem, tarot_premium_2: prem };
 }
 const CLIENT_CAPS = clientCardCaps();
 
@@ -540,12 +553,20 @@ function clientCardSites() {
     if (end === -1) return { err: '변환식의 닫는 괄호를 못 찾았다 (js/tarot.js 오프셋 ' + open + ')' };
     const cb = TAROT_SRC.slice(open + 1, end);
     const before = TAROT_SRC.slice(0, m.index);
-    const dm = [...before.matchAll(/\[\s*\.\.\.\s*([A-Za-z_$][\w$]*)\s*\]/g)].pop();
-    if (!dm) return { err: '적재 지점에 먹이는 덱(`[...<덱>]`)을 못 찾았다' };
+    // ★★v7.84 — 덱을 먹이는 형상이 둘이다. **가장 가까운 것**을 쓴다(두 형상이 섞여
+    //   있어도 적재 지점 직전의 것이 그 지점의 덱이다).
+    //     구(舊) 무작위 : `[...<덱>]` … `.slice(0,N)`
+    //     신(新) 선택   : `_tarotPickCards(<덱>, N, …)`
+    //   ★어느 쪽도 못 찾으면 판정 불가 = FAIL 이다(조용한 통과 금지).
+    const dmOld = [...before.matchAll(/\[\s*\.\.\.\s*([A-Za-z_$][\w$]*)\s*\]/g)].pop();
+    const dmNew = [...before.matchAll(/_tarotPickCards\(\s*([A-Za-z_$][\w$]*)\s*,\s*(\d+)/g)].pop();
+    const useNew = dmNew && (!dmOld || dmNew.index > dmOld.index);
+    const dm = useNew ? dmNew : dmOld;
+    if (!dm) return { err: '적재 지점에 먹이는 덱을 못 찾았다 (`[...<덱>]` · `_tarotPickCards(<덱>, N)` 둘 다 부재)' };
     const ls = before.lastIndexOf('\n', dm.index) + 1;
     const le = TAROT_SRC.indexOf('\n', dm.index);
     const deckLine = TAROT_SRC.slice(ls, le === -1 ? TAROT_SRC.length : le);
-    const sm = deckLine.match(/\.slice\(\s*0\s*,\s*(\d+)\s*\)/);
+    const sm = useNew ? [null, dm[2]] : deckLine.match(/\.slice\(\s*0\s*,\s*(\d+)\s*\)/);
     let fn = null;
     try { fn = new Function(TAROT_SRC + '\n;return (' + cb + ');')(); }
     catch (e) { return { err: '변환식 평가 실패: ' + ((e && e.message) || String(e)) }; }

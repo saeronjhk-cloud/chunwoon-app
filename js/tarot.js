@@ -15,6 +15,149 @@ function _tarotCardForApi(c, extra){
 }
 
 // ============================================================
+//  ★★v7.84 — 사용자가 **직접 뽑는** 카드 픽커 (무료·프리미엄 공용)
+// ============================================================
+//  【무엇이 바뀌나】 종전에는 클라가 `sort(()=>Math.random()-.5).slice(0,N)` 으로
+//    **혼자 정했다.** 사용자는 결과만 봤다. 이제 뒷면 덱을 펼쳐 놓고 사용자가 고른다.
+//
+//  ★★서버는 한 줄도 바뀌지 않는다 — 서버가 보는 것은 **몇 장이 왔는가**(`tarot:3` ·
+//    `tarot_premium_1/2:10` · `api/fortune.js:1464`)와 각 원소의 **형상**뿐이고,
+//    「누가 골랐는가」는 payload 에 나타나지 않는다. ⟹ 장수를 유지하는 한 게이트
+//    `eval_naming_tarot_guard.js` 의 `T-0`(서버 상한 == 클라 `slice` 상한)도 무영향이다.
+//    ★반대로 **장수를 바꾸면** 서버 상한과 클라 상한을 **함께** 고쳐야 하고 `T-0` 이 그것을
+//      강제한다. 한쪽만 고치면 붉어진다 — 그것이 그 검사의 존재 이유다.
+//
+//  【설계 — 사본을 만들지 않는다(결정 99)】
+//    무료(메이저 22 → 3장)와 프리미엄(풀덱 78 → 10장)이 **이 함수 하나**를 쓴다.
+//    덱과 장수만 인자로 받는다. 두 벌로 나누면 반드시 갈린다.
+//
+//  【정/역방향은 여전히 무작위다 — 의도한 것】
+//    ★사용자가 고르는 것은 **어느 카드인가**이지 **정방향인가 역방향인가**가 아니다.
+//      실제 타로도 뒤집기 전까지 방향을 모른다. 방향까지 고르게 하면 점이 아니라
+//      메뉴 선택이 된다. ⟹ 45% 역방향은 **뽑는 순간** 결정된다(종전과 동일).
+//
+//  【뒷면이라는 것이 핵심이다】
+//    ★카드 앞면을 보여주고 고르게 하면 「운」이 사라진다. 그래서 픽커는 **정보를 0으로**
+//      만든다 — 뒷면 문양만 있고, DOM 어디에도 어느 카드인지 적지 않는다.
+//      셔플 결과는 클로저 안 `pool` 에만 있고 `data-*` 로 새지 않는다.
+//
+//  @param {Array}  deck  뽑을 덱 (TAROT_MAJOR | TAROT_DECK)
+//  @param {number} need  뽑을 장수
+//  @param {object} opts  {title, sub, cancelable}
+//  @returns {Promise<Array|null>} 고른 카드 배열. 취소하면 null.
+function _tarotPickCards(deck, need, opts){
+  opts = opts || {};
+  return new Promise((resolve) => {
+    // ★셔플은 여기서 한 번만. 화면 순서 == 뒷면 순서이며 사용자는 알 수 없다.
+    const pool = [...deck].sort(() => Math.random() - .5);
+    const picked = [];                 // 선택한 pool 인덱스 (선택 순서 = 카드 순서)
+
+    const ov = document.createElement('div');
+    ov.id = 'cwTarotPicker';
+    ov.className = 'cw-tp-ov';
+
+    // ── 행 나누기 — 22장은 한 줄, 78장은 여러 줄. 모바일에서 카드가 뭉개지지 않게.
+    const perRow = pool.length <= 26 ? pool.length : Math.ceil(pool.length / 4);
+    const rows = [];
+    for (let i = 0; i < pool.length; i += perRow) rows.push(pool.slice(i, i + perRow).map((_, j) => i + j));
+
+    ov.innerHTML =
+      '<div class="cw-tp-box" role="dialog" aria-modal="true" aria-label="타로 카드 선택">' +
+        '<div class="cw-tp-title">' + (opts.title || '카드를 뽑아주세요') + '</div>' +
+        '<div class="cw-tp-sub">' + (opts.sub || '') + '</div>' +
+        '<div class="cw-tp-fans">' +
+          rows.map(() => '<div class="cw-tp-fan"></div>').join('') +
+        '</div>' +
+        '<div class="cw-tp-count"><span class="cw-tp-n">0</span> / ' + need + '</div>' +
+        '<div class="cw-tp-btns">' +
+          (opts.cancelable ? '<button type="button" class="cw-tp-cancel">취소</button>' : '') +
+          '<button type="button" class="cw-tp-ok" disabled>이 카드로 보기</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+
+    const fanEls = ov.querySelectorAll('.cw-tp-fan');
+    const nEl = ov.querySelector('.cw-tp-n');
+    const okBtn = ov.querySelector('.cw-tp-ok');
+    const cardEls = new Map();         // poolIndex -> element
+
+    // ── 부채꼴 배치 — 컨테이너 폭에서 간격을 **계산**한다(하드코딩하면 모바일에서 넘친다)
+    const CARD_W = 54;
+    function layout(){
+      rows.forEach((idxs, r) => {
+        const fan = fanEls[r];
+        const w = fan.clientWidth || 320;
+        const k = idxs.length;
+        const gap = k > 1 ? Math.max(11, Math.min(30, (w - CARD_W - 12) / (k - 1))) : 0;
+        const mid = (k - 1) / 2;
+        idxs.forEach((pi, j) => {
+          const el = cardEls.get(pi);
+          if (!el) return;
+          const off = j - mid;
+          const rot = off * (k > 1 ? Math.min(2.4, 46 / k) : 0);
+          const lift = Math.pow(Math.abs(off) / Math.max(1, mid), 2) * 12;
+          el._base = 'translateX(' + (off * gap) + 'px) translateY(' + lift + 'px) rotate(' + rot + 'deg)';
+          el.style.zIndex = String(100 + j);
+          paint(pi);
+        });
+      });
+    }
+    function paint(pi){
+      const el = cardEls.get(pi);
+      if (!el) return;
+      const at = picked.indexOf(pi);
+      const on = at >= 0;
+      el.classList.toggle('on', on);
+      el.style.transform = el._base + (on ? ' translateY(-20px) scale(1.06)' : '');
+      el.querySelector('.cw-tp-badge').textContent = on ? String(at + 1) : '';
+      el.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+
+    rows.forEach((idxs, r) => {
+      idxs.forEach((pi) => {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'cw-tp-card';
+        // ★어느 카드인지 DOM 에 남기지 않는다 — 뒷면의 뜻이 그것이다.
+        el.innerHTML = '<span class="cw-tp-badge"></span>';
+        el.setAttribute('aria-label', '카드');
+        el.onclick = () => {
+          const at = picked.indexOf(pi);
+          if (at >= 0) { picked.splice(at, 1); picked.forEach(paint); paint(pi); }
+          else {
+            if (picked.length >= need) { if (typeof showToast === 'function') showToast(need + '장을 이미 골랐습니다'); return; }
+            picked.push(pi); paint(pi);
+          }
+          nEl.textContent = String(picked.length);
+          okBtn.disabled = picked.length !== need;
+        };
+        cardEls.set(pi, el);
+        fanEls[r].appendChild(el);
+      });
+    });
+
+    const close = (val) => {
+      window.removeEventListener('resize', layout);
+      document.removeEventListener('keydown', onKey);
+      ov.remove();
+      resolve(val);
+    };
+    function onKey(e){ if (e.key === 'Escape' && opts.cancelable) close(null); }
+
+    okBtn.onclick = () => {
+      if (picked.length !== need) return;
+      close(picked.map((pi) => pool[pi]));
+    };
+    const cancelBtn = ov.querySelector('.cw-tp-cancel');
+    if (cancelBtn) cancelBtn.onclick = () => close(null);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', layout);
+    // 레이아웃은 DOM 이 붙은 뒤에야 폭을 알 수 있다
+    requestAnimationFrame(layout);
+  });
+}
+
+// ============================================================
 //  타로 무료 — 입력 검증 + 메이저 3장 + 정/역방향 결정
 // ============================================================
 async function analyzeTarot(){
@@ -26,9 +169,18 @@ async function analyzeTarot(){
   if(sajuFields && sajuFields.style.display !== 'none'){
     saju = _collectSajuFromUI('tarotBirth','tarotHour','tarotGender');
   }
-  // 메이저 22장 중 3장 무작위 + 정/역방향 (45% 역방향)
-  const shuffled = [...TAROT_MAJOR].sort(()=>Math.random()-.5).slice(0,3);
-  const cards = shuffled.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45, kind:'major'}));
+  // ★★v7.84 — 메이저 22장을 **뒷면으로 펼쳐** 사용자가 3장 고른다(종전: 클라 무작위 3장).
+  //   ★장수 3 은 그대로다 — 서버 상한(`api/fortune.js:1464` `tarot:3`)과 게이트 `T-0` 이
+  //     그 숫자로 묶여 있다. 여기를 바꾸려면 서버도 함께 바꿔야 한다.
+  //   ★취소 가능 — 무료이므로 되돌아가도 잃는 것이 없다(프리미엄은 결제 뒤라 불가).
+  const picked = await _tarotPickCards(TAROT_MAJOR, 3, {
+    title: '세 장을 뽑아주세요',
+    sub: '마음을 비우고 끌리는 카드를 고르세요 · 과거 · 현재 · 미래',
+    cancelable: true
+  });
+  if(!picked) return;                     // 취소 — 아무것도 바꾸지 않는다
+  // 정/역방향은 **뽑는 순간** 무작위로 정해진다(45%). 사용자는 방향을 고르지 않는다.
+  const cards = picked.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45, kind:'major'}));
   tarotSt.cards = cards;
   tarotSt.rev = 0;
   tarotSt.category = category;
@@ -204,6 +356,19 @@ async function unlockTarotPremium(){
     if(window.markPremiumPayment) window.markPremiumPayment('tarot');
   }
 
+  // ★★v7.84 — 풀덱 78장을 **뒷면으로 펼쳐** 사용자가 10장 고른다(종전: 클라 무작위 10장).
+  //   ★★취소를 열지 않는다 — 결제가 **이미 끝난** 지점이다. 여기서 빠져나갈 문을 만들면
+  //     「돈은 나갔는데 받은 것이 없는」 상태가 생긴다. 10장을 다 골라야만 진행된다.
+  //   ★따라서 이 호출은 결제 **직후·로딩 전**에 있어야 한다. 로딩 뒤로 옮기면
+  //     사용자가 카드를 고르는 동안 진행바가 혼자 돌아가고, 앞으로 옮기면 결제 전에
+  //     78장을 펼치게 된다(안 살 사람에게도).
+  const premPicked = await _tarotPickCards(TAROT_DECK, 10, {
+    title: '열 장을 뽑아주세요',
+    sub: '켈틱 크로스 · 뽑은 순서대로 위치가 정해집니다 (현재 상황 → 장애 → …)',
+    cancelable: false
+  });
+  if(!premPicked) return;                 // 방어 — cancelable:false 이므로 도달하지 않는다
+
   const pw = document.getElementById('tarotPaywall');
   let loadTimer = null;
   if(pw){
@@ -226,9 +391,10 @@ async function unlockTarotPremium(){
     },2400);
   }
 
-  // 78장 풀덱에서 10장 무작위 + 정/역방향
-  const sh = [...TAROT_DECK].sort(()=>Math.random()-.5).slice(0,10);
-  const cards = sh.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45}));
+  // ★v7.84 — 사용자가 고른 10장. 정/역방향은 **뽑는 순간** 무작위(45%)로 정해진다.
+  //   ★장수 10 은 그대로다 — 서버 상한(`tarot_premium_1/2:10`)·켈틱 크로스 10 포지션·
+  //     게이트 `T-0` 이 그 숫자에 묶여 있다.
+  const cards = premPicked.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45}));
   info.premCards = cards;
 
   const ctx = {
