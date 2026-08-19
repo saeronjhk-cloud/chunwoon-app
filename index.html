@@ -9878,16 +9878,27 @@ function installApp() {
 // ============================================================
 //  PRIVACY POLICY & TERMS MODAL
 // ============================================================
+// ★v7.84 — 닫을 때 해시도 지운다. 안 지우면 `#terms` 가 주소창에 남아
+//   같은 링크를 다시 눌러도 `hashchange` 가 안 나서 **두 번째부터 안 열린다**.
+//   ★해시가 그 문서일 때만 지운다 — 탭 해시(`#saju` 등)를 건드리면 안 된다.
+function cwCloseLegal(overlayId, hashName) {
+  const el = document.getElementById(overlayId);
+  if (el) el.remove();
+  if (window.location.hash.replace('#','') === hashName) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+}
+
 function showPrivacy() {
   const overlay = document.createElement('div');
   overlay.id = 'privacyOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s';
-  overlay.onclick = (e) => { if(e.target===overlay) overlay.remove() };
+  overlay.onclick = (e) => { if(e.target===overlay) cwCloseLegal('privacyOverlay','privacy') };
   overlay.innerHTML = `
     <div style="width:100%;max-width:440px;max-height:80vh;overflow-y:auto;background:#12121e;border:1px solid rgba(201,165,78,.2);border-radius:16px;padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div style="font-size:16px;color:#c9a54e;font-family:'Noto Serif KR',serif">개인정보처리방침</div>
-        <button onclick="document.getElementById('privacyOverlay').remove()" style="background:none;border:none;color:#9a9890;font-size:20px;cursor:pointer">✕</button>
+        <button onclick="cwCloseLegal('privacyOverlay','privacy')" style="background:none;border:none;color:#9a9890;font-size:20px;cursor:pointer">✕</button>
       </div>
       <div style="font-size:12px;line-height:1.9;color:#9a9890">
         <p>주식회사 새론미디어(이하 '회사')는 天運(이하 '서비스') 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」을 준수합니다. 본 방침은 서비스가 어떤 정보를 어떻게 다루는지를 실제 동작 그대로 설명합니다.</p>
@@ -9993,12 +10004,12 @@ function showTerms() {
   const overlay = document.createElement('div');
   overlay.id = 'termsOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s';
-  overlay.onclick = (e) => { if(e.target===overlay) overlay.remove() };
+  overlay.onclick = (e) => { if(e.target===overlay) cwCloseLegal('termsOverlay','terms') };
   overlay.innerHTML = `
     <div style="width:100%;max-width:440px;max-height:80vh;overflow-y:auto;background:#12121e;border:1px solid rgba(201,165,78,.2);border-radius:16px;padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div style="font-size:16px;color:#c9a54e;font-family:'Noto Serif KR',serif">이용약관</div>
-        <button onclick="document.getElementById('termsOverlay').remove()" style="background:none;border:none;color:#9a9890;font-size:20px;cursor:pointer">✕</button>
+        <button onclick="cwCloseLegal('termsOverlay','terms')" style="background:none;border:none;color:#9a9890;font-size:20px;cursor:pointer">✕</button>
       </div>
       <div style="font-size:12px;line-height:1.9;color:#9a9890">
         <p><strong style="color:#e8e6e0">제1조 (목적)</strong><br>
@@ -10063,11 +10074,28 @@ function insertAdSlots() {
 // ============================================================
 //  HASH-BASED NAVIGATION (for shortcuts & deep links)
 // ============================================================
+// ★★v7.84 — 법적 고지 문서의 **고유 주소(딥링크)**.
+//   【왜 필요한가】 카드사(PG) 심사가 「환불 정책을 확인할 수 있는 **URL**」을 요구한다.
+//     종전에는 푸터의 `javascript:showTerms()` 로만 열려서 **건넬 주소가 없었다** —
+//     심사자·이용자·검색엔진 어디에서도 약관에 직접 도달할 수 없었다.
+//   ⟹ `#terms`·`#privacy` 로 연다. 전자상거래법상 「약관을 쉽게 확인할 수 있게」의
+//     실질 요건이기도 하다.
+//   ★탭 전환과 **키 공간이 겹치지 않는다** — `[data-tab]` 에 `terms`·`privacy` 가
+//     없음을 아래에서 실측으로 확인하고 분기한다(있으면 탭이 우선한다).
+const CW_LEGAL_HASH = { terms: 'showTerms', privacy: 'showPrivacy' };
+
 function handleHash() {
   const hash = window.location.hash.replace('#','');
-  if (hash) {
-    const tab = document.querySelector(`[data-tab="${hash}"]`);
-    if (tab) tab.click();
+  if (!hash) return;
+  // ① 탭이 먼저다 — 기존 딥링크 동작을 한 바이트도 바꾸지 않는다.
+  const tab = document.querySelector(`[data-tab="${hash}"]`);
+  if (tab) { tab.click(); return; }
+  // ② 법적 고지 문서
+  const fn = CW_LEGAL_HASH[hash];
+  if (fn && typeof window[fn] === 'function') {
+    // ★이미 열려 있으면 겹쳐 열지 않는다(뒤로가기·새로고침 시 중복 방지).
+    if (document.getElementById(hash === 'terms' ? 'termsOverlay' : 'privacyOverlay')) return;
+    window[fn]();
   }
 }
 window.addEventListener('hashchange', handleHash);
