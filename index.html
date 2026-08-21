@@ -2703,7 +2703,7 @@ async function analyzeSaju(){
   try{
     const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'saju',context:ctx})});
     const data=await resp.json();
-    if(!data.success||!data.result)throw new Error(data.error||'API 응답 오류');
+    if(!data.success||!data.result)throw new Error(cwErrMsg(data)||'API 응답 오류');
     if(data.result.raw&&!data.result.summary)throw new Error('AI 응답 파싱 실패');
     renderSajuResult(data.result,info);
   }catch(err){
@@ -2909,7 +2909,7 @@ async function unlockSajuPremium(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.gyeokguk&&!d.result.daewoon)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
       return d.result;
     };
@@ -2978,7 +2978,7 @@ async function retrySajuPremiumAPI(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.gyeokguk&&!d.result.daewoon)throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
@@ -3433,7 +3433,7 @@ async function analyzeCompat(){
   try{
     const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'compat',context:ctx})});
     const data=await resp.json();
-    if(!data.success||!data.result)throw new Error(data.error||'API 응답 오류');
+    if(!data.success||!data.result)throw new Error(cwErrMsg(data)||'API 응답 오류');
     if(data.result.raw&&!data.result.summary)throw new Error('AI 응답 파싱 실패');
     renderCompatResult(data.result,info);
   }catch(err){
@@ -3635,7 +3635,7 @@ async function unlockCompatPremium(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.ilganDeep&&!d.result.daewoonAlignment)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
       return d.result;
     };
@@ -3702,7 +3702,7 @@ async function retryCompatPremiumAPI(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.ilganDeep&&!d.result.daewoonAlignment)throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
@@ -5890,7 +5890,7 @@ async function analyzeTojeong(){
       })
     });
     const data=await resp.json();
-    if(!data.success||!data.result){throw new Error(data.error||'API 응답 오류')}
+    if(!data.success||!data.result){throw new Error(cwErrMsg(data)||'API 응답 오류')}
     renderTojeongResult(data.result,{name,gender,targetYear,br,lunar,zodiac,ganji,upper,middle,lower,guaCombination});
   }catch(err){
     console.error('토정비결 API 오류:',err);
@@ -6122,7 +6122,7 @@ async function unlockTojeongPremium(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       // 파싱 실패하면 result에 raw만 있고 기대 필드 없음 → 명시적 실패 처리
       if(d.result.raw&&!d.result.detailedYear&&!d.result.monthlyDetail)throw new Error('AI 응답 파싱 실패 (max_tokens 초과 추정)');
       return d.result;
@@ -6206,7 +6206,7 @@ async function retryTojeongPremiumAPI(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.detailedYear&&!d.result.monthlyDetail)throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
@@ -6492,7 +6492,7 @@ async function analyzeDream(){
   try{
     const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'dream',context:ctx})});
     const data=await resp.json();
-    if(!data.success||!data.result)throw new Error(data.error||'API 응답 오류');
+    if(!data.success||!data.result)throw new Error(cwErrMsg(data)||'API 응답 오류');
     if(data.result.raw&&!data.result.summary)throw new Error('AI 응답 파싱 실패');
     renderDreamResult(data.result,info);
   }catch(err){
@@ -6652,7 +6652,7 @@ async function unlockDreamPremium(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.traditionalDeep&&!d.result.symbolsDetail)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
       return d.result;
     };
@@ -6719,7 +6719,7 @@ async function retryDreamPremiumAPI(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.traditionalDeep&&!d.result.symbolsDetail)throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
@@ -7452,7 +7452,7 @@ async function analyzeNaming(){
   try{
     const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
     const data=await resp.json();
-    if(!data.success||!data.result)throw new Error(data.error||'API 응답 오류');
+    if(!data.success||!data.result)throw new Error(cwErrMsg(data)||'API 응답 오류');
     if(data.result.raw&&!data.result.candidates)throw new Error('AI 응답 파싱 실패');
     renderNamingResult(data.result,info);
   }catch(err){
@@ -7915,7 +7915,7 @@ async function unlockNamingPremium(){
       const txt=await resp.text();
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
-      if(!d.success||!d.result)throw new Error(d.error||'응답 형식 오류');
+      if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
       if(d.result.raw&&!d.result.candidates&&!d.result.bestThree)throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
@@ -7971,7 +7971,7 @@ async function retryNamingPremiumAPI(){
     const doFetch=async(apiType)=>{
       const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,context:ctx})});
       const txt=await resp.text();if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
-      const d=JSON.parse(txt);if(!d.success||!d.result)throw new Error(d.error||'응답 오류');
+      const d=JSON.parse(txt);if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 오류');
       if(d.result.raw&&!d.result.candidates&&!d.result.bestThree)throw new Error('파싱 실패');
       return d.result;
     };
@@ -9873,6 +9873,18 @@ function installApp() {
       document.getElementById('installBanner')?.remove();
     });
   }
+}
+
+// ★★v7.84 B-13 — 서버 오류를 **사람이 읽는 문구**로 바꾼다.
+//   【왜】 무료 이용 제한(429)을 붙였는데 클라는 `data.error`(기계 코드)를 그대로 던져
+//     사용자에게 「RATE_LIMITED」라는 암호가 보였다. 방어를 세우면서 **설명을 안 세우면**
+//     사용자는 고장으로 읽는다.
+//   ★서버가 이미 한국어 `message` 를 싣고 있다 — 그것을 **먼저** 쓴다.
+//     기계 판별은 `code` 로 하므로 `error` 코드를 바꾸지 않아도 된다(게이트·로그 무영향).
+function cwErrMsg(d) {
+  if (!d || typeof d !== 'object') return '';
+  if (typeof d.message === 'string' && d.message.trim()) return d.message.trim();
+  return typeof d.error === 'string' ? d.error : '';
 }
 
 // ============================================================

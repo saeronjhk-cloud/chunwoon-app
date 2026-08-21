@@ -298,7 +298,7 @@ async function fetchDailyMessage(category){
     const resp = await fetch('/api/fortune', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type:'daily_message', context: ctx})});
     const data = await resp.json();
     _removeLoading();
-    if(!data.success || !data.result) throw new Error(data.error || 'API 응답 오류');
+    if(!data.success || !data.result) throw new Error(cwErrMsg(data) || 'API 응답 오류');
     let answer = data.result.text || data.result.raw || '메시지를 받지 못했어요.';
     // 행운 정보 파싱
     let luck = null;

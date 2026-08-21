@@ -237,7 +237,7 @@ async function showTarotReading(){
   try {
     const resp = await fetch('/api/fortune', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'tarot',context:ctx})});
     const data = await resp.json();
-    if(!data.success || !data.result) throw new Error(data.error || 'API 응답 오류');
+    if(!data.success || !data.result) throw new Error(cwErrMsg(data) || 'API 응답 오류');
     if(data.result.raw && !data.result.reading) throw new Error('AI 응답 파싱 실패');
     renderTarotResult(data.result);
   } catch(err) {
@@ -420,7 +420,7 @@ async function unlockTarotPremium(){
       const txt = await resp.text();
       if(!resp.ok) throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d = JSON.parse(txt);
-      if(!d.success || !d.result) throw new Error(d.error || '응답 형식 오류');
+      if(!d.success || !d.result) throw new Error(cwErrMsg(d) || '응답 형식 오류');
       if(d.result.raw && !d.result.readings && !d.result.deepAnalysis) throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
