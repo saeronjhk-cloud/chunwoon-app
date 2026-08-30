@@ -58,7 +58,8 @@ FULL = {"ROI_RADIAL_EXTRA": 0.0, "AREA_LO": 1.5, "AREA_HI": 6.0,
         "ASSIGN_RLC_CU": -0.2, "ASSIGN_FATE_CU": 0.2, "ASSIGN_RLC_SPAN": 0.15,
         "T1_GAP": 0.08, "T2_CLOSED": 0.05, "T2_COMMON_LEN": 0.05,
         "T3_ANGLE_DEG": 35, "T3_LEN": 0.25, "T3_CENTER": 0.30,
-        "T3_FAINT_RATIO": 0.6, "CONF_MARGIN": 0.01, "CONF_HIGH_MULT": 2.0}
+        "T3_FAINT_RATIO": 0.6, "CONF_MARGIN": 0.01, "CONF_HIGH_MULT": 2.0,
+        "MERGE_DIST": 0.10, "MERGE_ANG": 55.0}
 GOOD_SRC = dict(tier="B", date="2026-01-01", label_manifest="TEST_ONLY_NOT_REAL",
                 n_labels=40, n_subjects=20, method="합성 테스트 — ★실제 값 아님")
 
@@ -90,6 +91,8 @@ chk("거부는 확정 파일을 만들지 않는다", not os.path.exists(TH.STOR
 print("\n③ 판정 — 임계 확정 전에는 전부 UNCERTAIN")
 lm = fake_lm(); pred = fake_pred(lm)
 r = palmtype.judge(pred, lm, "Right", area_ok=True, mode="verdict")
+chk("★verdict 는 트리를 쓰지 않는다 (G-7)", palmtype.default_rule("verdict") == "v2")
+chk("★dev 는 트리를 쓴다", palmtype.default_rule("dev") == "tree")
 chk("조각이 실제로 분리된다 (≥4)", r["n_frags"] >= 4)
 chk("배정이 THRESHOLD_UNSET", r["assign_reason"].startswith("THRESHOLD_UNSET"))
 for k in ("T1", "T2", "T3"):
@@ -184,10 +187,11 @@ for n in ast.walk(tree):                      # ★비교식의 숫자 리터럴
         for side_ in [n.left] + list(n.comparators):
             if isinstance(side_, ast.Constant) and isinstance(side_.value, (int, float)):
                 lits.append(side_.value)
-chk(f"비교식의 숫자 리터럴이 구조값뿐이다 {sorted(set(lits))}", set(lits) <= {0, 1, 2})
+EPS = {1e-6, 1e-9, 1e-12}   # ★0 나눗셈 방지 — ★임계가 아닙니다
+chk(f"비교식의 숫자 리터럴이 구조값·엡실론뿐이다 {sorted(set(lits))}", set(lits) <= {0, 1, 2} | EPS)
 floats = {n.value for n in ast.walk(tree)
           if isinstance(n, ast.Constant) and isinstance(n.value, float)}
-chk(f"float 상수가 구조값뿐이다 {sorted(floats)}", floats <= {0.0, 1.0})
+chk(f"float 상수가 구조값·엡실론뿐이다 {sorted(floats)}", floats <= {0.0, 1.0} | EPS)
 used = {n.args[0].value for n in ast.walk(tree)
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
         and n.func.attr == 'get' and n.args and isinstance(n.args[0], ast.Constant)}

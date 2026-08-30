@@ -113,6 +113,65 @@ def frag_features(pts_yx, lm):
                 thick=_thickness(pts_yx, npix))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ①-b 조각 병합 (P-24 · 2026-08-29) — ★기본 off. ★근거가 있을 때만 켭니다
+# ─────────────────────────────────────────────────────────────────────────────
+def _endpoints(pix):
+    """조각의 두 끝점과 주축 단위벡터 (픽셀 좌표 du,dv)."""
+    c = pix.mean(0); p0 = pix - c
+    if len(p0) < 2: return c, c, np.array([0.0, 1.0])
+    vec = np.linalg.svd(p0, full_matrices=False)[2][0]
+    t = p0 @ vec
+    return c + vec*t.min(), c + vec*t.max(), vec
+
+
+def _ang(a, b):
+    c = abs(float(np.dot(a, b)))/(np.linalg.norm(a)*np.linalg.norm(b) + 1e-9)
+    return float(np.degrees(np.arccos(np.clip(c, 0, 1))))
+
+
+def merge_fragments(comps, lm, dist, angd):
+    """★근접·방향 일치 조각을 잇습니다. 반환: [합쳐진 pts 배열]
+
+    ★★`_fallback_line` 과의 경계: ★없는 선을 ★만들지 않습니다.
+       ★U-Net 이 찾은 ★조각들을 ★잇기만 합니다. ★조각이 없으면 아무 일도 없습니다.
+    ★★그리고 ★검증된 병합입니다 — ★박스 정답에서 ★F1 0.705 → 0.774 (P-24).
+       ★너무 이으면 ★스스로 나빠집니다 (거리 0.30·55° 에서 ★0.673 으로 하락).
+
+    조건 ★셋을 전부 만족할 때만 잇습니다:
+      ① 끝점 거리/wid <= dist   ② 주축 방향 차 <= angd   ③ ★이음선 방향도 양쪽과 <= angd
+      ★③ 이 없으면 ★나란한 두 선을 ★옆으로 붙입니다
+    """
+    o = lm[WRIST]
+    u, v, wid, hgt = palm_frame(lm)
+    pixs = []
+    for pts in comps:
+        xy = np.stack([pts[:, 1], pts[:, 0]], 1).astype(float) - o
+        pixs.append(np.stack([xy @ u, xy @ v], 1))
+    n = len(pixs)
+    par = list(range(n))
+    def find(x):
+        while par[x] != x: par[x] = par[par[x]]; x = par[x]
+        return x
+    ends = [_endpoints(p) for p in pixs]
+    for i in range(n):
+        ai, bi, vi = ends[i]
+        for j in range(i+1, n):
+            aj, bj, vj = ends[j]
+            if _ang(vi, vj) > angd: continue
+            best = min(((float(np.linalg.norm(e1-e2))/wid, e1, e2)
+                        for e1 in (ai, bi) for e2 in (aj, bj)), key=lambda t: t[0])
+            if best[0] > dist: continue
+            link = best[2]-best[1]
+            if np.linalg.norm(link) > 1e-6 and (_ang(link, vi) > angd or _ang(link, vj) > angd):
+                continue
+            ra, rb = find(i), find(j)
+            if ra != rb: par[rb] = ra
+    g = {}
+    for i in range(n): g.setdefault(find(i), []).append(i)
+    return [np.vstack([comps[i] for i in ids]) for ids in g.values()]
+
+
 def _thickness(pts_yx, npix):
     """굵기 ≈ 면적 / 골격 길이. ★metrics.skeletonize(Zhang-Suen) 를 재사용합니다."""
     try:
@@ -361,18 +420,27 @@ def judge_T3(feats, t1, t2, area_ok, mode="verdict"):
 # 진입점
 # ─────────────────────────────────────────────────────────────────────────────
 def default_rule(mode):
-    """★`diagnostic` 은 ★2026-08-26 재현이므로 ★그때의 규칙(v1)을 씁니다.
-    ★그 외에는 ★학습된 트리(P-53)를 씁니다 — ★없으면 ★v2 로 물러납니다.
+    """모드별 기본 배정 규칙.
 
-    ★★근거: 박스 정답 2,435조각에서 ★손규칙 v1 44.9 % · v2 41.5 % vs ★트리 76.6 %.
-    ★★한계: ★트리는 ★Tier-C(남의 박스 라벨 · 스튜디오 도메인)에서 학습됐습니다.
-       ⟹ ★**출시 판정 전에 ★Tier-B 로 재검증해야 합니다 (P-57).**
+    · `diagnostic` → **v1** — ★2026-08-26 재현이므로 그때의 규칙
+    · `verdict`    → **v2** — ★★**트리를 쓰지 않습니다** (아래 이유)
+    · `dev`        → **tree** — 학습된 트리(P-53). 없으면 v2 로 후퇴
+
+    ★★왜 verdict 에서 트리를 막는가 (2026-08-29 · t_palmtype 이 잡아낸 구멍)
+       ★트리는 ★임계 레지스트리를 ★거치지 않습니다 ⟹ ★G-7 이 적용되지 않습니다.
+       ★★그런데 ★트리도 ★Tier-C(남의 박스 라벨 · 스튜디오 도메인)에서 얻은
+          ★**학습된 파라미터**이고, ★그것은 ★임계와 같은 성질입니다.
+       ⟹ ★verdict(출시 판정)에서 쓰면 ★「Tier-C 결과를 출시에 쓰는 것」이 됩니다.
+       ⟹ ★★**P-57(Tier-B 재검증) + ADR 승인 전까지는 ★verdict 에서 쓰지 않습니다.**
+       ★성능은 트리가 훨씬 낫습니다 (2,435조각에서 v1 44.9 % vs 트리 76.6 %) —
+       ★그러나 ★성능이 ★출처를 면제하지 않습니다.
     """
     if mode == "diagnostic": return "v1"
+    if mode == "verdict":    return "v2"      # ★★G-7 — 아래 이유
     return "tree" if load_tree() is not None else "v2"
 
 
-def judge(pred, lm, hand, area_ok, mode="verdict", min_pix=1, rule=None):
+def judge(pred, lm, hand, area_ok, mode="verdict", min_pix=1, rule=None, merge=False):
     """전체 판정.
 
     pred     : (H,W) bool — U-Net p>0.5 & ROI
@@ -398,7 +466,16 @@ def judge(pred, lm, hand, area_ok, mode="verdict", min_pix=1, rule=None):
         res["notes"].append("손 미검출 — 판독 불가 (fail-closed)")
         return res
 
-    feats = [frag_features(p, lm) for _, p in components(pred, min_pix=min_pix)]
+    comps = [p for _, p in components(pred, min_pix=min_pix)]
+    res["n_components"] = len(comps)
+    if merge and comps:                       # ★★P-24 — ★기본 off. 켜면 임계가 필요합니다
+        try:
+            comps = merge_fragments(comps, lm, TH.get("MERGE_DIST", mode),
+                                    TH.get("MERGE_ANG", mode))
+            res["merged_to"] = len(comps)
+        except ThresholdUnset as e:
+            res["notes"].append(f"병합 임계 없음 — 병합하지 않았습니다: {e}")
+    feats = [frag_features(p, lm) for p in comps]
     res["n_frags"] = len(feats)
     res["n_degenerate"] = sum(1 for f in feats if f["degenerate"])
 
