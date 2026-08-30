@@ -50,6 +50,25 @@ chunwoon_ip_poc*.json
 _v*/
 _mvtest/
 
+# ★★2026-08-29 (P-44) — 손금 probe ★코드만★ 화이트리스트로 추적합니다
+#   ★이유: G-7(임계 확정 게이트)·게이트 6종·판정 엔진·배정 트리가 전부 `_v*/` 로 미추적이었습니다.
+#          ★「규율을 문서가 아니라 코드로 지킨다」고 해 놓고 ★그 코드에 이력·리뷰 지점이 없었습니다.
+#   ★★차단은 유지됩니다: 이미지·CSV·npz·리포트 JSON 은 ★계속 제외됩니다 (아래 재차단 참조).
+#   ★검증: git status --porcelain 로 ★.py 와 assign_tree.json 만 올라오는지 확인하십시오.
+!_v785_palm/
+_v785_palm/*
+!_v785_palm/probe/
+_v785_palm/probe/*
+!_v785_palm/probe/*.py
+!_v785_palm/probe/assign_tree.json
+# ★재차단 — 혹시라도 위 규칙을 넓혔을 때를 대비한 이중 방어
+_v785_palm/probe/*.png
+_v785_palm/probe/*.jpg
+_v785_palm/probe/*.npz
+_v785_palm/probe/*.csv
+_v785_palm/probe/report_*.json
+_v785_palm/probe/thresholds_frozen.json
+
 # ── 뮤테이션 잔여물 ──
 *_MUTANT.js
 
@@ -69,6 +88,25 @@ palm-api/
 천운-app/
 *.pth
 *.caffemodel
+
+# ── ★★2026-08-25 · 손금 평가셋 = 생체정보 (제이 승인 대기) ──
+# ★근거: `손금 사진/` 은 `_v*/` 패턴에 걸리지 않아 ★커밋 가능 상태였습니다(실측).
+#   손바닥 이미지는 생체정보이고 동의 범위가 「로컬 보관」이므로 원격에 올라가면 안 됩니다.
+# ★★.gitignore 는 「아직 추적되지 않은」 파일만 막습니다. 이미 인덱스에 들어갔다면
+#   `git rm --cached -r "손금 사진"` 을 반드시 함께 수행하십시오(로컬 파일은 보존됩니다).
+# ★항구 대책은 데이터셋을 저장소 **밖**(D:\ChunWoon_palm_dataset\)으로 옮기는 것입니다
+#   — 라벨규칙 v1 §5-5 · TierA수집 §3-1.
+손금 사진/
+손금사진/
+palm_dataset/
+A_smoke/
+B_verdict/
+# ★2026-08-28 추가 (P-38) — 라벨 산출물도 생체정보 파생물입니다
+#   _ruler/  : labelaid.py 가 만드는 ★자 오버레이 이미지 (원본 손바닥이 그대로 보입니다)
+#   types.csv: 유형 라벨 — ★손금 형태를 사람별로 표로 만든 것입니다 (라벨규칙 v2 §5-2)
+_ruler/
+types.csv
+*_ruler.jpg
 
 # ── 고전 원문 스캔 PDF (루트 · 滴天髓闡微 · 자평진전 · 적천수천미) ──
 /*.pdf
