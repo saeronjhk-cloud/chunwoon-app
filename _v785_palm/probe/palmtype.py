@@ -259,6 +259,27 @@ def assign_fragments(feats, mode="verdict", rule="v2"):
             out[_tree_apply(t, f)].append(i)
         return out, "OK"
 
+    if rule == "v3":                          # ★★P-59 — 트리 축을 손규칙으로
+        try:
+            u_dtc = TH.get("V3_UMAX_DTC", mode); u_rlc = TH.get("V3_UMAX_RLC", mode)
+            v_mid = TH.get("V3_VMAX_MID", mode); v_low = TH.get("V3_VMAX_LOW", mode)
+        except ThresholdUnset as e:
+            return None, f"THRESHOLD_UNSET:{e}"
+        out = {k: [] for k in LINES + ("NONE",)}
+        for i, f in enumerate(feats):
+            if f["degenerate"]:
+                out["NONE"].append(i); continue
+            if f["u_max"] > u_dtc:                       # ★자쪽까지 가로지름
+                k = "DTC"
+            elif f["v_max"] > v_mid:                     # ★위쪽 무리
+                k = "RLC" if f["u_max"] <= u_rlc else "PTC"
+            elif f["v_max"] <= v_low:                    # ★손목 근처 잡음
+                k = "NONE"
+            else:
+                k = "FATE"
+            out[k].append(i)
+        return out, "OK"
+
     try:
         horiz_dg = TH.get("ASSIGN_HORIZ_DEG", mode)
         dtc_cv   = TH.get("ASSIGN_DTC_CV", mode)
@@ -423,8 +444,13 @@ def default_rule(mode):
     """모드별 기본 배정 규칙.
 
     · `diagnostic` → **v1** — ★2026-08-26 재현이므로 그때의 규칙
-    · `verdict`    → **v2** — ★★**트리를 쓰지 않습니다** (아래 이유)
-    · `dev`        → **tree** — 학습된 트리(P-53). 없으면 v2 로 후퇴
+    · `verdict`    → ★**v3** — ★★트리 축을 손규칙으로 옮긴 것(P-59). ★임계가 레지스트리를 거칩니다
+    · `dev`        → **tree** — 학습된 트리(P-53). 없으면 v3 로 후퇴
+
+    ★★박스 정답 2,435조각 기준 (2026-08-29)
+       v1 44.9 % / F1 0.407 · v2 41.5 % / 0.356 · ★**v3 69.9 % / 0.705** · tree 76.6 % / 0.771
+       ⟹ ★v3 는 ★v1 의 ★1.7배이고 ★G-7 이 그대로 적용됩니다.
+       ⟹ ★tree 가 더 낫지만 ★임계 레지스트리를 ★우회하므로 ★verdict 에 쓰지 않습니다.
 
     ★★왜 verdict 에서 트리를 막는가 (2026-08-29 · t_palmtype 이 잡아낸 구멍)
        ★트리는 ★임계 레지스트리를 ★거치지 않습니다 ⟹ ★G-7 이 적용되지 않습니다.
@@ -436,8 +462,8 @@ def default_rule(mode):
        ★그러나 ★성능이 ★출처를 면제하지 않습니다.
     """
     if mode == "diagnostic": return "v1"
-    if mode == "verdict":    return "v2"      # ★★G-7 — 아래 이유
-    return "tree" if load_tree() is not None else "v2"
+    if mode == "verdict":    return "v3"      # ★★G-7 을 거치는 규칙 중 최고 (아래 이유)
+    return "tree" if load_tree() is not None else "v3"
 
 
 def judge(pred, lm, hand, area_ok, mode="verdict", min_pix=1, rule=None, merge=False):

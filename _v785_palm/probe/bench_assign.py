@@ -180,7 +180,7 @@ def cmd_rules(root):
     X, y, img, sp, files = load_cache(root)
     print(f"★★NOT_A_VERDICT — 배정 규칙 벤치마크 (조각 {len(y)}개 · {len(files)}장)")
     print("★박스 라벨을 정답으로 씁니다 — ★출시 판정용이 아닙니다.")
-    for rule in ('v1', 'v2', 'tree'):
+    for rule in ('v1', 'v2', 'v3', 'tree'):
         p, why = predict(X, rule)
         if p is None: print(f"★{rule}: {why}"); continue
         report(f"rule={rule}", p, y)

@@ -59,7 +59,9 @@ FULL = {"ROI_RADIAL_EXTRA": 0.0, "AREA_LO": 1.5, "AREA_HI": 6.0,
         "T1_GAP": 0.08, "T2_CLOSED": 0.05, "T2_COMMON_LEN": 0.05,
         "T3_ANGLE_DEG": 35, "T3_LEN": 0.25, "T3_CENTER": 0.30,
         "T3_FAINT_RATIO": 0.6, "CONF_MARGIN": 0.01, "CONF_HIGH_MULT": 2.0,
-        "MERGE_DIST": 0.10, "MERGE_ANG": 55.0}
+        "MERGE_DIST": 0.10, "MERGE_ANG": 55.0,
+        "V3_UMAX_DTC": 0.50, "V3_UMAX_RLC": 0.21,
+        "V3_VMAX_MID": 0.64, "V3_VMAX_LOW": 0.24}
 GOOD_SRC = dict(tier="B", date="2026-01-01", label_manifest="TEST_ONLY_NOT_REAL",
                 n_labels=40, n_subjects=20, method="합성 테스트 — ★실제 값 아님")
 
@@ -91,7 +93,9 @@ chk("거부는 확정 파일을 만들지 않는다", not os.path.exists(TH.STOR
 print("\n③ 판정 — 임계 확정 전에는 전부 UNCERTAIN")
 lm = fake_lm(); pred = fake_pred(lm)
 r = palmtype.judge(pred, lm, "Right", area_ok=True, mode="verdict")
-chk("★verdict 는 트리를 쓰지 않는다 (G-7)", palmtype.default_rule("verdict") == "v2")
+chk("★verdict 는 트리를 쓰지 않는다 (G-7)", palmtype.default_rule("verdict") == "v3")
+chk("★v3 도 임계 레지스트리를 거친다",
+    palmtype.assign_fragments([], mode="verdict", rule="v3")[1].startswith("THRESHOLD_UNSET"))
 chk("★dev 는 트리를 쓴다", palmtype.default_rule("dev") == "tree")
 chk("조각이 실제로 분리된다 (≥4)", r["n_frags"] >= 4)
 chk("배정이 THRESHOLD_UNSET", r["assign_reason"].startswith("THRESHOLD_UNSET"))
