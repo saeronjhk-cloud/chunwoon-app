@@ -30,12 +30,24 @@ from thresholds import ThresholdUnset
 from palmroi import palm_frame, WRIST, M_MCP, I_MCP, P_MCP   # noqa: F401
 
 __all__ = ["components", "frag_features", "assign_fragments", "judge",
-           "T1_CODES", "T2_CODES", "T3_CODES"]
+           "T1_CODES", "T2_CODES", "T3_CODES", "LINES", "CLOSED", "GROUP_KEYS"]
 
 T1_CODES = ("T1-S", "T1-M", "T1-U")
 T2_CODES = ("T2-C", "T2-O", "T2-M", "T2-U")
 T3_CODES = ("T3-C", "T3-F", "T3-A", "T3-U")
 LINES = ("RLC", "PTC", "DTC", "FATE")
+
+# ★★ADR-003 (2026-08-31 · 제이 승인) — closed crease 어휘
+#   ★`CLOSED` = ★RLC 와 PTC 가 ★공통 주름을 이뤄 ★한 조각으로 나온 것 (Park 2010 의 Closed)
+#   ★★배정 클래스가 ★아닙니다 — ★`LINES` 에 넣지 않습니다.
+#      ⟹ tree.CLASSES · ourtree.OK · bench_assign 이 ★그대로 유지됩니다 (212 · 72.2 % 불변)
+#   ★★현재 ★어떤 규칙도 이 값을 내지 않습니다 (정답 1건 · 학습 제외).
+#      ⟹ ★groups["CLOSED"] 는 ★항상 빈 리스트이고, ★judge_T2 의 가드는 ★발화하지 않습니다.
+#      ⟹ ★Tier-B 로 분류기가 붙는 순간 ★자동으로 무장됩니다. ★그때 잊지 않으려고 미리 넣습니다.
+#   ★★다중 라벨은 ★기각됐습니다 (ADR-003 §3 안 A) — `_pairdist` 에 같은 조각이 양쪽에 들어가
+#      gap=0 이 되어 ★T2-O 를 구조적으로 낼 수 없게 됩니다 = 순환논증.
+CLOSED = "CLOSED"
+GROUP_KEYS = LINES + ("NONE", CLOSED)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -252,11 +264,38 @@ def assign_fragments(feats, mode="verdict", rule="v2"):
         t = load_tree()
         if t is None:
             return None, "TREE_MISSING:assign_tree.json 이 없습니다 (fail-closed)"
-        out = {k: [] for k in LINES + ("NONE",)}
+        out = {k: [] for k in GROUP_KEYS}     # ★CLOSED 키 포함 (ADR-003) — 규칙은 아직 이 값을 내지 않습니다
         for i, f in enumerate(feats):
             if f["degenerate"]:              # ★방향·형태 불명 조각은 그대로 NONE
                 out["NONE"].append(i); continue
             out[_tree_apply(t, f)].append(i)
+        return out, "OK"
+
+    if rule == "v4":                          # ★★P-63 — ★우리 도메인 트리를 손규칙으로 (2026-08-31)
+        # ★★v3 와의 차이는 ★값이 아니라 ★축입니다.
+        #    v3: u_max · v_max   (★Tier-C 스튜디오에서 배운 축 — 조각이 큽니다)
+        #    v4: ★cu · ang_v_deg (★Tier-A 우리 도메인 — 조각이 잘아 u_max ≈ cu 가 됩니다)
+        #    ⟹ ★P-58 실측: 우리 npix 중앙값 12 vs 스튜디오 47 (4배)
+        # ★★verdict 기본값이 ★아닙니다 — 1명 2손 표본이므로 ★Tier-B 검증 전까지 승격 금지 (P-57).
+        try:
+            cu_s = TH.get("V4_CU_SPLIT", mode); a_rlc = TH.get("V4_ANG_RLC", mode)
+            v_mid = TH.get("V4_VMAX_MID", mode); a_dtc = TH.get("V4_ANG_DTC", mode)
+            cv_f = TH.get("V4_CV_FATE", mode)
+        except ThresholdUnset as e:
+            return None, f"THRESHOLD_UNSET:{e}"
+        out = {k: [] for k in GROUP_KEYS}
+        for i, f in enumerate(feats):
+            if f["degenerate"]:
+                out["NONE"].append(i); continue
+            if f["cu"] <= cu_s:                              # ★노쪽(엄지 쪽)
+                if f["ang_v_deg"] <= a_rlc:      k = "RLC"   # ★세로에 가까운 호
+                elif f["v_max"] <= v_mid:        k = "NONE"  # ★아래쪽 잔주름
+                else:                            k = "PTC"
+            else:                                            # ★자쪽(새끼 쪽)
+                if f["ang_v_deg"] > a_dtc:       k = "DTC"   # ★가로지름
+                elif f["cv"] <= cv_f:            k = "FATE"  # ★손목 쪽 세로
+                else:                            k = "NONE"
+            out[k].append(i)
         return out, "OK"
 
     if rule == "v3":                          # ★★P-59 — 트리 축을 손규칙으로
@@ -265,7 +304,7 @@ def assign_fragments(feats, mode="verdict", rule="v2"):
             v_mid = TH.get("V3_VMAX_MID", mode); v_low = TH.get("V3_VMAX_LOW", mode)
         except ThresholdUnset as e:
             return None, f"THRESHOLD_UNSET:{e}"
-        out = {k: [] for k in LINES + ("NONE",)}
+        out = {k: [] for k in GROUP_KEYS}     # ★CLOSED 키 포함 (ADR-003) — 규칙은 아직 이 값을 내지 않습니다
         for i, f in enumerate(feats):
             if f["degenerate"]:
                 out["NONE"].append(i); continue
@@ -290,7 +329,7 @@ def assign_fragments(feats, mode="verdict", rule="v2"):
     except ThresholdUnset as e:
         return None, f"THRESHOLD_UNSET:{e}"
 
-    out = {k: [] for k in LINES + ("NONE",)}
+    out = {k: [] for k in GROUP_KEYS}     # ★CLOSED 키 포함 (ADR-003) — 규칙은 아직 이 값을 내지 않습니다
     for i, f in enumerate(feats):
         if f["degenerate"]:                    # ★방향 불명 → ★배정하지 않습니다 (감사 D-4)
             out["NONE"].append(i); continue
@@ -363,6 +402,25 @@ def judge_T2(feats, groups, mode="verdict"):
     ★RLC 미검출이면 ★uncertain 입니다. ★추정하지 않습니다.
     """
     if groups is None: return _uncertain("T2-U", "ASSIGN_UNAVAILABLE")
+
+    # ★★ADR-003 §4-1 ③ — closed crease fail-closed 가드 (2026-08-31 · 제이 승인)
+    #   ★공통 주름이 ★한 조각으로 나오면 ★RLC 군과 PTC 군이 ★따로 서지 않습니다.
+    #   ★그 상태에서 ★무관한 잡음 조각이 반대편에 배정되면 ★gap 이 크게 잡혀
+    #   ★★`T2-O`(Open)를 ★확답합니다 — ★한국인 최다수 패턴을 ★정반대로 답하는 것입니다.
+    #   ⟹ ★확답 대신 ★판독 불가를 냅니다. ★임계를 쓰지 않습니다.
+    #
+    #   ★★이것은 ★잠정값이지 ★최종 의미가 아닙니다 (P-67).
+    #      ★`CLOSED` 라벨은 ★정의상 Park 의 Closed 이므로 ★답은 이미 `T2-C` 인데
+    #      ★여기서는 ★T2-U 를 냅니다 ⟹ ★그대로 두면 ★최다수 패턴이 ★영구 판독 불가입니다.
+    #      ⟹ ★Tier-B 후 ⓐT2-C 직결 / ⓑ조각 ★내부 common_len 측정 / ⓒ현행 유지 중 ★평가로 정합니다.
+    #
+    #   ★★그리고 이것은 ★해결이 아니라 ★안전망입니다 —
+    #      ★분류기가 ★미탐하면(병합 조각을 그냥 PTC 로 배정) ★가드는 침묵하고 구멍이 열립니다.
+    #
+    #   ★현재는 ★발화하지 않습니다: ★어떤 규칙도 CLOSED 를 내지 않습니다 (정답 1건 · 학습 제외).
+    if groups.get(CLOSED):
+        return _uncertain("T2-U", "CLOSED_FRAGMENT_UNMEASURED")
+
     if not groups["RLC"]: return _uncertain("T2-U", "RLC_NOT_DETECTED")
     if not groups["PTC"]: return _uncertain("T2-U", "PTC_NOT_DETECTED")
     gap = _pairdist(feats, groups["RLC"], groups["PTC"])

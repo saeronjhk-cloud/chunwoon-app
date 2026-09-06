@@ -31,9 +31,14 @@ import palmroi, palmtype
 from labelaid import _repo_guard, OutsideRepoRequired
 
 COLOR = {'RLC': (235, 70, 70), 'PTC': (70, 210, 100), 'DTC': (80, 140, 250),
-         'FATE': (245, 205, 60), 'NONE': (150, 150, 150)}
+         'FATE': (245, 205, 60), 'NONE': (150, 150, 150),
+         # ★★ADR-003 — closed crease. ★규칙이 아직 이 값을 내지 않으므로 지금은 쓰이지 않습니다.
+         palmtype.CLOSED: (205, 70, 205)}
 ZOOM = 3                       # 256 → 768. ★번호가 읽히도록
-COLS = ['file', 'frag_id', 'pred_tree', 'gt', 'note',
+# ★★P-68 (2026-08-31) — ★정답은 `gt` 열입니다. `note` 는 ★비고입니다.
+#   ★구판은 `note` 가 정답 채널이 돼 있었고, ★오타 하나로 표본이 조용히 줄어들었습니다.
+#   ★`exclude=Y` 로 ★제외를 ★명시하십시오 (이유는 `exclude_reason`).
+COLS = ['file', 'frag_id', 'pred_tree', 'gt', 'exclude', 'exclude_reason', 'note',
         'npix', 'cu', 'cv', 'u_max', 'v_max', 'ang_v_deg']
 
 
@@ -89,6 +94,7 @@ def make(root, outdir, ckpt):
             f = feats[i]
             rows.append({'file': os.path.basename(p), 'frag_id': i,
                          'pred_tree': owner.get(i, 'NONE'), 'gt': owner.get(i, 'NONE'),
+                         'exclude': 'N', 'exclude_reason': '',
                          'note': '', 'npix': f['npix'],
                          'cu': round(f['cu'], 3), 'cv': round(f['cv'], 3),
                          'u_max': round(f['u_max'], 3), 'v_max': round(f['v_max'], 3),
@@ -111,21 +117,41 @@ def make(root, outdir, ckpt):
     print(f"★입력표 → {cp}")
     print("★★제이가 하실 것: ★`gt` 열이 ★트리 예측으로 ★미리 채워져 있습니다.")
     print("   ★이미지를 보고 ★**틀린 것만** 고치십시오 (RLC / PTC / DTC / FATE / NONE).")
-    print("   ★애매하면 ★`note` 에 한 줄 적고 ★gt 는 그대로 두십시오.")
+    print("   ★★정답은 ★반드시 `gt` 열에 적으십시오 — ★`note` 는 ★비고입니다 (P-68).")
+    print("   ★생명선과 두뇌선이 ★한 조각으로 붙어 있으면 ★`CLOSED` 입니다 (ADR-003).")
+    print("   ★못 정하겠으면 ★`exclude` 를 `Y` 로, ★`exclude_reason` 에 이유를 적으십시오.")
     print("   ★잡음·잔주름·손가락 주름은 ★`NONE` 입니다.")
 
 
 def score(outdir):
-    cp = os.path.join(outdir, 'frag_gt.csv')
-    if not os.path.exists(cp): raise SystemExit(f"★없습니다: {cp}")
+    # ★★P-68 — 정본은 `frag_gt_v3.csv`(gt 열 · exclude 열). 없으면 구 파일로 후퇴합니다.
+    cp = None
+    for cand in ('frag_gt_v3.csv', 'frag_gt(수정).csv', 'frag_gt.csv'):
+        if os.path.exists(os.path.join(outdir, cand)):
+            cp = os.path.join(outdir, cand); break
+    if cp is None: raise SystemExit(f"★정답 CSV 가 없습니다: {outdir}")
+    print(f"★정답 파일: {os.path.basename(cp)}")
     rows = list(csv.DictReader(open(cp, encoding='utf-8-sig')))
+
+    # ★제외를 ★명시 열로 봅니다. ★구 스키마에는 이 열이 없으므로 전부 포함됩니다.
+    nex = sum(1 for r in rows if r.get('exclude', 'N').strip().upper() == 'Y')
+    if nex:
+        why = {}
+        for r in rows:
+            if r.get('exclude', 'N').strip().upper() == 'Y':
+                k = r.get('exclude_reason', '').strip() or 'UNSPECIFIED'
+                why[k] = why.get(k, 0) + 1
+        print(f"★제외 {nex}건: {why}")
+    rows = [r for r in rows if r.get('exclude', 'N').strip().upper() != 'Y']
+
     y = np.array([r['gt'].strip().upper() for r in rows], dtype=object)
     p = np.array([r['pred_tree'].strip().upper() for r in rows], dtype=object)
     ok = np.array([v in COLOR for v in y])
     if not ok.all():
         bad = sorted({v for v in y[~ok]})
         print(f"★★허용되지 않는 gt 값 {len(y)-ok.sum()}건: {bad}")
-        print("   ★RLC / PTC / DTC / FATE / NONE 중 하나여야 합니다"); return
+        print("   ★RLC / PTC / DTC / FATE / NONE / CLOSED 중 하나여야 합니다")
+        print("   ★못 정하겠으면 ★gt 를 고치지 말고 ★exclude=Y 로 두십시오"); return
     from bench_assign import report
     print("★★NOT_A_VERDICT — ★우리 도메인(Tier-A) 배정 정답 대비 채점")
     print(f"★조각 {len(y)}개 · 제이가 고친 것 {int((y != p).sum())}개")

@@ -32,10 +32,27 @@ OK = set(CLASSES)
 
 
 def read_gt(csvpath):
-    """★`note` 가 있으면 그것이 정답, 없으면 `gt`. ★제이가 note 열에 적으셨습니다."""
+    """★정답을 읽습니다. ★스키마 두 가지를 ★자동으로 가립니다 (P-68 · 2026-08-31).
+
+    ★신 스키마 (`frag_gt_v3.csv` · ★정본)
+       `gt` 가 정답 · `exclude=Y` 이면 ★제외 (`exclude_reason` 에 이유)
+       ⟹ ★제외가 ★명시적입니다. ★오타로 조용히 탈락하지 않습니다.
+
+    ★구 스키마 (`frag_gt(수정).csv` · 승계 · 재현용)
+       ★`note` 가 있으면 그것이 정답, 없으면 `gt` — ★제이가 note 열에 적으셨습니다.
+       ⟹ ★클래스가 아닌 note(`HALF ONLY` · `RLC & PTC`)는 ★호출자가 걸러 냅니다.
+
+    ★★두 스키마는 ★전 218행에서 ★같은 답을 냅니다 (p68_migrate.py 가 검증합니다).
+    """
+    rd = csv.DictReader(open(csvpath, encoding='utf-8-sig'))
+    new = 'exclude' in (rd.fieldnames or [])
     m = {}
-    for r in csv.DictReader(open(csvpath, encoding='utf-8-sig')):
-        v = (r['note'].strip().upper() or r['gt'].strip().upper())
+    for r in rd:
+        if new:
+            v = "EXCLUDED:" + (r['exclude_reason'].strip() or 'UNSPECIFIED') \
+                if r['exclude'].strip().upper() == 'Y' else r['gt'].strip().upper()
+        else:
+            v = (r['note'].strip().upper() or r['gt'].strip().upper())
         m[(r['file'].strip(), int(r['frag_id']))] = v
     return m
 
@@ -94,7 +111,8 @@ def main(depth, minleaf, folds):
     ck = os.environ.get('CW_PALM_CKPT', 'palm-api/checkpoint_aug_epoch70.pth')
 
     cp = None
-    for cand in ('frag_gt(수정).csv', 'frag_gt.csv'):
+    # ★★P-68 — `frag_gt_v3.csv`(gt 열 정본)를 ★먼저 찾습니다. 없으면 구 스키마로 후퇴합니다.
+    for cand in ('frag_gt_v3.csv', 'frag_gt(수정).csv', 'frag_gt.csv'):
         if os.path.exists(os.path.join(F, cand)): cp = os.path.join(F, cand); break
     if cp is None: raise SystemExit(f"★정답 CSV 가 없습니다: {F}")
     print(f"★★NOT_A_VERDICT — 우리 도메인 배정 학습 (P-60)")
@@ -103,8 +121,8 @@ def main(depth, minleaf, folds):
     X, y, g, skipped = collect_ours(A, ck, read_gt(cp))
     print(f"★우리 도메인: 조각 {len(y)}개 · 이미지 {len(np.unique(g))}장")
     if skipped:
-        print(f"★★제외한 정답(클래스 아님): {skipped}")
-        print("   ★`RLC & PTC` = ★Park 의 closed crease — ★현재 구조가 표현하지 못합니다 (P-61)")
+        print(f"★★제외한 정답: {skipped}")
+        print("   ★CLOSED = ★Park 의 closed crease — ★n=1 이라 학습에서 제외합니다 (ADR-003 · P-61)")
     from collections import Counter
     print(f"★정답 분포: {dict(Counter(y))}\n")
 

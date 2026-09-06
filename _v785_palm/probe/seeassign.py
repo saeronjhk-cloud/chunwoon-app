@@ -26,7 +26,10 @@ from sweep import load_cache
 from labelaid import _repo_guard, OutsideRepoRequired
 
 COLOR = {'RLC': (230, 60, 60), 'PTC': (60, 200, 90), 'DTC': (70, 130, 240),
-         'FATE': (240, 200, 50), 'NONE': (130, 130, 130)}
+         'FATE': (240, 200, 50), 'NONE': (130, 130, 130),
+         # ★★ADR-003 — closed crease(RLC·PTC 공통 주름). ★자홍: 빨강(RLC)+파랑 계열의 섞임
+         #   ★KeyError 방지용이 아니라 ★눈으로 구별하려고 넣습니다.
+         palmtype.CLOSED: (200, 60, 200)}
 
 
 def render(pred, lm, name, rule, mode="dev", min_pix=1):

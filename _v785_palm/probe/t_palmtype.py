@@ -61,7 +61,11 @@ FULL = {"ROI_RADIAL_EXTRA": 0.0, "AREA_LO": 1.5, "AREA_HI": 6.0,
         "T3_FAINT_RATIO": 0.6, "CONF_MARGIN": 0.01, "CONF_HIGH_MULT": 2.0,
         "MERGE_DIST": 0.10, "MERGE_ANG": 55.0,
         "V3_UMAX_DTC": 0.50, "V3_UMAX_RLC": 0.21,
-        "V3_VMAX_MID": 0.64, "V3_VMAX_LOW": 0.24}
+        "V3_VMAX_MID": 0.64, "V3_VMAX_LOW": 0.24,
+        # ★★P-63 — v4 임계를 레지스트리에 등록하면 ★freeze() 가 이 5개도 ★요구합니다.
+        #   ★그것이 G-7 의 설계입니다 (전부 한꺼번에 확정). ★아래는 ★합성 테스트값입니다.
+        "V4_CU_SPLIT": 0.03, "V4_ANG_RLC": 28.0, "V4_VMAX_MID": 0.71,
+        "V4_ANG_DTC": 47.7, "V4_CV_FATE": 0.45}
 GOOD_SRC = dict(tier="B", date="2026-01-01", label_manifest="TEST_ONLY_NOT_REAL",
                 n_labels=40, n_subjects=20, method="합성 테스트 — ★실제 값 아님")
 
@@ -237,6 +241,63 @@ chk("p23_diag 가 harness 게이트를 재사용한다",
     {'detect_tier', 'gate_checks'} <= d_names)
 chk("p23_diag 가 임계를 파일에 쓰지 않는다",
     'freeze' not in open('p23_diag.py', encoding='utf-8').read())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n⑨ ★★ADR-003 — closed crease 가드 (P-61 · P-64)")
+# ★★임계를 쓰지 않는 가드입니다. ★T2_CLOSED 가 있어도 ★CLOSED 조각이 있으면 먼저 막습니다.
+TH.set_dev(**FULL)
+_f = [dict(pix=np.array([[0.0, 0.0], [1.0, 1.0]]), wid=100.0, hgt=100.0, degenerate=False)]
+
+chk("★CLOSED 가 groups 키에 있다", palmtype.CLOSED in palmtype.GROUP_KEYS)
+chk("★CLOSED 는 배정 클래스가 아니다 (LINES 밖)", palmtype.CLOSED not in palmtype.LINES)
+# ★★이것이 핵심입니다 — tree.CLASSES 가 넓어지면 ourtree.OK 가 따라 넓어져 212 가 213 이 됩니다
+import tree as _tree
+chk("★★tree.CLASSES 에 CLOSED 가 들어가지 않았다 (212 불변 보호)",
+    palmtype.CLOSED not in _tree.CLASSES)
+
+_g = {k: [] for k in palmtype.GROUP_KEYS}
+_g["RLC"], _g["PTC"] = [0], [0]
+_t2_no = palmtype.judge_T2(_f, _g, mode="dev")
+_g[palmtype.CLOSED] = [0]
+_t2_yes = palmtype.judge_T2(_f, _g, mode="dev")
+chk("★CLOSED 조각이 있으면 T2 는 UNCERTAIN", _t2_yes["code"] == "T2-U")
+chk("★사유가 CLOSED_FRAGMENT_UNMEASURED", _t2_yes["reason"] == "CLOSED_FRAGMENT_UNMEASURED")
+chk("★가드는 RLC/PTC 검사보다 먼저 걸린다", _t2_no["reason"] != "CLOSED_FRAGMENT_UNMEASURED")
+chk("★★CLOSED 가 비어 있으면 가드가 발화하지 않는다 (현행 회귀 보호)",
+    palmtype.judge_T2(_f, {k: ([0] if k in ("RLC", "PTC") else [])
+                           for k in palmtype.GROUP_KEYS}, mode="dev")["reason"]
+    != "CLOSED_FRAGMENT_UNMEASURED")
+# ★★G-6 — 가드 사유가 판정 어휘 금칙어를 건드리지 않아야 리포트가 죽지 않습니다
+from harness import BANNED
+chk("★사유 문자열이 G-6 금칙어를 포함하지 않는다",
+    not any(b in "CLOSED_FRAGMENT_UNMEASURED" for b in BANNED))
+# ★현재는 어떤 규칙도 CLOSED 를 내지 않습니다 — 냈다면 학습 집합이 바뀐 것입니다
+_gr, _ = palmtype.assign_fragments(
+    [palmtype.frag_features(p, lm) for _, p in palmtype.components(pred)], "dev", "v3")
+chk("★어떤 규칙도 아직 CLOSED 를 내지 않는다", _gr is not None and not _gr[palmtype.CLOSED])
+
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n⑩ ★★P-63 — 배정 규칙 v4 (우리 도메인 축)")
+chk("★v4 가 임계 레지스트리를 거친다 (G-7)",
+    {"V4_CU_SPLIT", "V4_ANG_RLC", "V4_VMAX_MID", "V4_ANG_DTC", "V4_CV_FATE"} <= set(TH.NAMES))
+_fv = [palmtype.frag_features(p, lm) for _, p in palmtype.components(pred)]
+_g4, _w4 = palmtype.assign_fragments(_fv, "dev", "v4")
+chk("★dev 에서 v4 가 배정을 낸다", _g4 is not None and _w4 == "OK")
+chk("★v4 배정 합 = 조각 수", _g4 and sum(len(v) for v in _g4.values()) == len(_fv))
+chk("★v4 도 CLOSED 를 내지 않는다", _g4 is not None and not _g4[palmtype.CLOSED])
+TH.clear_dev()
+# ★★v4 임계는 ★2026-08-26 실패치에 ★없습니다 (그때 존재하지 않던 규칙입니다).
+#   ⟹ ★diagnostic 모드에서 ★fail-closed 여야 합니다. ★추측해서 채우면 안 됩니다.
+_g4d, _w4d = palmtype.assign_fragments(_fv, "diagnostic", "v4")
+chk("★★diagnostic 에서 v4 는 임계가 없어 배정하지 않는다 (fail-closed)",
+    _g4d is None and _w4d.startswith("THRESHOLD_UNSET"))
+# ★freeze 된 뒤에는 ★레지스트리를 통해 값을 받습니다 — ★트리처럼 우회하지 않습니다
+chk("★freeze 후 verdict 에서 v4 가 레지스트리로 값을 받는다",
+    palmtype.assign_fragments(_fv, "verdict", "v4")[1] == "OK")
+# ★★v4 는 ★1명 2손 표본입니다 — ★verdict 기본값이 되면 안 됩니다 (P-57)
+chk("★★verdict 기본 규칙은 여전히 v3 이다 (v4 무단 승격 방지)",
+    palmtype.default_rule("verdict") == "v3")
 
 os.remove(TH.STORE)
 n_bad = sum(1 for _, o in OK if not o)
