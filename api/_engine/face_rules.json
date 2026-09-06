@@ -1,0 +1,3422 @@
+{
+ "_note": "★배포 산출물. 고전 원문(한자)은 들어 있지 않다. 인용은 서지 ID(source_edition_id · corpus_id)와 음역된 locus 로만 한다. 이 파일은 _v786_diag/compile_face_rules.js 가 생성한다 — 손으로 고치지 말 것.",
+ "_source": "IP_face/rules/face/{ogwan,xlhz}.json (배포 제외 · .gitignore)",
+ "artifact_version": "face_rules/1.0.0",
+ "axes_source": "face_core_v786.js · CW_FACE_AXES (30축)",
+ "doctrines": [
+  {
+   "doctrine_id": "FACE_OGWAN",
+   "name_ko": "오관",
+   "priority_default": 3,
+   "decision_authority": "NON_AUTHORITATIVE",
+   "user_output_enabled": false
+  },
+  {
+   "doctrine_id": "FACE_XLHZ",
+   "name_ko": "상리형진",
+   "priority_default": 1,
+   "decision_authority": "NON_AUTHORITATIVE",
+   "user_output_enabled": false
+  }
+ ],
+ "editions": [
+  {
+   "source_edition_id": "SRC_TQSJ_A",
+   "title_ko": "태청신감",
+   "license": "PD",
+   "status": "CANDIDATE"
+  },
+  {
+   "source_edition_id": "SRC_XLHZ_A",
+   "title_ko": "상리형진",
+   "license": "PD",
+   "status": "SELECTED"
+  }
+ ],
+ "tally": {
+  "rules_total": 100,
+  "measurability": {
+   "PARTIAL": 45,
+   "UNMEASURABLE": 50,
+   "MEASURABLE": 5
+  },
+  "threshold_origin": {
+   "POPULATION": 33,
+   "NONE": 50,
+   "TEXT": 17
+  },
+  "condition_coverage": {
+   "PARTIAL": 34,
+   "NONE": 58,
+   "FULL": 8
+  },
+  "user_exposure_blocked": 19,
+  "expr_present": 5,
+  "measure_axis_null": 63
+ },
+ "rules": [
+  {
+   "rule_id": "FACE_OGWAN_R001",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "눈이 맑고 빼어나며 도톰하고 솟았다",
+   "verdict_code": "GWAN_HO",
+   "verdict_ko": "한 官이 좋으면 10년을 귀하게 산다",
+   "condition": {
+    "key": "ogwan.eye.cheong_su_pung_ryung",
+    "axes": [
+     "eyeSize",
+     "eyeAspect"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 너비 비",
+     "눈 가로세로비"
+    ],
+    "uncovered": [
+     "맑음",
+     "빼어남",
+     "도톰함",
+     "솟음"
+    ],
+    "basis": "형태 두 어절만 근사한다. 맑음과 빼어남은 계측량이 아니다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "eyeSize",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R002",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "눈썹이 맑고 빼어나며 도톰하고 솟았다",
+   "verdict_code": "GWAN_HO",
+   "verdict_ko": "한 官이 좋으면 10년을 귀하게 산다",
+   "condition": {
+    "key": "ogwan.brow.cheong_su_pung_ryung",
+    "axes": [
+     "browThick",
+     "browLength"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 두께",
+     "눈썹 길이"
+    ],
+    "uncovered": [
+     "맑음",
+     "빼어남",
+     "도톰함",
+     "솟음"
+    ],
+    "basis": "형태 두 어절만 근사한다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "browThick",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R003",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "귀가 맑고 빼어나며 도톰하고 솟았다",
+   "verdict_code": "GWAN_HO",
+   "verdict_ko": "한 官이 좋으면 10년을 귀하게 산다",
+   "condition": {
+    "key": "ogwan.ear.cheong_su_pung_ryung",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "귀 윤곽",
+     "맑음",
+     "빼어남",
+     "도톰함",
+     "솟음"
+    ],
+    "basis": "귀 랜드마크가 없어 조건의 대상 부위를 잘라낼 수 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R004",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "코가 맑고 빼어나며 도톰하고 솟았다",
+   "verdict_code": "GWAN_HO",
+   "verdict_ko": "한 官이 좋으면 10년을 귀하게 산다",
+   "condition": {
+    "key": "ogwan.nose.cheong_su_pung_ryung",
+    "axes": [
+     "noseHRatio",
+     "noseDorsum",
+     "noseWRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "코 길이 비",
+     "코 폭 비",
+     "콧등"
+    ],
+    "uncovered": [
+     "맑음",
+     "빼어남",
+     "도톰함",
+     "솟음"
+    ],
+    "basis": "형태 축만 있고 상태 형용은 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "noseHRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R005",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "입이 맑고 빼어나며 도톰하고 솟았다",
+   "verdict_code": "GWAN_HO",
+   "verdict_ko": "한 官이 좋으면 10년을 귀하게 산다",
+   "condition": {
+    "key": "ogwan.mouth.cheong_su_pung_ryung",
+    "axes": [
+     "mouthRatio",
+     "lipThickness"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "입 폭 비",
+     "입술 두께"
+    ],
+    "uncovered": [
+     "맑음",
+     "빼어남",
+     "도톰함",
+     "솟음"
+    ],
+    "basis": "형태 축만 있고 상태 형용은 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "mouthRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R006",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "결함이 있거나 추악하다",
+   "verdict_code": "HYUNG",
+   "verdict_ko": "흉",
+   "condition": {
+    "key": "ogwan.any.gyeolham_or_chuak",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "결함",
+     "추악"
+    ],
+    "basis": "결함은 깊이이고 추악은 미적 판단이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R007",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C1",
+   "locus": "권2 오관",
+   "gloss_ko": "좋은 官의 개수 k",
+   "verdict_code": "GWI_10Y_PER_OFFICER",
+   "verdict_ko": "官 하나당 귀함 10년",
+   "condition": {
+    "key": "ogwan.aggregate.count_ho",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 너비 비",
+     "눈썹 두께",
+     "코 길이 비",
+     "입 폭 비"
+    ],
+    "uncovered": [
+     "귀",
+     "좋음의 기준"
+    ],
+    "basis": "집계 대상 다섯 부위 중 귀가 통째로 빠지고 좋음의 기준도 원문에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R008",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C2",
+   "locus": "권2 육부",
+   "gloss_ko": "평평하고 그득하며 빛나고 맑다",
+   "verdict_code": "BU_10Y",
+   "verdict_ko": "한 府가 좋으면 10년을 부유하게 산다",
+   "condition": {
+    "key": "yukbu.pyeongman_gwangyeong",
+    "axes": [
+     "gwanGol",
+     "foreheadRatio",
+     "jeonTaek"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "관골",
+     "이마 폭 비",
+     "전택"
+    ],
+    "uncovered": [
+     "평평하고 그득함",
+     "빛남",
+     "맑음"
+    ],
+    "basis": "평평하고 그득함은 부피와 깊이이고 광택 축은 결속 전이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "gwanGol",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R009",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C2",
+   "locus": "권2 육부",
+   "gloss_ko": "결함·흉터·검은 점이 있다",
+   "verdict_code": "HYUNG",
+   "verdict_ko": "흉하다",
+   "condition": {
+    "key": "yukbu.gyeolham_jiban_heukji",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "결함",
+     "흉터",
+     "검은 점"
+    ],
+    "basis": "점과 흉터 축은 색과 텍스처 센서에 후보로만 있고 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R010",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C3",
+   "locus": "권2 사독",
+   "gloss_ko": "단정하고 곧고 맑고 크고 밝고 깨끗하며 흐름이 트이고 물가(윤곽)가 이루어졌다",
+   "verdict_code": "GWI_DAJI",
+   "verdict_ko": "귀하고 지혜가 많다",
+   "condition": {
+    "key": "sadok.danjik_cheongdae_myeongjeong",
+    "axes": [
+     "symmetry"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "대칭"
+    ],
+    "uncovered": [
+     "귀",
+     "맑음",
+     "밝음",
+     "깨끗함",
+     "흐름",
+     "물가 윤곽"
+    ],
+    "basis": "단정함만 대칭으로 부분 근사한다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "symmetry",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R011",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C3",
+   "locus": "권2 사독",
+   "gloss_ko": "추하고 단정치 않다 / 이지러지고 꺼졌다",
+   "verdict_code": "UIN_CHEON",
+   "verdict_ko": "어리석은 사람 / 천한 부류가 된다",
+   "condition": {
+    "key": "sadok.chu_budan_hwehyam",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "추함",
+     "단정치 않음",
+     "이지러짐",
+     "꺼짐"
+    ],
+    "basis": "미적 판단과 깊이뿐이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R012",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C4",
+   "locus": "권2 오악",
+   "gloss_ko": "높고 가파르다",
+   "verdict_code": "SANG_GWI",
+   "verdict_ko": "상의 귀함이다",
+   "condition": {
+    "key": "oak.nose.go_jun",
+    "axes": [
+     "noseHRatio",
+     "noseDorsum"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "코 길이 비"
+    ],
+    "uncovered": [
+     "가파름"
+    ],
+    "basis": "가파름은 깊이라 단안 사진으로 확정할 수 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "noseHRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R013",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C4",
+   "locus": "권2 오악",
+   "gloss_ko": "모나고 넓다",
+   "verdict_code": "SANG_GWI",
+   "verdict_ko": "상의 귀함이다",
+   "condition": {
+    "key": "oak.forehead.bang_gwang",
+    "axes": [
+     "foreheadRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "이마 폭 비"
+    ],
+    "uncovered": [
+     "모남"
+    ],
+    "basis": "모남은 윤곽 각도이며 정본 축에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "foreheadRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R014",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C4",
+   "locus": "권2 오악",
+   "gloss_ko": "둥글고 바르다",
+   "verdict_code": "SANG_GWI",
+   "verdict_ko": "상의 귀함이다",
+   "condition": {
+    "key": "oak.cheekbone.won_jeong",
+    "axes": [
+     "gwanGol",
+     "symmetry"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "관골",
+     "대칭"
+    ],
+    "uncovered": [
+     "둥긂"
+    ],
+    "basis": "둥긂은 곡률이며 정본 축에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "gwanGol",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R015",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C4",
+   "locus": "권2 오악",
+   "gloss_ko": "서로 마주 향한다(어느 하나가 홀로 튀지 않고 균형을 이룬다)",
+   "verdict_code": "SANG_GWI",
+   "verdict_ko": "상의 귀함이다",
+   "condition": {
+    "key": "oak.sangjo",
+    "axes": [
+     "symmetry",
+     "cheonI"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "대칭",
+     "천이"
+    ],
+    "uncovered": [
+     "다섯 부위 상호 비교"
+    ],
+    "basis": "좌우 균형만 덮고 다섯 부위가 서로 걸맞은가를 재는 축은 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": "symmetry",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R016",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C8",
+   "locus": "권5 논면부",
+   "gloss_ko": "삼정이 모두 서로 걸맞다(고르다)",
+   "verdict_code": "SANG_SANG",
+   "verdict_ko": "상등의 상을 가진 사람이다",
+   "condition": {
+    "key": "samjeong.gaechang",
+    "axes": [
+     "thirds"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": "비교 대상(세 구간)은 원문에 있으나 「걸맞다」의 컷오프가 원문에 없다. thirds 축은 0~1 균등도이지만 몇 이상이 「걸맞음」인지는 원문이 말하지 않는다. 컷오프를 지어내면 원문 판정이 아니므로 식을 붙이지 않는다."
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "삼정 균등도"
+    ],
+    "uncovered": [],
+    "basis": "원문이 구획 경계를 스스로 지정하고 판정 기준도 서로 걸맞음이라 균등도 한 축이 조건 전부를 덮는다. 못 내는 이유는 걸맞음의 컷오프 부재뿐이다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "thirds",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R017",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C8",
+   "locus": "권5 논면부",
+   "gloss_ko": "길고 도톰히 솟았으며 모나고 넓다",
+   "verdict_code": "GWI",
+   "verdict_ko": "귀함을 주관한다",
+   "condition": {
+    "key": "samjeong.upper.jang_pungryung",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "상정 비율",
+     "이마 폭 비"
+    ],
+    "uncovered": [
+     "도톰히 솟음",
+     "모남"
+    ],
+    "basis": "길이와 넓이만 덮는다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R018",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C8",
+   "locus": "권5 논면부",
+   "gloss_ko": "뾰족하고 좁고 결함이 있다",
+   "verdict_code": "HYEONGAEK_BANGGEUK",
+   "verdict_ko": "형액의 재앙이 많고 부모를 해치는 비천한 상이다",
+   "condition": {
+    "key": "samjeong.upper.cheomhyeop_gyeolham",
+    "axes": [
+     "foreheadRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "이마 폭 비"
+    ],
+    "uncovered": [
+     "뾰족함",
+     "결함"
+    ],
+    "basis": "좁음만 덮는다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "foreheadRatio",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R019",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C8",
+   "locus": "권5 논면부",
+   "gloss_ko": "모나고 그득하며 단정하고 두텁다",
+   "verdict_code": "BU",
+   "verdict_ko": "부유함을 주관한다",
+   "condition": {
+    "key": "samjeong.lower.bang_man_dan_hu",
+    "axes": [
+     "chin",
+     "jawRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "턱 길이 비",
+     "하악각 폭 비"
+    ],
+    "uncovered": [
+     "그득함",
+     "두터움",
+     "모남"
+    ],
+    "basis": "길이와 폭만 덮고 부피는 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "chin",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R020",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C9",
+   "locus": "권5 논미부",
+   "gloss_ko": "눈썹이 눈을 지나(눈보다 길다)",
+   "verdict_code": "BU",
+   "verdict_ko": "부유하다",
+   "condition": {
+    "key": "mi.gwa_an",
+    "axes": [
+     "browLength",
+     "eyeSize"
+    ],
+    "expr": {
+     "space": "measure",
+     "op": "gt",
+     "left": {
+      "axis": "browLength"
+     },
+     "right": {
+      "axis": "eyeSize"
+     }
+    },
+    "expr_basis": "operational 이 비교 대상을 명시한다 — 눈썹 길이 대 눈 너비. 두 축 모두 얼굴폭으로 나뉘어 있어 비를 취하면 분모가 약분된다.",
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 길이",
+     "눈 너비"
+    ],
+    "uncovered": [],
+    "basis": "원문이 비교 대상을 스스로 준다. 두 축의 분모가 같아 원시값 비교로 조건 전부가 덮인다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "browLength",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R021",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C9",
+   "locus": "권5 논미부",
+   "gloss_ko": "짧아서 눈을 덮지 못한다",
+   "verdict_code": "PIP_JAE",
+   "verdict_ko": "재물이 모자란다",
+   "condition": {
+    "key": "mi.dan_bulbok_an",
+    "axes": [
+     "browLength",
+     "eyeSize"
+    ],
+    "expr": {
+     "space": "measure",
+     "op": "lte",
+     "left": {
+      "axis": "browLength"
+     },
+     "right": {
+      "axis": "eyeSize"
+     }
+    },
+    "expr_basis": "operational 이 R020 의 여집합이라고 명시한다. 같은 비교의 반대 방향.",
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 길이",
+     "눈 너비"
+    ],
+    "uncovered": [],
+    "basis": "앞 규칙의 여집합이며 같은 비교로 조건 전부가 덮인다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "browLength",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R022",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C9",
+   "locus": "권5 논미부",
+   "gloss_ko": "성기고 가늘며 평평하고 넓고 빼어나고 길다",
+   "verdict_code": "CHONGMIN",
+   "verdict_ko": "성품이 총명하고 민첩하다",
+   "condition": {
+    "key": "mi.so_se_pyeong_hwal_su_jang",
+    "axes": [
+     "browThick",
+     "browAngle",
+     "browLength"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 두께",
+     "눈썹 각도",
+     "눈썹 길이"
+    ],
+    "uncovered": [
+     "성김",
+     "빼어남",
+     "넓음"
+    ],
+    "basis": "성김은 모발 밀도이고 빼어남은 정의가 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "browThick",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R023",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C9",
+   "locus": "권5 논미부",
+   "gloss_ko": "굵고 짙으며 거스르고 어지럽고 짧고 오그라들었다",
+   "verdict_code": "HYUNGWAN",
+   "verdict_ko": "성품이 흉하고 완악하다",
+   "condition": {
+    "key": "mi.chu_nong_yeok_ran_dan_chuk",
+    "axes": [
+     "browThick",
+     "browLength"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 두께",
+     "눈썹 길이"
+    ],
+    "uncovered": [
+     "짙음",
+     "털결의 거스름",
+     "어지러움",
+     "오그라듦"
+    ],
+    "basis": "짙음은 색이고 털결은 텍스처라 결속 전이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "browThick",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R024",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C9",
+   "locus": "권5 논미부",
+   "gloss_ko": "눈썹 머리가 서로 맞닿았다",
+   "verdict_code": "BINBAK_BANGHYEONGJE",
+   "verdict_ko": "가난하고 형제를 해친다",
+   "condition": {
+    "key": "mi.dugyo",
+    "axes": [
+     "myungGung"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 사이 폭"
+    ],
+    "uncovered": [
+     "털이 이어졌는가"
+    ],
+    "basis": "고정 랜드마크 사이 거리는 털의 이어짐에 대한 대용이지 등가가 아니다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "myungGung",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R025",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C9",
+   "locus": "권5 논미부",
+   "gloss_ko": "눈썹 위에 세로결이 있다 / 가로결이 있다",
+   "verdict_code": "BUGWI_OR_BINGO",
+   "verdict_ko": "부귀하다 / 가난하고 고생한다",
+   "condition": {
+    "key": "mi.sang_jikri_hoengri",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "세로결",
+     "가로결"
+    ],
+    "basis": "주름 축은 텍스처 센서에 후보로만 있고 결속 전이며 눈썹 위 전용 마스크도 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R026",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C10",
+   "locus": "권5 논안부",
+   "gloss_ko": "길고 빼어나고 또렷하다",
+   "verdict_code": "DAEGWI",
+   "verdict_ko": "크게 귀한 상이다",
+   "condition": {
+    "key": "an.jang_su_bunmyeong",
+    "axes": [
+     "eyeAspect",
+     "eyeSize"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 가로세로비",
+     "눈 너비 비"
+    ],
+    "uncovered": [
+     "빼어남",
+     "또렷함"
+    ],
+    "basis": "길이만 덮고 또렷함은 색 대비라 결속 전이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "eyeAspect",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R027",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C10",
+   "locus": "권5 논안부",
+   "gloss_ko": "흰자는 옥 같고 검은자는 옻 같다",
+   "verdict_code": "DAEGWI",
+   "verdict_ko": "크게 귀한 상이다",
+   "condition": {
+    "key": "an.baek_yeook_heuk_yeochil",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "흰자 밝기",
+     "검은자 어둡기"
+    ],
+    "basis": "색 축이 후보로만 있고 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R028",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C11",
+   "locus": "권6 육극",
+   "gloss_ko": "눈이 작다",
+   "verdict_code": "MU_GYEONSIK",
+   "verdict_ko": "견식이 없고 벗의 도움을 얻지 못한다",
+   "condition": {
+    "key": "yukgeuk.eye.so",
+    "axes": [
+     "eyeSize"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈 너비 비"
+    ],
+    "uncovered": [],
+    "basis": "조건이 눈의 크기 한 가지뿐이며 그 크기를 재는 축이 정본에 있다. 못 내는 이유는 작다의 컷오프가 원문에 없다는 것뿐이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "eyeSize",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R029",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C11",
+   "locus": "권6 육극",
+   "gloss_ko": "귀가 작다",
+   "verdict_code": "SUMYEONG_DANCHOK",
+   "verdict_ko": "수명이 짧다",
+   "condition": {
+    "key": "yukgeuk.ear.so",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "귀 크기"
+    ],
+    "basis": "귀 랜드마크가 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R030",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C11",
+   "locus": "권6 육극",
+   "gloss_ko": "코가 작다",
+   "verdict_code": "MU_JAKROK",
+   "verdict_ko": "작록이 없고 관직이 있어도 자리를 잃는 일이 많다",
+   "condition": {
+    "key": "yukgeuk.nose.so",
+    "axes": [
+     "noseWRatio",
+     "noseHRatio"
+    ],
+    "expr": {
+     "space": "rank",
+     "op": "all",
+     "terms": [
+      {
+       "op": "lt",
+       "left": {
+        "axis": "noseWRatio"
+       },
+       "right": {
+        "const": 0.5
+       }
+      },
+      {
+       "op": "lt",
+       "left": {
+        "axis": "noseHRatio"
+       },
+       "right": {
+        "const": 0.5
+       }
+      }
+     ]
+    },
+    "expr_basis": "coverage_note 가 조건 전부를 덮었음을 근거와 함께 남긴다(uncovered 0). 남은 것은 「얼마나 작은가」뿐이고 그 컷오프는 원문이 아니라 참조 모집단이 준다 — 모집단 중앙값 미만을 「작다」로 본다. 치수 선택이 원문에 없으므로 두 치수를 모두 요구한다(부분으로 전체를 판정하지 않는다).",
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "코 폭 비",
+     "코 길이 비"
+    ],
+    "uncovered": [],
+    "basis": "조건의 어절이 부위와 크기 방향 둘뿐이고 코의 두 치수 축이 모두 정본에 있다. 원문이 어느 치수인지 특정하지 않으므로 한 치수로 전체를 판정하지 않고 두 치수를 모두 요구하는 보수적 결합으로 읽는다. 남은 것은 얼마나 작은가의 컷오프뿐이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "noseWRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R031",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C11",
+   "locus": "권6 육극",
+   "gloss_ko": "입이 작다",
+   "verdict_code": "GIHAN",
+   "verdict_ko": "굶주리고 춥다",
+   "condition": {
+    "key": "yukgeuk.mouth.so",
+    "axes": [
+     "mouthRatio",
+     "mouthOverIP"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "입 폭 비"
+    ],
+    "uncovered": [],
+    "basis": "조건이 입의 크기 한 가지뿐이고 입 폭 비가 그 크기를 재는 정본 축이다. 컷오프만 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "mouthRatio",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R032",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C12",
+   "locus": "권6 팔소",
+   "gloss_ko": "작더라도 서로 걸맞고 단정하고 아름답다",
+   "verdict_code": "BAN_BUGWI",
+   "verdict_ko": "도리어 부귀한 사람이 된다",
+   "condition": {
+    "key": "palso.sangeung_danmi",
+    "axes": [
+     "symmetry",
+     "thirds"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "대칭",
+     "삼정 균등도"
+    ],
+    "uncovered": [
+     "단정함",
+     "아름다움",
+     "여덟 부위 상호 비례",
+     "소리",
+     "몸"
+    ],
+    "basis": "자기참조 조건이나 여덟 부위 상호 비례를 재는 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": "symmetry",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R033",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C13",
+   "locus": "권6 팔대",
+   "gloss_ko": "크더라도 서로 걸맞지 않다",
+   "verdict_code": "BAN_BINCHEON",
+   "verdict_ko": "도리어 빈천한 사람이 된다",
+   "condition": {
+    "key": "paldae.bul_sangeung",
+    "axes": [
+     "symmetry",
+     "thirds"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "대칭",
+     "삼정 균등도"
+    ],
+    "uncovered": [
+     "여덟 부위 상호 비례",
+     "소리",
+     "몸"
+    ],
+    "basis": "앞 규칙과 같은 결손이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": "symmetry",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R034",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C7",
+   "locus": "권2 오행상극가",
+   "gloss_ko": "코가 크고 눈이 작다",
+   "verdict_code": "BINHAN_GODOK",
+   "verdict_ko": "한평생 가난하고 외롭다",
+   "condition": {
+    "key": "ohaeng.nose_dae_eye_so",
+    "axes": [
+     "noseWRatio",
+     "eyeSize"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "코 폭 비",
+     "눈 너비 비"
+    ],
+    "uncovered": [
+     "코의 큼이 폭인지 길이인지의 특정"
+    ],
+    "basis": "코 쪽 치수 선택이 원문에 없어 우리 해석이 된다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "noseWRatio",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R035",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C7",
+   "locus": "권2 오행상극가",
+   "gloss_ko": "눈이 크고 코가 작다",
+   "verdict_code": "SUMYEONG_CHOK",
+   "verdict_ko": "재물은 있어도 수명이 촉박하다",
+   "condition": {
+    "key": "ohaeng.eye_dae_nose_so",
+    "axes": [
+     "eyeSize",
+     "noseWRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 너비 비",
+     "코 폭 비"
+    ],
+    "uncovered": [
+     "코의 작음이 폭인지 길이인지의 특정"
+    ],
+    "basis": "앞 규칙의 역이며 같은 결손이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "eyeSize",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R036",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C7",
+   "locus": "권2 오행상극가",
+   "gloss_ko": "귀가 크고 입술이 얇다",
+   "verdict_code": "BINHAN",
+   "verdict_ko": "의식이 가난하고 지혜만 헛되이 있다",
+   "condition": {
+    "key": "ohaeng.ear_dae_lip_bak",
+    "axes": [
+     "lipThickness"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "입술 두께"
+    ],
+    "uncovered": [
+     "귀 크기"
+    ],
+    "basis": "두 항 중 귀가 관측 불가라 결합 조건 전체를 판정할 수 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R037",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C5",
+   "locus": "권2 사학당위",
+   "gloss_ko": "길고 빼어나며 맑고 흑백이 또렷하다",
+   "verdict_code": "GWANJIK",
+   "verdict_ko": "관직이 있음을 주관한다",
+   "condition": {
+    "key": "hakdang.eye.jang_sucheong_heukbaek_bunmyeong",
+    "axes": [
+     "eyeAspect"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 가로세로비"
+    ],
+    "uncovered": [
+     "빼어남",
+     "맑음",
+     "흑백 또렷함"
+    ],
+    "basis": "길이만 덮는다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "eyeAspect",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R038",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C5",
+   "locus": "권2 사학당위",
+   "gloss_ko": "평평하고 그득하며 빛나고 맑다",
+   "verdict_code": "CHONGMYEONG_HAKSIK",
+   "verdict_ko": "총명과 학식을 주관한다",
+   "condition": {
+    "key": "hakdang.earfront.pyeongman_gwangyeong",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "귀 앞 부위의 위치",
+     "평평함",
+     "그득함",
+     "빛남"
+    ],
+    "basis": "부위의 위치가 귀를 기준으로 정의되는데 귀 랜드마크가 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R039",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C6",
+   "locus": "권2 이의상응",
+   "gloss_ko": "위와 아래가 서로 응한다",
+   "verdict_code": "BUGWI_BOKROK",
+   "verdict_ko": "부귀와 복록을 능히 누린다",
+   "condition": {
+    "key": "iui.cheonjeong_jigak_sangeung",
+    "axes": [
+     "foreheadRatio",
+     "chin"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "천지 폭비",
+     "천지 높이비"
+    ],
+    "uncovered": [
+     "서로 응함이 폭과 높이만을 뜻한다는 근거"
+    ],
+    "basis": "신설 축으로 차원은 맞췄으나 응함의 내용을 폭과 높이로 한정할 근거가 원문에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_OGWAN_R040",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C16",
+   "locus": "권6 육천",
+   "gloss_ko": "코가 굽고 낮게 꺼졌다",
+   "verdict_code": "CHEON",
+   "verdict_ko": "다섯째 천함이 된다",
+   "condition": {
+    "key": "yukcheon.nose.gok_jeotap",
+    "axes": [
+     "noseDorsum",
+     "noseCenter",
+     "noseHRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "코 길이 비",
+     "코 중심 이탈"
+    ],
+    "uncovered": [
+     "낮게 꺼짐"
+    ],
+    "basis": "굽음만 부분 근사하고 꺼짐은 깊이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "noseDorsum",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R041",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C16",
+   "locus": "권6 육천",
+   "gloss_ko": "귀와 눈이 곁눈질한다(비스듬히 본다)",
+   "verdict_code": "CHEON",
+   "verdict_ko": "넷째 천함이 된다",
+   "condition": {
+    "key": "yukcheon.earye.sasi",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "귀",
+     "응시 방향"
+    ],
+    "basis": "귀 랜드마크가 없고 응시 방향은 정지 랜드마크 축이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_OGWAN_R042",
+   "doctrine_id": "FACE_OGWAN",
+   "source_edition_id": "SRC_TQSJ_A",
+   "corpus_id": "C15",
+   "locus": "권5 논액부",
+   "gloss_ko": "이마가 크고 얼굴이 모나다",
+   "verdict_code": "GILCHANG",
+   "verdict_ko": "늙도록 길하고 창성한다",
+   "condition": {
+    "key": "aek.dae_bang",
+    "axes": [
+     "foreheadRatio",
+     "whRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "이마 폭 비",
+     "얼굴 가로세로비"
+    ],
+    "uncovered": [
+     "모남"
+    ],
+    "basis": "이마가 큼만 덮고 모남은 윤곽 각도라 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "foreheadRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R001",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X2",
+   "locus": "권6 오행형상론(엽20a)",
+   "gloss_ko": "그 형이 모나고 반듯하며 희다",
+   "verdict_code": "GEUM_HYEONG",
+   "verdict_ko": "금형은 모남을 주로 한다",
+   "condition": {
+    "key": "xlhz.geum.hyeong_bangjeong",
+    "axes": [
+     "whRatio",
+     "jawRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "얼굴 가로세로비",
+     "하악각 폭 비"
+    ],
+    "uncovered": [
+     "모나고 반듯함",
+     "흼"
+    ],
+    "basis": "종횡비는 모남의 대용이지 등가가 아니고 색 축은 결속 전이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "whRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R002",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X2",
+   "locus": "권6 오행형상론(엽20a)",
+   "gloss_ko": "살이 넘치지 않고 뼈가 얇지 않으며 뼈가 굳고 살이 실하다",
+   "verdict_code": "GEUM_JEONGGYEOK",
+   "verdict_ko": "그 중도를 얻었다",
+   "condition": {
+    "key": "xlhz.geum.gol_gyeon_yuk_sil",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "살과 뼈의 비중"
+    ],
+    "basis": "랜드마크 좌표비로 관측되지 않는다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R003",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X2",
+   "locus": "권6 오행형상론(엽20a)",
+   "gloss_ko": "색은 희고 기는 굳세다",
+   "verdict_code": "GEUM_JEONGGYEOK",
+   "verdict_ko": "그 중도를 얻었다",
+   "condition": {
+    "key": "xlhz.geum.saek_baek_gi_gang",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "색이 흼",
+     "기가 굳셈"
+    ],
+    "basis": "색 축은 결속 전이고 기는 계측 대상이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R004",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X2",
+   "locus": "권6 오행형상론(엽20a)",
+   "gloss_ko": "뼈가 적고 살이 많다",
+   "verdict_code": "GEUM_BULGYEOK",
+   "verdict_ko": "유약하여 굳세지 못하다",
+   "condition": {
+    "key": "xlhz.geum.gol_so_yuk_da",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "뼈와 살의 양"
+    ],
+    "basis": "관측 축이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R005",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X2",
+   "locus": "권6 오행형상론(엽20a)",
+   "gloss_ko": "움직이고 멈춤에 규모가 있고 오래 앉아 있어도 무겁다",
+   "verdict_code": "GEUM_GUK",
+   "verdict_ko": "금형이 금국을 얻었다",
+   "condition": {
+    "key": "xlhz.geum.dongji_gyumo",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "거동"
+    ],
+    "basis": "정지 사진에 거동이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R006",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X2",
+   "locus": "권6 오행형상론(엽20a)",
+   "gloss_ko": "곧고 살이 적으며 마르고 곧고 길다",
+   "verdict_code": "MOK_HYEONG",
+   "verdict_ko": "목형은 긺을 주로 한다",
+   "condition": {
+    "key": "xlhz.mok.hyeong_su_jik_su_jang",
+    "axes": [
+     "whRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "얼굴 가로세로비"
+    ],
+    "uncovered": [
+     "살이 적음",
+     "곧음"
+    ],
+    "basis": "길쭉함만 덮는다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "whRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R007",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "허리가 치우치고 등이 얇다",
+   "verdict_code": "MOK_BULSEON",
+   "verdict_ko": "목형의 좋은 상이 아니다",
+   "condition": {
+    "key": "xlhz.mok.yo_pyeon_bae_bak",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "허리",
+     "등"
+    ],
+    "basis": "얼굴 사진 밖이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R008",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "색이 맑고 기가 빼어나다",
+   "verdict_code": "MOK_JEONG",
+   "verdict_ko": "그 바름을 얻었다",
+   "condition": {
+    "key": "xlhz.mok.saek_cheong_gi_su",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "색이 맑음",
+     "기가 빼어남"
+    ],
+    "basis": "맑음과 기는 계측량이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R009",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "거동이 온유하고 오래 걸어도 맑다",
+   "verdict_code": "MOK_GUK",
+   "verdict_ko": "목형이 목국을 얻었다",
+   "condition": {
+    "key": "xlhz.mok.dongji_onyu",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "거동"
+    ],
+    "basis": "정지 사진에 거동이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R010",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "둥글고 무거우며 두텁고 실하다",
+   "verdict_code": "SU_HYEONG",
+   "verdict_ko": "수형은 둥긂을 주로 한다",
+   "condition": {
+    "key": "xlhz.su.hyeong_won_jung_hu_sil",
+    "axes": [
+     "whRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "얼굴 가로세로비"
+    ],
+    "uncovered": [
+     "둥긂",
+     "무거움",
+     "두터움",
+     "실함"
+    ],
+    "basis": "종횡비는 곡률이 아니며 부피 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "whRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R011",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "등이 우뚝하고 배가 드리웠다",
+   "verdict_code": "SU_HYEONG",
+   "verdict_ko": "수형",
+   "condition": {
+    "key": "xlhz.su.bae_oe_bok_su",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "등",
+     "배"
+    ],
+    "basis": "얼굴 사진 밖이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R012",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "살이 무겁고 뼈가 가볍다",
+   "verdict_code": "SU_SANG",
+   "verdict_ko": "그것이 그 떳떳함이다",
+   "condition": {
+    "key": "xlhz.su.yuk_jung_gol_gyeong",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "살과 뼈의 무게"
+    ],
+    "basis": "관측 축이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R013",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X3",
+   "locus": "권6 오행형상론(엽20b)",
+   "gloss_ko": "거동이 너그럽고 오래 걸어도 가볍지 않다",
+   "verdict_code": "SU_GUK",
+   "verdict_ko": "수형이 수국을 얻었다",
+   "condition": {
+    "key": "xlhz.su.dongji_gwanyong",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "거동"
+    ],
+    "basis": "정지 사진에 거동이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R014",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "그 형이 뾰족하되 아래가 풍만하다",
+   "verdict_code": "HWA_HYEONG",
+   "verdict_ko": "화형은 밝음을 주로 한다",
+   "condition": {
+    "key": "xlhz.hwa.hyeong_ye_ha_pung",
+    "axes": [
+     "jawRatio",
+     "foreheadRatio"
+    ],
+    "expr": {
+     "space": "measure",
+     "op": "gt",
+     "left": {
+      "axis": "jawRatio"
+     },
+     "right": {
+      "axis": "foreheadRatio"
+     }
+    },
+    "expr_basis": "operational 이 조건식을 문장으로 확정해 둔다 — jawRatio > foreheadRatio. 두 축은 분모가 같다.",
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "하악각 폭 비",
+     "이마 폭 비"
+    ],
+    "uncovered": [],
+    "basis": "원문이 위와 아래의 대비를 스스로 주고 두 축의 분모가 같아 원시값 비교로 조건 전부가 덮인다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "jawRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R015",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "위가 뾰족한 것이 불꽃 같다",
+   "verdict_code": "HWA_HYEONG",
+   "verdict_ko": "위가 뾰족함이 불꽃 같다",
+   "condition": {
+    "key": "xlhz.hwa.sangcheom",
+    "axes": [
+     "foreheadRatio",
+     "jawRatio"
+    ],
+    "expr": {
+     "space": "measure",
+     "op": "lt",
+     "left": {
+      "axis": "foreheadRatio"
+     },
+     "right": {
+      "axis": "jawRatio"
+     }
+    },
+    "expr_basis": "operational 이 조건식을 문장으로 확정해 둔다 — foreheadRatio < jawRatio.",
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "이마 폭 비",
+     "하악각 폭 비"
+    ],
+    "uncovered": [],
+    "basis": "앞 규칙을 위쪽에서 다시 말한 것이며 같은 비교로 조건 전부가 덮인다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "foreheadRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R016",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "색이 붉고 기가 마르다",
+   "verdict_code": "HWA_JEONGGYEOK",
+   "verdict_ko": "그 중도를 얻었다",
+   "condition": {
+    "key": "xlhz.hwa.saek_jeok",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "색이 붉음",
+     "기가 마름"
+    ],
+    "basis": "색 축은 결속 전이고 기는 계측 대상이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R017",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "멀리 드러나고 들뜨고 조급하다",
+   "verdict_code": "HWA_BULGYEOK",
+   "verdict_ko": "메마르고 타는 지나침이다",
+   "condition": {
+    "key": "xlhz.hwa.wonro_bujo",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "드러남",
+     "들뜸"
+    ],
+    "basis": "드러남은 깊이이고 들뜸은 기질이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R018",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "한 군데라도 드러나면 火라 하고 얼굴이 깊으면 土라 한다",
+   "verdict_code": "HWA_OR_TO",
+   "verdict_ko": "火 또는 土로 가른다",
+   "condition": {
+    "key": "xlhz.hwa_to.byeonbyeol_ro_sim",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "드러남",
+     "얼굴이 깊음"
+    ],
+    "basis": "둘 다 깊이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R019",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "붉게 피되 메마르지 않고 색이 윤택하다",
+   "verdict_code": "JIN_YANG_HWA",
+   "verdict_ko": "곧 진짜 양의 화형이다",
+   "condition": {
+    "key": "xlhz.hwa.jinyang_hwahyeong",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "붉게 핌",
+     "메마르지 않음",
+     "윤택함"
+    ],
+    "basis": "색과 광택 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R020",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "거동이 풍성하고 예리하며 오래 앉아도 지치지 않는다",
+   "verdict_code": "HWA_GUK",
+   "verdict_ko": "화국을 얻었다",
+   "condition": {
+    "key": "xlhz.hwa.dongji_pungye",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "거동"
+    ],
+    "basis": "정지 사진에 거동이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R021",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "토형은 살짐을 주로 하며 다섯 가지 살진 기운을 얻는다",
+   "verdict_code": "TO_HYEONG",
+   "verdict_ko": "토형은 살짐을 주로 한다",
+   "condition": {
+    "key": "xlhz.to.ju_bi",
+    "axes": [
+     "whRatio",
+     "jawRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "얼굴 가로세로비",
+     "하악각 폭 비"
+    ],
+    "uncovered": [
+     "살짐"
+    ],
+    "basis": "종횡비는 살의 부피에 대한 대용이지 등가가 아니다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "whRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R022",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "돈후하고 속되며 팔과 등이 드러나고 얼굴이 깊고 허리가 드러나며 형모가 헌앙하다",
+   "verdict_code": "TO_HYEONG",
+   "verdict_ko": "그 걸맞음을 얻었다",
+   "condition": {
+    "key": "xlhz.to.donhu_jinsok",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "팔",
+     "등",
+     "허리",
+     "얼굴의 깊이",
+     "인상"
+    ],
+    "basis": "몸통과 깊이와 인상 평가다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R023",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "살이 가볍고 뼈가 무겁다",
+   "verdict_code": "TO_CHING",
+   "verdict_ko": "그 걸맞음을 얻었다",
+   "condition": {
+    "key": "xlhz.to.yuk_gyeong_gol_jung",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "살과 뼈의 무게"
+    ],
+    "basis": "관측 축이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R024",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X4",
+   "locus": "권6 오행형상론(엽21a)",
+   "gloss_ko": "색이 누렇다",
+   "verdict_code": "TO_CHING",
+   "verdict_ko": "그 걸맞음을 얻었다",
+   "condition": {
+    "key": "xlhz.to.saek_hwang",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "색이 누름"
+    ],
+    "basis": "색 축은 결속 전이고 절대 색 기준의 신뢰도도 낮다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R025",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "뼈가 무겁고 살이 얇으며 신이 어둡고 힘이 없다",
+   "verdict_code": "TO_BULGYEOK",
+   "verdict_ko": "곧 막히고 정체된 토다",
+   "condition": {
+    "key": "xlhz.to.gol_jung_yuk_bak",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "뼈와 살",
+     "신의 밝기"
+    ],
+    "basis": "관측 축이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R026",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "두텁고 무거우면 토가 실하고 살이 살지며 색이 붉고 윤택하며 흐르지도 막히지도 않고 순정하여 토가 편안하며 움직여도 마르지 않는다",
+   "verdict_code": "TO_SIL",
+   "verdict_ko": "두텁고 무거우면 토가 실하다",
+   "condition": {
+    "key": "xlhz.to.hujung_tosil",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "두텁고 무거움",
+     "살짐",
+     "붉고 윤택함",
+     "거동"
+    ],
+    "basis": "부피와 색과 거동뿐이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R027",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "거동이 돈후하고 그치며 오래 누워도 편안하다",
+   "verdict_code": "TO_GUK",
+   "verdict_ko": "토형이 토국을 얻었다",
+   "condition": {
+    "key": "xlhz.to.dongji_donggan",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "거동"
+    ],
+    "basis": "정지 사진에 거동이 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R028",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "이 오행을 얻고 깨진 곳이 없다",
+   "verdict_code": "DAEBU_DAEGWI",
+   "verdict_ko": "크게 부하고 크게 귀한 사람이다",
+   "condition": {
+    "key": "xlhz.ohaeng.mupa",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "깨진 곳의 정의"
+    ],
+    "basis": "정의가 원문에 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R029",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "금과 목은 서로 지킬 수 없고 수와 화는 나란할 수 없다",
+   "verdict_code": "BULHAP_SANG",
+   "verdict_ko": "모두 합하지 않는 상이다",
+   "condition": {
+    "key": "xlhz.ohaeng.sanggeuk_geumji",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "두 형이 함께 있음을 담을 자료구조"
+    ],
+    "basis": "금지 조합을 표현할 자리가 엔진에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R030",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "형을 논할 때는 많은 쪽을 골라 주로 삼는다",
+   "verdict_code": "JU_HYEONG_SEONJEONG",
+   "verdict_ko": "많은 쪽을 골라 주로 삼는다",
+   "condition": {
+    "key": "xlhz.ohaeng.taek_gi_daja",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "다섯 형 각각의 부합도"
+    ],
+    "basis": "부합도 다섯 값을 내는 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R031",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X5",
+   "locus": "권6 오행형상론(엽21b)",
+   "gloss_ko": "금은 모남을 꺼리지 않고 목은 마름을, 수는 살짐을, 화는 뾰족함을, 토는 두터움을 꺼리지 않는다",
+   "verdict_code": "BULHYEOM",
+   "verdict_ko": "꺼리지 않는다",
+   "condition": {
+    "key": "xlhz.ohaeng.bulhyeom",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "형 판정과 축 평가의 조건부 결합"
+    ],
+    "basis": "결합 구조가 엔진에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R032",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "금은 모남, 목은 마름, 수는 둥긂, 화는 뾰족함, 토는 두터움이며 체모는 상생해야 하고 상극해서는 안 된다",
+   "verdict_code": "SANGSAENG_YOGU",
+   "verdict_ko": "체모는 상생해야 하고 상극은 마땅치 않다",
+   "condition": {
+    "key": "xlhz.ohaeng.chemo_sangsaeng",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "부위별 오행 귀속",
+     "상생상극 판정"
+    ],
+    "basis": "부위를 오행에 배당하는 매핑이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R033",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "오행이 순일하고 섞이지 않았다",
+   "verdict_code": "HAPGYEOK",
+   "verdict_ko": "합격이 된다",
+   "condition": {
+    "key": "xlhz.ohaeng.sunil_buljap",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "다섯 형 부합도"
+    ],
+    "basis": "부합도 다섯 값을 내는 축이 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R034",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "금은 의(義)이며 강직과 과감을 주관한다",
+   "verdict_code": "JEONG_GWICHEON",
+   "verdict_ko": "귀천을 정한다",
+   "condition": {
+    "key": "xlhz.soju.geum",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "성정"
+    ],
+    "basis": "결과측 의미이지 조건이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R035",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "목은 인(仁)이며 정화와 청수를 주관한다",
+   "verdict_code": "JEONG_GWISUYO",
+   "verdict_ko": "귀함과 수명을 정한다",
+   "condition": {
+    "key": "xlhz.soju.mok",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "성정"
+    ],
+    "basis": "결과측 의미이지 조건이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R036",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "수는 지(智)이며 총명과 민첩을 주관한다",
+   "verdict_code": "JEONG_HYEONUU",
+   "verdict_ko": "어짊과 어리석음을 정한다",
+   "condition": {
+    "key": "xlhz.soju.su",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "성정"
+    ],
+    "basis": "결과측 의미이지 조건이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R037",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "화는 예(禮)이며 위세와 맹렬을 주관한다",
+   "verdict_code": "JEONG_GANGYU",
+   "verdict_ko": "강함과 부드러움을 정한다",
+   "condition": {
+    "key": "xlhz.soju.hwa",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "성정"
+    ],
+    "basis": "결과측 의미이지 조건이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R038",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "토는 신(信)이며 만물을 싣고 기름을 주관한다",
+   "verdict_code": "JEONG_BINBU",
+   "verdict_ko": "가난과 부를 정한다",
+   "condition": {
+    "key": "xlhz.soju.to",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "성정"
+    ],
+    "basis": "결과측 의미이지 조건이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R039",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X6",
+   "locus": "권6 오행형상론(엽22a)",
+   "gloss_ko": "풍후하고 무겁다 / 얕고 얇고 짧고 메마르다",
+   "verdict_code": "BU_GWI_OR_BIN_YO",
+   "verdict_ko": "부하지 않으면 귀하고 / 가난하지 않으면 요절한다",
+   "condition": {
+    "key": "xlhz.ohaeng.punghu_vs_cheonbak",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "풍후함",
+     "무거움",
+     "얕고 얇음",
+     "메마름"
+    ],
+    "basis": "부피와 질감뿐이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R040",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "X7",
+   "locus": "권6 오행형상론(엽23a)",
+   "gloss_ko": "오행이 체를 이루고 오음이 합격하며 근저가 대대로 아름답고 음덕으로 사람을 구제한다",
+   "verdict_code": "BUGWI_MUCHAMYU",
+   "verdict_ko": "그 부귀에 어긋남이 없다",
+   "condition": {
+    "key": "xlhz.ohaeng.eumdeok_jein",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "목소리",
+     "행위"
+    ],
+    "basis": "형태가 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R041",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Y1",
+   "locus": "권4 오관총론(엽1)",
+   "gloss_ko": "한 官이 이루어지다",
+   "verdict_code": "GWI_10Y_PER_OFFICER",
+   "verdict_ko": "한 官이 이루어지면 10년의 귀현",
+   "condition": {
+    "key": "xlhz.ogwan.ilgwan_seong",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 너비 비",
+     "눈썹 두께",
+     "코 길이 비",
+     "입 폭 비"
+    ],
+    "uncovered": [
+     "귀",
+     "이루어짐의 기준"
+    ],
+    "basis": "집계 대상 중 귀가 빠지고 이루어짐의 기준을 이 총론이 주지 않는다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R042",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Y1",
+   "locus": "권4 오관총론(엽1)",
+   "gloss_ko": "간에 뿌리를 두고 목에 속하며 가로로 자람을 취한다",
+   "verdict_code": "MI_SOK_MOK",
+   "verdict_ko": "목에 속한다",
+   "condition": {
+    "key": "xlhz.ogwan.mi_gwisok_mok",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "가로로 자람"
+    ],
+    "basis": "오행 귀속의 설명이지 판정 조건이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R043",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Y1",
+   "locus": "권4 오관총론(엽1)",
+   "gloss_ko": "눈썹이 곧고 빼어나며 무성하다",
+   "verdict_code": "MI_JEONGGYEOK",
+   "verdict_ko": "그러므로 눈썹은 곧고 빼어나고 무성해야 한다",
+   "condition": {
+    "key": "xlhz.ogwan.mi_jik_su_ul",
+    "axes": [
+     "browAngle",
+     "browThick"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 각도",
+     "눈썹 두께"
+    ],
+    "uncovered": [
+     "빼어남",
+     "무성함"
+    ],
+    "basis": "곧음만 근사하고 무성함은 모발 밀도다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "browAngle",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R044",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Y1",
+   "locus": "권4 오관총론(엽1)",
+   "gloss_ko": "빼어나고 길어야 하며 더부룩하고 어지러워서는 안 되고 검고 윤택해야 하며 누렇고 메말라서는 안 된다",
+   "verdict_code": "MOBAL_JEONGGYEOK",
+   "verdict_ko": "빼어나고 길어야 하며 더부룩해서는 안 된다",
+   "condition": {
+    "key": "xlhz.ogwan.mobal_su_jang",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "눈썹 밖의 털",
+     "색",
+     "밀도"
+    ],
+    "basis": "자를 마스크가 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R045",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Y1",
+   "locus": "권4 오관총론(엽1)",
+   "gloss_ko": "오관이 조화(造化)의 이치에 부합한다",
+   "verdict_code": "BUGWI_SUGO",
+   "verdict_ko": "부귀와 장수가 반드시 있다",
+   "condition": {
+    "key": "xlhz.ogwan.hap_hu_johwa",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "조화의 이치"
+    ],
+    "basis": "조작적 정의가 원문에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R046",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z1",
+   "locus": "권2 십이궁총결(엽13a)",
+   "gloss_ko": "밝고 윤택해야 한다",
+   "verdict_code": "SU_JANG",
+   "verdict_ko": "수명이 길다",
+   "condition": {
+    "key": "xlhz.myeonggung.myeongyun",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "밝음",
+     "윤택함"
+    ],
+    "basis": "밝기와 광택 축은 색 센서에 후보로만 있고 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R047",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z1",
+   "locus": "권2 십이궁총결(엽13a)",
+   "gloss_ko": "주름이 교차한다",
+   "verdict_code": "SINMYEONG_JOGYEONG",
+   "verdict_ko": "몸과 목숨이 일찍 기운다",
+   "condition": {
+    "key": "xlhz.myeonggung.mungyo",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "주름의 교차"
+    ],
+    "basis": "텍스처 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R048",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z1",
+   "locus": "권2 십이궁총결(엽13a)",
+   "gloss_ko": "현침(印堂에 세로로 선 주름)",
+   "verdict_code": "GEUK_CHEO_HAE_JA",
+   "verdict_ko": "현침은 극(尅)을 주관한다 — 다음 葉으로 이어져 「妻害子」",
+   "condition": {
+    "key": "xlhz.myeonggung.hyeonchim",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "세로 주름"
+    ],
+    "basis": "텍스처 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R049",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "어둡고 컴컴해서는 안 된다",
+   "verdict_code": "BULGIL",
+   "verdict_ko": "어두우면 마땅치 않다",
+   "condition": {
+    "key": "xlhz.myeonggung.sanak_honam",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "어둡고 컴컴함"
+    ],
+    "basis": "밝기 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R050",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "「川」자 모양 주름이 있다",
+   "verdict_code": "JAESANG",
+   "verdict_ko": "재상을 주관한다",
+   "condition": {
+    "key": "xlhz.myeonggung.cheonja",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "세로 주름 세 줄"
+    ],
+    "basis": "텍스처 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R051",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "거울처럼 빛나고 밝다",
+   "verdict_code": "HAKMUN_TONG",
+   "verdict_ko": "학문에 두루 통한 선비",
+   "condition": {
+    "key": "xlhz.myeonggung.gwangmyeong_yeogyeong",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "빛남",
+     "밝음"
+    ],
+    "basis": "광택과 밝기 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R052",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "산근이 평평하고 그득하다",
+   "verdict_code": "BOKSU_ANHYANG",
+   "verdict_ko": "복과 수를 편안히 누린다",
+   "condition": {
+    "key": "xlhz.myeonggung.sangeun_pyeongman",
+    "axes": [
+     "jilAek",
+     "noseDorsum"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "질액궁 폭"
+    ],
+    "uncovered": [
+     "평평하고 그득함"
+    ],
+    "basis": "폭만 덮고 평평하고 그득함은 깊이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "jilAek",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R053",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "우묵하게 꺼졌다",
+   "verdict_code": "GONGBU_PALDU",
+   "verdict_ko": "여덟 말의 재주를 헛되이 진다",
+   "condition": {
+    "key": "xlhz.myeonggung.aoham",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "우묵하게 꺼짐"
+    ],
+    "basis": "깊이이며 이차원 사진은 그림자만 본다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R054",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "나쁜 점",
+   "verdict_code": "RYEONGEO",
+   "verdict_ko": "몸이 반드시 옥에 갇힌다",
+   "condition": {
+    "key": "xlhz.myeonggung.akji",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "점",
+     "나쁨의 판정"
+    ],
+    "basis": "점 축은 결속 전이고 나쁨은 계측량이 아니다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R055",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "Z2",
+   "locus": "권2 십이궁총결(엽13b)",
+   "gloss_ko": "실 같은 붉은 색이 명궁에 있거나 점·마가 돋는다",
+   "verdict_code": "GONGSONG_3Y",
+   "verdict_ko": "3년 안에 송사를 주관한다",
+   "condition": {
+    "key": "xlhz.myeonggung.gisaek_jeoksaek",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "실 같은 붉은 색",
+     "점"
+    ],
+    "basis": "색과 점 축이 결속 전이다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R056",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "W1",
+   "locus": "권2 변와설(엽26a)",
+   "gloss_ko": "모두 왼쪽을 양, 오른쪽을 음으로 정했으니 보기 편하게 하기 위함이다",
+   "verdict_code": "JWAYANG_UEUM_GYUYAK",
+   "verdict_ko": "모두 좌양우음으로 정한다",
+   "condition": {
+    "key": "xlhz.byeonwa.jwaupyeon_gyuyak",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "좌우 배당 규약"
+    ],
+    "basis": "원문이 편의라고 스스로 밝힌 규약이라 판정 대상이 아니다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R057",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "W1",
+   "locus": "권2 변와설(엽26a)",
+   "gloss_ko": "선천도와 태극도를 (상법에) 쓸 수 없다",
+   "verdict_code": "DOSIK_GIGAK",
+   "verdict_ko": "선천도·태극도는 쓸 수 없다",
+   "condition": {
+    "key": "xlhz.byeonwa.seoncheon_taegeuk_geumji",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "어느 도식을 썼는가"
+    ],
+    "basis": "표시할 자리가 엔진에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R058",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "W1",
+   "locus": "권2 변와설(엽26a)",
+   "gloss_ko": "이제 각 책이 만든 면도를 보건대",
+   "verdict_code": "SEONHAENG_GIGAK",
+   "verdict_ko": "어찌 화복을 알 수 있겠는가",
+   "condition": {
+    "key": "xlhz.byeonwa.gakseo_myeondo_gigak",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "선행 도판의 존재"
+    ],
+    "basis": "판정 대상이 아니다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  }
+ ]
+}

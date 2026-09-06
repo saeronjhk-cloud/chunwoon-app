@@ -29,6 +29,20 @@ async function cwEngine() {
   return __cwEngine;
 }
 
+// ★v786 — 관상 판정 엔진(`facever.js`) 적재. `cwEngine` 과 같은 패턴이다.
+//   ★적재 실패는 서비스 중단 사유가 아니다 — 실패하면 종전대로 LLM 이 전담한다(fail-closed).
+let __cwFaceVer = null;
+let __cwFaceVerTried = false;
+async function cwFaceVer() {
+  if (__cwFaceVerTried) return __cwFaceVer;
+  __cwFaceVerTried = true;
+  try {
+    const m = await import('./_engine/facever.js');
+    __cwFaceVer = (m && m.default) ? m.default : (m || null);
+  } catch (e) { __cwFaceVer = null; }
+  return __cwFaceVer;
+}
+
 // ★v7.73 관통 #4 — compat 가드는 `ctxguard.js` 를 **직접** 적재한다.
 //   이유: 판정 로직의 정본은 엔진이 쥔다(결정 80)는 원칙은 그대로 지키되,
 //   재노출 어댑터(`bind.js`)는 v7.73 계약 §0 에서 A 의 소유 파일이 아니다.
@@ -1711,6 +1725,39 @@ export default async function handler(req, res) {
       + ' 근거를 밝힐 때는 "전통 명리 이론에 따르면" 처럼 일반적인 표현을 쓰세요.';
 
 
+    // ★★v786-V — 관상 **원문 판정 엔진**. 규칙 100건(太淸神鑑 42 · 相理衡眞 58)을 태운다.
+    //   제이 원칙 ⑤ 이행: 엔진이 낼 수 있는 것은 엔진이 내고, 못 내는 것만 LLM 이 맡는다.
+    //   3층 — VERDICT(엔진 확정) / REFERENCE(계측+전통 관점, 판정 아님) / WITHHELD(내보내지 않음)
+    //   ★★`user_output_enabled` 게이트: doctrine 이 NON_AUTHORITATIVE 이면 **VERDICT 를 사용자에게 내보내지 않는다.**
+    //     현재 두 교리 모두 false 다(영인 sha256 미확보). ⟹ 지금은 REFERENCE 만 나간다.
+    //     ★교리 승인이 나면 이 플래그 하나로 판정 상품이 켜진다 — 코드 수정 불필요.
+    let cwFaceVerdict = null, cwFaceBlock = '', cwFaceAuthoritative = false;
+    if (type === 'face' || type === 'face_premium_1' || type === 'face_premium_2') {
+      const fv = await cwFaceVer();
+      if (fv && features && features.measurements) {
+        try {
+          cwFaceVerdict = fv.evaluateFace({
+            measures: features.measurements,
+            ranks: features.ranks || null,
+            refTier: features.refTier || 'C-SYNTHETIC'
+          });
+          const docs = (fv.RULES && fv.RULES.doctrines) || [];
+          cwFaceAuthoritative = docs.length > 0 && docs.every((d) => d.user_output_enabled === true);
+          if (!cwFaceAuthoritative && cwFaceVerdict) {
+            // ★교리 미승인 — VERDICT 를 통째로 비운다. 참고층만 남긴다.
+            cwFaceVerdict = Object.assign({}, cwFaceVerdict, { verdicts: [] });
+          }
+          cwFaceBlock = fv.factsBlockFace(cwFaceVerdict) || '';
+        } catch (e) { cwFaceVerdict = null; cwFaceBlock = ''; }
+      }
+      try {
+        console.log('[cw:facever]', JSON.stringify({
+          type, loaded: !!cwFaceVerdict, authoritative: cwFaceAuthoritative,
+          tally: cwFaceVerdict ? cwFaceVerdict.tally : null
+        }));
+      } catch (e) { /* 로깅 실패는 판정에 영향 없다 */ }
+    }
+
     // ★v786 — 관상 결정변수 블록. 24축 분위수 랭크를 프롬프트에 직접 싣는다.
     //   진단 근거: 종전에는 4축 라벨만 전달돼 두 사용자가 4축 전부 같을 확률이 26%였다.
     //   (_v786_diag/p03_build_and_eval.js 실측)
@@ -1769,7 +1816,12 @@ export default async function handler(req, res) {
       //   근거: _v786_diag/IP_face/rules/face/ogwan.json  R032(八小) → R028·R030·R031 overridden_by
       + ' 크기 하나만으로 길흉을 단정하지 마세요. 전통 관상학은 작아도 빼어나고 길면 오히려 좋다고 봅니다.'
       + ' 형태·균형·서로 걸맞음을 함께 보고 판단하세요.'
-      + ' 귀·얼굴빛·주름결은 이 앱이 계측하지 않으므로 언급하지 마세요.';
+      + ' 귀·얼굴빛·주름결은 이 앱이 계측하지 않으므로 언급하지 마세요.'
+      // ★v786-V — 판정 블록 3층 취급 규칙
+      + ' 아래에 【관상 엔진 판정】 블록이 있으면 그 항목은 이미 확정된 값입니다.'
+      + ' 그대로 인용하고 다시 판단하거나 뒤집지 마세요.'
+      + ' 【참고】 블록은 판정이 아니라 계측값과 전통 관점입니다. "~라고 봅니다" 처럼 관점으로만 쓰고 단정하지 마세요.'
+      + ' 두 블록에 없는 항목은 이 앱이 판정할 수 없는 것이니 만들어 쓰지 마세요.';
 
     if (type === 'face') {
       systemPrompt = `당신은 전통 관상학(觀相學) 해석을 돕는 AI 어시스턴트입니다. 전통 관상학의 일반적 관점을 참고합니다.
@@ -1781,7 +1833,7 @@ export default async function handler(req, res) {
       const m = features.measurements;
       const mb = m ? `실측: whR:${m.whRatio?.toFixed(3)||'?'}, jawR:${m.jawRatio?.toFixed(3)||'?'}, eyeR:${m.eyeAspect?.toFixed(2)||'?'}, noseW:${((m.noseWRatio||0)*100).toFixed(1)}%, mouth:${m.mouthRatio?.toFixed(3)||'?'}, sym:${((m.symmetry||0)*100).toFixed(1)}%, thirds:${((m.thirds||0)*100).toFixed(1)}%` : '';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}`;
+      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'face_premium_1') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기. 수치 인용.
@@ -1792,7 +1844,7 @@ features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20
       const m = features.measurements;
       const mStr = m ? `whR:${m.whRatio?.toFixed(3)||'?'},jawR:${m.jawRatio?.toFixed(3)||'?'},eyeR:${m.eyeRatio?.toFixed(2)||'?'},noseW:${((m.noseWRatio||0)*100).toFixed(1)}%,noseH:${((m.noseHRatio||0)*100).toFixed(1)}%,sym:${((m.symmetry||0)*100).toFixed(1)}%,thirds:${((m.thirdsScore||0)*100).toFixed(1)}%,upper:${m.upperThirdPct?.toFixed(1)||'?'}%,mid:${m.middleThirdPct?.toFixed(1)||'?'}%,lower:${m.lowerThirdPct?.toFixed(1)||'?'}%` : 'N/A';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}`;
+      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'face_premium_2') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기.
@@ -1803,7 +1855,7 @@ weaknesses 2개, enemies 2개, allies 2개.` + CW_FACE_AXIS_RULE + CITATION_RULE
       const m = features.measurements;
       const mStr = m ? `whR:${m.whRatio?.toFixed(3)||'?'},jawR:${m.jawRatio?.toFixed(3)||'?'},noseW:${((m.noseWRatio||0)*100).toFixed(1)}%,sym:${((m.symmetry||0)*100).toFixed(1)}%,thirds:${((m.thirdsScore||0)*100).toFixed(1)}%` : 'N/A';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}`;
+      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'naming_company') {
       // 회사명·브랜드명 무료 — 추천 5개 + 등록 가능성 평가
@@ -2598,6 +2650,13 @@ ${cardsDesc}
       //   ★부수 효과(안전 강화): 엔진 값도 스크럽을 통과하므로, 엔진이 훗날 문헌명을
       //     내보내게 되더라도 차단된다.
       //   ★LLM 이 프롬프트 지시를 어겨도 여기서 무효화된다. 엔진에 없는 합충은 버려진다.
+      // ★v786-V — 엔진 판정을 응답에 덮어쓴다. ★교리 미승인이면 verdicts 가 비어 있어 아무 일도 안 한다.
+      if (cwFaceVerdict) {
+        try {
+          const fv = await cwFaceVer();
+          if (fv && typeof fv.applyFaceVerdicts === 'function') fv.applyFaceVerdicts(parsed, cwFaceVerdict);
+        } catch (e) { /* 적용 실패 시 LLM 값 유지 */ }
+      }
       if (cwFacts && cwEng) {
         try { cwEng.applyEngineFacts(type, parsed, cwFacts); } catch (e) { /* 적용 실패 시 LLM 값 유지 */ }
       }

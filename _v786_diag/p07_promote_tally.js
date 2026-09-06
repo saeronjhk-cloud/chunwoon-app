@@ -144,10 +144,38 @@ for (const r of rules) {
 }
 for (const [k, v] of [...reasons.entries()].sort((a, b) => b[1] - a[1])) console.log(`  ${String(v).padStart(3)}건  ${k}`);
 
-check('T-5', '★귀 규칙은 승격되지 않았다 (센서가 없는데 승격되면 위조다)', () => {
-  const ear = rules.filter(r => /耳/.test((r.citation && r.citation.text_original) || ''));
-  const bad = ear.filter(r => { const to = best.get(r.rule_id); return to && ORDER[to] > ORDER[r.measurability]; });
-  return { ok: bad.length === 0, detail: bad.length ? '★귀 규칙 승격됨: ' + bad.map(r => r.rule_id).join(',') : `귀 규칙 ${ear.length}건 전부 미승격` };
+// ★T-5 재설계 (P-786-W) — 종전 T-5 는 「인용문에 耳 가 한 글자라도 있으면 승격 실패」였다.
+//   그 결과 FACE_OGWAN_R027(눈의 흰자·검은자 색으로 승격)까지 실패시켰다 — 오탐이다.
+//   같은 인용문 안의 「聳耳入鬢」은 여전히 미계측이지만, 승격된 것은 **눈 부분**이다.
+//   ⟹ 두 가지를 가른다.
+//     ① 조건이 통째로 귀인 규칙   — 승격 자체가 위조다. 어떤 승격도 허용하지 않는다.
+//     ② 귀가 조건의 일부인 규칙   — 다른 부위로의 승격은 허용한다.
+//        단 ★귀 어절이 덮이지 않으므로 condition_coverage 가 **FULL 일 수 없다.**
+//        (①의 결과인 condition_coverage 와 자동으로 맞물린다)
+const organOf = (r) => ((r.condition && r.condition.organ) || '').replace(/\([^)]*\)/g, '').trim();
+const predOf = (r) => (r.condition && r.condition.predicate_original) || '';
+const EAR_RE = /耳|採聽|采聽/;
+const isEarWhole = (r) => organOf(r) === '耳' || /^耳[大小長短]?$/.test(predOf(r).trim());
+const earAll = rules.filter(r => EAR_RE.test(((r.citation && r.citation.text_original) || '') + organOf(r) + predOf(r)));
+const earWhole = earAll.filter(isEarWhole);
+const earPart = earAll.filter(r => !isEarWhole(r));
+
+check('T-5a', '★조건이 통째로 귀인 규칙은 승격되지 않았다 (센서가 없는데 승격되면 위조다)', () => {
+  const bad = earWhole.filter(r => { const to = best.get(r.rule_id); return to && ORDER[to] > ORDER[r.measurability]; });
+  return {
+    ok: bad.length === 0,
+    detail: bad.length ? '★귀 전용 규칙 승격됨: ' + bad.map(r => r.rule_id).join(',')
+      : `귀 전용 ${earWhole.length}건(${earWhole.map(r => r.rule_id).join(',')}) 전부 미승격`
+  };
+});
+check('T-5b', '★귀가 일부인 규칙은 다른 부위로 승격되어도 되나 condition_coverage 가 FULL 이면 안 된다', () => {
+  const bad = earPart.filter(r => r.condition_coverage === 'FULL');
+  const promoted = earPart.filter(r => { const to = best.get(r.rule_id); return to && ORDER[to] > ORDER[r.measurability]; });
+  return {
+    ok: bad.length === 0,
+    detail: bad.length ? '★귀가 안 덮이는데 FULL: ' + bad.map(r => r.rule_id).join(',')
+      : `귀 일부 ${earPart.length}건 중 승격 ${promoted.length}건(${promoted.map(r => r.rule_id).join(',') || '없음'}) · 전부 FULL 아님`
+  };
 });
 check('T-6', '★「清」 규칙은 승격되지 않았다 (색 축이 생겨도 원문이 기준을 안 준다)', () => {
   const q = rules.filter(r => /清|淸/.test((r.citation && r.citation.text_original) || ''));
