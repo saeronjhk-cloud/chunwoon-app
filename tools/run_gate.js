@@ -61,7 +61,12 @@ const EVAL_DIR = path.join(ROOT, 'eval');
 //     ★러너 자신의 sha 를 pin 파일에 넣는 것은 상호 해시가 되어(각자가 상대의 해시를 담음) 정당한
 //       갱신조차 불가능해지므로 의도적으로 하지 않는다. 그 한 칸이 남는 위험이다.
 const GATE_PINS_FILE = path.join(EVAL_DIR, '_gate_pins.json');
-const GATE_PINS_SHA256 = 'ee4e73b4879ef42419b0cae1c77413b45e118c0b285381146720d4cb7c75130c';
+// ★v786(2026-09-05) 갱신 — `eval/_gate_pins.json` 안의 sha256 두 개를 정당하게 바꿨다:
+//   eval_ctx_birth_keys.js · eval_tojeong_guard.js. 사유는 다양성 붕괴 수리로
+//   compat/tojeong payload 와 토정 작괘식이 **의도적으로** 바뀐 것이다(인수인계 v786 §5-2).
+//   ★checks_min(24·21)은 건드리지 않았고 regen_gate_pins.js 도 돌리지 않았다
+//     — 돌리면 소멸한 eval 39종의 침식 기록이 통째로 지워진다(§5-3).
+const GATE_PINS_SHA256 = '1495ed8fe338a08d4e727be3d54da905715ca4fbd9a1ac9ef577368d95139011';
 
 function readPins() {
   if (!fs.existsSync(GATE_PINS_FILE)) return { err: '외부 pin 파일 부재: eval/_gate_pins.json — 판정 불가(통과 아님)' };

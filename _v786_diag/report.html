@@ -1,0 +1,589 @@
+<title>천운 다양성 붕괴 진단</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --ink:#141a1f; --ink-2:#3c4a55; --ink-3:#68798a; --ink-4:#93a3b1;
+  --bg:#f6f8f9; --surface:#ffffff; --surface-2:#eef2f4; --line:#dbe3e8; --line-2:#c3d0d8;
+  --accent:#0f6b74; --accent-soft:#dbeef0; --accent-ink:#0a4b52;
+  --bad:#a52016; --bad-soft:#fbe4e1; --warn:#8a5a00; --warn-soft:#fbf0da;
+  --good:#1f6b45; --good-soft:#dff0e6;
+  --shadow:0 1px 2px rgba(20,26,31,.05),0 8px 24px -14px rgba(20,26,31,.18);
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Noto Sans KR","Gothic A1",system-ui,-apple-system,sans-serif;
+  --disp:"Gothic A1","Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8eef1; --ink-2:#b7c5cd; --ink-3:#8b9aa5; --ink-4:#697884;
+    --bg:#0e1317; --surface:#161d22; --surface-2:#1d262c; --line:#2a353d; --line-2:#3a4750;
+    --accent:#5cc0c9; --accent-soft:#123238; --accent-ink:#8fd8de;
+    --bad:#f08b80; --bad-soft:#3a1a17; --warn:#e2b258; --warn-soft:#33270f;
+    --good:#72c795; --good-soft:#14301f;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8eef1; --ink-2:#b7c5cd; --ink-3:#8b9aa5; --ink-4:#697884;
+  --bg:#0e1317; --surface:#161d22; --surface-2:#1d262c; --line:#2a353d; --line-2:#3a4750;
+  --accent:#5cc0c9; --accent-soft:#123238; --accent-ink:#8fd8de;
+  --bad:#f08b80; --bad-soft:#3a1a17; --warn:#e2b258; --warn-soft:#33270f;
+  --good:#72c795; --good-soft:#14301f;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-weight:400; line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
+a{color:var(--accent);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* ── header ── */
+header{padding:56px 0 28px;border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 14px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center
+}
+.eyebrow b{color:var(--accent);font-weight:500}
+h1{
+  font-family:var(--disp);font-weight:900;font-size:clamp(30px,5.2vw,50px);
+  line-height:1.12;letter-spacing:-.02em;margin:0 0 16px;text-wrap:balance
+}
+.lede{font-size:17px;color:var(--ink-2);max-width:62ch;margin:0;line-height:1.75}
+.lede strong{color:var(--ink);font-weight:700}
+
+/* ── verdict strip ── */
+.strip{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  margin:32px 0 8px;box-shadow:var(--shadow)
+}
+.stat{background:var(--surface);padding:20px 20px 18px}
+.stat .k{font-size:12px;color:var(--ink-3);margin:0 0 12px;line-height:1.45;min-height:2.9em}
+.stat .pair{display:flex;align-items:baseline;gap:10px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.stat .was{font-size:20px;font-weight:500;color:var(--bad);text-decoration:line-through;text-decoration-thickness:1px;opacity:.85}
+.stat .arw{color:var(--ink-4);font-size:14px}
+.stat .now{font-size:27px;font-weight:700;color:var(--good);letter-spacing:-.02em}
+
+/* ── sections ── */
+section{padding-top:52px}
+h2{
+  font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.01em;
+  margin:0 0 6px;display:flex;align-items:center;gap:12px;text-wrap:balance
+}
+h2::before{content:"";width:3px;height:20px;background:var(--accent);border-radius:2px;flex:none}
+.sub{color:var(--ink-3);font-size:14px;margin:0 0 24px;padding-left:15px;max-width:70ch}
+h3{font-family:var(--disp);font-weight:700;font-size:16px;margin:34px 0 10px;letter-spacing:-.005em}
+
+/* ── flaw cards (enumerated: three real causes) ── */
+.flaws{display:flex;flex-direction:column;gap:14px}
+.flaw{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:20px 22px;display:grid;grid-template-columns:auto 1fr;gap:0 18px;box-shadow:var(--shadow)
+}
+.flaw .num{
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--bad);
+  background:var(--bad-soft);border-radius:6px;width:30px;height:30px;
+  display:grid;place-items:center;margin-top:2px
+}
+.flaw h4{margin:0 0 8px;font-family:var(--disp);font-size:17px;font-weight:700;letter-spacing:-.005em}
+.flaw p{margin:0 0 10px;color:var(--ink-2);font-size:14.5px}
+.flaw p:last-child{margin-bottom:0}
+.flaw .body{min-width:0}
+
+/* ── code ── */
+code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);padding:.12em .38em;border-radius:4px;color:var(--ink)}
+pre{
+  font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:12px 0;color:var(--ink-2)
+}
+pre b{color:var(--ink);font-weight:700}
+pre .c{color:var(--ink-4)}
+
+/* ── tables ── */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{
+  background:var(--surface-2);font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;white-space:nowrap
+}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.was{color:var(--bad);font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.now{color:var(--good);font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+td b{font-weight:700}
+
+/* ── severity chips ── */
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:20px;white-space:nowrap;font-weight:500
+}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.acc{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* ── distribution bars ── */
+.dist{display:flex;height:22px;border-radius:5px;overflow:hidden;min-width:200px;border:1px solid var(--line)}
+.dist span{display:block;font-family:var(--mono);font-size:9.5px;color:#fff;text-align:center;line-height:22px;overflow:hidden}
+.d1{background:#0f6b74}.d2{background:#4a8f8a}.d3{background:#87b2a4}.d4{background:#c0d4c6;color:#1a2b26 !important}
+
+/* ── callout ── */
+.note{
+  border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--surface);
+  border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14.5px;color:var(--ink-2)
+}
+.note.stop{border-left-color:var(--bad)}
+.note.ok{border-left-color:var(--good)}
+.note strong{color:var(--ink)}
+.note p{margin:0 0 8px}.note p:last-child{margin:0}
+.note ul{margin:8px 0 0;padding-left:20px}
+.note li{margin:4px 0}
+
+footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12.5px;font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+@media (max-width:640px){
+  .flaw{grid-template-columns:1fr;gap:12px}
+  header{padding-top:36px}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow"><b>천운 v786</b> <span>2026-09-05</span> <span>진단 · 수리 · 실측</span></p>
+  <h1>결과가 서로 비슷하게 나온 이유</h1>
+  <p class="lede">제이가 관찰한 현상은 <strong>사실이었고, 관상이 가장 심했습니다.</strong>
+  두 사용자가 관상 4축 라벨을 <strong>전부 똑같이</strong> 받을 확률이 정사각 사진에서 <strong>60.3%</strong>였습니다.
+  원인은 우연이 아니라 구조였습니다 — 임계가 어떤 모집단으로도 보정된 적이 없었고, 두 개의 분기는 <strong>수학적으로 도달 불가</strong>였으며,
+  얼굴형을 결정한 것은 얼굴이 아니라 <strong>사진 비율</strong>이었습니다.</p>
+
+  <div class="strip">
+    <div class="stat">
+      <p class="k">관상 4축 라벨이 두 사용자에게 전부 같을 확률</p>
+      <div class="pair"><span class="was">26.1%</span><span class="arw">→</span><span class="now">0.63%</span></div>
+    </div>
+    <div class="stat">
+      <p class="k">사진 비율을 바꿔도 관상 판정이 유지될 확률</p>
+      <div class="pair"><span class="was">0.18%</span><span class="arw">→</span><span class="now">100%</span></div>
+    </div>
+    <div class="stat">
+      <p class="k">토정비결 괘 조합 실도달 (이론 144)</p>
+      <div class="pair"><span class="was">18</span><span class="arw">→</span><span class="now">144</span></div>
+    </div>
+    <div class="stat">
+      <p class="k">데일리 메시지 같은 날 프롬프트 충돌확률</p>
+      <div class="pair"><span class="was">6.44%</span><span class="arw">→</span><span class="now">0.01%</span></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <h2>관상 — 세 개의 결함</h2>
+  <p class="sub">셋 다 독립적으로 발생했고, 셋이 겹치면서 서로 다른 얼굴이 같은 라벨로 수렴했습니다. 번호는 발견 순서가 아니라 <em>영향 크기</em> 순입니다.</p>
+
+  <div class="flaws">
+    <article class="flaw">
+      <div class="num">01</div>
+      <div class="body">
+        <h4>사진 비율이 얼굴형을 결정했다</h4>
+        <p>MediaPipe 는 x 를 <b>사진 폭</b>으로, y 를 <b>사진 높이</b>로 각각 정규화합니다.
+        코드는 <code>whRatio = faceW(x) / faceH(y)</code> 처럼 두 축을 섞어 비율을 만들었고,
+        입력 캔버스가 원본 종횡비를 그대로 보존하므로(<code>index.html:4941</code>) 같은 얼굴이라도 사진 비율만큼 값이 통째로 이동합니다.</p>
+        <div class="tw"><table>
+          <thead><tr><th class="n">사진비 H/W</th><th>대표</th><th>얼굴형 분포</th><th>눈 분포</th></tr></thead>
+          <tbody>
+            <tr><td class="n">0.750</td><td>가로 4:3</td><td>긴 형 93% · 각진형 7%</td><td>큰 눈 47% · 둥근 눈 39%</td></tr>
+            <tr><td class="n">1.000</td><td>정사각</td><td>각진형 98% · 긴 형 2%</td><td>큰 눈 82% · 처진 눈 12%</td></tr>
+            <tr><td class="n">1.333</td><td>세로 3:4</td><td><b>각진형 100%</b></td><td>가늘고 긴 눈 57%</td></tr>
+            <tr><td class="n">1.778</td><td>세로 9:16</td><td><b>각진형 100%</b></td><td><b>가늘고 긴 눈 93%</b></td></tr>
+          </tbody>
+        </table></div>
+        <p>같은 사람을 다섯 가지 비율로 찍었을 때 4축 판정이 전부 같을 확률은 <b>0.18%</b>였습니다.
+        관상기가 아니라 <b>촬영 비율 판독기</b>였습니다.</p>
+      </div>
+    </article>
+
+    <article class="flaw">
+      <div class="num">02</div>
+      <div class="body">
+        <h4>턱을 재지 않았다 — 잰 것은 관자놀이였다</h4>
+        <p>npm <code>@mediapipe/face_mesh</code> 번들에서 <code>FACEMESH_FACE_OVAL</code> 을 직접 꺼내
+        윤곽 순회 순서를 실측했습니다.</p>
+<pre>10 → 338 → 297 → 332 → 284 → <b>251</b> → 389 → <b>356</b> → <b>454</b> → 323 → … → <b>152</b>
+      <span class="c">이마옆         관자     광대(최대폭)          턱끝</span></pre>
+        <p>코드는 <code>jawW = |x356 − x127|</code> 을 "턱 너비"라 부르고 있었지만, 이 두 점은 <b>관자놀이</b>입니다.
+        관자폭 ÷ 광대폭은 거의 항상 1.0 근처(실측 p05~p95 = <b>0.948 ~ 1.053</b>)라
+        임계 <code>&gt; 0.88</code> 이 사실상 항상 참이 됐습니다.</p>
+        <p>같은 순회 순서 때문에 <code>21/251</code>(이마옆)은 <code>127/356</code>보다 <b>위</b>에 있고,
+        볼록한 윤곽에서 이마폭이 관자폭의 1.15배를 넘을 수 없으므로 <b>「역삼각형」 분기는 도달 불가</b>였습니다.</p>
+        <div class="tw"><table>
+          <thead><tr><th>얼굴형</th><th style="width:46%">현행 분포</th><th class="n">점유</th></tr></thead>
+          <tbody>
+            <tr><td>각진형</td><td><div class="dist"><span class="d1" style="width:80.7%">80.7%</span><span class="d4" style="width:19.3%"></span></div></td><td class="was">80.7%</td></tr>
+            <tr><td>긴 형</td><td><div class="dist"><span class="d2" style="width:19.1%"></span><span class="d4" style="width:80.9%"></span></div></td><td class="n">19.1%</td></tr>
+            <tr><td>둥근형</td><td><div class="dist"><span class="d3" style="width:0.1%"></span><span class="d4" style="width:99.9%"></span></div></td><td class="was">0.1%</td></tr>
+            <tr><td>역삼각형</td><td><div class="dist"><span class="d4" style="width:100%"></span></div></td><td class="was">0.0% · 도달 불가</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </article>
+
+    <article class="flaw">
+      <div class="num">03</div>
+      <div class="body">
+        <h4>임계가 어떤 모집단으로도 보정된 적이 없다</h4>
+        <p>분기 임계를 실측 분포와 나란히 놓으면, 여러 임계가 분포 <b>바깥</b>에 있습니다.</p>
+        <div class="tw"><table>
+          <thead><tr><th>분기 변수</th><th class="n">p05 / 중앙 / p95</th><th class="n">코드 임계</th><th>결과</th></tr></thead>
+          <tbody>
+            <tr><td><code>jawRatio</code></td><td class="n">0.948 / 1.000 / 1.053</td><td class="n">0.88</td><td>항상 참 → 각진형 고정</td></tr>
+            <tr><td><code>noseWRatio</code></td><td class="n">0.230 / 0.265 / 0.300</td><td class="n">0.30 · 0.20</td><td>대부분 미달 → 높은 코 93%</td></tr>
+            <tr><td><code>mouthFaceRatio</code></td><td class="n">0.696 / 0.790 / 0.884</td><td class="n">0.95</td><td><b>전원 「작은 입」</b></td></tr>
+            <tr><td><code>tipToAlar</code></td><td class="n">−0.028 / −0.025 / −0.022</td><td class="n">+0.015</td><td><b>부호가 반대 — 영구 도달 불가</b></td></tr>
+          </tbody>
+        </table></div>
+        <p><code>mouthFaceRatio</code> 는 <b>구각폭 ÷ 동공간거리</b>입니다. 사람의 입은 동공 사이보다 좁으므로(≈0.79)
+        임계 0.95 는 모든 인간을 「작은 입」으로 만듭니다. 입술 두께 분기는 그 뒤에 있어 <b>영영 도달하지 않았습니다.</b></p>
+        <p>「매부리코」는 더 확정적입니다. <code>canonical_face_model.obj</code> 의 실제 좌표에서
+        코끝(LM1)은 그 아래 점(LM2)보다 항상 위에 있으므로 <code>ai[1].y − ai[2].y</code> 는 <b>언제나 음수</b>입니다.
+        60,000건 표본에서 <b>0건</b> 발생했습니다.</p>
+        <p>점수도 같은 문제를 겪었습니다 — 입 점수는 <b>고유값이 1개</b>(86점, 100%),
+        눈 점수는 2개(90점이 98.6%), 얼굴형 점수는 상수 네 개 중 82점이 97.7%였습니다.</p>
+      </div>
+    </article>
+  </div>
+
+  <div class="note">
+    <p><strong>분산 가정에 견고한가?</strong> 합성 모집단의 중심값은 canonical 모델과 표준 안면계측에서 잡았지만
+    <b>분산은 미지</b>입니다. 그래서 CV 를 3%에서 25%까지 흔들어 확인했습니다.</p>
+<pre>CV      얼굴형 top1        눈 top1         코 top1         입 top1        4축조합
+ 3%     각진형 100.00%     큰눈 98.91%     높은코 100.00%  작은입 100.00%    3/256
+ 8%     각진형  98.08%     큰눈 82.53%     높은코  94.94%  작은입  99.78%   15/256
+18%     각진형  76.74%     큰눈 56.69%     높은코  72.09%  작은입  89.83%   87/256
+25%     각진형  64.35%     큰눈 46.42%     높은코  61.85%  작은입 <b>83.61%</b>  125/256</pre>
+    <p>비현실적으로 큰 CV 25%에서도 입의 <b>83.6%</b>가 「작은 입」입니다. 결론은 가정에 흔들리지 않습니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>관상 수리 — 무엇을 어떻게 고쳤나</h2>
+  <p class="sub">고정 임계를 없애고 <b>참조 분위수</b>로 바꿨습니다. 이미 재고 있으면서 분류에 쓰지 않던 십이궁·오관 계측 12축을 분류축으로 올렸습니다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th style="width:34%">지표</th><th class="n">현행</th><th class="n">v786</th></tr></thead>
+    <tbody>
+      <tr><td><b>두 사용자 4축 전부 동일 확률</b></td><td class="was">26.14%</td><td class="now">0.63%</td></tr>
+      <tr><td>4축 조합 고유 수</td><td class="was">46종</td><td class="now">256 / 256</td></tr>
+      <tr><td>정규화 엔트로피 (max 8 bit)</td><td class="was">2.58 bit</td><td class="now">7.59 bit</td></tr>
+      <tr><td>얼굴형 분포</td><td class="was">80.7 / 19.1 / 0.1 / 0.0</td><td class="now">28.6 / 25.1 / 24.2 / 22.2</td></tr>
+      <tr><td>눈 분포</td><td class="was">46.8 / 34.4 / 10.4 / 8.4</td><td class="now">34.7 / 22.9 / 21.7 / 20.6</td></tr>
+      <tr><td>코 분포 (매부리코 포함)</td><td class="was">93.4 / 6.2 / 0.4 / <b>0</b></td><td class="now">49.3 / 31.5 / 12.5 / 6.6</td></tr>
+      <tr><td>입 분포</td><td class="was">98.8 / 1.2 / <b>2종 미도달</b></td><td class="now">27.6 / 24.3 / 24.1 / 24.0</td></tr>
+      <tr><td>종합점수 폭 · 표준편차</td><td class="was">77~95 · SD 2.41</td><td class="now">64~93 · SD 4.42</td></tr>
+      <tr><td><b>사진 비율 불변성</b></td><td class="was">0.18%</td><td class="now">100.00%</td></tr>
+      <tr><td>24축 계측 시그니처</td><td class="was">없음</td><td class="now">20,000건 전건 유일</td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="padding-left:0;margin-top:10px">평가 20,000건 · CV 5·8·12% × 사진비 0.75~1.778 · 캘리브레이션과 독립 시드.</p>
+</section>
+
+<section>
+  <h2>그런데 관상학이 실제로 반영돼 있나</h2>
+  <p class="sub">분포를 고른 것은 계측기를 고친 것이지 교리를 세운 것이 아닙니다. 원문 트랙을 열어 실제로 재봤습니다.</p>
+
+  <div class="note stop">
+    <p><strong>관상은 IP 파이프라인을 하나도 통과하지 않았습니다.</strong></p>
+    <div class="tw" style="margin:12px 0 0"><table>
+      <thead><tr><th>도메인</th><th class="n">등재 판본</th><th class="n">doctrine</th><th class="n">규칙 JSON</th><th class="n">원문 직독</th></tr></thead>
+      <tbody>
+        <tr><td>사주</td><td class="n">6종 (PD 확정)</td><td class="n">있음</td><td class="n">7개</td><td class="n">영인본 7회차</td></tr>
+        <tr><td>작명</td><td class="n">3종</td><td class="n">있음</td><td class="n">5개</td><td class="n">원획 20,992자</td></tr>
+        <tr><td><b>관상</b></td><td class="was">0종</td><td class="was">0건</td><td class="was">없음</td><td class="was">0회</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-top:10px">코드의 「각진형 = 강한 의지와 추진력 · 82점」은 <b>출처가 없습니다.</b>
+    프롬프트도 "전통 관상학의 일반적 관점"이라는 말이 8곳에 있을 뿐입니다.</p>
+  </div>
+
+  <h3>파이프라인 관통 시운전 — 태청신감 42규칙</h3>
+  <p class="sub" style="padding-left:0">문헌 16종을 조사해 정본 1순위를 <b>相理衡眞 도광13년(1833) 각본</b>으로 잡았지만 영인이 아직입니다.
+  그래서 확보비용 0인 <b>太淸神鑑</b>(위키문헌 전사, 영인 없어 정본 불가)으로 경로가 뚫리는지만 먼저 시험했습니다.
+  규칙 42건을 인용과 함께 등재하고 GT 26케이스로 <b>80/80</b> 통과, 변이 시험으로 게이트가 실제로 무는 것까지 확인했습니다.</p>
+
+  <div class="strip" style="margin-top:20px">
+    <div class="stat">
+      <p class="k">원문이 <b>수치 임계</b>를 준 문장</p>
+      <div class="pair"><span class="now" style="color:var(--bad)">0건 / 42</span></div>
+    </div>
+    <div class="stat">
+      <p class="k">우리가 모집단을 정해야 하는 규칙 <span class="chip acc">POPULATION</span></p>
+      <div class="pair"><span class="now" style="color:var(--warn)">25건 · 60%</span></div>
+    </div>
+    <div class="stat">
+      <p class="k">랜드마크로 <b>아예 잴 수 없는</b> 규칙</p>
+      <div class="pair"><span class="now" style="color:var(--bad)">10건 · 24%</span></div>
+    </div>
+    <div class="stat">
+      <p class="k">실제로 판정 가능 <span class="chip acc">MEASURABLE + 축</span></p>
+      <div class="pair"><span class="now" style="color:var(--bad)">3건 · 7%</span></div>
+    </div>
+  </div>
+
+  <p class="sub" style="padding-left:0;margin-top:16px">판정 가능한 3건은 <code>三停皆稱</code>(삼정 균등) · <code>眉過眼者富</code>(눈썹이 눈보다 김) · <code>短不覆眼者乏財</code>뿐입니다.
+  원문이 기준을 주는 7건도 <b>수치가 아니라 비교 대상</b>을 줍니다 — 「三停<b>皆稱</b>」(서로), 「眉<b>過眼</b>」(눈보다), 「五嶽<b>相朝</b>」(서로).
+  「淸而秀 豐而隆(맑고 빼어나며 도톰하고 솟았다)」에 컷오프를 붙이는 일은 원문이 하지 않습니다. <b>우리가 합니다.</b></p>
+
+  <h3>정본을 구해도 안 풀리는 것</h3>
+  <div class="tw"><table>
+    <thead><tr><th style="width:22%">절단 지점</th><th style="width:56%">실태</th><th class="n">정본으로 해소?</th></tr></thead>
+    <tbody>
+      <tr><td><b>귀 랜드마크 0개</b></td><td>MediaPipe FaceMesh 468점에 <b>귀 윤곽이 없습니다.</b> 그런데 귀는 오관의 하나(採聽官)입니다. 관련 규칙 4건 전부 판정 불가</td><td class="was">아니오</td></tr>
+      <tr><td><b>색·기색 축 0개</b></td><td>「淸·白如玉·黑如漆·光·瑩」. 太淸神鑑에 <b>「氣色」이 36회</b> 나오는데 우리는 색을 한 축도 재지 않습니다</td><td class="was">아니오</td></tr>
+      <tr><td><b>텍스처 축 0개</b></td><td>주름결·점·흉터 — <b>원문 상법에서 가장 빈번한 조건 유형</b></td><td class="was">아니오</td></tr>
+      <tr><td><b>차원 불일치</b></td><td>「天庭·地角 上下相應」은 원문이 비교 대상을 다 줬는데, <code>foreheadRatio</code>는 폭 기준이고 <code>chin</code>은 길이 기준이라 <b>비교가 성립하지 않습니다</b></td><td class="was">아니오</td></tr>
+      <tr><td>모집단이 TIER-C</td><td>POPULATION 25건인데 모집단이 합성 60,000건뿐 → 분위수 랭크는 내지만 「豐隆」의 참·거짓은 못 냅니다</td><td class="was">아니오</td></tr>
+      <tr><td>집일(輯佚) 결락</td><td>太淸神鑑 권5에 <b>論鼻部·論耳部·論口部가 없습니다</b>(전수 검색 0건)</td><td class="now">예</td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="padding-left:0;margin-top:12px"><b>정본 확보는 인용의 질과 커버리지를 풀지, 계측 가능성을 풀지 않습니다.</b>
+  후자는 ① 실사진 모집단 ② 귀·색·텍스처 센서 ③ 차원이 맞는 비교축 설계 — 문헌 트랙과 별개의 작업입니다.</p>
+
+  <h3>원문이 우리 구현을 반증한 항목</h3>
+  <div class="note stop">
+<pre>太淸神鑑 六極 「眼雖小 秀且長 … 反爲富貴」
+<span class="c">        (눈이 작아도 빼어나고 길면 오히려 부귀하다)</span></pre>
+    <p><b>크기 하나로 길흉을 가르는 현 구현은 원문에 정면으로 어긋납니다.</b>
+    규칙 R032(八小)가 크기 규칙 3건을 무력화하도록 등재했고, 프롬프트에도 못박았습니다.</p>
+    <p style="margin-top:8px">그리고 <code>R006 醜惡者㐫</code>은 <b>원문에 정의가 없습니다.</b>
+    이걸 조작적으로 정의하는 순간 그것은 원문 인용이 아니라 <b>우리가 사용자 얼굴을 추하다고 판정하는 코드</b>가 됩니다.
+    판정 불가로 두고 노출을 차단했습니다.</p>
+  </div>
+
+  <h3>착수 결과 — 정본 확보와 센서 신설</h3>
+  <p class="sub" style="padding-left:0"><b>相理衡眞 도광13년(1833) 원각본</b>을 Commons에서 열람해 4편 27면을 직독했습니다
+  (한자 1,435자, 판독 불가 30자 = 2.1%). 自序의 간기와 卷四 교열자가 전부 저자 인척인 것을 판면으로 확인해
+  <b>20세기 교감층이 없음</b>을 증명했고, 이로써 법무 리스크(1925년 秦愼安 교감본)를 회피했습니다.
+  <b>첫 정식 등재본</b>으로 올렸습니다. 파일 자체는 세 경로 모두 막혀 받지 못해 <code>sha256</code>은 null로 남겼습니다.</p>
+
+  <div class="note stop">
+    <p><strong>원문이 뒤집은 것 — 火形 배당이 상하가 거꾸로였습니다</strong></p>
+<pre>相理衡眞 卷六 五行形相論
+  「其形銳而<b>下豐</b>」 · 「<b>上尖</b>如火之炎」
+<span class="c">   → 火形은 위가 뾰족하고 아래가 풍만한 형</span>
+<span class="c">   → 그런데 코드는 火形을 역삼각형(이마 넓고 턱 좁음)에 배당하고 있었다 — 정반대</span></pre>
+    <p>같은 문단의 서로 다른 두 어구가 같은 결론을 지지합니다. 압축 배당 「金方木瘦水圓火尖土厚」만 인용해
+    역삼각형을 정당화하는 것은 <b>원문을 절반만 읽은 것</b>입니다.</p>
+    <p style="margin-top:8px">오행 의미 문구도 이 원전에서 온 것이 아니었습니다. 원문 배당은 오상입니다 —
+    <b>金為義 · 木為仁 · 水為智 · 火為禮 · 土為信</b>.</p>
+    <p style="margin-top:8px">그리고 원문은 오형 다섯 조 <b>전부에 거동 조항</b>(坐·涉·行·臥)과 색·몸통·살뼈 조건을 함께 겁니다.
+    <b>정면 사진 한 장으로 오형을 확정하는 것은 원문 절차가 아닙니다.</b>
+    단일 라벨 확정을 폐기하고 부합도 벡터 + 커버리지로 바꿨습니다.
+    土形은 판정 기준이 <b>원문에 완결돼 있는데</b> 우리 축에 걸리는 게 「肥」 하나뿐입니다 —
+    코드가 土形을 못 내는 것은 <b>원문 부재가 아니라 센서 부재</b>였습니다.</p>
+  </div>
+
+  <h4 style="font-family:var(--disp);font-size:15px;margin:26px 0 8px">신설 센서 — 불변성이 합격선입니다</h4>
+  <p class="sub" style="padding-left:0">사진 비율이 얼굴형을 결정하던 실패를 색과 텍스처에서 반복하지 않는 것이 설계 기준이었습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th style="width:20%">센서</th><th class="n">축</th><th>불변성 검사</th><th class="n">정규화 전</th><th class="n">정규화 후</th></tr></thead>
+    <tbody>
+      <tr><td><b>색·기색</b></td><td class="n">13</td><td>밝기 ±40% · 색온도 · 감마 · 그라디언트 · 채도</td><td class="was">64.0%</td><td class="now">7.1% (9.1× 개선)</td></tr>
+      <tr><td><b>텍스처</b> 방향축</td><td class="n">14</td><td>해상도 320~1280 · 흐림 · JPEG 열화</td><td class="was">19.4%</td><td class="now">2.6% (7.5× 개선)</td></tr>
+      <tr><td><b>텍스처</b> 세기축</td><td class="n">—</td><td>강한 흐림(σ3.2)</td><td class="was">57.5%</td><td class="was">31.3% — <b>목표 미달</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="padding-left:0">세기축 미달은 <b>원리적 한계</b>입니다 — 주름(얼굴폭 0.6%)과 피부 미세결(1.2%)은 공간 스케일이 달라
+  두 스케일의 에너지 비가 초점에 불변일 수 없습니다. 감추지 않고 검사로 못박고, 초점 게이트로 작동 범위를 막고,
+  승격은 세기 절대값이 아니라 방향·개수·형상 축에 기대게 했습니다.
+  색 센서의 랜드마크 좌표는 추측하지 않고 MediaPipe 패킹 자산을 파싱해 canonical 468정점을 실측했습니다.</p>
+
+  <h4 style="font-family:var(--disp);font-size:15px;margin:26px 0 8px">통합 재판정 — 이번 착수의 성공 지표</h4>
+  <div class="tw"><table>
+    <thead><tr><th>등급</th><th class="n">착수 전</th><th class="n">착수 후</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td>MEASURABLE</td><td class="n">5</td><td class="n">5</td><td>원문이 컷오프를 주지 않아 오르지 않습니다 — 실사진 모집단이 있어야 합니다</td></tr>
+      <tr><td>PARTIAL</td><td class="n">45</td><td class="now">62</td><td>축이 생겨 부분 판정이 가능해진 것</td></tr>
+      <tr><td><b>UNMEASURABLE</b></td><td class="was">50</td><td class="now">33</td><td><b>17건 승격</b> · 축이 없던 규칙 21건에 축이 생김</td></tr>
+      <tr><td colspan="2"><b>「무엇이든 잴 수 있는 것」</b></td><td class="now">50% → 67%</td><td>규칙 100건 기준</td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="padding-left:0"><b>억지 승격을 막는 검사를 넣었습니다</b> — 귀 규칙 10건이 승격되지 않았는지,
+  「清」 규칙 11건이 승격되지 않았는지, MEASURABLE로 오른 규칙의 근거가 TEXT인지를 게이트가 강제합니다.
+  남은 33건은 귀 10 · 몸통 8 · 거동 6 · 凹陷(깊이) 4 · 清秀 4 · 氣 3 · 길흉 형용 1로,
+  이 중 몸통·거동·清秀·길흉 형용은 <b>얼굴 사진의 범위 밖이라 해소 경로가 없습니다.</b></p>
+
+  <h3>사용자에게 하던 거짓 표기 3건 — 정정했습니다</h3>
+  <div class="tw"><table>
+    <thead><tr><th style="width:36%">종전 문구</th><th style="width:26%">실태</th><th>정정</th></tr></thead>
+    <tbody>
+      <tr><td>「눈·코·입을 포함한 <b>십이궁</b>을 살펴」</td><td class="was">실제 계측 8궁</td><td class="now">「8개 부위를 재고… 잴 수 없는 항목(귀·기색·주름결)은 판정하지 않습니다」</td></tr>
+      <tr><td>「木·火·土·金·水 <b>다섯 가지</b>로 분류」</td><td class="was">코드는 4형 (土形 없음)</td><td class="now">「4형만 판별하며 土形은 아직 판별하지 않습니다」</td></tr>
+      <tr><td>火形 = 역삼각형 배당</td><td class="was">원문 근거 미확인</td><td class="now">「배당 기준은 원문 대조 전입니다」</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>v786-a 가 교리를 지웠던 지점 — 되돌렸습니다</h3>
+  <p class="sub" style="padding-left:0">관상 축은 두 종류인데, 앞선 패치가 이걸 구분하지 않았습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="n">종류</th><th style="width:34%">정의</th><th>예</th><th class="n">모집단</th></tr></thead>
+    <tbody>
+      <tr><td><b>ABS</b> 자기참조</td><td>원문이 <b>기준을 스스로 준다</b></td><td>三停均等 · 左右均衡 · 五官相稱</td><td class="now">불필요</td></tr>
+      <tr><td><b>REL</b> 상대</td><td>원문이 <b>정량 기준을 주지 않는다</b></td><td>準頭豐隆 (코끝이 도톰하다)</td><td class="was">필요 — 우리 몫</td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="padding-left:0">구코드는 삼정·대칭을 절대값으로 <b>올바르게</b> 쓰고 있었는데, 다양성을 늘리려고 분위수 랭크로 덮었습니다.
+  삼정이 완벽히 고른 사람도 「상위 32%」로만 표현되고 「고르다」는 판정이 사라진 것 — <b>교리를 지운 것</b>입니다. 지금은 둘로 나눠 놓았습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>값</th><th class="n">성질</th><th class="n">실측</th><th>해석</th></tr></thead>
+    <tbody>
+      <tr><td><b>조화도(和)</b></td><td class="n">ABS 절대값</td><td class="n">62~93 · p05~p95 76~89</td><td><b>좁은 것이 정상.</b> 억지로 벌리면 그게 왜곡</td></tr>
+      <tr><td><b>특징(格)</b></td><td class="n">REL 상대 랭크</td><td class="n">고유 19,789종 · 동일 0.01%</td><td>사람을 구분하는 일은 이쪽이 맡는다</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>관상 밖에서 발견한 것</h2>
+  <p class="sub">사주와 타로 <em>조합</em>은 멀쩡했습니다. 무너진 곳은 따로 있었습니다.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th style="width:15%">기능</th><th style="width:40%">결함</th><th class="n">전</th><th class="n">후</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>토정</b> <span class="chip bad">심각</span></td>
+        <td>상괘가 <b>해당 연도만</b>으로 결정 — 같은 해 신청자 전원 동일. 게다가 태세수가 항상 짝수라 팔괘 8종 중 <b>4종이 영구 미도달</b></td>
+        <td class="was">상괘 1/8종<br>조합 18/144<br>H 0.581</td>
+        <td class="now">8/8종<br>144/144<br>H 0.972</td>
+      </tr>
+      <tr>
+        <td><b>궁합</b> <span class="chip warn">주의</span></td>
+        <td>점수 하드 clamp 로 <b>11.5%가 소실</b>(raw 16~125 → 55~99). 일지 관계는 육합·육충 2표만 조회</td>
+        <td class="was">55점이 10.63%<br>「무관」 83.70%</td>
+        <td class="now">최빈 3.53%<br>「무관」 0.00%</td>
+      </tr>
+      <tr>
+        <td><b>타로</b> <span class="chip warn">주의</span></td>
+        <td><code>sort(()=&gt;Math.random()−.5)</code> 는 균일 순열이 아님. 그리고 화면 정/역이 <b>LLM 응답값</b>을 따라감</td>
+        <td class="was">χ²/df 208.9<br>셀 편차 19.4배</td>
+        <td class="now">χ²/df 1.004<br>1.23배</td>
+      </tr>
+      <tr>
+        <td><b>데일리</b> <span class="chip bad">심각</span></td>
+        <td>사주가 없으면 결정변수가 페르소나 3 × 카테고리 5 = <b>15종</b>뿐. 사용자 식별자·시드·시각이 프롬프트에 전혀 없었음</td>
+        <td class="was">15종<br>충돌 6.44%</td>
+        <td class="now">17,280종<br>0.01%</td>
+      </tr>
+      <tr>
+        <td><b>작명</b> <span class="chip warn">주의</span></td>
+        <td>JS <code>%</code> 의 음수 반환으로 획수가 없으면 인덱스 0 → <b>한글 전용 스타일 전 후보가</b> 「총 0획 · 반길반흉 · ?」로 동일</td>
+        <td class="was">전 후보 동일</td>
+        <td class="now">판정 불가 명시</td>
+      </tr>
+      <tr>
+        <td><b>엔진 결속</b> <span class="chip bad">심각</span></td>
+        <td>사실 산출기가 4기둥 3키를 요구하는데 무료 4상품 ctx 에 그 키가 없어 <b>항상 null</b> — 출력 100%가 LLM 자유생성</td>
+        <td class="was">확정 필드 0개</td>
+        <td class="now">경로 개통</td>
+      </tr>
+      <tr>
+        <td>사주 <span class="chip good">양호</span></td>
+        <td>4기둥 43,680건 전건 유일 · 오행 674종 · 십성 1,100종</td>
+        <td class="n" colspan="2">붕괴 없음 — 다시 재지 마십시오</td>
+      </tr>
+      <tr>
+        <td>타로 조합 <span class="chip good">양호</span></td>
+        <td>카드 <em>조합</em> 자체는 1540/1540 도달, 두 사용자 충돌 0.012%. 편향은 위치별 빈도에만 있었음</td>
+        <td class="n" colspan="2">붕괴 없음 — 다시 재지 마십시오</td>
+      </tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>아직 사실이 아닌 것</h2>
+  <p class="sub">고친 범위를 정확히 그어 둡니다. 이 선을 넘어서 인용하면 다음 세션이 잘못된 전제 위에서 일하게 됩니다.</p>
+
+  <div class="note stop">
+    <p><strong>관상 참조분포는 합성 유래(TIER-C)입니다.</strong></p>
+    <p>「각진형」은 이제 <b>“하악각폭이 상위 38%”</b>라는 뜻이지 <b>“실제로 각진 얼굴”</b>이 아닙니다.
+    다양성은 해결됐지만 <b>절대적 의미는 아직 보정되지 않았습니다.</b> 실사진 200~500장의 계측값이 필요합니다.</p>
+    <p>그런데 얼굴 계측값은 <b>생체인식정보</b>입니다 — 손금 트랙에서 이미 확정한 것과 같은 문제입니다.
+    라이선스(CC0 등)는 동의가 아니고, 공개 얼굴 데이터셋에도 <b>상업 판정용 동의는 없습니다.</b>
+    손금 원격수집 패킷과 같은 동의 절차로 모으거나, TIER-C 임을 화면에 명시해야 합니다.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>LLM 출력 문자열 자체의 유사도는 측정하지 않았습니다.</strong></p>
+    <p>이번에 고친 것은 <b>프롬프트 입력의 다양성</b>입니다. 모델이 그 씨앗을 실제 문체에 반영하는지는
+    type 별 서로 다른 입력 30건 × 3회 호출 후 임베딩 코사인 유사도를 재는 <b>별도 실험</b>이 필요합니다.
+    참고로 <code>temperature</code>·<code>top_p</code>·<code>seed</code>·캐싱이 전부 미설정이라
+    <b>문자열 자체는 호출마다 다릅니다</b> — 「비슷함」은 캐시 탓이 아닙니다.</p>
+  </div>
+
+  <div class="note stop">
+    <p><strong>게이트는 이번 작업 이전부터 침식돼 있습니다.</strong> 기준선 <code>fail=66</code>.</p>
+    <ul>
+      <li><code>eval_metamorphic_*</code> 16종 · <code>mutation_kill_*</code> 13종 등 <b>eval 파일 39종이 소멸</b> — 핀 표에는 있는데 파일이 없습니다</li>
+      <li><code>eval/_failclosed.js</code> 부재로 응답 스크럽·인용 가드 <b>2종이 실행 불가</b></li>
+      <li>패키지 <code>engine/</code> 정본 부재</li>
+    </ul>
+    <p style="margin-top:8px">이번에 <code>jsdom</code> 을 설치해 ctx 게이트 2종(34검사)이 <b>실제로 판정</b>하게 됐습니다.
+    나머지는 다음 세션 과제입니다. <b><code>regen_gate_pins.js</code> 를 무심코 돌리면 이 침식이 통째로 지워집니다.</b></p>
+  </div>
+</section>
+
+<section>
+  <h2>다음 세션이 할 일</h2>
+  <p class="sub">순서대로입니다. A 와 D 가 최우선입니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="n">과제</th><th style="width:52%">내용</th><th>가능 시점</th></tr></thead>
+    <tbody>
+      <tr><td class="n"><b>P-786-F</b> <span class="chip acc">최우선</span></td><td><b>相理衡眞 도광13년 각본 확보 → 첫 정식 등재.</b> 권4 오관총론 · 권2 십이궁총결 · 권6 오행형상론(土形·火形 검증) · 권2 변와설(이설 기각 근거). doctrine priority 1 은 이 책을 위해 비워 뒀습니다</td><td>영인 확보 후</td></tr>
+      <tr><td class="n"><b>P-786-G</b> <span class="chip acc">최우선</span></td><td><b>계측 가능성 확장</b> — 귀 센서 · 색/기색 축(조명 정규화 선결) · 텍스처 축 · 차원 정합 비교축. <b>관상 커버리지를 올리는 유일한 길이고, 문헌 트랙과 별개입니다</b></td><td>지금 착수 가능</td></tr>
+      <tr><td class="n"><b>P-786-A</b> <span class="chip acc">최우선</span></td><td>관상 참조분포 <b>실사진 캘리브레이션</b> — POPULATION 25건이 여기 걸려 있습니다. 생체인식정보 동의 절차 필요</td><td>동의 패킷 확보 후</td></tr>
+      <tr><td class="n"><b>P-786-D</b> <span class="chip acc">최우선</span></td><td>게이트 침식 복구 — eval 39종 + <code>_failclosed.js</code> 를 git 이력에서 복원, 불가하면 <b>명시적으로 제외하고 기록</b></td><td>지금 가능</td></tr>
+      <tr><td class="n">P-786-B</td><td><code>DREAM_KEYS</code> 12항목 가동 — 선언만 되고 참조 0건. 행운숫자·길흉이 지금은 전부 LLM 임의값</td><td>지금 가능</td></tr>
+      <tr><td class="n">P-786-C</td><td>데일리 <code>variance</code> 전용 ctx 키 개설 — 지금은 <code>personaTone</code> 반송이라 자리가 틀림</td><td>지금 가능</td></tr>
+      <tr><td class="n">P-786-E</td><td>LLM 출력 유사도 실측 (30건 × 3회 × 임베딩)</td><td>지금 가능</td></tr>
+      <tr><td class="n">검토</td><td><code>effort:'low'</code> 를 작명·꿈에 한해 medium A/B · <code>temperature</code> 명시 여부 · compat 에 주체 구분 후 엔진 사실 결합</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>재현</h2>
+  <p class="sub">모든 수치는 아래 명령으로 다시 나옵니다. 관상 코어를 고쳤으면 <code>p03</code> 재실행이 필수입니다.</p>
+<pre>cd "D:\AI ChunWoon"
+
+<span class="c"># 현행 분류기 진단 — 붕괴 실측 · 임계 대비 분포 · CV sweep · 종횡비 sweep</span>
+node _v786_diag/p01_face_diversity.js --n 20000
+<span class="c">#   기대: 4축 동일확률 60.27%(정사각) · 각진형 97.67% · 작은입 99.76% · 매부리코 0건</span>
+
+<span class="c"># v786 재빌드 + 전/후 비교  ★코어 정본은 _v786_diag/face_core_v786.js 입니다</span>
+node _v786_diag/p03_build_and_eval.js
+<span class="c">#   기대: 26.14% → 0.63% · 조합 256/256 · 종횡비 불변성 0.18% → 100.00%</span>
+
+<span class="c"># 회귀</span>
+node eval/eval_ctx_birth_keys.js      <span class="c"># 24/24</span>
+node eval/eval_tojeong_guard.js       <span class="c"># 21/21</span>
+node eval/eval_ctxguard.js            <span class="c"># 58/58</span>
+node eval/eval_compat_guard.js        <span class="c"># 46/46</span>
+node eval/eval_naming_tarot_guard.js  <span class="c"># 57/57</span>
+node eval/eval_dream_daily_guard.js   <span class="c"># 48/48</span></pre>
+  <p class="sub" style="padding-left:0"><code>npm i -D jsdom</code> 이 필수입니다 — 없으면 ctx 게이트 2종이 「판정 불가 = FAIL」이 됩니다.</p>
+</section>
+
+<footer>
+  정본 인수인계 · 천운_인수인계_v786_다양성붕괴_진단수리_2026-09-05.md<br>
+  진단 스크립트 · _v786_diag/ · 패치 전 원본 · backup_pre_v786/
+</footer>
+
+</div>

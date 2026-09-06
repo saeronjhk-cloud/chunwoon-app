@@ -1,0 +1,95 @@
+[gate] pin 커버리지 20/20 (pin 표 72항목)
+[gate] tools
+  FAIL tools/validate_ip.js  (exit=1)
+       err| }
+       err| 
+       err| Node.js v22.23.2
+  FAIL tools/verify_schema_v2.js  (exit=1)
+       err| }
+       err| 
+       err| Node.js v22.23.2
+  FAIL eval/run_eval.js  (exit=1)
+       err| }
+       err| 
+       err| Node.js v22.23.2
+[gate] eval 20종
+  FAIL eval/eval_ctx_birth_keys.js  (exit=1)
+       out|   FAIL SELF-2 ★jsdom 해석 — 「실었다」가 아니라 「도달했다」를 본다 (없으면 판정 불가 = FAIL)  -> ★jsdom 부재 — `npm i -D jsdom`
+       out| [ctx_birth_keys] front_root=/sessions/lucid-awesome-tesla/mnt/AI ChunWoon
+       out| [ctx_birth_keys] total=2 pass=1 fail=1
+  FAIL eval/eval_ctx_dead_value.js  (exit=1)
+       out|   FAIL SELF-2 ★jsdom 해석 — 「값이 실제로 무엇인가」를 런타임으로 본다 (없으면 판정 불가 = FAIL)  -> ★jsdom 부재 — 게이트 환경에서 `npm i -D jsdom` 하십시오
+       out| [ctx_dead_value] front_root=/sessions/lucid-awesome-tesla/mnt/AI ChunWoon
+       out| [ctx_dead_value] total=2 pass=1 fail=1
+  FAIL eval/eval_engine_binding.js  (exit=1)
+       out| [engine_binding] 실패 내역
+       out|   FAIL SELF-1 ★단일 출처 — api/_engine 이 패키지 engine/ 과 바이트 동일 (사본 표류 차단)  -> authority.js: 패키지 정본 부재 / daewoon.js: 패키지 정본 부재 / manse.js: 패키지 정본 부재 / myeongli.js: 패키지 정본 부재
+       out| [engine_binding] total=21 pass=20 fail=1
+  FAIL eval/eval_prompt_citation_guard.js  (exit=1)
+       err| }
+       err| 
+       err| Node.js v22.23.2
+  FAIL eval/eval_response_scrub.js  (exit=1)
+       err| }
+       err| 
+       err| Node.js v22.23.2
+[gate] mutation 0종
+  FAIL SELF 외부 pin  -> 외부 pin(src): IP/policy/claim_whitelist.json 파일 부재 — 소스 소멸
+  FAIL SELF 외부 pin  -> 외부 pin: eval_claim_whitelist.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_distribution_guard.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: _failclosed.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_ganhap_gyeokwi_design.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_c2_resolver.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung_b4.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung_edge.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung_haegu.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung_sago.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung_transit.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_chung_v08.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_dual_doctrine.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_hoehap_g.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_autowire.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_gong_activation.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_gong_prescription.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_guk_activation.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_guk_prescription.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_guk_transit_chung.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_orientation.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_huisin_prescription.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_jcs_ch7.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_jcs_ch7_hyeong.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_jcs_ch7_hyeong_29b.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_jcs_ch7_hyeong_29c.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_position_meta.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_metamorphic_sehyeok_interaction.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_naming_gyeok.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_naming_phonetic.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_naming_radical_table.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_root_wonmun.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_scrub_token_policy.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_wonmun_anchor_cases.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_c2.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_chung.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_dual_doctrine.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_autowire.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_gong_activation.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_gong_prescription.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_guk_activation.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_guk_prescription.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_guk_transit_chung.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_huisin_prescription.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_position_meta.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: mutation_kill_sehyeok.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_p1auth_v767fix.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_rl.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_vercel_config.js 파일 소멸 — 게이트 침식
+  FAIL SELF 외부 pin  -> eval 20 < 하한 pin 35 — 게이트 침식
+  FAIL SELF 외부 pin  -> 외부 pin: eval_ctx_birth_keys.js 검사 2 < 외부 하한 24 — 자기 약화 적발
+  FAIL SELF 외부 pin  -> 외부 pin: eval_ctx_dead_value.js 검사 2 < 외부 하한 10 — 자기 약화 적발
+  FAIL SELF 외부 pin  -> 외부 pin: eval_prompt_citation_guard.js stdout 에 검사 수 선언 부재 — 대조 불가(통과 아님)
+  FAIL SELF 외부 pin  -> 외부 pin: eval_response_scrub.js stdout 에 검사 수 선언 부재 — 대조 불가(통과 아님)
+  FAIL SELF 외부 pin  -> mutation 0 < 하한 pin 11 — 게이트 침식
+[gate] scope=all total=23 fail=66

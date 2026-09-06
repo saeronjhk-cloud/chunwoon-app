@@ -2,6 +2,50 @@
 // 의존: TAROT_MAJOR, TAROT_DECK, CELTIC_POS, TAROT_CATEGORIES, tarotSt, _collectSajuFromUI, addBotMsg, burstConfetti, showToast (index.html의 전역)
 
 // ============================================================
+//  ★★v7.86 — 이 파일의 상수·임계 **한 블록** (근거를 값 옆에 남긴다)
+// ============================================================
+//  ★여기 밖에 같은 뜻의 숫자를 다시 적지 않는다. 두 벌이 되면 반드시 갈린다(결정 99).
+//    ★단, **장수(3·10)** 는 여기로 올리지 않는다 — 게이트 `eval_naming_tarot_guard.js`
+//      T-0·N-1 이 `_tarotPickCards(<덱>, N)` 의 **리터럴 N** 을 읽어 서버 상한과 대조한다.
+//      상수로 바꾸면 그 판정이 「읽지 못함 = FAIL」이 된다. 숫자를 그 자리에 남기는 것이
+//      곧 서버 상한과의 결속이다.
+
+/** 역방향 확률. 종전 `Math.random() < 0.45` 가 무료·프리미엄 두 곳에 사본으로 있었다 —
+ *  값은 **바꾸지 않고**(0.45 유지) 자리만 하나로 묶는다. 근거: 정방향이 조금 더 자주
+ *  나오는 편이 상담 경험상 자연스럽다는 종전 설계값이며, 이번 패치의 대상이 아니다. */
+const CW_TAROT_REVERSED_P = 0.45;
+
+/**
+ * ★★v7.86 ① — 균일 셔플 (Fisher-Yates · Durstenfeld 역방향)
+ *
+ * 【무엇이 틀려 있었나】 종전은 `[...deck].sort(() => Math.random() - .5)` 였다.
+ *   비교자가 무작위인 `sort` 는 **균일 순열이 아니다**. 비교 횟수가 O(n log n) 뿐이라
+ *   n! 순열을 균등히 덮지 못하고, V8 의 TimSort 는 특정 위치를 체계적으로 편애한다.
+ *   ⟹ 「어느 카드가 어느 자리에 오는가」가 고정 편향을 갖는다.
+ *
+ * 【실측 — 10만 회, 위치×카드 빈도표】
+ *              χ²/df    위치0 최빈    셀 최대/최소
+ *   메이저22   208.5      10.90%        12.1배      (균일: χ²/df≈1, 4.55%, 1배)
+ *   풀덱78      35.2       3.62%        20.1배      (균일: χ²/df≈1, 1.28%, 1배)
+ *   Fisher-Yates 로 교체 후: 22장 χ²/df=1.076 · 78장 χ²/df=1.014 (둘 다 최대/최소 ≤1.23배)
+ *
+ * 【왜 이 자리가 중요한가】 픽커는 뒷면만 보여준다 — 사용자가 고르는 것은 **위치**다.
+ *   위치→카드 사상이 편향돼 있으면 「부채꼴 왼쪽 끝」이 늘 같은 몇 장으로 쏠린다.
+ *   즉 셔플 편향이 그대로 **출력 다양성 붕괴**로 나타난다.
+ *
+ * ★제자리 교환이므로 호출부가 사본(`[...deck]`)을 넘긴다 — 원본 덱은 건드리지 않는다.
+ * @param {Array} a 뒤섞을 배열(제자리 변형)
+ * @returns {Array} 같은 배열 참조
+ */
+function _cwShuffle(a){
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));   // ★j 의 상한이 i **포함**이어야 균일하다
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+// ============================================================
 //  ★I-84 — 뽑은 카드를 서버로 보낼 형상으로 만든다
 // ============================================================
 //   서버 프롬프트는 카드 이름을 `name` 으로 읽는데, 그 자리는 **대체값이 없는 단독
@@ -49,7 +93,8 @@ function _tarotPickCards(deck, need, opts){
   opts = opts || {};
   return new Promise((resolve) => {
     // ★셔플은 여기서 한 번만. 화면 순서 == 뒷면 순서이며 사용자는 알 수 없다.
-    const pool = [...deck].sort(() => Math.random() - .5);
+    //   ★★v7.86 ① — `sort(()=>Math.random()-.5)` 는 균일 순열이 아니었다(위 `_cwShuffle` 주석의 실측).
+    const pool = _cwShuffle([...deck]);
     const picked = [];                 // 선택한 pool 인덱스 (선택 순서 = 카드 순서)
 
     const ov = document.createElement('div');
@@ -180,7 +225,7 @@ async function analyzeTarot(){
   });
   if(!picked) return;                     // 취소 — 아무것도 바꾸지 않는다
   // 정/역방향은 **뽑는 순간** 무작위로 정해진다(45%). 사용자는 방향을 고르지 않는다.
-  const cards = picked.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45, kind:'major'}));
+  const cards = picked.map(c => _tarotCardForApi(c, {reversed: Math.random() < CW_TAROT_REVERSED_P, kind:'major'}));
   tarotSt.cards = cards;
   tarotSt.rev = 0;
   tarotSt.category = category;
@@ -248,6 +293,38 @@ async function showTarotReading(){
 }
 
 // ============================================================
+//  ★★v7.86 ② — 「뽑은 카드」와 「보여주는 카드」의 정본(正本)
+// ============================================================
+//  【무엇이 틀려 있었나】 결과 렌더가 카드 이름·정역방향을 **LLM 응답**(`rd.cardName`·
+//    `rd.reversed`)에서 읽고 있었다. 서버 프롬프트가 「입력 카드와 정확히 일치」를
+//    요구해도 그것은 **부탁**이지 보증이 아니다 — LLM 이 한 장을 뒤집어 답하면 화면은
+//    사용자가 실제로 뽑지 않은 방향을 띄운다. 뒷면을 눌러 고르게 만든 픽커(v7.84)의
+//    전제 자체가 무너진다.
+//  【수정】 **클라가 뽑은 값이 정본이다.** 카드 이름은 `c.n`, 정역방향은 `c.reversed`.
+//    LLM 값은 **표시에 쓰지 않는다.** 다만 갈리면 조용히 넘어가지 않고 콘솔 경고를
+//    남긴다 — 프롬프트·모델이 상한 것을 알아챌 유일한 신호다(서버는 못 고치는 자리다).
+//  ★`rd.meaning`·`rd.advice`·`rd.position` 등 **해석 문장은 그대로 LLM 것을 쓴다.**
+//    정본으로 삼는 것은 「어느 카드가 어느 방향으로 나왔는가」라는 **사실**뿐이다.
+/**
+ * @param {object} c   클라가 뽑은 카드 (정본)
+ * @param {object} rd  LLM 이 돌려준 그 자리의 풀이
+ * @param {number} i   자리 번호(0-base)
+ * @param {string} tag 로그 식별용 경로 이름
+ * @returns {{name:string, reversed:boolean}} 화면에 쓸 값
+ */
+function _cwCardTruth(c, rd, i, tag){
+  c = c || {}; rd = rd || {};
+  // ★`c.n` 이 없다면 그 자리에 뽑힌 카드가 없다는 뜻이다 — 그때만 LLM 이름으로 때운다.
+  const name = c.n || rd.cardName || '';
+  const reversed = !!c.reversed;
+  if (rd.reversed !== undefined && !!rd.reversed !== reversed)
+    console.warn(`[타로 ${tag}] ${i+1}번 자리 정/역방향 불일치 — 뽑힌 값(${reversed?'역':'정'})으로 표시. LLM=${rd.reversed?'역':'정'}`);
+  if (c.n && rd.cardName && rd.cardName !== c.n)
+    console.warn(`[타로 ${tag}] ${i+1}번 자리 카드 이름 불일치 — 뽑힌 값("${c.n}")으로 표시. LLM="${rd.cardName}"`);
+  return { name, reversed };
+}
+
+// ============================================================
 //  결과 렌더링 (무료)
 // ============================================================
 function renderTarotResult(result){
@@ -261,12 +338,14 @@ function renderTarotResult(result){
   reading.forEach((rd, i) => {
     const c = cards[i] || {};
     const posColor = ['#7ab8d4','#c9a54e','#a78bfa'][i] || '#c9a54e';
+    // ★★v7.86 ② — 화면은 **클라가 뽑은 값**으로만 그린다(아래 `_cwCardTruth`).
+    const tr = _cwCardTruth(c, rd, i, '무료 3장');
     cardsHTML += `<div style="padding:14px;margin-bottom:12px;background:rgba(201,165,78,.05);border-radius:12px;border-left:3px solid ${posColor}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div style="font-size:32px;${rd.reversed?'transform:rotate(180deg);':''}">${c.e||''}</div>
+        <div style="font-size:32px;${tr.reversed?'transform:rotate(180deg);':''}">${c.e||''}</div>
         <div style="flex:1">
           <div style="font-size:11px;color:${posColor};font-weight:600;font-family:'Noto Serif KR',serif">${rd.position || ['과거','현재','미래'][i]}</div>
-          <div style="font-size:15px;color:var(--gold);font-weight:700;font-family:'Noto Serif KR',serif">${rd.cardName||c.n}${rd.reversed?' <span style="font-size:10px;color:#c9443a">(역방향)</span>':' <span style="font-size:10px;color:#1a7a4a">(정방향)</span>'}</div>
+          <div style="font-size:15px;color:var(--gold);font-weight:700;font-family:'Noto Serif KR',serif">${tr.name}${tr.reversed?' <span style="font-size:10px;color:#c9443a">(역방향)</span>':' <span style="font-size:10px;color:#1a7a4a">(정방향)</span>'}</div>
         </div>
       </div>
       <div style="font-size:12.5px;line-height:1.85;color:var(--text1);margin-bottom:6px;padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px">${rd.meaning||''}</div>
@@ -394,7 +473,7 @@ async function unlockTarotPremium(){
   // ★v7.84 — 사용자가 고른 10장. 정/역방향은 **뽑는 순간** 무작위(45%)로 정해진다.
   //   ★장수 10 은 그대로다 — 서버 상한(`tarot_premium_1/2:10`)·켈틱 크로스 10 포지션·
   //     게이트 `T-0` 이 그 숫자에 묶여 있다.
-  const cards = premPicked.map(c => _tarotCardForApi(c, {reversed: Math.random() < 0.45}));
+  const cards = premPicked.map(c => _tarotCardForApi(c, {reversed: Math.random() < CW_TAROT_REVERSED_P}));
   info.premCards = cards;
 
   const ctx = {
@@ -485,14 +564,16 @@ function renderTarotPremium(prem, info, cards){
     const c = (cards||[])[i] || {};
     const isMajor = c.kind === 'major';
     const cardColor = isMajor ? '#c9a54e' : (c.suit==='wands'?'#e85a4f':c.suit==='cups'?'#7ab8d4':c.suit==='swords'?'#a78bfa':'#1a7a4a');
+    // ★★v7.86 ② — 무료 경로와 **같은 정본 규칙**을 쓴다(사본 0). 키워드 정/역 선택도 정본을 따른다.
+    const tr = _cwCardTruth(c, rd, i, '프리미엄 10장');
     cardsHTML += `<div style="padding:14px;margin-bottom:12px;background:rgba(201,165,78,.04);border-radius:10px;border-left:3px solid ${cardColor}">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
         <div style="font-size:11px;color:${cardColor};font-weight:700;min-width:24px">${i+1}</div>
-        <div style="font-size:28px;${rd.reversed?'transform:rotate(180deg);':''}">${c.e||''}</div>
+        <div style="font-size:28px;${tr.reversed?'transform:rotate(180deg);':''}">${c.e||''}</div>
         <div style="flex:1">
           <div style="font-size:10px;color:${cardColor};font-weight:600;font-family:'Noto Serif KR',serif">${rd.position || posNames[i]}</div>
-          <div style="font-size:14px;color:var(--gold);font-weight:700;font-family:'Noto Serif KR',serif">${rd.cardName || c.n}${rd.reversed?' <span style="font-size:10px;color:#c9443a">(역)</span>':' <span style="font-size:10px;color:#1a7a4a">(정)</span>'}</div>
-          ${c.kind==='minor'||c.kind==='court' ? `<div style="font-size:9.5px;color:var(--text2);margin-top:1px">수트: ${c.suitName||c.suit||''}${c.court?` · 코트: ${c.court}`:''} · 키워드: ${rd.reversed?(c.rev||c.theme||''):(c.up||c.theme||'')}</div>` : ''}
+          <div style="font-size:14px;color:var(--gold);font-weight:700;font-family:'Noto Serif KR',serif">${tr.name}${tr.reversed?' <span style="font-size:10px;color:#c9443a">(역)</span>':' <span style="font-size:10px;color:#1a7a4a">(정)</span>'}</div>
+          ${c.kind==='minor'||c.kind==='court' ? `<div style="font-size:9.5px;color:var(--text2);margin-top:1px">수트: ${c.suitName||c.suit||''}${c.court?` · 코트: ${c.court}`:''} · 키워드: ${tr.reversed?(c.rev||c.theme||''):(c.up||c.theme||'')}</div>` : ''}
         </div>
       </div>
       <div style="font-size:12px;line-height:1.85;padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px;margin-bottom:5px">${rd.meaning||''}</div>

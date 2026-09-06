@@ -247,8 +247,14 @@ const WANT_C = Object.freeze({
 // ══════════════════════════════════════════════════════════════════════════
 const CLOSED_PIN = Object.freeze({
   saju: '9764ba218843b41a4b070adeade0396490885a1161d8517f9910d0b24b42cbd4',
-  compat: '0524236feecac009708f67d17b8621d4acdba143ffe26b473b2e287a3d12808a',
-  tojeong: 'cbba7035e62814d2fbcff368d0660e983fc9e4823ea9cabf22cc3c6aad400a4f',
+  // ★v786(2026-09-04) 갱신 — 다양성 붕괴 수리로 두 payload 가 **의도적으로** 바뀌었다.
+  //   compat : 점수 하드 clamp 제거(55~99 → 로지스틱 40~98) + `iljiRelation` 7종→30종 확장.
+  //   tojeong: 상괘가 연도만으로 결정되던 식을 「태세수+행년수」로 교체(팔괘 8종 중 4종이
+  //            영구 미도달이었다) + 중·하괘를 월건·일진 간지수 기반으로 승격 +
+  //            엔진 3키(yearPillar/monthPillar/dayPillar) 적재.
+  //   ★근거·실측: _v786_diag/ · 인수인계 v786 §2. 무단 변경이면 여기가 다시 붉어진다.
+  compat: '30859a894f8816e1b6c3b9d620942631b41e120347e2a1608b93cb9d652eb3b0',
+  tojeong: 'b119a0ec9d3d9eceb7fbafff9a7215b86742ec8103864a0d437e0aa64500875d',
 });
 const CLOSED_VOLATILE = Object.freeze(['currentYear', 'currentGanji']);
 function stableStr(v) {

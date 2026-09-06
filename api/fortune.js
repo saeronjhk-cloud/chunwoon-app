@@ -1027,7 +1027,10 @@ export default async function handler(req, res) {
       return false;
     };
     let cwFacts = null;
-    const cwEng = (CW_ENGINE_TYPES.indexOf(type) !== -1) ? await cwEngine() : null;
+    // ★v786 — `let` 로 바꾼 이유: 아래 CW_FACTS_ONLY_TYPES 에서 **사실 산출만** 하도록
+    //   같은 핸들에 엔진을 늦게 물린다. 가드/400 차단 경로(위쪽)는 이미 지나간 뒤이므로
+    //   그 경로의 의미는 종전과 완전히 같다.
+    let cwEng = (CW_ENGINE_TYPES.indexOf(type) !== -1) ? await cwEngine() : null;
 
     // ★v7.71 — 결정 78 이행: context 원국을 **서버가 재계산**한다.
     //   종전에는 클라이언트가 계산한 4기둥·오행·십성을 서버가 그대로 프롬프트에
@@ -1666,6 +1669,19 @@ export default async function handler(req, res) {
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
     }
 
+    // ★v786 — 엔진 확정값을 **사주 3종 밖의 1인 상품에도** 붙인다.
+    //   진단(2026-09-04): tojeong·naming·tarot·dream 은 클라 ctx 에 4기둥 3키가 없어
+    //   `computeFacts` 가 항상 null 이었고, 그 결과 무료 상품의 출력 100%가 LLM
+    //   자유생성이었다(엔진 확정 필드 0개). 3키는 index.html 에서 적재되도록 고쳤다.
+    //   ★`CW_ENGINE_TYPES` 에 넣지 않는 이유: 그 상수는 「원국 재계산 + 400 차단」의
+    //     대상이고, 아래 type 들은 ctx 형상이 달라 그 경로에 넣으면 전 요청이 400 이 된다
+    //     (v7.73 관통 #8 과 같은 재발). 여기서는 **사실 산출만** 한다 — 차단하지 않는다.
+    //   ★compat 제외: bind.js 의 사실 블록은 주체 표기가 없는 1인용이라, 2인 상품에
+    //     한 사람의 십성·대운을 실으면 「두 사람의 확정값」으로 읽힌다.
+    const CW_FACTS_ONLY_TYPES = ['tojeong', 'naming', 'tarot', 'dream'];
+    if (!cwEng && CW_FACTS_ONLY_TYPES.indexOf(type) !== -1) {
+      try { cwEng = await cwEngine(); } catch (e) { cwEng = null; }
+    }
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
 
@@ -1694,39 +1710,100 @@ export default async function handler(req, res) {
       + ' 해석 본문에는 고전 문헌의 제목·서명을 적지 마세요.'
       + ' 근거를 밝힐 때는 "전통 명리 이론에 따르면" 처럼 일반적인 표현을 쓰세요.';
 
+
+    // ★v786 — 관상 결정변수 블록. 24축 분위수 랭크를 프롬프트에 직접 싣는다.
+    //   진단 근거: 종전에는 4축 라벨만 전달돼 두 사용자가 4축 전부 같을 확률이 26%였다.
+    //   (_v786_diag/p03_build_and_eval.js 실측)
+    const CW_FACE_AXIS_KO = {
+      whRatio: '얼굴 가로세로비', jawRatio: '하악각 폭', foreheadRatio: '이마 폭',
+      eyeAspect: '눈 가로/세로', eyeSize: '눈 크기', eyeTilt: '눈꼬리 경사',
+      noseWRatio: '콧방울 폭', noseHRatio: '코 길이', noseDorsum: '콧대 볼록도',
+      mouthRatio: '입 너비', lipThickness: '입술 두께', symmetry: '좌우 대칭',
+      thirds: '삼정 균형', myungGung: '명궁(미간)', cheonI: '천이궁(관자 균형)',
+      jaNyeo: '자녀궁(와잠)', jilAek: '질액궁(산근)', jeonTaek: '전택궁(눈썹-눈)',
+      browLength: '보수관 길이', browAngle: '보수관 기울기', browThick: '보수관 두께',
+      gwanGol: '관골 돌출', inJung: '인중 길이', chin: '지각(턱)'
+    };
+    // ★v786-b — 축을 두 종류로 나눠 싣는다.
+    //   ABS(자기참조 절대축): 「三停均等」·「左右均衡」·「五官相稱」은 원문이 기준을 스스로 준다.
+    //     ⟹ 백분위로 말하면 절대 기준이 상대 순위로 바뀌어 교리가 사라진다. **절대값으로 싣는다.**
+    //   REL(상대축): 「準頭豐隆」처럼 원문이 정량 기준을 주지 않는 것.
+    //     ⟹ 비교 모집단이 있어야 판정되므로 백분위로 싣고, 그 모집단의 TIER 를 함께 밝힌다.
+    const CW_FACE_ABS_AXES = { symmetry: '좌우 균형(左右均衡)', thirds: '삼정 균등(三停均等)', cheonI: '천이궁 좌우 균형' };
+    function cwFaceAxisBlock(f) {
+      const R = f && f.ranks, M = f && f.measurements;
+      if (!R) return '';
+      const abs = [], rel = [];
+      if (M) {
+        for (const k of Object.keys(CW_FACE_ABS_AXES)) {
+          const v = M[k];
+          if (typeof v !== 'number' || !isFinite(v)) continue;
+          const p = Math.round(v * 100);
+          const band = p >= 92 ? '매우 고름' : p >= 82 ? '고른 편' : p >= 68 ? '보통' : p >= 50 ? '치우침이 있음' : '치우침이 큼';
+          abs.push(`${CW_FACE_ABS_AXES[k]} ${p}/100(${band})`);
+        }
+      }
+      for (const k of Object.keys(CW_FACE_AXIS_KO)) {
+        if (CW_FACE_ABS_AXES[k]) continue;
+        const r = R[k];
+        if (typeof r !== 'number' || !isFinite(r)) continue;
+        const p = Math.round(r * 100);
+        const band = p >= 90 ? '매우 큼/높음' : p >= 70 ? '큼/높음' : p >= 30 ? '보통' : p >= 10 ? '작음/낮음' : '매우 작음/낮음';
+        rel.push(`${CW_FACE_AXIS_KO[k]} 상위 ${100 - p}%(${band})`);
+      }
+      let out = '';
+      if (abs.length) out += '\n[균형 계측 — 절대 기준] ' + abs.join(' · ');
+      if (rel.length) out += '\n[개인 계측 백분위 — 상대 기준] ' + rel.join(' · ');
+      if (f.signature) out += `\n[계측 시그니처] ${f.signature}`;
+      return out;
+    }
+    const CW_FACE_AXIS_RULE =
+      ' 아래 계측 블록은 이 사람만의 수치입니다. 두 블록의 성질이 다르니 섞지 마세요.'
+      + ' [균형 계측 — 절대 기준]은 순위가 아니라 상태입니다. 「고르다/치우쳤다」로만 서술하고'
+      + ' 절대로 "상위 몇 %"처럼 남과 비교하지 마세요. 대부분의 사람이 비슷하게 고른 것이 정상입니다.'
+      + ' [개인 계측 백분위 — 상대 기준]은 또래 분포 대비 위치입니다. 여기서만 "상위 몇 %"를 쓰세요.'
+      + ' 해석의 모든 문장은 두 블록에서 최소 6개 축을 근거로 삼고, 상대 기준 축은 상위 10% 또는 하위 10%인 것을 우선하세요.'
+      + ' 누구에게나 해당되는 일반론(예: "노력하면 좋아집니다")은 쓰지 마세요.'
+      // ★v786-b — 원문이 우리 구현을 반증한 항목. 太淸神鑑 六極 「眼雖小秀且長…反爲富貴」:
+      //   크기 하나로 길흉을 가르는 것을 원문이 명시적으로 부정한다.
+      //   근거: _v786_diag/IP_face/rules/face/ogwan.json  R032(八小) → R028·R030·R031 overridden_by
+      + ' 크기 하나만으로 길흉을 단정하지 마세요. 전통 관상학은 작아도 빼어나고 길면 오히려 좋다고 봅니다.'
+      + ' 형태·균형·서로 걸맞음을 함께 보고 판단하세요.'
+      + ' 귀·얼굴빛·주름결은 이 앱이 계측하지 않으므로 언급하지 마세요.';
+
     if (type === 'face') {
       systemPrompt = `당신은 전통 관상학(觀相學) 해석을 돕는 AI 어시스턴트입니다. 전통 관상학의 일반적 관점을 참고합니다.
 - 한국어, 해요체
 - 얼굴형(오행), 눈(감찰관), 코(재백궁), 입(출납관) 각각 해석
 - measurements 수치를 해석에 직접 인용 (예: "가로세로비 0.82로 金形")
-- JSON 형식으로만 응답: {"shape":"얼굴형","eyes":"눈","nose":"코","mouth":"입","summary":"종합 200자+","advice":"조언"}` + JSON_FORCE;
+- JSON 형식으로만 응답: {"shape":"얼굴형","eyes":"눈","nose":"코","mouth":"입","summary":"종합 200자+","advice":"조언"}` + CW_FACE_AXIS_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mb = m ? `실측: whR:${m.whRatio?.toFixed(3)||'?'}, jawR:${m.jawRatio?.toFixed(3)||'?'}, eyeR:${m.eyeRatio?.toFixed(2)||'?'}, noseW:${((m.noseWRatio||0)*100).toFixed(1)}%, mouth:${m.mouthFaceRatio?.toFixed(3)||'?'}, sym:${((m.symmetry||0)*100).toFixed(1)}%, thirds:${((m.thirdsScore||0)*100).toFixed(1)}%` : '';
+      const mb = m ? `실측: whR:${m.whRatio?.toFixed(3)||'?'}, jawR:${m.jawRatio?.toFixed(3)||'?'}, eyeR:${m.eyeAspect?.toFixed(2)||'?'}, noseW:${((m.noseWRatio||0)*100).toFixed(1)}%, mouth:${m.mouthRatio?.toFixed(3)||'?'}, sym:${((m.symmetry||0)*100).toFixed(1)}%, thirds:${((m.thirds||0)*100).toFixed(1)}%` : '';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}`;
+      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}`;
 
     } else if (type === 'face_premium_1') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기. 수치 인용.
 반드시 아래 정확한 JSON 구조로만 응답:
 {"analysisProcess":{"features":[{"part":"string","measured":"string","standard":"string","classification":"string","confidence":number,"reasoning":"string 80자+","citation_ref":{"source_id":"등재ID|NONE"}}]},"fortuneGraph":{"decades":[{"age":"string","wealth":number,"love":number,"health":number,"keyword":"string"}],"analysis":"string 100자+","peakAge":"string","citation_ref":{"source_id":"등재ID|NONE"}}}
-features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CITATION_RULE + JSON_FORCE;
+features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
       const mStr = m ? `whR:${m.whRatio?.toFixed(3)||'?'},jawR:${m.jawRatio?.toFixed(3)||'?'},eyeR:${m.eyeRatio?.toFixed(2)||'?'},noseW:${((m.noseWRatio||0)*100).toFixed(1)}%,noseH:${((m.noseHRatio||0)*100).toFixed(1)}%,sym:${((m.symmetry||0)*100).toFixed(1)}%,thirds:${((m.thirdsScore||0)*100).toFixed(1)}%,upper:${m.upperThirdPct?.toFixed(1)||'?'}%,mid:${m.middleThirdPct?.toFixed(1)||'?'}%,lower:${m.lowerThirdPct?.toFixed(1)||'?'}%` : 'N/A';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]`;
+      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}`;
 
     } else if (type === 'face_premium_2') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기.
 반드시 아래 정확한 JSON 구조로만 응답:
 {"breakingPoint":{"weaknesses":[{"part":"string","problem":"string 60자+","solution":"string 60자+","measurement":"string","citation_ref":{"source_id":"등재ID|NONE"}}],"summary":"string 80자+"},"enemyFace":{"enemies":[{"feature":"string","reason":"string 60자+","risk":"string","citation_ref":{"source_id":"등재ID|NONE"}}],"allies":[{"feature":"string","reason":"string 60자+","benefit":"string"}],"summary":"string 80자+"}}
-weaknesses 2개, enemies 2개, allies 2개.` + CITATION_RULE + JSON_FORCE;
+weaknesses 2개, enemies 2개, allies 2개.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
       const mStr = m ? `whR:${m.whRatio?.toFixed(3)||'?'},jawR:${m.jawRatio?.toFixed(3)||'?'},noseW:${((m.noseWRatio||0)*100).toFixed(1)}%,sym:${((m.symmetry||0)*100).toFixed(1)}%,thirds:${((m.thirdsScore||0)*100).toFixed(1)}%` : 'N/A';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]`;
+      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}`;
 
     } else if (type === 'naming_company') {
       // 회사명·브랜드명 무료 — 추천 5개 + 등록 가능성 평가

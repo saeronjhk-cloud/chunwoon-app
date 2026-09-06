@@ -169,11 +169,16 @@ const CLEAN_CTX = () => ({
   zodiac: '말띠(午)', ganjiYear: '병오년',
   // ★이 값들은 **실제 index.html 이 양력 1990-05-15 · targetYear 2026 에서 만드는 값**이다.
   //   지어내면 T-7b(긍정 대조)가 붉어진다 — 실제로 붉어졌고, 그게 이 검사의 존재 이유다.
-  //   (음력 1990-4-21 · 태세수 10 → 팔괘 2번 · 월건 4 → 육괘 4번 · 일진 21%3=0 → 하괘 3번)
-  upperGua: '태(兌)☱', taeseNum: 10,
-  middleGua: '진(震)☳', wolNum: 4,
-  lowerGua: '하(下)', ilNum: 21,
-  guaCombination: '태(兌)☱ · 진(震)☳ · 하(下)'
+  //   ★v786(2026-09-04) 갱신 — 작괘식을 고쳤으므로 이 픽스처도 새 산출로 바꾼다.
+  //     양력 1990-05-15 → 월건 신사(=14) · 일진 경진(=12), 음력 1990-4-21, targetYear 2026.
+  //     행년(세는나이) 37 · 태세수 10 ⟹ 상 (10+37)%8=7 → 간(艮)☶
+  //                                   중 (47+14+4)%6=5 → 손(巽)☴
+  //                                   하 (65+12+21)%3=2 → 중(中)
+  //     ★독립 재현: node 로 index.html 의 calcTojeongGua 를 꺼내 같은 값을 확인했다.
+  upperGua: '간(艮)☶', taeseNum: 10,
+  middleGua: '손(巽)☴', wolNum: 14,
+  lowerGua: '중(中)', ilNum: 12,
+  guaCombination: '간(艮)☶ · 손(巽)☴ · 중(中)'
 });
 /** 줄 구조를 위조하려는 context — 개행·제어문자·과길이 */
 const EVIL_CTX = () => Object.assign(CLEAN_CTX(), {

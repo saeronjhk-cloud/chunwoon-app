@@ -8,7 +8,17 @@
     "start": "npx serve .",
     "deploy": "vercel --prod"
   },
-  "keywords": ["fortune", "tarot", "saju", "horoscope", "korean", "pwa"],
+  "keywords": [
+    "fortune",
+    "tarot",
+    "saju",
+    "horoscope",
+    "korean",
+    "pwa"
+  ],
   "author": "天運",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
 }

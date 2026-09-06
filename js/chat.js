@@ -1,6 +1,57 @@
 // 천운 — 데일리 한 마디 (선녀·도사·점성술사 + 사주 자동 컨텍스트)
 // 무료: 일일 1회 / 유료 회원(최근 30일 결제): 일일 3회
 
+// ════════════════════════════════════════════════════════════
+//  ★★v7.86 ③ — 데일리 한 마디 **결정변수** 상수 한 블록 (근거를 값 옆에 남긴다)
+// ════════════════════════════════════════════════════════════
+//  【무엇이 틀려 있었나 — 실측】
+//    프롬프트를 가르는 변수가 페르소나 3종 × 카테고리 5종 = **15종**뿐이었다.
+//    `window._sajuResultData` 가 없으면 서버의 `ctxBlock` 이 **빈 문자열**이 되어
+//    (api/fortune.js:2365) 사주 없는 사용자 둘의 (system,user) 프롬프트가
+//    **같은 날 6.67%(=1/15) 확률로 완전히 동일**했다. 사용자 식별자도, 시드도,
+//    요청 시각도 프롬프트에 하나도 없었다 — 다양성이 붕괴할 수밖에 없는 구조다.
+//
+//  【왜 새 ctx 키를 만들지 않는가 — 이 패치의 핵심 제약】
+//    ★서버(`api/fortune.js`)는 **이번 작업 범위 밖**이고(동시 수정 중), daily_message
+//      분기가 읽는 키는 고정돼 있다: personaName · personaTone · category ·
+//      (사주가 있을 때만) ilgan·birth·gender·dayPillar·ilganElement·hourBranch·lacking ·
+//      tarotSummary · faceSummary.
+//    ★게다가 게이트 `eval/eval_ctx_key_surface.js` K-2 는 「클라가 싣는데 서버가 안 읽는」
+//      키를 **dangling 으로 적발해 FAIL** 시킨다. ⟹ `ctx.iljin` 같은 새 키를 넣으면
+//      프롬프트에 도달하지도 못하면서 게이트만 붉어진다.
+//    ⟹ 결정변수는 **서버가 이미 읽는 `personaTone`** 에 실어 보낸다. 이 값은
+//      systemPrompt 의 `캐릭터: ${personaTone}.` 자리로 그대로 들어가는, 클라가
+//      **문안을 전적으로 소유한** 유일한 문체 지시 슬롯이다.
+//
+//  【지어내지 않는다】 세 축은 전부 **실재하는 값**이다 — 오늘의 일진(달력에서 유도),
+//    지금의 시진(시계), 그리고 이 브라우저가 스스로 만든 난수 시드의 버킷.
+//    사용자의 사주·생년월일을 **추정하지 않는다.** 산출이 불가능하면 그 축은
+//    **빈 문자열**로 빠진다(아래 각 함수의 실패 경로).
+//  ★그리고 이 값들을 **문장에 그대로 옮기지 말라**고 명시한다 — 사주 없는 사용자에게
+//    일진이 「당신의 일간」으로 둔갑하면 그것이 바로 없는 정보를 지어내는 것이다.
+
+/** 60갑자 천간·지지 (한글). ★한자를 쓰지 않는 이유: 이 문자열은 프롬프트에만 살고
+ *  화면에 안 나오며, 응답 스크럽(`api/fortune.js` SCRUB_*)의 한자 문헌명 표면과
+ *  엮일 이유가 전혀 없다. 값의 동일성은 아래 REF 로 서버(`api/_engine/manse.js`)와 묶인다. */
+const CW_ILJIN_STEMS = ['갑','을','병','정','무','기','경','신','임','계'];
+const CW_ILJIN_BRANCHES = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+/** ★일진 기준점 — `api/_engine/manse.js` 와 **같은 식·같은 기준점**이다.
+ *  1990-01-01 = 병인일 = 60갑자 idx 2 (KASI 검증 기준점). UTC 로 날 수를 세어 DST 무관.
+ *  ★검증: `node` 로 1900-01-01~2050-12-31 **전건 55,152일**을 서버 `manse.dayGanzi` 와
+ *    대조했다 — 인덱스·간지 **불일치 0**. (예: 2026-09-04 서버 辛巳 == 클라 신사) */
+const CW_ILJIN_REF_UTC = Date.UTC(1990, 0, 1);
+const CW_ILJIN_REF_IDX = 2;
+/** 12지시(시진) 라벨. 자시는 23:00~00:59 이므로 `(시+1)%24 / 2` 로 인덱스가 나온다.
+ *  ★이 경계는 이 파일 `_gatherChatContext` 의 `hourLabels`(생시 표기)와 같은 구획이다. */
+const CW_SIJIN_LABELS = ['자시','축시','인시','묘시','진시','사시','오시','미시','신시','유시','술시','해시'];
+/** 브라우저 고유 시드 저장 키. ★개인정보가 아니다 — 난수이며 이 브라우저 밖으로 나가지 않는다.
+ *  프롬프트로 나가는 것은 시드 자체가 아니라 아래 버킷 인덱스 하나뿐이다. */
+const CW_DAILY_SEED_KEY = 'cw_daily_seed';
+/** 성향 버킷 수. 32 = 프롬프트에 넣어도 「집단 라벨」로만 읽히는 크기(사용자 식별 불가:
+ *  버킷 하나에 전체 사용자의 1/32 이 들어간다)이면서, 페르소나×카테고리 15종을
+ *  480종으로 넓히기에 충분하다. 더 키우면 개인 식별성에 가까워지고, 더 줄이면 다양성이 는다. */
+const CW_DAILY_SEED_BUCKETS = 32;
+
 // ============================================================
 //  데이터
 // ============================================================
@@ -152,6 +203,112 @@ window.isPremiumActiveFor = function(productKey){
   } catch(e) { return false; }
 };
 
+// ════════════════════════════════════════════════════════════
+//  ★★v7.86 ③ — 결정변수 3축 산출 (일진 · 시진 · 성향 버킷)
+// ════════════════════════════════════════════════════════════
+
+/**
+ * 오늘(로컬 날짜)의 일진 간지.
+ * ★산출식은 서버 `api/_engine/manse.js` 의 `dayGanziIndex` 를 **그대로** 옮긴 것이다.
+ *   클라에는 「임의 날짜의 일진」을 주는 경로가 없다 — `CW_ENGINE`(index.html 이식본)이
+ *   내주는 것은 **생년월일의 사주 4기둥**이지 오늘의 일진이 아니고, index.html 은
+ *   이번 작업의 수정 대상이 아니다. ⟹ 재사용할 것이 없어 여기에 3줄을 둔다.
+ *   ★사본이 하나 생겼다는 사실을 숨기지 않는다: 값의 동일성은 손이 아니라
+ *     Node 전건 대조(1900-01-01~2050-12-31, 55,153일 · 불일치 0)로 못박았다.
+ * @returns {string} 예: '갑자' · 산출 불가면 '' (지어내지 않는다)
+ */
+function _cwTodayIljin(){
+  try {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+    if (!isFinite(y) || !isFinite(m) || !isFinite(d)) return '';
+    const days = Math.round((Date.UTC(y, m - 1, d) - CW_ILJIN_REF_UTC) / 86400000);
+    if (!isFinite(days)) return '';
+    const idx = ((CW_ILJIN_REF_IDX + days) % 60 + 60) % 60;
+    return CW_ILJIN_STEMS[idx % 10] + CW_ILJIN_BRANCHES[idx % 12];
+  } catch(e) { return ''; }
+}
+
+/**
+ * 요청 **시각**의 시진(12지시). 같은 사용자의 하루 3회 호출도 서로 갈리게 하는 축이다.
+ * @returns {string} 예: '유시' · 산출 불가면 ''
+ */
+function _cwNowSijin(){
+  try {
+    const h = new Date().getHours();
+    if (!isFinite(h)) return '';
+    return CW_SIJIN_LABELS[Math.floor(((h + 1) % 24) / 2)] || '';
+  } catch(e) { return ''; }
+}
+
+/**
+ * 이 브라우저의 고유 시드를 **버킷 인덱스**로 축약한다.
+ * ★시드 원문은 프롬프트에 넣지 않는다 — 나가는 것은 0~31 정수 하나뿐이라 서버·모델
+ *   어느 쪽도 사용자를 되짚을 수 없다(한 버킷 = 전체의 1/32).
+ * ★localStorage 를 못 쓰는 환경(사생활 보호 모드 등)에서는 **세션 한정 시드**로
+ *   물러난다 — 그 경우 새로고침마다 버킷이 바뀌지만, 다양성은 오히려 늘고 잃는 것은
+ *   「같은 사람에게 일관된 톤」뿐이다. 여기서 실패해 축을 통째로 빼는 것보다 낫다.
+ * @returns {number} 0 ~ CW_DAILY_SEED_BUCKETS-1
+ */
+let _cwSeedMemo = null;
+function _cwSeedBucket(){
+  let seed = _cwSeedMemo;
+  if (!seed) {
+    try {
+      seed = localStorage.getItem(CW_DAILY_SEED_KEY);
+      if (!seed) {
+        // ★암호학적 난수를 먼저 쓴다. 없으면 Math.random 2회로 충분한 폭을 만든다.
+        const c = (typeof crypto !== 'undefined' && crypto && crypto.getRandomValues) ? crypto : null;
+        if (c) {
+          const b = new Uint32Array(2); c.getRandomValues(b);
+          seed = b[0].toString(36) + b[1].toString(36);
+        } else {
+          seed = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        }
+        localStorage.setItem(CW_DAILY_SEED_KEY, seed);
+      }
+    } catch(e) {
+      seed = _cwSeedMemo || (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+    }
+    _cwSeedMemo = seed;
+  }
+  // FNV-1a 32bit — 시드 문자열을 버킷으로 고르게 흩는다(암호용이 아니라 분산용이다).
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h % CW_DAILY_SEED_BUCKETS;
+}
+
+/**
+ * ★★세 축을 **서버가 이미 읽는 `personaTone`** 에 실을 문자열로 만든다.
+ *   서버는 이 값을 systemPrompt 의 `캐릭터: ${personaTone}.` 자리에 그대로 보간한다
+ *   (api/fortune.js:2342). 새 ctx 키를 만들지 않는 이유는 파일 상단 상수 블록 참조.
+ * ★산출 못 한 축은 **문장에서 빠진다**(빈 문자열) — 값을 지어내 채우지 않는다.
+ * ★세 축을 「사용자의 사주」로 오독하지 못하도록 **공통 정보임을 명시**하고
+ *   문장에 옮기지 말라고 지시한다. 이것이 없으면 사주 없는 사용자에게
+ *   일진이 「당신의 일간」으로 둔갑할 수 있다.
+ * @returns {string} personaTone 뒤에 붙일 접미 문자열 (붙일 것이 없으면 '')
+ */
+function _cwDailyVariance(){
+  const parts = [];
+  const iljin = _cwTodayIljin();
+  if (iljin) parts.push('오늘 일진 ' + iljin + '일');
+  const sijin = _cwNowSijin();
+  if (sijin) parts.push('지금 ' + sijin);
+  parts.push('성향 버킷 ' + _cwSeedBucket() + '/' + CW_DAILY_SEED_BUCKETS);
+  // ★4번째 축 — 오늘 **몇 번째** 요청인가(유료 회원은 하루 3회다). 시진은 2시간 구획이라
+  //   연달아 두 번 받으면 세 축이 전부 같아진다 — 같은 사람이 같은 답을 받는 그 경로를
+  //   이 축이 닫는다. 값은 이미 `_getDailyCount` 가 세고 있던 것이라 새로 만든 정보가 아니다.
+  try { parts.push('오늘 ' + (_getDailyCount() + 1) + '번째 청'); } catch(e) {}
+  if (!parts.length) return '';
+  return ' · 【오늘의 변주 씨앗】' + parts.join(' · ') +
+    '. 이 값들은 사용자의 사주가 아니라 오늘·지금의 공통 정보와 무작위 버킷이며, ' +
+    '어조·비유·소재·시작 문장을 남과 다르게 고르는 씨앗으로만 쓰십시오. ' +
+    '값이나 숫자를 답변 문장에 그대로 옮기지 말고, 사용자 개인의 사주로 해석하지 마십시오.';
+}
+
 // ============================================================
 //  컨텍스트 수집 (사주·관상·타로·꿈·궁합·토정)
 // ============================================================
@@ -288,9 +445,12 @@ async function fetchDailyMessage(category){
   }
   const persona = CHAT_PERSONAS.find(function(p){return p.k === chatPersona;}) || CHAT_PERSONAS[0];
   const ctxData = _gatherChatContext();
+  // ★★v7.86 ③ — 결정변수 3축을 `personaTone` 에 **덧붙인다**(새 키를 만들지 않는다).
+  //   ★사주가 있는 사용자도 동일하다 — 기존 `ctxData`(=`ctxBlock` 재료)는 그대로 두고
+  //     이 축을 **추가**만 한다. 사주 유무로 코드 경로가 갈리지 않는다.
   const ctx = Object.assign({}, ctxData, {
     personaName: persona.n,
-    personaTone: persona.tone,
+    personaTone: persona.tone + _cwDailyVariance(),
     category: (DAILY_CATEGORIES.find(function(x){return x.k === category;}) || {n:'전반'}).n
   });
   _showLoading(category);

@@ -338,9 +338,17 @@ const HS_FULL = Object.freeze(['갑(甲)', '을(乙)', '병(丙)', '정(丁)', '
 const EB_FULL = Object.freeze(['자(子)', '축(丑)', '인(寅)', '묘(卯)', '진(辰)', '사(巳)', '오(午)', '미(未)', '신(申)', '유(酉)', '술(戌)', '해(亥)']);
 const GENDER_NAMES = Object.freeze(['남성', '여성']);
 
-/** 자동 산출 점수의 정의역 — index.html `compareCompatibility`: `Math.min(99, Math.max(55, …))`. */
-const COMPAT_SCORE_MIN = 55;
-const COMPAT_SCORE_MAX = 99;
+/**
+ * 자동 산출 점수의 정의역.
+ * ★★v7.86 ② — 종전 `55~99` 는 클라의 **하드 clamp**(`Math.min(99,Math.max(55,…))`)를
+ *   그대로 옮긴 값이었다. 그 clamp 는 300,000쌍 실측에서 하한 9.25% + 상한 2.28% 를
+ *   두 값에 뭉치게 해 55점 하나가 전체의 10.63% 였고, 그래서 **삭제**했다.
+ *   클라는 이제 로지스틱으로 `40~98` 에 사상한다(`COMPAT_SCORE` 상수 블록).
+ *   ⟹ 여기 정의역도 **같이** 옮긴다. 안 옮기면 서버가 40~54 를 정의역 밖으로 보고
+ *     `autoScore` 를 통째로 폐기해 하위 20% 사용자의 프롬프트에서 점수가 사라진다.
+ */
+const COMPAT_SCORE_MIN = 40;
+const COMPAT_SCORE_MAX = 98;
 /** 합충 목록의 최대 항목 수 — 4기둥 × 4기둥 = 16. */
 const COMPAT_LIST_MAX_ITEMS = 16;
 
@@ -373,10 +381,28 @@ const ILGAN_RELATIONS = (() => {
   }
   return s;
 })();
-/** 일지 관계 — 전 7종. */
+/**
+ * 일지 관계 어휘.
+ * ★★v7.86 ② — 종전에는 **7종**(무관 · 육충 · 육합×5)뿐이었고, 클라도 같은 2표만 봐서
+ *   300,000쌍의 **83.70% 가 `무관`** 이었다(궁합의 가장 중요한 축이 사실상 상수).
+ *   클라 `analyzeIljiRelation` 이 삼합(반합)·삼형·무례지형·원진·육해·파·동일지지·
+ *   동일오행·지지 오행 상생상극까지 넓혔으므로(실측 후 `무관` 0.00% · 고유 30종),
+ *   **이 화이트리스트도 같이 넓힌다.** 안 넓히면 서버가 새 라벨을 전부 `무관` 으로
+ *   되돌려(무해화 규약) 수정이 프롬프트에서는 **없던 일이 된다**.
+ * ★라벨은 클라 생성식의 전개다 — 글자 하나라도 다르면 그 라벨만 조용히 `무관` 이 된다.
+ */
 const ILJI_RELATIONS = (() => {
-  const s = new Set(['무관', '육충(六沖)']);
-  for (const e of EL_NAMES) s.add('육합(六合) → ' + e);
+  const s = new Set(['무관', '육충(六沖)', '삼형(三刑)', '무례지형(無禮之刑)',
+    '원진(怨嗔)', '육해(六害)', '파(破)', '동일(同氣)']);
+  for (const e of EL_NAMES) {
+    s.add('육합(六合) → ' + e);
+    s.add('반합(半合) → ' + e);
+    s.add('동기(同氣) → ' + e);
+  }
+  for (const a of EL_NAMES) for (const b of EL_NAMES) {
+    s.add('상생: ' + a + '이 ' + b + '을 도움');
+    s.add('상극: ' + a + '이 ' + b + '을 극함');
+  }
   return s;
 })();
 
@@ -798,12 +824,66 @@ const TJ_ZODIAC = [
   { n: '용', h: '辰' }, { n: '뱀', h: '巳' }, { n: '말', h: '午' }, { n: '양', h: '未' },
   { n: '원숭이', h: '申' }, { n: '닭', h: '酉' }, { n: '개', h: '戌' }, { n: '돼지', h: '亥' },
 ];
-/** 서버가 다시 만들어 **교체**하는 키. 재유도 실패 시 이 키들을 폐기한다. */
+/** 서버가 다시 만들어 **교체**하는 키. 재유도 실패 시 이 키들을 폐기한다.
+ *  ★v7.86 ④ — 엔진 3키(`yearPillar`·`monthPillar`·`dayPillar`)는 **여기 넣지 않는다.**
+ *    이 목록은 「프롬프트가 보간하는 파생 12키」의 정의이고 게이트가 `replaced === 12` 로
+ *    **정확히** 대조한다(eval_tojeong_guard T-7). 엔진 3키는 성질이 다르므로
+ *    `ENGINE_PILLAR_KEYS` 로 따로 교체·계수한다(naming·dream 과 같은 규약). */
 const TOJEONG_REPLACE_KEYS = ['lunarYear', 'lunarMonth', 'lunarDay', 'zodiac', 'ganjiYear',
   'upperGua', 'taeseNum', 'middleGua', 'wolNum', 'lowerGua', 'ilNum', 'guaCombination'];
 /** 클라이언트가 새로 실어야 하는 생년월일 원본 키 (계약). */
 const TOJEONG_BIRTH_KEYS = ['cal', 'y', 'm', 'd', 'leap'];
 const TOJEONG_YEAR_MIN = 1900, TOJEONG_YEAR_MAX = 2100;
+
+// ════════════════════════════════════════════════════════════════════════════
+// ★★v7.86 ① — 토정비결 작괘(作卦). **index.html `calcTojeongGua` 와 같은 식이다.**
+//   두 벌이 갈리면 화면과 해석이 갈린다(서버가 클라 값을 교체하므로 즉시 드러나지도
+//   않는다) ⟹ 아래 상수·산출식을 고칠 때는 반드시 클라와 **동시에** 고칠 것.
+//
+//   【수정 전 실측 결함 — 1980~2005년생 × 12월 × 28일 = 8,736 전수】
+//     · 상괘가 `(targetYear-4)` 만으로 결정 → 같은 해 신청자 **전원 동일 상괘**(top-1 100%)
+//     · `(y-4)%10` 과 `(y-4)%12` 는 같은 패리티 → 태세수가 항상 짝수 → `%8∈{0,2,4,6}`
+//       ⟹ 건·리·손·간 **4종이 1900~2100 어느 해에도 도달 불가**
+//     · 중괘 `month%6` · 하괘 `day%3` 에 생년이 기여하지 않음
+//     ⟹ 조합 고유 18/144 · top-1 5.79% · H/Hmax 0.581 · 충돌 5.56%
+//   【수정 후】 전통 작괘법(태세수+나이 → +월건수 → +일진수)으로 승격
+//     ⟹ 조합 고유 **144/144** · top-1 1.58% · H/Hmax 0.972 · 충돌 0.87% · 상괘 8/8
+//   ★짝수 편향을 깨는 축은 **나이**뿐이다 — 태세수·월건수·일진수는 60갑자 제약상
+//     모두 짝수라, 「생년 간지수」만 더해도 결함이 그대로 남는다(실측 확인).
+// ════════════════════════════════════════════════════════════════════════════
+/** 작괘 나눗셈 상수 — 팔괘 8 · 육괘 6 · 삼괘 3. 코드에 흩뿌리지 않는다. */
+const TJ_GUA_MOD = Object.freeze({ UPPER: 8, MIDDLE: 6, LOWER: 3 });
+/** 나머지 0을 제수로 올리는 전통 규약(`1..k`). 음수 입력도 안전하다. */
+function tjMod(n, k) { return (((n % k) + k) % k) || k; }
+/** 간지 2자(`'신사'`) → 간지수(천간수+지지수). 판독 불가면 **null**. */
+function tjGanjiNum(ganji) {
+  if (typeof ganji !== 'string') return null;
+  const ch = [...ganji.trim()];
+  if (ch.length !== 2) return null;
+  const s = TJ_CHEONGAN.indexOf(ch[0]), b = TJ_JIJI.indexOf(ch[1]);
+  if (s === -1 || b === -1) return null;
+  return (s + 1) + (b + 1);
+}
+/**
+ * 상·중·하괘 인덱스 + 월건수·일진수. **index.html `calcTojeongGua` 와 1:1**.
+ * @returns {{upperIdx,middleIdx,lowerIdx,wolNum,ilNum,age}|null}
+ */
+function tojeongGua(targetYear, lunar, monthPillar, dayPillar) {
+  if (!lunar || !(lunar.year > 0)) return null;
+  const wolNum = tjGanjiNum(monthPillar), ilNum = tjGanjiNum(dayPillar);
+  if (wolNum === null || ilNum === null) return null;
+  const taeseNum = (((targetYear - 4) % 10) + 1) + (((targetYear - 4) % 12) + 1);
+  const age = targetYear - lunar.year + 1;               // 세는나이(行年數)
+  const upperNum = taeseNum + age;
+  const middleNum = upperNum + wolNum + lunar.month;
+  const lowerNum = middleNum + ilNum + lunar.day;
+  return {
+    age, wolNum, ilNum,
+    upperIdx: tjMod(upperNum, TJ_GUA_MOD.UPPER),
+    middleIdx: tjMod(middleNum, TJ_GUA_MOD.MIDDLE),
+    lowerIdx: tjMod(lowerNum, TJ_GUA_MOD.LOWER),
+  };
+}
 
 /** 5키 판독. `{missing:true}` | `{bad:CODE}` | `{input:{...}}` */
 function tojeongBirthInput(ctx) {
@@ -832,18 +912,34 @@ function tojeongDerive(inp, targetYear) {
   }
   const ci = (ty - 4) % 10, ji = (ty - 4) % 12;
   const taeseNum = (ci + 1) + (ji + 1);
-  const upper = TJ_PALGUA[(taeseNum % 8 || 8) - 1];
-  const middle = TJ_YUKGUA[(lunar.month % 6 || 6) - 1];
-  const lower = TJ_HAGUA[(lunar.day % 3 || 3) - 1];
+  // ★v7.86 ① — 월건·일진이 필요하므로 원국을 재유도한다(시각은 안 쓰므로 3기둥).
+  //   ★클라(index.html `analyzeTojeong`)도 **같은 엔진·같은 입력**으로 뽑는다.
+  let rp = null;
+  try {
+    rp = RC.recompute({
+      birth: String(inp.y).padStart(4, '0') + '-' + String(inp.m).padStart(2, '0') + '-' + String(inp.d).padStart(2, '0'),
+      calType: inp.cal, isLeap: inp.leap === true, hourIdx: null,
+    });
+  } catch (e) { rp = null; }
+  if (!rp || !rp.ok || !rp.pillarStrings) return null;   // 판정 불가는 「클라값 채택」이 아니다
+  const gua = tojeongGua(ty, lunar, rp.pillarStrings.monthPillar, rp.pillarStrings.dayPillar);
+  if (!gua) return null;
+  const upper = TJ_PALGUA[gua.upperIdx - 1];
+  const middle = TJ_YUKGUA[gua.middleIdx - 1];
+  const lower = TJ_HAGUA[gua.lowerIdx - 1];
   const z = TJ_ZODIAC[(lunar.year - 4) % 12];
   return {
     lunarYear: lunar.year, lunarMonth: lunar.month, lunarDay: lunar.day,
     zodiac: z.n + '띠(' + z.h + ')',
     ganjiYear: TJ_CHEONGAN[ci] + TJ_JIJI[ji] + '년',
     upperGua: upper, taeseNum,
-    middleGua: middle, wolNum: lunar.month,
-    lowerGua: lower, ilNum: lunar.day,
+    middleGua: middle, wolNum: gua.wolNum,
+    lowerGua: lower, ilNum: gua.ilNum,
     guaCombination: upper + ' · ' + middle + ' · ' + lower,
+    // ★v7.86 ④ — bind.js `toPillars` 계약(간지 2자). 클라가 싣는 3키를 여기서 교체한다.
+    yearPillar: rp.pillarStrings.yearPillar,
+    monthPillar: rp.pillarStrings.monthPillar,
+    dayPillar: rp.pillarStrings.dayPillar,
   };
 }
 
@@ -907,7 +1003,7 @@ function guardTojeongContext(ctx) {
     //   ★`reason` 을 `NO_BIRTH_KEYS` 와 **다른 문자열**로 둔다. 같은 값을 쓰면
     //     「키가 없어서 통과」와 「키가 없어서 폐기」가 로그에서 구별되지 않는다.
     if (strictLegacy) {
-      for (const k of TOJEONG_REPLACE_KEYS) {
+      for (const k of TOJEONG_REPLACE_KEYS.concat(ENGINE_PILLAR_KEYS)) {
         if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
       }
       metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = 'NO_BIRTH_KEYS_STRICT';
@@ -918,7 +1014,7 @@ function guardTojeongContext(ctx) {
   }
   if (got.bad) {
     // 5키를 **주장했는데** 형식이 틀렸다 ⟹ 클라값을 믿을 근거가 없다. 파생 키를 폐기한다.
-    for (const k of TOJEONG_REPLACE_KEYS) {
+    for (const k of TOJEONG_REPLACE_KEYS.concat(ENGINE_PILLAR_KEYS)) {
       if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
     }
     metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = got.bad;
@@ -927,7 +1023,7 @@ function guardTojeongContext(ctx) {
 
   const derived = tojeongDerive(got.input, ctx.targetYear);
   if (!derived) {
-    for (const k of TOJEONG_REPLACE_KEYS) {
+    for (const k of TOJEONG_REPLACE_KEYS.concat(ENGINE_PILLAR_KEYS)) {
       if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
     }
     metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = 'DERIVE_FAILED';
@@ -940,6 +1036,18 @@ function guardTojeongContext(ctx) {
     if (before !== undefined && String(before) !== String(after)) metrics.diffs.push(k);
     out[k] = after;
     metrics.replaced++;
+  }
+  // ★v7.86 ④ — 엔진 3키(bind.js `toPillars`)는 **별도 계수**로 교체한다.
+  //   `metrics.replaced`·`diffs` 에 섞으면 게이트가 「파생 12키 표가 바뀌었다」고 오진한다.
+  metrics.enginePillars = [];
+  metrics.enginePillarDiffs = [];
+  for (const k of ENGINE_PILLAR_KEYS) {
+    const before = Object.prototype.hasOwnProperty.call(out, k) ? out[k] : undefined;
+    const after = derived[k];
+    if (after === undefined || after === '') continue;      // 없는 값을 지어내지 않는다
+    if (before !== undefined && String(before) !== String(after)) metrics.enginePillarDiffs.push(k);
+    out[k] = after;
+    metrics.enginePillars.push(k);
   }
   metrics.applied = true; metrics.mode = 'derived';
   return { applied: true, context: out, metrics };
@@ -1057,6 +1165,9 @@ const NT_VALUE_OF = Object.freeze({
   //   ★형식은 계약 §5 의 **런타임 실측**이 정본이다. 아래 세 개가 함정이다.
   /** 일주 — 클라 `HS[dStem]+EB[dBranch]`(한글 2글자). `pillarStrings.dayPillar` 와 동일 형식. */
   dayPillar: (r) => r.pillarStrings.dayPillar,
+  // ── ★v7.86 ④ — 엔진 3축(`bind.js toPillars`)용 연·월주. 형식은 `dayPillar` 와 같다. ──
+  yearPillar: (r) => r.pillarStrings.yearPillar,
+  monthPillar: (r) => r.pillarStrings.monthPillar,
   /** ★`EL` 원소 **1개**. `·` 로 잇지 않는다 — `dominant` 와 항상 같다(계약 §5-1). */
   dominantElement: (r) => elExtremes(r.els).dominantElement,
   /**
@@ -1106,6 +1217,25 @@ const NAMING_CTX_KEYS = Object.freeze({
   naming_premium_2: Object.freeze(['pillar', 'ilgan', 'lacking']),
   naming_nickname: Object.freeze(['ilgan', 'ilganElement', 'lacking']),
 });
+/**
+ * ★★v7.86 ④ — **엔진 3축용 원국 3키**(`api/_engine/bind.js` `toPillars` 의 계약).
+ *
+ * 【왜 위 상품별 표에 넣지 않는가】 위 표(`NAMING_CTX_KEYS` 등)는 「그 상품의 **프롬프트가
+ *   보간하는** 키」와 1:1 이어야 한다는 계약이 있고, 게이트가 `api/fortune.js` 소스에서
+ *   보간 키를 재추출해 **표와 1:1 대조**한다(eval_naming_tarot_guard C-3 ·
+ *   eval_dream_daily_guard 동형). 이 3키는 프롬프트가 `${c.yearPillar}` 로 보간하는 키가
+ *   아니라 **엔진이 사실(십성·대운·지지관계)을 산출하려고 읽는 키**다 — 성질이 다르다.
+ *   ⟹ 표를 오염시키지 않고 **별도 상수**로 두되, 교체 대상에는 반드시 포함시킨다.
+ *     (포함시키지 않으면 클라가 싣는 3키가 **무검증**으로 서버에 남는다 = 관통 #4 재발.)
+ *
+ * ★적용 대상은 「클라가 실제로 3키를 싣는 상품」뿐이다 — 현재 `naming`(4종)·`dream`(3종).
+ *   ★`tarot`(js/tarot.js)·`daily_message`(js/chat.js)·`naming_company` 는 **다른 파일이
+ *     소유**한다. 그 클라가 3키를 싣기 시작하면 **여기 목록에 그 가드를 추가**해야 한다 —
+ *     안 하면 그 상품에서만 3키가 무검증으로 남는다.
+ * ★서버는 이 3키를 「6키 재유도가 성립할 때」만 만든다. 성립하지 않으면(구버전 클라 등)
+ *   `mode:'legacy'` 로 아무것도 만들지 않는다 — 없는 원국을 지어내지 않는다.
+ */
+const ENGINE_PILLAR_KEYS = Object.freeze(['yearPillar', 'monthPillar', 'dayPillar']);
 const TAROT_CTX_KEYS = Object.freeze({
   tarot: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
   tarot_premium_1: Object.freeze(['ilgan', 'ilganElement', 'dominant', 'lacking']),
@@ -1235,6 +1365,14 @@ function guardPersonContext(ctx, keys, engineTag, opts) {
   const has = Object.prototype.hasOwnProperty;
   const omittable = (opts && Array.isArray(opts.omittable)) ? opts.omittable : [];
   const isOmittable = (k) => omittable.indexOf(k) !== -1;
+  // ★★v7.86 ④ — `extraKeys`(= `ENGINE_PILLAR_KEYS`)는 **교체는 하되 기존 계수기에는
+  //   섞지 않는다.** `metrics.replaced`·`diffs` 는 「§3 표 키」의 관측치이고 게이트가
+  //   `replaced === 표의 길이` 로 **정확히** 대조한다(eval_naming_tarot_guard MAIN-2).
+  //   여기에 3키를 섞으면 게이트가 「표가 바뀌었다」고 오진한다 ⟹ 별도 필드로 관측한다.
+  const extraKeys = (opts && Array.isArray(opts.extraKeys))
+    ? opts.extraKeys.filter((k) => keys.indexOf(k) === -1) : [];
+  metrics.enginePillars = [];      // 실제로 교체한 엔진 3키
+  metrics.enginePillarDiffs = [];  // 클라값과 갈린 엔진 3키(위조·구버전의 유일한 신호)
   const out = Object.assign({}, ctx);
 
   // ── ① 6키 판독 — ★`compatPersonInput(ctx, '')` 재사용 (계약 §2-1) ──────────
@@ -1250,6 +1388,11 @@ function guardPersonContext(ctx, keys, engineTag, opts) {
     for (const k of keys) {
       if (has.call(out, k)) { out[k] = ''; metrics.discarded++; }
     }
+    // ★엔진 3키도 함께 폐기한다 — 검증 못 한 원국을 남겨 두면 `computeFacts` 가
+    //   **클라가 보낸 위조 기둥**으로 「서버 엔진 산출 확정값」을 만든다(M16 회귀).
+    for (const k of extraKeys) {
+      if (has.call(out, k)) { out[k] = ''; metrics.enginePillarDiffs.push(k); }
+    }
     metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = reason;
     return { applied: true, context: out, metrics };
   };
@@ -1264,12 +1407,13 @@ function guardPersonContext(ctx, keys, engineTag, opts) {
   try {
     vals = {};
     for (const k of keys) vals[k] = NT_VALUE_OF[k](r);
+    for (const k of extraKeys) vals[k] = NT_VALUE_OF[k](r);
   } catch (e) { vals = null; }
   // ★렌더가 하나라도 성립하지 않으면 **전부 폐기**한다. 절반만 서버값인 프롬프트는
   //   「검증됐다」고 말할 수 없다(M16 의 교훈 — 판정 못 하면 채택이 아니라 폐기다).
   //   ★단 `omittable` 키의 `undefined` 는 **실패가 아니라 「키 없음」이라는 산출**이다
   //     (계약 §5-2 — 시각 미상의 `hourBranch`). 그 밖의 빈 값('' · null)은 여전히 실패다.
-  const renderFailed = !vals || keys.some((k) => (isOmittable(k)
+  const renderFailed = !vals || keys.concat(extraKeys).some((k) => (isOmittable(k)
     ? (vals[k] !== undefined && (vals[k] === null || vals[k] === ''))
     : (vals[k] === null || vals[k] === undefined || vals[k] === '')));
   if (renderFailed) return discardAll('DERIVE_FAILED');
@@ -1288,21 +1432,38 @@ function guardPersonContext(ctx, keys, engineTag, opts) {
     out[k] = after;
     metrics.replaced++;
   }
+  // ★v7.86 ④ — 엔진 3키 교체(별도 계수). 클라가 안 실어도 서버가 만든다 —
+  //   6키 재유도가 성립한 이상 그 원국은 **서버가 판정한 사실**이기 때문이다.
+  for (const k of extraKeys) {
+    const before = has.call(out, k) ? out[k] : undefined;
+    const after = vals[k];
+    if (after === undefined) {
+      if (before !== undefined) { delete out[k]; metrics.enginePillarDiffs.push(k); }
+      continue;
+    }
+    if (before !== undefined && String(before) !== String(after)) metrics.enginePillarDiffs.push(k);
+    out[k] = after;
+    metrics.enginePillars.push(k);
+  }
   metrics.applied = true; metrics.mode = 'derived';
   return { applied: true, context: out, metrics };
 }
 
-/** 작명 계열(`naming`·`naming_premium_1/2`·`naming_nickname`) 가드. */
+/** 작명 계열(`naming`·`naming_premium_1/2`·`naming_nickname`) 가드.
+ *  ★v7.86 ④ — 클라가 싣기 시작한 엔진 3키(`ENGINE_PILLAR_KEYS`)도 함께 교체한다. */
 function guardNamingContext(ctx, type) {
-  return guardPersonContext(ctx, NAMING_CTX_KEYS[type], 'ctxguard/v7.79-naming');
+  return guardPersonContext(ctx, NAMING_CTX_KEYS[type], 'ctxguard/v7.86-naming',
+    { extraKeys: ENGINE_PILLAR_KEYS });
 }
 /** 타로 계열(`tarot`·`tarot_premium_1/2`) 가드. */
 function guardTarotContext(ctx, type) {
   return guardPersonContext(ctx, TAROT_CTX_KEYS[type], 'ctxguard/v7.79-tarot');
 }
-/** ★v7.79 파 ⓑ — 꿈해몽 계열(`dream`·`dream_premium_1/2`) 가드. */
+/** ★v7.79 파 ⓑ — 꿈해몽 계열(`dream`·`dream_premium_1/2`) 가드.
+ *  ★v7.86 ④ — 엔진 3키 편입. `dayPillar` 는 이미 표에 있으므로 중복되지 않는다. */
 function guardDreamContext(ctx, type) {
-  return guardPersonContext(ctx, DREAM_CTX_KEYS[type], 'ctxguard/v7.79-dream');
+  return guardPersonContext(ctx, DREAM_CTX_KEYS[type], 'ctxguard/v7.86-dream',
+    { extraKeys: ENGINE_PILLAR_KEYS });
 }
 /**
  * ★v7.79 파 ⓑ — 데일리 한 마디(`daily_message`) 가드.
@@ -1331,6 +1492,11 @@ function guardCompanyContext(ctx, type) {
   for (const t of tables) for (const ty of Object.keys(t)) {
     for (const k of t[ty]) if (typeof NT_VALUE_OF[k] !== 'function') uncovered.push(ty + '.' + k);
   }
+  // ★v7.86 ④ — 엔진 3키도 산출기가 있어야 한다. 없으면 `guardPersonContext` 가
+  //   렌더 실패로 보고 **그 상품의 원국 전건을 폐기**한다(조용한 대형 회귀).
+  for (const k of ENGINE_PILLAR_KEYS) {
+    if (typeof NT_VALUE_OF[k] !== 'function') uncovered.push('ENGINE_PILLAR_KEYS.' + k);
+  }
   // ★`omittable` 은 실제 교체 표에 있는 키여야 한다. 표에 없는 키를 면제하면
   //   「면제한 줄 알았는데 아무 효과가 없는」 죽은 상수가 된다(I-43 유형).
   for (const k of DAILY_OMITTABLE_KEYS) {
@@ -1349,11 +1515,14 @@ module.exports = {
   NAMING_CTX_KEYS, TAROT_CTX_KEYS, PERSON_BIRTH_KEYS, NT_VALUE_OF,
   // ★v7.79 파 ⓑ — dream(3)·daily_message 가드
   guardDreamContext, guardDailyContext, elExtremes,
+  // ★v7.86 ④ — 엔진 3축(bind.js toPillars)용 원국 3키
+  ENGINE_PILLAR_KEYS,
   DREAM_CTX_KEYS, DAILY_CTX_KEYS, DAILY_OMITTABLE_KEYS, HOUR_BRANCH_LABELS,
   // ★v7.79 파 ⓒ — naming_company(3) 가드 (무가드 17종의 마지막)
   guardCompanyContext, ceoBirthInput, COMPANY_CTX_KEYS, CEO_BIRTH_KEYS,
   // ★v7.75 관통 #9 — tojeong 가드
   guardTojeongContext, tojeongBirthInput, tojeongDerive,
+  tojeongGua, tjGanjiNum, tjMod, TJ_GUA_MOD,
   TOJEONG_REPLACE_KEYS, TOJEONG_BIRTH_KEYS,
   TJ_PALGUA, TJ_YUKGUA, TJ_HAGUA,
   CTX_REPLACE_KEYS, CTX_GUARDED_KEYS, CTX_VALUE_OF, HOUR_LABELS,

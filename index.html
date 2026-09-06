@@ -1887,6 +1887,29 @@ function cwBirthKeys(calType,y,m,d,hi,leap){
 }
 
 /**
+ * ★★v7.86 ④ — 서버 엔진(`api/_engine/bind.js` `toPillars`)이 요구하는 **연·월·일주 3키**.
+ *
+ * 【고치는 결함】 `computeFacts(ctx)` 는 `ctx.yearPillar`·`monthPillar`·`dayPillar` 를
+ *   읽는데, 사주 탭 말고는 **어느 상품 ctx 에도 그 3키가 없었다** ⟹ `toPillars` 가 항상
+ *   `null` → 엔진 3축(십성·대운·지지관계)의 「서버 엔진 산출 확정값」 블록도,
+ *   응답 덮어쓰기(`applyEngineFacts`)도 그 상품들에서는 **한 번도 발화하지 않았다**.
+ *
+ * ★★날조 금지 — 이미 산출해 둔 `pillars`(사주 탭·폼 입력)를 **재사용만** 한다.
+ *   사주가 없으면 `null` 을 돌려주고, 적재부는 3키를 **만들지 않는다**(부분 적재도 금지).
+ * ★산출식은 여기 하나다(결정 99). 적재부는 `yearPillar:_pk.yearPillar` 처럼
+ *   **명시 리터럴**로 쓴다(계약 §2-3 · 표면 추출기 규약).
+ * @param {object} pillars `{year:{stem,branch}, month:…, day:…}`
+ * @returns {{yearPillar:string,monthPillar:string,dayPillar:string}|null}
+ */
+function cwPillarKeys(pillars){
+  if(!pillars||!pillars.year||!pillars.month||!pillars.day)return null;
+  const g=(p)=>(Number.isInteger(p.stem)&&Number.isInteger(p.branch))?(HS[p.stem]+EB[p.branch]):null;
+  const y=g(pillars.year),m=g(pillars.month),d=g(pillars.day);
+  if(!y||!m||!d)return null;
+  return{yearPillar:y,monthPillar:m,dayPillar:d};
+}
+
+/**
  * ★적재 규약 — 6키는 **payload 리터럴에 이름 그대로** 쓴다.
  *   `cal:_bk.cal` · `y:_bk.y` · `m:_bk.m` · `d:_bk.d` · `h:_bk.h` · `leap:_bk.leap`
  *   (`_bk` 는 `cwBirthKeys(...)||{}` 의 결과. 지역명은 `_bkP`·`_bkN` 처럼 접미가 붙을 수 있다.)
@@ -2104,19 +2127,78 @@ const ZOD_ANIMALS=[
 
 function getGanji(year){return CHEONGAN[(year-4)%10]+JIJI_NAMES[(year-4)%12]}
 function getZodiac(year){return ZOD_ANIMALS[(year-4)%12]}
-function calcUpperGua(targetYear){
-  const ci=(targetYear-4)%10,ji=(targetYear-4)%12;
-  const ts=CHEONGAN_NUM[ci]+JIJI_NUM[ji];
-  const gi=ts%8||8;
-  return{taeseNum:ts,guaIdx:gi,name:PALGUA[gi-1]};
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ★v7.86 ① — 토정비결 작괘(作卦). **산출식은 여기와 `api/_engine/ctxguard.js`
+//    (`tojeongDerive`) 두 곳뿐이며 두 벌은 반드시 같은 식이다.** 서버가 클라 값을
+//    재유도해 교체하므로(관통 #9) 한쪽만 고치면 화면과 해석이 갈린다.
+//
+//  【수정 전의 실측 결함 — 1980~2005년생 × 12월 × 28일 = 8,736 전수】
+//    ⓐ 상괘가 `(targetYear-4)` 만으로 결정돼 **같은 해 신청자 전원 동일 상괘**
+//       (상괘 top-1 점유 100.00% · 도달 1/8종).
+//    ⓑ `(y-4)%10` 과 `(y-4)%12` 는 **항상 같은 패리티**라 태세수가 언제나 짝수 →
+//       `%8 ∈ {0,2,4,6}` → 건·리·손·간 4종이 1900~2100 어느 해에도 도달 불가.
+//    ⓒ 중괘 `lunarMonth%6` · 하괘 `lunarDay%3` 에는 생년이 기여하지 않는다.
+//    ⟹ 조합 고유 18종 / 144 · top-1 5.79% · H/Hmax 0.581 · 두 사용자 충돌 5.56%.
+//
+//  【수정 후 — 전통 작괘법으로 승격 + 개인 축 투입】
+//    · 상괘 = (태세수 + **나이**) mod 8      ← 「當年太歲數 + 行年數」(전통)
+//    · 중괘 = (상괘수 + **월건수** + 생월) mod 6
+//    · 하괘 = (중괘수 + **일진수** + 생일) mod 3
+//    나이는 세는나이(targetYear − 음력 생년 + 1)다. 태세수·월건수·일진수는 모두
+//    「천간수(1~10) + 지지수(1~12)」이며 60갑자 제약상 **항상 짝수**다 —
+//    그래서 짝수 편향을 깨는 축은 **나이**뿐이고, 나이를 넣어야만 8괘 전종에 닿는다
+//    (생년 간지수만 더하면 짝수+짝수=짝수라 ⓑ가 그대로 남는다 — 실측 확인).
+//    ⟹ 같은 표본에서 조합 고유 **144/144** · top-1 1.58% · H/Hmax 0.972 ·
+//       충돌 0.87% · 상괘 **8/8종** 도달(top-1 15.17%).
+//
+//  ★`wolNum`·`ilNum` 의 의미도 바로잡았다. 프롬프트는 「중괘(월건괘) … (월건수 N)」
+//    「하괘(일진괘) … (일진수 N)」로 보간하는데(api/fortune.js:2291·2292) 종전 값은
+//    월건수·일진수가 아니라 **음력 월·일**이었다 — 라벨이 값을 거짓 설명하고 있었다.
+// ════════════════════════════════════════════════════════════════════════════
+/** 작괘 나눗셈 상수 — 팔괘 8 · 육괘 6 · 삼괘 3. 흩뿌리지 않는다. */
+const TJ_GUA_MOD=Object.freeze({UPPER:8,MIDDLE:6,LOWER:3});
+/** 나머지 0을 제수로 올리는 전통 규약(`1..k`). 음수 입력도 안전하다. */
+function tjMod(n,k){return(((n%k)+k)%k)||k}
+/** 간지 2자(`'신사'`) → 간지수(천간수+지지수). 판독 불가면 **null**(값을 지어내지 않는다). */
+function tjGanjiNum(ganji){
+  if(typeof ganji!=='string')return null;
+  const ch=[...ganji.trim()];
+  if(ch.length!==2)return null;
+  const s=CHEONGAN.indexOf(ch[0]),b=JIJI_NAMES.indexOf(ch[1]);
+  if(s===-1||b===-1)return null;
+  return CHEONGAN_NUM[s]+JIJI_NUM[b];
 }
-function calcMiddleGua(lunarMonth){
-  const gi=lunarMonth%6||6;
-  return{wolNum:lunarMonth,guaIdx:gi,name:YUKGUA[gi-1]};
+/** 당해 태세수 = 그 해 간지의 천간수+지지수. */
+function tjTaeseNum(targetYear){
+  return CHEONGAN_NUM[(targetYear-4)%10]+JIJI_NUM[(targetYear-4)%12];
 }
-function calcLowerGua(lunarDay){
-  const gi=lunarDay%3||3;
-  return{ilNum:lunarDay,guaIdx:gi,name:HAGUA[gi-1]};
+/**
+ * 상·중·하괘 일괄 산출. **ctxguard.js `tojeongDerive` 와 같은 입력이면 같은 값**이어야 한다.
+ * @param {number} targetYear 신수를 보는 해
+ * @param {{year:number,month:number,day:number}} lunar 음력 생년월일
+ * @param {string} monthPillar 생월의 월건 간지 2자 (CW_ENGINE 산출)
+ * @param {string} dayPillar   생일의 일진 간지 2자 (CW_ENGINE 산출)
+ * @returns {object|null} 월건·일진을 못 읽으면 **null** — 임의값으로 때우지 않는다.
+ */
+function calcTojeongGua(targetYear,lunar,monthPillar,dayPillar){
+  if(!lunar||!(lunar.year>0))return null;
+  const wolNum=tjGanjiNum(monthPillar),ilNum=tjGanjiNum(dayPillar);
+  if(wolNum===null||ilNum===null)return null;
+  const taeseNum=tjTaeseNum(targetYear);
+  const age=targetYear-lunar.year+1;                      // 세는나이(行年數)
+  const upperNum=taeseNum+age;
+  const middleNum=upperNum+wolNum+lunar.month;
+  const lowerNum=middleNum+ilNum+lunar.day;
+  const ui=tjMod(upperNum,TJ_GUA_MOD.UPPER);
+  const mi=tjMod(middleNum,TJ_GUA_MOD.MIDDLE);
+  const li=tjMod(lowerNum,TJ_GUA_MOD.LOWER);
+  return{
+    age,
+    upper:{taeseNum,guaIdx:ui,name:PALGUA[ui-1]},
+    middle:{wolNum,guaIdx:mi,name:YUKGUA[mi-1]},
+    lower:{ilNum,guaIdx:li,name:HAGUA[li-1]}
+  };
 }
 
 // ============================================================
@@ -2383,11 +2465,25 @@ function calcFiveGyeok(surnameStrokes, firstNameStrokes){
 /**
  * 사격을 81수에 매핑해 길흉 평가
  */
+/**
+ * ★★v7.86 ③ — 81수 사상의 **음수 모듈러 버그** 수리.
+ *   JS `%` 는 피제수의 부호를 그대로 돌려준다: `v=0` 이면 `((0-1)%81)+1 === 0` 이고
+ *   `SUR_81[0]` 은 `undefined` → 종전 폴백 `{grade:'half',k:'?',m:'?'}` 이 걸려
+ *   **「총 0획 · 반길반흉 · 키워드 ?」가 전 후보에 동일 표시**됐다.
+ *   `strokes` 가 비는 경로(작명 스타일 **「한글 전용」**)에서는 후보 전건이 그 상태다.
+ *   ⟹ ⑴ 나머지를 `((v-1)%81+81)%81+1` 로 양수 고정하고
+ *     ⑵ `v<=0`(획수 자체가 없음)은 **판정 불가(UNMEASURED)** 로 명시한다 —
+ *        길흉을 임의값으로 날조하지 않는다. 렌더도 이 상태를 그대로 표시한다.
+ */
+const GYEOK_UNMEASURED=Object.freeze({grade:'unmeasured',keyword:'판정 불가',meaning:'획수를 확인할 수 없어 81수 길흉을 판정하지 않았습니다(한글 전용 등 획수 미상 후보).'});
 function evaluateFiveGyeok(gyeok){
   const result={};
   for(const [k,v] of Object.entries(gyeok)){
-    const idx=((v-1)%81)+1; // 81 초과 시 mod
-    const info=SUR_81[idx]||{grade:'half',k:'?',m:'?'};
+    if(!(v>0)){ result[k]={value:v,idx:null,...GYEOK_UNMEASURED}; continue; }
+    const idx=((v-1)%81+81)%81+1;   // ★음수·0 안전. 81 초과는 순환.
+    const info=SUR_81[idx];
+    // ★표에 없는 칸도 **날조하지 않는다**(종전에는 조용히 '반길반흉'이 됐다).
+    if(!info){ result[k]={value:v,idx,...GYEOK_UNMEASURED}; continue; }
     result[k]={value:v,idx,grade:info.grade,keyword:info.k,meaning:info.m};
   }
   return result;
@@ -3173,6 +3269,86 @@ const EB_SAMHYUNG=[[2,5,8],[1,10,7]];
 const EB_HYUNG_BI=[[0,3]]; // 자묘 무례지형
 // 지지 육해(六害) — 자미, 축오, 인사, 묘진, 신해, 유술
 const EB_HAE=[[0,7],[1,6],[2,5],[3,4],[8,11],[9,10]];
+// ★v7.86 ② 신설 — 지지 파(破): 자유, 축진, 인해, 묘오, 사신, 미술
+const EB_PA=[[0,9],[1,4],[2,11],[3,6],[5,8],[7,10]];
+// ★v7.86 ② 신설 — 지지 원진(怨嗔): 자미, 축오, 인유, 묘신, 진해, 사술
+const EB_WONJIN=[[0,7],[1,6],[2,9],[3,8],[4,11],[5,10]];
+
+// ════════════════════════════════════════════════════════════════════════════
+// ★★v7.86 ② — 궁합 점수·등급 상수. **여기 한 곳에만 둔다**(코드에 흩뿌리지 않는다).
+//
+//  【수정 전 실측 — 4,000명 풀 × 무작위 300,000쌍】
+//    · 원시 점수 범위 24~133(중앙 71)인데 `Math.min(99,Math.max(55,…))` 하드 clamp 로
+//      **하한 9.25% + 상한 2.28% = 11.53% 가 두 값(55·99)에 뭉쳤다.**
+//    · 그 결과 55점 하나가 전체의 **10.63%** — 단일 버킷 최대 점유.
+//  【수정 후】 clamp 를 버리고 **로지스틱 사상**으로 40~98 에 재사상한다.
+//    · 로지스틱은 점근선이라 값이 경계에 뭉치지 않는다(정보 손실 0 — 순서를 보존한다).
+//    · `MID` 는 실측 원시 점수의 **중앙값**, `K` 는 「중앙부 기울기 ≈ 1.45(>1)」가 되도록
+//      `(OUT_MAX-OUT_MIN)/(4K)` 로 역산했다 — 기울기가 1 미만이면 인접한 원시 점수가
+//      한 버킷으로 합쳐져 다시 뭉친다.
+//    · 등급 임계는 **재사상 후 분포의 분위수**(p95·p80·p50·p20)로 다시 잡았다.
+//      종전 92/82/72/62 는 clamp 된 분포 기준이라 재사상 후에는 의미가 달라진다.
+// ════════════════════════════════════════════════════════════════════════════
+const COMPAT_SCORE=Object.freeze({
+  RAW_BASE:65,          // 원시 점수 기준선(종전과 동일 — 가감 항목도 종전 유지)
+  OUT_MIN:40, OUT_MAX:98,
+  MID:72,               // 실측 원시 중앙값(300,000쌍 p50 = 72)
+  K:10,                 // 중앙부 기울기 = (98-40)/(4·10) ≈ 1.45
+  // 재사상 후 분포의 분위수 임계 — p95=92 / p80=85 / p50=69 / p20=53 (300,000쌍 실측)
+  GRADE_SOULMATE:92, GRADE_GOOD:85, GRADE_EFFORT:69, GRADE_PLAIN:53,
+});
+/** 원시 점수 → 표시 점수. **clamp 가 아니라 사상**이다(경계에 뭉치지 않는다). */
+function compatMapScore(raw){
+  const C=COMPAT_SCORE;
+  const s=C.OUT_MIN+(C.OUT_MAX-C.OUT_MIN)/(1+Math.exp(-(raw-C.MID)/C.K));
+  // ★Math.max/min 은 「뭉치는 clamp」가 아니라 부동소수 반올림 방어다(로지스틱은 점근선).
+  return Math.max(C.OUT_MIN,Math.min(C.OUT_MAX,Math.round(s)));
+}
+/** 표시 점수 → 등급. 임계는 위 상수 한 곳에서만 온다. */
+function compatGrade(score){
+  const C=COMPAT_SCORE;
+  if(score>=C.GRADE_SOULMATE)return '천생연분 💫';
+  if(score>=C.GRADE_GOOD)return '좋은 인연 ✨';
+  if(score>=C.GRADE_EFFORT)return '노력하면 좋은 궁합 🌿';
+  if(score>=C.GRADE_PLAIN)return '평범한 인연 ☁️';
+  return '특별한 인연 🌙';
+}
+
+/**
+ * ★★v7.86 ② — 일지(배우자궁) 관계 판정. 종전에는 **육합·육충 2표만** 봐서
+ *   300,000쌍 중 **83.70% 가 `무관`** 이었다(= 궁합의 가장 중요한 축이 사실상 상수).
+ *   삼합(반합)·삼형·무례지형·원진·육해·파·동일지지·지지 오행 상생상극까지 확장한다.
+ *
+ * ★판정 순서는 **우선순위**다(먼저 맞은 것 하나만 채택). 자미(子未)처럼 육해이면서
+ *   원진인 쌍이 있으므로 순서를 바꾸면 라벨이 바뀐다 — 순서 자체가 계약이다.
+ * ★★라벨 문자열은 `api/_engine/ctxguard.js` 의 `ILJI_RELATIONS` 화이트리스트와
+ *   **글자 단위로 같아야 한다.** 다르면 서버가 전부 `무관` 으로 되돌린다(무해화 규약).
+ * @returns {{label:string, delta:number}} delta = 자동 점수 가감치
+ */
+function analyzeIljiRelation(b1,b2){
+  if(!(b1>=0)||!(b2>=0))return{label:'무관',delta:0};
+  const pair=(t)=>t.some(x=>(x[0]===b1&&x[1]===b2)||(x[1]===b1&&x[0]===b2));
+  const hab=EB_HAB.find(h=>(h[0]===b1&&h[1]===b2)||(h[1]===b1&&h[0]===b2));
+  if(hab)return{label:`육합(六合) → ${EL[hab[2]]}`,delta:12};
+  // 삼합 3지지 중 2개 = 반합(半合)
+  const sam=EB_SAMHAB.find(s=>s.slice(0,3).indexOf(b1)!==-1&&s.slice(0,3).indexOf(b2)!==-1&&b1!==b2);
+  if(sam)return{label:`반합(半合) → ${EL[sam[3]]}`,delta:10};
+  if(pair(EB_CHUNG))return{label:'육충(六沖)',delta:-10};
+  const hyung=EB_SAMHYUNG.find(s=>s.indexOf(b1)!==-1&&s.indexOf(b2)!==-1&&b1!==b2);
+  if(hyung)return{label:'삼형(三刑)',delta:-9};
+  if(pair(EB_HYUNG_BI))return{label:'무례지형(無禮之刑)',delta:-7};
+  if(pair(EB_WONJIN))return{label:'원진(怨嗔)',delta:-8};
+  if(pair(EB_HAE))return{label:'육해(六害)',delta:-6};
+  if(pair(EB_PA))return{label:'파(破)',delta:-4};
+  if(b1===b2)return{label:'동일(同氣)',delta:5};
+  const e1=JIJI_EL[b1],e2=JIJI_EL[b2];
+  if(e1===e2)return{label:`동기(同氣) → ${EL[e1]}`,delta:4};
+  if((e1+1)%5===e2)return{label:`상생: ${EL[e1]}이 ${EL[e2]}을 도움`,delta:6};
+  if((e1+4)%5===e2)return{label:`상생: ${EL[e2]}이 ${EL[e1]}을 도움`,delta:6};
+  if((e1+2)%5===e2)return{label:`상극: ${EL[e1]}이 ${EL[e2]}을 극함`,delta:-5};
+  if((e1+3)%5===e2)return{label:`상극: ${EL[e2]}이 ${EL[e1]}을 극함`,delta:-5};
+  return{label:'무관',delta:0};
+}
 
 const HS_NAMES_FULL=['갑(甲)','을(乙)','병(丙)','정(丁)','무(戊)','기(己)','경(庚)','신(辛)','임(壬)','계(癸)'];
 const EB_NAMES_FULL=['자(子)','축(丑)','인(寅)','묘(卯)','진(辰)','사(巳)','오(午)','미(未)','신(申)','유(酉)','술(戌)','해(亥)'];
@@ -3239,13 +3415,10 @@ function compareCompatibility(p1, p2){
     else if((e1+3)%5===e2)ilganRelation=`상극: ${EL[e2]}이 ${EL[e1]}을 극함`;
   }
 
-  // 일지 (배우자궁) 관계 — 일지 합/충이 가장 중요
+  // 일지 (배우자궁) 관계 — ★v7.86 ② 육합·육충 2표 → 합·충·형·해·파·원진·오행까지 확장
   const ilji1=p1.day.branch, ilji2=p2.day.branch;
-  let iljiRelation='무관';
-  const iljiHab=EB_HAB.find(h=>(h[0]===ilji1&&h[1]===ilji2)||(h[1]===ilji1&&h[0]===ilji2));
-  const iljiChung=EB_CHUNG.find(c=>(c[0]===ilji1&&c[1]===ilji2)||(c[1]===ilji1&&c[0]===ilji2));
-  if(iljiHab)iljiRelation=`육합(六合) → ${EL[iljiHab[2]]}`;
-  else if(iljiChung)iljiRelation='육충(六沖)';
+  const iljiRel=analyzeIljiRelation(ilji1,ilji2);
+  const iljiRelation=iljiRel.label;
 
   // 오행 보완성
   const els1=calcElementDistribution(p1);
@@ -3257,42 +3430,37 @@ function compareCompatibility(p1, p2){
     if(v>=6)excess.push(EL[i]);
   });
 
-  // 자동 점수 산출 (55~99)
-  let score=65;
-  if(ilganHab)score+=18;
-  else if(ilganChung)score-=12;
-  else if(ilgan1===ilgan2)score+=4;
+  // 자동 점수 산출 — ★v7.86 ② 원시 점수(정의역 무제한) → 로지스틱 사상(40~98)
+  //   ★가감 항목 자체는 종전과 같다. 바뀐 것은 ⑴ 일지 항목이 확장 표를 쓰고
+  //     ⑵ 마지막의 하드 clamp 가 **사상**으로 바뀐 것 둘뿐이다.
+  let raw=COMPAT_SCORE.RAW_BASE;
+  if(ilganHab)raw+=18;
+  else if(ilganChung)raw-=12;
+  else if(ilgan1===ilgan2)raw+=4;
   else{
     const e1=HS_EL[ilgan1],e2=HS_EL[ilgan2];
-    if((e1+1)%5===e2||(e1+4)%5===e2)score+=8; // 상생
-    else if((e1+2)%5===e2||(e1+3)%5===e2)score-=4; // 상극
+    if((e1+1)%5===e2||(e1+4)%5===e2)raw+=8; // 상생
+    else if((e1+2)%5===e2||(e1+3)%5===e2)raw-=4; // 상극
   }
-  if(iljiHab)score+=12;
-  else if(iljiChung)score-=10;
-  score+=hsHabs.length*3;
-  score-=hsChungs.length*2;
-  score+=ebHabs.length*4;
-  score-=ebChungs.length*3;
-  score-=ebHaes.length*2;
+  raw+=iljiRel.delta;
+  raw+=hsHabs.length*3;
+  raw-=hsChungs.length*2;
+  raw+=ebHabs.length*4;
+  raw-=ebChungs.length*3;
+  raw-=ebHaes.length*2;
   // 오행 보완 보너스: 한쪽에 부족한 게 다른 쪽에 풍부하면 +
   for(let i=0;i<5;i++){
-    if(els1[i]===0&&els2[i]>=2)score+=2;
-    if(els2[i]===0&&els1[i]>=2)score+=2;
+    if(els1[i]===0&&els2[i]>=2)raw+=2;
+    if(els2[i]===0&&els1[i]>=2)raw+=2;
   }
-  score=Math.min(99,Math.max(55,Math.round(score)));
-
-  let grade;
-  if(score>=92)grade='천생연분 💫';
-  else if(score>=82)grade='좋은 인연 ✨';
-  else if(score>=72)grade='노력하면 좋은 궁합 🌿';
-  else if(score>=62)grade='평범한 인연 ☁️';
-  else grade='특별한 인연 🌙';
+  const score=compatMapScore(raw);
+  const grade=compatGrade(score);
 
   return {
     hsHabs, hsChungs, ebHabs, ebChungs, ebHaes,
     ilganRelation, iljiRelation,
     els1, els2, elsCombined, lacking, excess,
-    score, grade
+    rawScore:raw, score, grade
   };
 }
 
@@ -3468,8 +3636,10 @@ function renderCompatResult(result,info){
       </div>
     </div>
     <div style="text-align:center;margin:18px 0">
-      <div style="font-size:48px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700">${result.score||cmp.score}<span style="font-size:18px">점</span></div>
-      <div style="font-size:15px;color:var(--gold);margin-top:4px;font-family:'Noto Serif KR',serif;font-weight:600">${result.grade||cmp.grade}</div>
+      <!-- ★v7.86 ② — 엔진 산출값 우선. 종전에는 LLM 값(result.score)을 먼저 써서
+           화면 점수가 엔진 점수와 조용히 갈렸다. 엔진 값이 없을 때만 LLM 값으로 떨어진다. -->
+      <div style="font-size:48px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700">${cmp.score!=null?cmp.score:result.score}<span style="font-size:18px">점</span></div>
+      <div style="font-size:15px;color:var(--gold);margin-top:4px;font-family:'Noto Serif KR',serif;font-weight:600">${cmp.grade||result.grade||''}</div>
     </div>
 
     <!-- 일간·일지 관계 핵심 -->
@@ -3850,18 +4020,34 @@ const photoState={face:{img:null,hash:null,w:0,h:0}};
 
 // ---- Classical sources for palm/face reading ----
 const FACE_SOURCES={
+  // ★★v786-c 정정 — 相理衡眞 卷六 五行形相論 직독(2026-09-05)으로 두 가지를 고쳤다.
+  //   ① ★火形 배당이 뒤집혀 있었다. 원문은 「其形銳而下豐」·「上尖如火之炎」 —
+  //      火形은 **위가 뾰족하고 아래가 풍만**한 형이다. 역삼각형(이마 넓고 턱 좁음)은 그 반대다.
+  //      ⟹ inv 에서 火 배당을 뗀다. 원문 五形 어디에도 대응하지 않는다.
+  //   ② ★의미 문구가 이 원전에서 온 것이 아니었다. 원문 배당은 五常이다:
+  //      「金為義 · 木為仁 · 水為智 · 火為禮 · 土為信」. 형태는 「金方 · 木瘦 · 水圓 · 火尖 · 土厚」.
+  //   ★그리고 원문은 五形마다 색·몸통·살뼈·거동(坐·涉·行·臥)을 함께 본다.
+  //     ⟹ ★정면 사진 한 장으로 오형을 확정하는 것은 원문 절차가 아니다.
+  //        분류기는 `wuxing` 부합도 벡터를 함께 내며, 확정 라벨로 쓰지 않는다.
   shape:{
-    round:{el:'水形 (수형)',meaning:'水는 원만·포용·재물복을 상징'},
-    square:{el:'金形 (금형)',meaning:'金은 강직·의지·명예를 상징'},
-    long:{el:'木形 (목형)',meaning:'木은 성장·품격·지혜를 상징'},
-    inv:{el:'火形 (화형)',meaning:'火는 열정·민첩·추진력을 상징'}
+    round:{el:'水形 (수형)',meaning:'원문은 水의 형태를 「圓(둥긂)」, 오상은 「水為智」로 봅니다'},
+    square:{el:'金形 (금형)',meaning:'원문은 金의 형태를 「方(모남)」, 오상은 「金為義」로 봅니다'},
+    long:{el:'木形 (목형)',meaning:'원문은 木의 형태를 「瘦(마름)·長」, 오상은 「木為仁」으로 봅니다'},
+    inv:{el:'(오행 미배당)',meaning:'원문의 火形은 「上尖下豐」 — 위가 뾰족하고 아래가 풍만한 형입니다. 역삼각형은 그 반대라 오행을 배당하지 않습니다'}
   },
   eyes:'전통 관상학의 일반적 관점 — 눈은 감찰관(監察官)으로, 지혜·수명·애정운을 드러낸다.',
   nose:'전통 관상학의 일반적 관점 — 코는 12궁 중 재백궁(財帛宮)이자 질액궁(疾厄宮). 중년 운세(40~50대)와 재물·건강을 주관한다.',
   mouth:'전통 관상학의 일반적 관점 — 입은 출납관(出納官). 복록·언어·만년 운세(50대 이후)를 주관한다.',
-  shapeCommon:'오행(五行) 관점 — 얼굴 윤곽을 木·火·土·金·水 다섯 가지 기본형으로 분류하여 운명의 결을 본다.'
+  // ★v786-b — 종전 문구는 「다섯 가지로 분류」라 했으나 코드는 4형뿐이다(土形 없음).
+  //   또 火形을 역삼각형에 배당한 근거를 원문에서 확인하지 못했다(相理衡眞 卷六 五行形相論 미확보).
+  //   ⟹ 원문 대조 전까지 오형 배당을 단정하지 않는다.
+  shapeCommon:'오행(五行) 관점 — 얼굴 윤곽을 오행의 형태에 견주어 보는 방식입니다. <span style="opacity:.7">현재 木·火·金·水 4형만 판별하며 土形은 아직 판별하지 않습니다. 배당 기준은 원문 대조 전입니다.</span>'
 };
-const METHOD_FACE='전통 관상학의 관점을 참고한 AI 해석입니다. 얼굴을 오행(五行)의 형태로 분류하고, 눈·코·입을 포함한 <strong>십이궁(十二宮)</strong>을 살펴 타고난 기질과 운의 흐름을 읽습니다.';
+// ★v786-b 정정 — 종전 문구는 「십이궁을 살펴」라고 했으나 실제 계측은 8궁뿐이었고,
+//   오행도 4형만 있었다(土形 없음). 재지 않는 것을 잰다고 말하지 않는다.
+//   ★관상 원문 트랙 착수(2026-09-05) 결과: 太淸神鑑 42규칙 중 우리가 실제로 판정할 수 있는 것은 3건(7%).
+//     원문은 「淸而秀 豐而隆」처럼 정량 기준을 주지 않고, 귀·색·주름결은 계측축 자체가 없다.
+const METHOD_FACE='얼굴 계측값을 바탕으로 한 AI 해석입니다. 눈·코·입·눈썹과 삼정(三停)·명궁·천이궁 등 <strong>8개 부위</strong>를 재고, 전통 관상학에서 그 부위를 어떻게 보는지를 함께 전합니다. <span style="opacity:.75">잴 수 없는 항목(귀·기색·주름결)은 판정하지 않습니다.</span>';
 let _mediaStream=null, _activeCam=null;
 function renderFaceUI(){} // legacy no-op
 
@@ -4327,249 +4513,351 @@ function computeImageHash(sourceCanvas){
 function pickFromHash(arr,seed){return arr[seed%arr.length]}
 
 // ── Landmark-based face classification (replaces hash-based random) ──
-function classifyFaceFromLandmarks(ai){
-  // ai = array of 468 MediaPipe FaceMesh landmarks, each {x, y, z}
-  // Returns {shape, eyes, nose, mouth} each being an element from FACE_S/E/N/M
-  // plus numeric ratios for score calculation
+/* ============================================================
+   ★v786 관상 코어 — index.html 삽입용 정본 (이 파일이 원본)
+   진단 근거: _v786_diag/p01_face_diversity.js · p02_face_v2_eval.js
+   ------------------------------------------------------------
+   고친 것 3가지
+   ① 등방화 — MediaPipe 는 x 를 사진 폭, y 를 사진 높이로 각각 정규화한다.
+      x/y 를 섞는 비율(가로세로비·눈 종횡비)은 사진 비율에 비례해 왜곡됐다.
+      실측: 같은 사람을 5가지 사진 비율로 찍으면 4축 판정이 전부 같을 확률 0.30%.
+   ② 랜드마크 정정 — FACEMESH_FACE_OVAL 순회순서 실측 결과
+      127/356 은 '관자'이지 '턱'이 아니다. 실제 하악각은 172/397.
+      기존 jawRatio 는 관자폭/광대폭이라 항상 ≈1.0 → '각진형'으로 고정됐다.
+   ③ 고정임계 → 참조분위수 — 임계가 어떤 모집단으로도 보정된 적이 없어
+      '매부리코'는 수학적으로 도달 불가, '작은 입'이 99.8%를 차지했다.
+   ============================================================ */
 
-  // --- Face shape: width vs height ratio ---
-  // LM 234 = right cheek, LM 454 = left cheek (face width)
-  // LM 10 = forehead top, LM 152 = chin bottom (face height)
-  // LM 127 = right jaw, LM 356 = left jaw (jaw width)
-  const faceW = Math.abs(ai[454].x - ai[234].x);
-  const faceH = Math.abs(ai[152].y - ai[10].y);
-  const jawW = Math.abs(ai[356].x - ai[127].x);
-  const whRatio = faceW / (faceH || 0.001);
-  const jawRatio = jawW / (faceW || 0.001); // how wide jaw is relative to face
+/* 참조 분위수 레지스트리. ★TIER-C(합성 유래) — 실사진 캘리브레이션 전까지 잠정. */
+var CW_FACE_REF = {"version":"REF-SYNTH-v786-20260904","tier":"C-SYNTHETIC","n":60000,"q":{"whRatio":[0.407848,0.692997,0.724158,0.743239,0.757152,0.768557,0.778104,0.786587,0.79474,0.802166,0.809638,0.817228,0.825056,0.832943,0.841829,0.851432,0.86258,0.876035,0.894773,0.926912,1.19032],"jawRatio":[0.247816,0.620421,0.663718,0.689715,0.708802,0.724414,0.737634,0.749428,0.760172,0.77032,0.78018,0.789616,0.799933,0.810473,0.821857,0.835249,0.850254,0.869365,0.894155,0.93769,1.391987],"foreheadRatio":[0.546503,0.807974,0.840449,0.860173,0.874599,0.886147,0.89602,0.905174,0.913643,0.921569,0.929283,0.937149,0.945143,0.953402,0.962724,0.972751,0.984256,0.998709,1.018995,1.052692,1.350376],"eyeAspect":[1.156242,2.559954,2.704639,2.791947,2.855123,2.906754,2.952674,2.992718,3.02963,3.064445,3.098879,3.131992,3.167727,3.205209,3.245255,3.291119,3.34185,3.404291,3.490173,3.637505,5.036655],"eyeSize":[0.110026,0.18344,0.192157,0.197195,0.200843,0.203816,0.206375,0.208701,0.210848,0.212835,0.214832,0.216896,0.218937,0.221098,0.223384,0.22587,0.228898,0.232497,0.237475,0.245765,0.317671],"eyeTilt":[-38.014736,-11.860404,-9.46983,-8.011624,-7.011827,-6.202656,-5.511137,-4.896721,-4.347158,-3.797396,-3.2747,-2.735884,-2.191682,-1.625298,-1.010543,-0.332416,0.481002,1.437842,2.843633,5.23174,24.67981],"noseWRatio":[0.148367,0.226966,0.237283,0.243295,0.247727,0.251465,0.254536,0.257365,0.260028,0.26266,0.265097,0.267543,0.270051,0.272636,0.275539,0.278677,0.282355,0.286914,0.293149,0.303602,0.392698],"noseHRatio":[0.126902,0.213796,0.223757,0.229594,0.233754,0.237205,0.240271,0.242982,0.245425,0.247788,0.250093,0.252346,0.254731,0.257176,0.259851,0.262775,0.266194,0.270565,0.276355,0.286161,0.371943],"noseDorsum":[0,0,0,0,0,0,0,0,0.000322,0.001816,0.003327,0.004874,0.006509,0.008219,0.010095,0.012181,0.014759,0.017939,0.022307,0.029788,0.09049],"mouthRatio":[0.163093,0.288393,0.303795,0.313331,0.32016,0.325968,0.330808,0.335247,0.339378,0.343331,0.347193,0.351033,0.355079,0.359214,0.363729,0.368664,0.374953,0.38231,0.392696,0.409921,0.563989],"lipThickness":[0.034763,0.076005,0.080691,0.083545,0.085641,0.087297,0.088738,0.09005,0.091282,0.092412,0.093541,0.094628,0.095757,0.097024,0.098286,0.099727,0.101382,0.10349,0.10634,0.111266,0.150819],"symmetry":[0.389251,0.77096,0.8186,0.847601,0.867938,0.884529,0.897649,0.908637,0.91891,0.927956,0.936081,0.943614,0.950722,0.957684,0.964059,0.970505,0.976579,0.982428,0.98833,0.994202,1],"thirds":[0.174276,0.521852,0.561696,0.585044,0.601682,0.615486,0.627749,0.638596,0.648368,0.657817,0.667035,0.676049,0.685591,0.695368,0.706062,0.71776,0.731422,0.748875,0.771964,0.810518,0.813333],"myungGung":[0.038418,0.08933,0.09496,0.098372,0.100819,0.102774,0.104463,0.105974,0.107332,0.108741,0.110065,0.111353,0.11265,0.114095,0.115578,0.117243,0.119196,0.12169,0.125044,0.130696,0.179163],"cheonI":[0.644268,0.86934,0.896915,0.913127,0.92476,0.933938,0.941515,0.948027,0.953892,0.958943,0.963712,0.968123,0.972248,0.97613,0.979836,0.983408,0.986914,0.990268,0.993642,0.99683,1],"jaNyeo":[0.02661,0.060624,0.064563,0.066916,0.068611,0.069981,0.071156,0.072213,0.073147,0.074078,0.075008,0.075896,0.076812,0.077783,0.078835,0.080017,0.081352,0.083055,0.085409,0.089095,0.121823],"jilAek":[0.028118,0.056868,0.060395,0.062526,0.064064,0.065319,0.066393,0.06736,0.068287,0.069144,0.069975,0.070847,0.071686,0.072554,0.073539,0.074648,0.075914,0.077501,0.079599,0.083127,0.115591],"jeonTaek":[0,0.000738,0.001453,0.002149,0.002826,0.003492,0.004138,0.004761,0.00539,0.006006,0.006669,0.007319,0.007997,0.008738,0.009547,0.010428,0.011523,0.012859,0.014832,0.018149,0.058426],"browLength":[0.112602,0.181943,0.191065,0.19642,0.200342,0.203629,0.206457,0.208992,0.211287,0.213472,0.215669,0.217882,0.2201,0.222519,0.224964,0.227816,0.23112,0.23513,0.240704,0.24998,0.314473],"browAngle":[-178.807364,-176.636824,-176.332553,-176.142279,-175.995438,-175.873546,-175.765099,-175.669093,-175.579868,-175.488434,-175.398031,-175.30694,-175.212948,-175.110383,-174.999566,-174.8754,-174.721944,-174.530625,-174.253827,-173.749682,-166.707612],"browThick":[0.008742,0.023427,0.025228,0.026304,0.027075,0.027694,0.02824,0.028721,0.02918,0.029613,0.030028,0.030436,0.03086,0.031304,0.031793,0.03235,0.032983,0.03374,0.034782,0.036581,0.055223],"gwanGol":[0.848385,0.945189,0.959365,0.968085,0.97458,0.980043,0.984594,0.988695,0.992563,0.996381,1.000098,1.003759,1.007595,1.011581,1.01592,1.020899,1.026799,1.033809,1.044093,1.061888,1.249721],"inJung":[0.000011,0.034933,0.045296,0.051294,0.055854,0.059547,0.062545,0.065301,0.067876,0.070326,0.0727,0.075097,0.077596,0.080222,0.08303,0.086159,0.089686,0.094301,0.100445,0.110707,0.186936],"chin":[0.127833,0.152004,0.155014,0.156756,0.158044,0.159055,0.159936,0.160708,0.161482,0.162172,0.162836,0.163526,0.164217,0.16497,0.165771,0.166652,0.167664,0.168945,0.170689,0.173552,0.198756],"upperThirdPct":[38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38],"middleThirdPct":[12.690246,21.379633,22.375741,22.959436,23.375389,23.720471,24.027066,24.29824,24.542522,24.77877,25.009293,25.234621,25.473116,25.717571,25.985051,26.277466,26.619437,27.056492,27.635499,28.616088,37.19435],"lowerThirdPct":[24.80565,33.383912,34.364501,34.943508,35.380563,35.722534,36.014949,36.282429,36.526884,36.765379,36.990781,37.22123,37.457478,37.70176,37.972934,38.279529,38.624611,39.040564,39.624259,40.620367,49.309754],"lowerUpperWidth":[0.275921,0.649997,0.698487,0.72836,0.751013,0.769116,0.784704,0.798935,0.812188,0.825284,0.838421,0.851002,0.864244,0.879035,0.894039,0.911828,0.932135,0.957766,0.995087,1.059272,1.780175],"cheonJiWidth":[0.561742,0.944045,1.004938,1.044096,1.072806,1.096698,1.11852,1.137611,1.157081,1.175085,1.192741,1.211703,1.231243,1.251666,1.274366,1.300194,1.331536,1.372948,1.431666,1.538468,3.624223],"cheonJiHeight":[0.770639,0.935491,0.959008,0.973347,0.983829,0.992698,1.000713,1.00791,1.014484,1.020923,1.027285,1.033581,1.04033,1.047339,1.055117,1.063754,1.074036,1.08747,1.105792,1.138273,1.531909]}};
 
-  let shapeOpt;
-  if (whRatio > 0.85) {
-    // Wide face
-    if (jawRatio > 0.88) shapeOpt = FACE_S.find(s=>s.v==='square'); // wide jaw = square
-    else shapeOpt = FACE_S.find(s=>s.v==='round'); // narrower jaw but wide = round
-  } else if (whRatio < 0.68) {
-    shapeOpt = FACE_S.find(s=>s.v==='long'); // narrow and long
-  } else {
-    // Medium ratio — check if forehead is wider than jaw (inverted triangle)
-    const foreheadW = Math.abs(ai[251].x - ai[21].x); // approximate forehead width
-    if (foreheadW > jawW * 1.15) shapeOpt = FACE_S.find(s=>s.v==='inv');
-    else if (jawRatio > 0.85) shapeOpt = FACE_S.find(s=>s.v==='square');
-    else shapeOpt = FACE_S.find(s=>s.v==='round');
+function _cwRank(v, qs) {
+  if (!qs || qs.length < 3 || !isFinite(v)) return 0.5;
+  if (v <= qs[0]) return 0;
+  if (v >= qs[qs.length - 1]) return 1;
+  var n = qs.length - 1;
+  for (var i = 0; i < n; i++) {
+    if (v <= qs[i + 1]) {
+      var t = (v - qs[i]) / ((qs[i + 1] - qs[i]) || 1e-12);
+      return (i + t) / n;
+    }
   }
-  if (!shapeOpt) shapeOpt = FACE_S[0];
+  return 1;
+}
 
-  // --- Eyes: width/height ratio + droopiness ---
-  // Left eye: outer corner 33, inner corner 133, top 159, bottom 145
-  // Right eye: outer corner 362, inner corner 263, top 386, bottom 374
-  const leW = Math.abs(ai[33].x - ai[133].x);
-  const leH = Math.abs(ai[159].y - ai[145].y);
-  const reW = Math.abs(ai[362].x - ai[263].x);
-  const reH = Math.abs(ai[386].y - ai[374].y);
-  const avgEyeW = (leW + reW) / 2;
-  const avgEyeH = (leH + reH) / 2;
-  const eyeRatio = avgEyeW / (avgEyeH || 0.001);
-  // Check droopiness: outer corner lower than inner corner
-  const lDroop = ai[33].y - ai[133].y; // positive = outer corner lower
-  const rDroop = ai[263].y - ai[362].y; // for right eye, inner(263) vs outer(362)
-  const avgDroop = (lDroop + rDroop) / 2;
-  // Eye size relative to face
-  const eyeSizeRatio = avgEyeH / (faceH || 0.001);
+/* 등방 좌표 복원. A = 사진높이/사진폭 */
+function _cwFaceIso(ai, A) {
+  var a = (A && isFinite(A) && A > 0) ? A : 1, out = new Array(ai.length);
+  for (var i = 0; i < ai.length; i++) out[i] = { x: ai[i].x, y: ai[i].y * a, z: ai[i].z || 0 };
+  return out;
+}
 
-  let eyeOpt;
-  if (avgDroop > 0.008) {
-    eyeOpt = FACE_E.find(e=>e.v==='droopy');
-  } else if (eyeRatio > 4.0) {
-    eyeOpt = FACE_E.find(e=>e.v==='narrow'); // very wide relative to height
-  } else if (eyeSizeRatio > 0.055) {
-    eyeOpt = FACE_E.find(e=>e.v==='big'); // large eyes
-  } else if (eyeRatio < 3.0) {
-    eyeOpt = FACE_E.find(e=>e.v==='round'); // rounder eyes
-  } else {
-    eyeOpt = FACE_E.find(e=>e.v==='big'); // default
-  }
-  if (!eyeOpt) eyeOpt = FACE_E[0];
+/* 순수 계측 26축 — 분류·점수 이전 단계 */
+function _cwFaceMeasure(aiRaw, A) {
+  var p = _cwFaceIso(aiRaw, A);
+  var dx = function (a, b) { return Math.abs(p[a].x - p[b].x); };
+  var dy = function (a, b) { return Math.abs(p[a].y - p[b].y); };
+  var faceW = dx(234, 454) || 1e-6, faceH = dy(10, 152) || 1e-6;
+  var jawW = dx(172, 397);            // ★하악각 (정정)
+  var templeW = dx(127, 356) || 1e-6; // 관자 (구 jawW)
+  var foreheadW = dx(21, 251);
+  var leW = dx(33, 133), leH = dy(159, 145), reW = dx(362, 263), reH = dy(386, 374);
+  var eyeW = (leW + reW) / 2, eyeH = ((leH + reH) / 2) || 1e-6;
+  var lT = Math.atan2(p[33].y - p[133].y, dx(33, 133) || 1e-6) * 180 / Math.PI;
+  var rT = Math.atan2(p[263].y - p[362].y, dx(362, 263) || 1e-6) * 180 / Math.PI;
+  var tilt = (lT + rT) / 2;           // + 면 외안각이 아래 = 처진 눈
 
-  // --- Nose: width vs face width ---
-  // LM 129 = right nostril, LM 358 = left nostril
-  // LM 168 = nose bridge top
-  const noseW = Math.abs(ai[358].x - ai[129].x);
-  const noseWRatio = noseW / (faceW || 0.001);
-  // Nose height: bridge(168) to tip(1)
-  const noseH = Math.abs(ai[1].y - ai[168].y);
-  const noseHRatio = noseH / (faceH || 0.001);
-  // Nose bridge prominence (z-depth if available, else use proportions)
-  const noseBridgeZ = ai[6] ? Math.abs(ai[6].z || 0) : 0;
+  /* 콧대 볼록도 — LM168(콧부리)→LM1(코끝) 현(弦) 대비 중간점 돌출 (y,z 평면) */
+  var conv = 0;
+  (function () {
+    var A0 = p[168], B0 = p[1];
+    var vy = B0.y - A0.y, vz = (B0.z || 0) - (A0.z || 0);
+    var len = Math.sqrt(vy * vy + vz * vz) || 1e-6;
+    var mids = [6, 197, 195, 5].filter(function (i) { return p[i]; });
+    var mx = 0;
+    for (var k = 0; k < mids.length; k++) {
+      var q = p[mids[k]];
+      var d = ((q.y - A0.y) * vz - ((q.z || 0) - (A0.z || 0)) * vy) / len;
+      if (d > mx) mx = d;
+    }
+    conv = mx / (faceH || 1e-6);
+  })();
 
-  let noseOpt;
-  if (noseWRatio > 0.30) {
-    noseOpt = FACE_N.find(n=>n.v==='wide'); // wide nose
-  } else if (noseWRatio < 0.20 && noseHRatio < 0.25) {
-    noseOpt = FACE_N.find(n=>n.v==='small'); // small nose
-  } else if (noseHRatio > 0.30 || noseBridgeZ > 0.06) {
-    noseOpt = FACE_N.find(n=>n.v==='high'); // tall/prominent nose
-  } else {
-    // Check for hooked nose: tip(1) extends below alar base(2)
-    const tipToAlar = ai[1].y - ai[2].y;
-    if (tipToAlar > 0.015) noseOpt = FACE_N.find(n=>n.v==='hooked');
-    else noseOpt = FACE_N.find(n=>n.v==='high');
-  }
-  if (!noseOpt) noseOpt = FACE_N[0];
-
-  // --- Mouth: width vs inter-pupil distance, lip thickness ---
-  // LM 61 = left mouth corner, LM 291 = right mouth corner
-  // LM 13 = upper lip top, LM 14 = lower lip bottom
-  // LM 0 = upper lip outer, LM 17 = lower lip outer (for thickness)
-  const mouthW = Math.abs(ai[291].x - ai[61].x);
-  const lePupil = {x:(ai[33].x+ai[133].x)/2, y:(ai[33].y+ai[133].y)/2};
-  const rePupil = {x:(ai[362].x+ai[263].x)/2, y:(ai[362].y+ai[263].y)/2};
-  const interPupil = Math.abs(rePupil.x - lePupil.x);
-  const mouthFaceRatio = mouthW / (interPupil || 0.001);
-  // Lip thickness: distance from lip top edge to bottom edge
-  const upperLipH = Math.abs(ai[13].y - ai[0].y);
-  const lowerLipH = Math.abs(ai[17].y - ai[14].y);
-  const totalLipH = upperLipH + lowerLipH;
-  const lipThicknessRatio = totalLipH / (faceH || 0.001);
-
-  let mouthOpt;
-  if (mouthFaceRatio > 1.3) {
-    mouthOpt = FACE_M.find(m=>m.v==='big'); // wide mouth
-  } else if (mouthFaceRatio < 0.95) {
-    mouthOpt = FACE_M.find(m=>m.v==='small'); // small mouth
-  } else if (lipThicknessRatio > 0.06) {
-    mouthOpt = FACE_M.find(m=>m.v==='thick'); // thick lips
-  } else if (lipThicknessRatio < 0.035) {
-    mouthOpt = FACE_M.find(m=>m.v==='thin'); // thin lips
-  } else {
-    mouthOpt = mouthFaceRatio > 1.1 ? FACE_M.find(m=>m.v==='big') : FACE_M.find(m=>m.v==='small');
-  }
-  if (!mouthOpt) mouthOpt = FACE_M[0];
-
-  // --- Scores based on actual ratios (golden ratio proximity, symmetry, etc.) ---
-  // Face symmetry score
-  const leCenter = {x:(ai[33].x+ai[133].x)/2};
-  const reCenter = {x:(ai[362].x+ai[263].x)/2};
-  const noseCx = ai[1].x;
-  const faceCx = (ai[234].x + ai[454].x) / 2;
-  const symmetryL = Math.abs(noseCx - leCenter.x);
-  const symmetryR = Math.abs(reCenter.x - noseCx);
-  const symmetry = 1 - Math.min(1, Math.abs(symmetryL - symmetryR) / (faceW || 0.001) * 5);
-
-  // Three-court proportion (삼정: forehead, mid-face, lower face should be ~equal)
-  const foreheadH = ai[168].y - ai[10].y; // forehead to brow
-  const midFaceH = ai[1].y - ai[168].y; // brow to nose tip
-  const lowerFaceH = ai[152].y - ai[1].y; // nose tip to chin
-  const totalThirds = foreheadH + midFaceH + lowerFaceH;
-  const idealThird = totalThirds / 3;
-  const thirdsDev = (Math.abs(foreheadH-idealThird) + Math.abs(midFaceH-idealThird) + Math.abs(lowerFaceH-idealThird)) / (totalThirds || 0.001);
-  const thirdsScore = 1 - Math.min(1, thirdsDev * 2);
-
-  // Overall face score: blend of symmetry, proportion, golden ratio proximity
-  const goldenRatio = 1.618;
-  const fhwRatio = faceH / (faceW || 0.001);
-  const goldenProximity = 1 - Math.min(1, Math.abs(fhwRatio - goldenRatio) / goldenRatio);
-
-  const baseScore = Math.round(60 + symmetry * 15 + thirdsScore * 12 + goldenProximity * 10);
-  const overallScore = Math.min(99, Math.max(65, baseScore));
-
-  // Per-feature scores
-  const eyeSymmetry = 1 - Math.min(1, Math.abs(leW-reW)/(avgEyeW||0.001));
-  const eyeScore = Math.min(95, Math.max(65, Math.round(68 + eyeSymmetry*12 + (eyeSizeRatio>0.04?10:5))));
-
-  const noseSymScore = 1 - Math.min(1, Math.abs(noseCx - faceCx)/(faceW||0.001)*8);
-  const noseScore = Math.min(95, Math.max(65, Math.round(66 + noseSymScore*14 + (noseHRatio>0.22?8:4))));
-
-  const mouthSym = 1 - Math.min(1, Math.abs((ai[61].x+ai[291].x)/2 - faceCx)/(faceW||0.001)*8);
-  const mouthScore = Math.min(95, Math.max(65, Math.round(64 + mouthSym*14 + (lipThicknessRatio>0.04?8:5))));
-
-  // ── 십이궁·오관 추가 측정 (프리미엄용) ──
-
-  // 명궁(命宮) — 미간 너비·평탄도 (LM 55=좌 눈썹 안쪽, 285=우 눈썹 안쪽)
-  const myungGungW = Math.abs(ai[285].x - ai[55].x);
-  const myungGungRatio = myungGungW / (faceW || 0.001);
-
-  // 관록궁(官祿宮) — 이마 중앙 너비 (LM 21=좌이마, 251=우이마)
-  const foreheadCenterW = Math.abs(ai[251].x - ai[21].x);
-  const foreheadWidthRatio = foreheadCenterW / (faceW || 0.001);
-
-  // 천이궁(遷移宮) — 이마 양측(관자놀이) 균형
-  const templeWL = Math.abs(ai[21].x - ai[234].x);
-  const templeWR = Math.abs(ai[454].x - ai[251].x);
-  const templeBalance = 1 - Math.min(1, Math.abs(templeWL - templeWR) / (faceW || 0.001) * 5);
-
-  // 부처궁(夫妻宮) — 눈꼬리 각도 (외안각 기울기)
-  const eyeTailAngleL = (ai[33].y - ai[133].y) / (Math.abs(ai[33].x - ai[133].x) || 0.001);
-  const eyeTailAngleR = (ai[263].y - ai[362].y) / (Math.abs(ai[362].x - ai[263].x) || 0.001);
-  const eyeTailAngle = ((Math.atan(eyeTailAngleL) + Math.atan(eyeTailAngleR)) / 2) * (180/Math.PI);
-
-  // 자녀궁(子女宮) — 와잠(눈 아래) 두께 (LM 145=하안검, 117=볼 상단)
-  const underEyeL = Math.abs(ai[117].y - ai[145].y);
-  const underEyeR = Math.abs(ai[346].y - ai[374].y);
-  const underEyeRatio = ((underEyeL + underEyeR) / 2) / (faceH || 0.001);
-
-  // 질액궁(疾厄宮) — 산근(코뿌리) 너비 (LM 188, 412)
-  const sanGeunW = Math.abs(ai[188].x - ai[412].x);
-  const sanGeunRatio = sanGeunW / (faceW || 0.001);
-
-  // 전택궁(田宅宮) — 눈썹-눈 거리 (LM 66=좌 눈썹 하단, 159=좌 상안검)
-  const browEyeL = Math.abs(ai[159].y - ai[66].y);
-  const browEyeR = Math.abs(ai[386].y - ai[296].y);
-  const jeonTaekRatio = ((browEyeL + browEyeR) / 2) / (faceH || 0.001);
-
-  // ── 오관 추가: 보수관(눈썹) ──
-  // 눈썹 길이 (LM 55→46→53 좌, 285→276→283 우)
-  const browLenL = Math.sqrt(Math.pow(ai[53].x-ai[55].x,2)+Math.pow(ai[53].y-ai[55].y,2));
-  const browLenR = Math.sqrt(Math.pow(ai[283].x-ai[285].x,2)+Math.pow(ai[283].y-ai[285].y,2));
-  const browLengthRatio = ((browLenL+browLenR)/2) / (faceW || 0.001);
-  // 눈썹 기울기
-  const browAngleL = Math.atan2(ai[53].y-ai[55].y, ai[53].x-ai[55].x)*(180/Math.PI);
-  const browAngleR = Math.atan2(ai[283].y-ai[285].y, ai[285].x-ai[283].x)*(180/Math.PI);
-  const browAngle = (browAngleL + browAngleR) / 2;
-  // 눈썹 간격 (= 명궁과 동일)
-  const browGapRatio = myungGungRatio;
-  // 눈썹 두께 (LM 63=좌 눈썹 상단, 66=좌 눈썹 하단)
-  const browThickL = Math.abs(ai[63].y - ai[66].y);
-  const browThickR = Math.abs(ai[293].y - ai[296].y);
-  const browThicknessRatio = ((browThickL+browThickR)/2) / (faceH || 0.001);
-
-  // ── 관골(觀骨) — 광대뼈 돌출도 ──
-  const cheekboneW = faceW; // 광대 너비 = 얼굴 최대폭
-  const gwanGolProminence = cheekboneW / (jawW || 0.001); // 광대/턱 비율 (높을수록 광대 돌출)
-
-  // ── 인중(人中) ──
-  const inJungLen = Math.abs(ai[0].y - ai[2].y); // 코 하단(2) → 윗입술 상단(0)
-  const inJungRatio = inJungLen / (faceH || 0.001);
-
-  // ── 턱(地閣) ──
-  const chinLen = Math.abs(ai[152].y - ai[17].y); // 턱끝(152) → 하입술 하단(17)
-  const chinRatio = chinLen / (faceH || 0.001);
-  const jawAngleL2 = Math.atan2(ai[152].y - ai[127].y, ai[127].x - ai[152].x)*(180/Math.PI);
-  const jawAngleR2 = Math.atan2(ai[152].y - ai[356].y, ai[152].x - ai[356].x)*(180/Math.PI);
-  const jawAngle = (jawAngleL2 + jawAngleR2) / 2;
-
-  // ── 삼정(三停) 개별 비율 ──
-  const upperThirdPct = (foreheadH / (totalThirds || 0.001)) * 100;
-  const middleThirdPct = (midFaceH / (totalThirds || 0.001)) * 100;
-  const lowerThirdPct = (lowerFaceH / (totalThirds || 0.001)) * 100;
+  var lc = (p[33].x + p[133].x) / 2, rc = (p[362].x + p[263].x) / 2;
+  var noseCx = p[1].x, faceCx = (p[234].x + p[454].x) / 2;
+  var symmetry = 1 - Math.min(1, Math.abs(Math.abs(noseCx - lc) - Math.abs(rc - noseCx)) / faceW * 5);
+  var t1 = p[168].y - p[10].y, t2 = p[1].y - p[168].y, t3 = p[152].y - p[1].y;
+  var tot = (t1 + t2 + t3) || 1e-6, id = tot / 3;
+  var thirds = 1 - Math.min(1, (Math.abs(t1 - id) + Math.abs(t2 - id) + Math.abs(t3 - id)) / tot * 2);
+  var browLen = (Math.sqrt(Math.pow(p[53].x - p[55].x, 2) + Math.pow(p[53].y - p[55].y, 2)) +
+    Math.sqrt(Math.pow(p[283].x - p[285].x, 2) + Math.pow(p[283].y - p[285].y, 2))) / 2;
+  var browAng = (Math.atan2(p[53].y - p[55].y, p[53].x - p[55].x) * 180 / Math.PI +
+    Math.atan2(p[283].y - p[285].y, p[285].x - p[283].x) * 180 / Math.PI) / 2;
 
   return {
-    shapeOpt, eyeOpt, noseOpt, mouthOpt,
-    overallScore,
-    eyeScore, noseScore, mouthScore,
-    ratios: {
-      whRatio, jawRatio, eyeRatio, eyeSizeRatio, noseWRatio, noseHRatio,
-      mouthFaceRatio, lipThicknessRatio, symmetry, thirdsScore, goldenProximity,
-      // 십이궁 추가 측정
-      myungGungRatio, foreheadWidthRatio, templeBalance, eyeTailAngle,
-      underEyeRatio, sanGeunRatio, jeonTaekRatio,
-      // 오관 추가: 눈썹
-      browLengthRatio, browAngle, browGapRatio, browThicknessRatio,
-      // 관골·인중·턱
-      gwanGolProminence, inJungRatio, chinRatio, jawAngle,
-      // 삼정 개별
-      upperThirdPct, middleThirdPct, lowerThirdPct
-    }
+    whRatio: faceW / faceH,
+    jawRatio: jawW / faceW,
+    templeRatio: templeW / faceW,
+    foreheadRatio: foreheadW / faceW,
+    eyeAspect: eyeW / eyeH,
+    eyeSize: eyeW / faceW,
+    eyeTilt: tilt,
+    eyeSymmetry: 1 - Math.min(1, Math.abs(leW - reW) / (eyeW || 1e-6)),
+    noseWRatio: dx(129, 358) / faceW,
+    noseHRatio: dy(1, 168) / faceH,
+    noseDorsum: conv,
+    noseCenter: 1 - Math.min(1, Math.abs(noseCx - faceCx) / faceW * 8),
+    mouthRatio: dx(61, 291) / faceW,
+    mouthOverIP: dx(61, 291) / (Math.abs(rc - lc) || 1e-6),
+    lipThickness: (dy(13, 0) + dy(17, 14)) / faceH,
+    mouthCenter: 1 - Math.min(1, Math.abs((p[61].x + p[291].x) / 2 - faceCx) / faceW * 8),
+    symmetry: symmetry,
+    thirds: thirds,
+    upperThirdPct: t1 / tot * 100,
+    middleThirdPct: t2 / tot * 100,
+    lowerThirdPct: t3 / tot * 100,
+    myungGung: dx(55, 285) / faceW,
+    cheonI: 1 - Math.min(1, Math.abs(dx(21, 234) - dx(454, 251)) / faceW * 5),
+    jaNyeo: (dy(117, 145) + dy(346, 374)) / 2 / faceH,
+    jilAek: dx(188, 412) / faceW,
+    jeonTaek: (dy(159, 66) + dy(386, 296)) / 2 / faceH,
+    browLength: browLen / faceW,
+    browAngle: browAng,
+    browThick: (dy(63, 66) + dy(293, 296)) / 2 / faceH,
+    gwanGol: faceW / templeW,
+    inJung: dy(0, 2) / faceH,
+    chin: dy(152, 17) / faceH,
+
+    /* ── ★v786-c · G4 차원 정합 축 ──────────────────────────────
+       相理衡眞 직독(2026-09-05)에서 드러난 결함: 「天庭·地角 上下相應」은
+       원문이 비교 대상을 다 주는데(TEXT 등급), 우리 축은 foreheadRatio 가 폭(/faceW)이고
+       chin 이 길이(/faceH)라 ★차원이 달라 비교 자체가 성립하지 않았다.
+       ⟹ 같은 차원끼리 짝지은 비(比) 축을 신설한다. 1.0 = 「相應(서로 걸맞다)」.
+       ★이 세 축은 분모가 같으므로 ★분위수 랭크가 아니라 원시값으로 비교해야 TEXT 등급이 유지된다. */
+    lowerUpperWidth: jawW / (foreheadW || 1e-6),   // 하악각폭 / 이마폭 — 「上尖下豐」의 방향
+    cheonJiWidth: foreheadW / (jawW || 1e-6),      // 天庭 / 地角 (폭)
+    cheonJiHeight: t1 / (t3 || 1e-6),              // 上停 / 下停 (높이) — 둘 다 세로라 정합
+
+    /* ── 구 명칭 별칭 (기존 화면·프리미엄 렌더러 호환) ──
+       ★jawRatio 는 이제 진짜 하악각 폭이다. 화면의 '턱비율' 표기가 비로소 맞다. */
+    eyeRatio: eyeW / eyeH,
+    eyeSizeRatio: eyeH / faceH,
+    mouthFaceRatio: dx(61, 291) / (Math.abs(rc - lc) || 1e-6),
+    lipThicknessRatio: (dy(13, 0) + dy(17, 14)) / faceH,
+    thirdsScore: thirds,
+    goldenProximity: 1 - Math.min(1, Math.abs(faceH / faceW - 1.618) / 1.618),
+    myungGungRatio: dx(55, 285) / faceW,
+    foreheadWidthRatio: foreheadW / faceW,
+    templeBalance: 1 - Math.min(1, Math.abs(dx(21, 234) - dx(454, 251)) / faceW * 5),
+    eyeTailAngle: tilt,
+    underEyeRatio: (dy(117, 145) + dy(346, 374)) / 2 / faceH,
+    sanGeunRatio: dx(188, 412) / faceW,
+    jeonTaekRatio: (dy(159, 66) + dy(386, 296)) / 2 / faceH,
+    browLengthRatio: browLen / faceW,
+    browGapRatio: dx(55, 285) / faceW,
+    browThicknessRatio: (dy(63, 66) + dy(293, 296)) / 2 / faceH,
+    gwanGolProminence: faceW / templeW,
+    inJungRatio: dy(0, 2) / faceH,
+    chinRatio: dy(152, 17) / faceH,
+    jawAngle: (Math.atan2(p[152].y - p[172].y, Math.abs(p[172].x - p[152].x) || 1e-6) +
+      Math.atan2(p[152].y - p[397].y, Math.abs(p[152].x - p[397].x) || 1e-6)) / 2 * 90 / Math.PI
   };
 }
+
+/* 분류축 24개 — 시그니처·프롬프트 결정변수 */
+var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
+  'noseWRatio', 'noseHRatio', 'noseDorsum', 'mouthRatio', 'lipThickness', 'symmetry',
+  'thirds', 'myungGung', 'cheonI', 'jaNyeo', 'jilAek', 'jeonTaek',
+  'browLength', 'browAngle', 'browThick', 'gwanGol', 'inJung', 'chin',
+  /* ★v786-c · G5 — 재고 있으면서 분류에 안 쓰던 삼정 3축을 승격.
+     「고른가(thirds)」만 묻고 「긴가」는 안 묻던 구조였다. */
+  'upperThirdPct', 'middleThirdPct', 'lowerThirdPct',
+  /* ★v786-c · G4 — 차원 정합 비교축 */
+  'lowerUpperWidth', 'cheonJiWidth', 'cheonJiHeight'];
+
+/* ════════════════════════════════════════════════════════════════════
+   ★v786-b — 축의 성질을 두 종류로 나눈다. 이걸 안 나눈 것이 v786-a 의 결함이었다.
+
+   ABS  ★자기참조 절대축 — 관상학 원문이 **기준을 스스로 준다**.
+        「三停均等」(삼정이 고르다) · 「左右均衡」 · 「五官相稱」(오관이 서로 걸맞다)
+        ⟹ 모집단이 필요 없다. 1.0 = 원문이 말하는 「고르다」에 완전 부합.
+        ⟹ ★분위수 랭크로 바꾸면 **절대 기준이 상대 순위로 바뀌어 교리가 사라진다.**
+           v786-a 가 정확히 그 잘못을 했다. 여기서 되돌린다.
+
+   REL  상대축 — 원문은 「準頭豐隆」(코끝이 도톰하다)처럼 **정량 기준을 주지 않는다**.
+        ⟹ 「도톰하다」를 판정하려면 비교 모집단이 있어야 한다.
+        ⟹ 그 모집단이 우리 몫이므로 ★TIER 표기가 반드시 따라붙는다.
+
+   ★이 구분은 「다양성」과 「교리」가 충돌할 때 어느 쪽이 옳은지를 정해 준다:
+     ABS 축은 사람마다 비슷하게 나오는 것이 **정상**이다. 억지로 벌리면 그게 왜곡이다.
+     사람을 구분하는 일은 REL 축이 맡는다.
+   ════════════════════════════════════════════════════════════════════ */
+var CW_FACE_AXIS_KIND = {
+  symmetry: 'ABS',   // 左右均衡 — 코 중심 대비 좌우 눈 거리의 상칭
+  thirds: 'ABS',     // 三停均等 — 상·중·하정이 고른가
+  cheonI: 'ABS',     // 遷移宮 좌우 균형
+  whRatio: 'REL', jawRatio: 'REL', foreheadRatio: 'REL', eyeAspect: 'REL', eyeSize: 'REL',
+  eyeTilt: 'REL', noseWRatio: 'REL', noseHRatio: 'REL', noseDorsum: 'REL', mouthRatio: 'REL',
+  lipThickness: 'REL', myungGung: 'REL', jaNyeo: 'REL', jilAek: 'REL', jeonTaek: 'REL',
+  browLength: 'REL', browAngle: 'REL', browThick: 'REL', gwanGol: 'REL', inJung: 'REL', chin: 'REL',
+  upperThirdPct: 'REL', middleThirdPct: 'REL', lowerThirdPct: 'REL',
+  /* ★G4 세 축은 ABS 다 — 원문이 「相應(서로 걸맞다)」이라는 기준을 스스로 주기 때문이다.
+     1.0 에서 얼마나 벗어났는가가 곧 판정이고, 모집단이 필요 없다. */
+  lowerUpperWidth: 'ABS', cheonJiWidth: 'ABS', cheonJiHeight: 'ABS'
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   ★v786-c — 五形(오형) 부합도. ★종전 「단일 라벨 + 오행 배당」을 폐기한다.
+
+   ★★원문 직독으로 밝혀진 것 (相理衡眞 卷六 五行形相論, 2026-09-05 판독):
+     「金方、木瘦、水圓、火尖、土厚」
+     「火主明 … 其形銳而下豐 … 上尖如火之炎」
+   ⟹ ★火形은 **위가 뾰족하고 아래가 풍만**한 형이다.
+   ⟹ ★종전 코드는 火形을 **역삼각형(이마 넓고 턱 좁음)** 에 배당했다 — ★상하가 뒤집혀 있었다.
+
+   ★★그리고 더 중요한 것: 원문의 五形 조건은 다섯 조 **전부에 거동 조항**(坐·涉·行·臥)과
+     색(色黃·色赤氣枯)·몸통(露臂露背·腰)·살뼈(肉輕骨重) 조건이 붙어 있다.
+   ⟹ ★**정면 사진 한 장으로 오형을 확정하는 것은 원문 절차가 아니다.**
+   ⟹ 그래서 단일 라벨을 버리고 **부합도 벡터 + 커버리지**를 낸다. 확정하지 않는다.
+
+   ★五常 배당도 원문으로 정정: 金為義·木為仁·水為智·火為禮·土為信.
+     종전의 「水=원만·포용·재물복」류 문구는 ★이 원전에서 온 것이 아니다.
+   ════════════════════════════════════════════════════════════════════ */
+var CW_WUXING = {
+  木: { form: '瘦(마름)·長', virtue: '仁', locus: '相理衡眞 卷六 五行形相論' },
+  火: { form: '尖 — 上尖下豐(위가 뾰족하고 아래가 풍만)', virtue: '禮', locus: '同' },
+  土: { form: '厚·肥', virtue: '信', locus: '同' },
+  金: { form: '方(모남)', virtue: '義', locus: '同' },
+  水: { form: '圓(둥긂)', virtue: '智', locus: '同' }
+};
+
+/* 메인 — 반환 형상은 종전 코드와 호환 유지 (shapeOpt/eyeOpt/noseOpt/mouthOpt/…/ratios) */
+function classifyFaceFromLandmarks(ai, aspect) {
+  var A = aspect;
+  if (!(A > 0)) A = (typeof window !== 'undefined' && window._cwFaceAspect) || 1;
+  var m = _cwFaceMeasure(ai, A);
+  var R = {}, i;
+  for (i = 0; i < CW_FACE_AXES.length; i++) {
+    var k = CW_FACE_AXES[i];
+    R[k] = _cwRank(m[k], CW_FACE_REF.q[k]);
+  }
+
+  /* ── 얼굴형 (분위수 기반 · 4종 전부 도달) ──
+     ★v786-c — 역삼각형 판정을 ★랭크 차가 아니라 원시값 비교로 바꾼다.
+       foreheadRatio 와 jawRatio 는 분모가 둘 다 faceW 라 ★원시값 비교가 성립하고,
+       그러면 이 판정은 TEXT 등급(모집단 불필요)을 유지한다.
+       종전처럼 랭크를 빼면 TIER-C 합성 모집단에 의존하게 되어 POPULATION 으로 격하됐다. */
+  var shapeV;
+  if (R.whRatio < 0.25) shapeV = 'long';
+  else if (R.jawRatio > 0.62) shapeV = 'square';
+  else if (m.cheonJiWidth > 1.06) shapeV = 'inv';   // 이마폭이 하악각폭보다 6% 이상 넓다
+  else shapeV = 'round';
+
+  /* ── 눈 ── */
+  var eyeV;
+  if (R.eyeTilt > 0.78) eyeV = 'droopy';
+  else if (R.eyeSize > 0.70) eyeV = 'big';
+  else if (R.eyeAspect > 0.62) eyeV = 'narrow';
+  else eyeV = 'round';
+
+  /* ── 코 (매부리코는 콧대 볼록도로 판정 — 종전엔 도달 불가였다) ── */
+  var noseV;
+  if (R.noseDorsum > 0.93) noseV = 'hooked';
+  else if (R.noseWRatio > 0.66) noseV = 'wide';
+  else if (R.noseHRatio < 0.30 && R.noseWRatio < 0.45) noseV = 'small';
+  else noseV = 'high';
+
+  /* ── 입 ── */
+  var mouthV;
+  if (R.lipThickness > 0.76) mouthV = 'thick';
+  else if (R.lipThickness < 0.24) mouthV = 'thin';
+  else if (R.mouthRatio > 0.52) mouthV = 'big';
+  else mouthV = 'small';
+
+  var pick = function (arr, v) { for (var j = 0; j < arr.length; j++) if (arr[j].v === v) return arr[j]; return arr[0]; };
+  var sc = function (r, lo, hi) { return Math.round(lo + Math.max(0, Math.min(1, r)) * (hi - lo)); };
+
+  /* ── 조화도(和) — ★ABS 축만. 원문의 절대 기준을 그대로 쓴다.
+        ★분위수 랭크를 쓰지 않는다. 「三停均等」은 순위가 아니라 상태다.
+        ★대부분 사람이 비슷한 값을 받는 것이 정상이다 — 그것이 원문이 말하는 바다.
+        오관상칭(五官相稱): 눈·코·입의 폭이 서로 걸맞은가를 자기참조로 잰다. */
+  var organProp = 1 - Math.min(1, (
+    Math.abs(m.eyeSize * 2 / (m.noseWRatio || 1e-6) - 1.62) / 1.62 +
+    Math.abs(m.mouthRatio / (m.noseWRatio || 1e-6) - 1.62) / 1.62
+  ) / 2);
+  var harmony = Math.round(100 * (
+    0.32 * m.symmetry + 0.32 * m.thirds + 0.18 * m.cheonI + 0.18 * organProp
+  ));
+
+  /* ── 특징(格) — ★REL 축만. 이 사람을 남과 구분하는 것은 여기다.
+        중앙(0.5)에서 가장 멀리 떨어진 축을 뽑는다. */
+  var dist = [];
+  for (i = 0; i < CW_FACE_AXES.length; i++) {
+    var ak = CW_FACE_AXES[i];
+    if (CW_FACE_AXIS_KIND[ak] !== 'REL') continue;
+    dist.push({ axis: ak, rank: R[ak], dev: Math.abs(R[ak] - 0.5) });
+  }
+  dist.sort(function (a, b) { return b.dev - a.dev; });
+  var distinctAxes = dist.slice(0, 5);
+
+  var overall = harmony;
+
+  /* ── 五形 부합도 벡터 (★단일 라벨 확정을 하지 않는다) ──
+     원문 네 글자(方·瘦·圓·尖)를 우리 축으로 직역한 것만 낸다.
+     ★土(厚·肥)는 살집·몸통 조건이라 우리 센서로 잴 수 없다 ⟹ null. 억지로 배당하지 않는다.
+     ★covered: 원문 조건 계열 4개(형태·색·몸통·거동) 중 우리가 잰 것은 형태 하나뿐이다. */
+  var clamp01 = function (x) { return Math.max(0, Math.min(1, x)); };
+  var wuxingFit = {
+    木: { fit: clamp01(1 - R.whRatio), basis: '瘦·長 — 세로로 길고 마름', axes: ['whRatio'], confidence: 'MED' },
+    // ★2축 이상은 기하평균을 쓴다 — 곱을 그대로 쓰면 단일축(木)과 스케일이 달라 top 비교가 불공정해진다.
+    火: { fit: clamp01(Math.sqrt(R.jawRatio * (1 - R.foreheadRatio))), basis: '尖 — 上尖下豐(위 좁고 아래 넓음)', axes: ['jawRatio', 'foreheadRatio', 'lowerUpperWidth'], confidence: 'MED' },
+    土: { fit: null, basis: '厚·肥 — 살집·몸통·거동 조건. ★센서 부재로 판정 불가', axes: [], confidence: 'NONE' },
+    金: { fit: clamp01(Math.min(R.jawRatio, R.foreheadRatio)), basis: '方 — 위아래가 모두 넓어 모남', axes: ['jawRatio', 'foreheadRatio'], confidence: 'MED' },
+    水: { fit: clamp01(Math.sqrt(R.whRatio * (1 - R.jawRatio))), basis: '圓 — 넓되 각지지 않음 ★「圓」의 해석이 들어감', axes: ['whRatio', 'jawRatio'], confidence: 'LOW' }
+  };
+  var wuxingTop = null, wuxingBest = -1;
+  for (var wk in wuxingFit) {
+    if (wuxingFit[wk].fit !== null && wuxingFit[wk].fit > wuxingBest) { wuxingBest = wuxingFit[wk].fit; wuxingTop = wk; }
+  }
+
+  var sig = '';
+  for (i = 0; i < CW_FACE_AXES.length; i++) {
+    var r = R[CW_FACE_AXES[i]];
+    sig += (r < 0.10 ? 0 : r < 0.30 ? 1 : r < 0.70 ? 2 : r < 0.90 ? 3 : 4);
+  }
+
+  return {
+    shapeOpt: pick(FACE_S, shapeV), eyeOpt: pick(FACE_E, eyeV),
+    noseOpt: pick(FACE_N, noseV), mouthOpt: pick(FACE_M, mouthV),
+    overallScore: overall,
+    /* ★v786-b — 성질이 다른 두 값을 분리해 내보낸다. 화면·프롬프트가 섞어 쓰면 안 된다. */
+    harmonyScore: harmony,          // ABS · 절대 기준 · 「대부분 여기 듭니다」를 함께 표기할 것
+    harmonyParts: { symmetry: m.symmetry, thirds: m.thirds, cheonI: m.cheonI, organProp: organProp },
+    distinctAxes: distinctAxes,     // REL · 이 사람을 구분하는 축 5개
+    axisKind: CW_FACE_AXIS_KIND,
+    /* ★v786-c — 五形은 ★확정하지 않고 부합도로만 낸다 (§원문 절차 근거는 CW_WUXING 주석) */
+    wuxing: wuxingFit,
+    wuxingTop: wuxingTop,
+    wuxingTable: CW_WUXING,
+    wuxingCoverage: {
+      measured: ['형태(方·瘦·圓·尖)'],
+      notMeasured: ['색(色黃·色赤氣枯)', '몸통(露臂露背·腰)', '살뼈(肉輕骨重)', '거동(坐·涉·行·臥)'],
+      note: '원문은 五形마다 네 계열을 함께 본다. 정면 사진 한 장으로 확정하는 것은 원문 절차가 아니다.'
+    },
+    eyeScore: sc((R.eyeSize + R.jeonTaek + (1 - Math.abs(R.eyeTilt - 0.5) * 2)) / 3, 62, 97),
+    noseScore: sc((R.noseWRatio + R.noseHRatio + R.jilAek) / 3, 62, 97),
+    mouthScore: sc((R.mouthRatio + R.lipThickness + R.inJung) / 3, 62, 97),
+    refVersion: CW_FACE_REF.version, refTier: CW_FACE_REF.tier,
+    aspect: A,
+    ranks: R,
+    signature: sig,
+    ratios: m
+  };
+}
+
+
+
+
 
 // ============================================================
 //  5b. PALM ANALYSIS
@@ -4944,6 +5232,10 @@ async function analyzeFace(){
       const aiLm=await detectFaceAI(tmpCv);
       if(aiLm){
         photoState.face.aiLandmarks=aiLm;
+        // ★v786 — MediaPipe 는 x 를 사진 폭, y 를 사진 높이로 각각 정규화한다.
+        //   x/y 를 섞는 비율이 사진 비율에 끌려가지 않도록 종횡비를 함께 보관한다.
+        photoState.face.aiAspect=tmpCv.height/(tmpCv.width||1);
+        window._cwFaceAspect=photoState.face.aiAspect;
         photoState.face.faceBounds=_boundsFromAILandmarks(aiLm);
       }
     }catch(e){console.warn('FaceMesh detection failed, using fallback:',e)}
@@ -5151,7 +5443,12 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
         nose:{label:nR.t,score:noseScore},
         mouth:{label:mR.t,score:mouthScore},
         overallScore:ov,
-        measurements:aiScores?aiScores.ratios:null
+        measurements:aiScores?aiScores.ratios:null,
+        // ★v786 — 분위수 랭크·24축 시그니처를 프롬프트 결정변수로 전달
+        ranks:aiScores?aiScores.ranks:null,
+        signature:aiScores?aiScores.signature:null,
+        refVersion:aiScores?aiScores.refVersion:null,
+        refTier:aiScores?aiScores.refTier:null
       };
       const llm=await callFortuneAPI('face',llmFeatures);
       if(llm){
@@ -5279,7 +5576,11 @@ async function handlePremiumPurchase(type){
       nose:{label:FACE_R.nose[cls?.noseOpt?.v||'high']?.t||'',score:cls?.noseScore||80},
       mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
       overallScore:cls?.overallScore||80,
-      measurements:ra
+      measurements:ra,
+      ranks:cls?.ranks||null,
+      signature:cls?.signature||null,
+      refVersion:cls?.refVersion||null,
+      refTier:cls?.refTier||null
     };
 
     // ① 클라이언트에서 십이궁·오관·삼정 즉시 생성 (API 불필요)
@@ -5377,7 +5678,11 @@ async function retryPremiumAPI(){
       nose:{label:FACE_R.nose[cls?.noseOpt?.v||'high']?.t||'',score:cls?.noseScore||80},
       mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
       overallScore:cls?.overallScore||80,
-      measurements:ra
+      measurements:ra,
+      ranks:cls?.ranks||null,
+      signature:cls?.signature||null,
+      refVersion:cls?.refVersion||null,
+      refTier:cls?.refTier||null
     };
     const doFetch=async(apiType)=>{
       const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,features:premFeatures})});
@@ -5843,10 +6148,16 @@ async function analyzeTojeong(){
     lunar={year:br.y,month:br.m,day:br.d,isLeap:!!br.leap};
   }
 
-  // 괘 계산
-  const upper=calcUpperGua(targetYear);
-  const middle=calcMiddleGua(lunar.month);
-  const lower=calcLowerGua(lunar.day);
+  // 괘 계산 — ★v7.86 ① 월건·일진이 필요하므로 **CW_ENGINE 이 산출한 기둥**을 쓴다.
+  //   ★서버(`ctxguard.tojeongDerive`)도 같은 엔진·같은 입력으로 다시 유도한다 — 두 값이 갈리지 않는다.
+  const _tjp=CW_ENGINE.recompute({
+    birth:`${br.y}-${String(br.m).padStart(2,'0')}-${String(br.d).padStart(2,'0')}`,
+    calType:br.calType,isLeap:!!br.leap,hourIdx:null
+  });
+  if(!_tjp||!_tjp.ok){alert(CW_PILLAR_RANGE_MSG);return}
+  const gua=calcTojeongGua(targetYear,lunar,_tjp.pillarStrings.monthPillar,_tjp.pillarStrings.dayPillar);
+  if(!gua){alert('월건·일진을 산출하지 못해 괘를 세울 수 없습니다. 생년월일을 다시 확인해주세요.');return}
+  const upper=gua.upper,middle=gua.middle,lower=gua.lower;
   const zodiac=getZodiac(lunar.year);
   const ganji=getGanji(targetYear);
   const guaCombination=`${upper.name} · ${middle.name} · ${lower.name}`;
@@ -5878,6 +6189,13 @@ async function analyzeTojeong(){
           // ★v7.75 관통 #9 — 생년월일 **원본 5키**. 서버가 이것으로 음력·띠·간지·상중하괘를
           //   재유도해 아래 파생 키를 교체한다(compat 12키와 같은 설계).
           //   ★이 5키가 없으면 서버는 `mode:legacy` 로 아무것도 검증하지 못한다.
+          // ★v7.86 ④ — `api/_engine/bind.js` `toPillars` 가 요구하는 3키(간지 2자).
+          //   값은 **이미 산출한 `_tjp`(CW_ENGINE)** 를 재사용한다 — 사본 산출식을 만들지 않는다.
+          //   서버는 `TOJEONG_REPLACE_KEYS` 로 이 3키도 재유도해 교체한다(무검증 키를 만들지 않는다).
+          //   ★5키 줄보다 **앞**에 둔다(뮤턴트가 그 줄을 통째로 지워도 구문이 안 깨지게).
+          yearPillar:_tjp.pillarStrings.yearPillar,
+          monthPillar:_tjp.pillarStrings.monthPillar,
+          dayPillar:_tjp.pillarStrings.dayPillar,
           cal:br.calType,y:br.y,m:br.m,d:br.d,leap:!!br.leap,
           lunarYear:lunar.year,lunarMonth:lunar.month,lunarDay:lunar.day,
           zodiac:`${zodiac.n}띠(${zodiac.h})`,
@@ -6439,7 +6757,7 @@ async function analyzeDream(){
   //   ★★사주 미연동(`linkSaju` 꺼짐 · 전역 부재)이면 **6키를 만들지 않는다.**
   //     없는 생년월일을 지어내면 서버가 그것을 참으로 믿고 원국을 재유도한다(계약 §6 `derived`).
   //     미적재면 서버는 `mode:'legacy'` 로 **아무것도 바꾸지 않는다** — 그것이 정상 동작이다.
-  let _bkDr={};
+  let _bkDr={},_pkDr={};
   if(linkSaju&&window._sajuResultData){
     const sd=window._sajuResultData;
     const dStem=sd.pillars.day.stem;
@@ -6456,11 +6774,13 @@ async function analyzeDream(){
     // ★`leap` 은 v7.79 파 ⓐ(I-77)가 `_sajuResultData` 에 신설한 키다. 이것이 없으면
     //   음력 윤달 생일이 평달로 재유도돼 화면≠해석이 된다(I-43 과 같은 형태).
     _bkDr=cwBirthKeys(sd.calType,sd.inputYear,sd.inputMonth,sd.inputDay,sd.hi,sd.leap)||{};
+    // ★v7.86 ④ — 엔진 3키. 사주 미연동이면 이 블록에 안 들어오므로 3키도 안 생긴다(날조 금지).
+    _pkDr=cwPillarKeys(sd.pillars)||{};
   }
 
   // ★`birthKeys` 는 프리미엄·재시도 경로(`_buildDreamContext`)가 같은 값을 쓰기 위한 운반이다.
   //   서버로 나가는 것은 아래 `ctx` 의 **명시 리터럴 6키**이지 이 객체가 아니다.
-  const info={time,timeName,cats,catNames,emo,emoName,story,sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,birthKeys:_bkDr};
+  const info={time,timeName,cats,catNames,emo,emoName,story,sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,birthKeys:_bkDr,pillarKeys:_pkDr};
   window._dreamResultData=info;
 
   // 로딩 UI
@@ -6486,6 +6806,12 @@ async function analyzeDream(){
     emotion:emoName||'미선택',
     story:story||'(미입력 — 모티브만)',
     sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,
+    // ★v7.86 ④ — 엔진 3축(bind.js `toPillars`)이 요구하는 3키 중 **연·월주**를 더한다.
+    //   `dayPillar` 는 이 상품이 **이미 같은 형식(간지 2자)으로 싣고 있다**(위 줄) —
+    //   같은 키를 두 번 쓰면 뒤엣것이 앞을 덮으므로 여기서는 만들지 않는다.
+    //   ★6키 줄(`cal:…leap:…`)보다 **앞**에 둔다 — 게이트 B-14 의 뮤턴트가 그 줄을
+    //     **통째로 삭제**해 보기 때문에, 뒤에 두면 삭제 자국이 `,` 만 남아 구문이 깨진다.
+    yearPillar:_pkDr.yearPillar,monthPillar:_pkDr.monthPillar,
     cal:_bkDr.cal,y:_bkDr.y,m:_bkDr.m,d:_bkDr.d,h:_bkDr.h,leap:_bkDr.leap
   };
 
@@ -6750,7 +7076,11 @@ function _buildDreamContext(info){
   //   여기서 다시 `_sajuResultData` 를 읽으면 사본이 갈린다(결정 99·113) — 사용자가 결제 사이에
   //   사주 탭을 다시 돌리면 무료 해몽과 프리미엄이 서로 다른 생년월일로 갈릴 수 있다.
   const _bkDp=(info&&info.birthKeys)||{};
+  // ★v7.86 ④ — 3키도 `analyzeDream` 이 운반한 값을 그대로 쓴다(사본 금지 · 결정 99·113).
+  //   `dayPillar` 는 아래에 이미 같은 형식으로 실리므로 여기서는 연·월주만 더한다.
+  const _pkDp=(info&&info.pillarKeys)||{};
   return {
+    yearPillar:_pkDp.yearPillar,monthPillar:_pkDp.monthPillar,
     time:info.timeName||'미선택',
     categories:info.catNames||'미선택',
     emotion:info.emoName||'미선택',
@@ -7349,7 +7679,10 @@ async function analyzeNaming(){
     const styleName=NAMING_STYLES.find(s=>s.k===info.style)?.n||'전통 한자';
     const lengthName=NAMING_LENGTHS.find(l=>l.k===info.length)?.n||'3자';
     const _bkP=cwBirthKeys(info.cal,info.y,info.m,info.d,info.h,info.leap)||{};
-    ctx={surname:info.surname,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',/* ★v7.77 K-2 — `hangryeol`(사람이 읽는 조합 문자열)은 서버가 한 번도 읽지 않는다. 서버는 `hangryeolHanja`·`hangryeolPos` 만 보간한다. 클라만 아는 사실은 표면이므로 제거한다(I-43 유형). */hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||'',
+    // ★v7.86 ④ — 엔진 3축용 연·월·일주. 사주가 없으면 `{}` 라 3키가 통째로 안 실린다.
+    const _pkP=cwPillarKeys(info.pillars)||{};
+    ctx={surname:info.surname,
+      yearPillar:_pkP.yearPillar,monthPillar:_pkP.monthPillar,dayPillar:_pkP.dayPillar,surnameHanja:info.surnameHanja||'',pillar:info.pillarStr||'(미입력)',ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',dominant:info.dominant||'',lacking:info.lacking||'없음',gender:info.gender==='male'?'남성':'여성',style:styleName,length:lengthName,preferred:info.preferred||'없음',/* ★v7.77 K-2 — `hangryeol`(사람이 읽는 조합 문자열)은 서버가 한 번도 읽지 않는다. 서버는 `hangryeolHanja`·`hangryeolPos` 만 보간한다. 클라만 아는 사실은 표면이므로 제거한다(I-43 유형). */hangryeolHanja:info.hangryeolHanja||'',hangryeolPos:info.hangryeolPos||'',
       // ★v7.79 계약 §2-1 — 생년월일 **원본 6키**(직접 입력·`_sajuResultData` 폴백 공통)
       cal:_bkP.cal,y:_bkP.y,m:_bkP.m,d:_bkP.d,h:_bkP.h,leap:_bkP.leap};
   }
@@ -7499,11 +7832,24 @@ function renderNamingResult(result,info){
     const gyeok=calcFiveGyeok(sn,fn);
     const evals=evaluateFiveGyeok(gyeok);
     const totalEval=evals.chong;
-    const gradeColor=totalEval.grade==='great'?'#1a7a4a':totalEval.grade==='good'?'#5a8b1a':totalEval.grade==='half'?'#b8860b':'#c9443a';
-    const llmGrade=c.gyeokGrade||'';
-    const gradeLabel=llmGrade||(totalEval.grade==='great'?'대길':totalEval.grade==='good'?'길':totalEval.grade==='half'?'반길반흉':'흉');
+    // ★v7.86 ③ — 길흉 색·라벨은 **엔진(사격 산출) 우선**. 종전 `llmGrade||(…)` 는
+    //   LLM 값을 먼저 써서, 엔진이 「판정 불가」인 후보에도 LLM 이 지어낸 등급이 붙었다.
+    //   엔진이 판정 불가(UNMEASURED)면 그 사실을 그대로 쓴다 — LLM 값으로 덮지 않는다.
+    const gradeColor=totalEval.grade==='great'?'#1a7a4a':totalEval.grade==='good'?'#5a8b1a':totalEval.grade==='half'?'#b8860b':totalEval.grade==='unmeasured'?'var(--text2)':'#c9443a';
+    //   ★`c.gyeokGrade`(LLM 값)는 여기서 **쓰지 않는다**. 사격 산출은 결정적이라
+    //     엔진 라벨이 항상 존재하며, 「없을 때만 LLM」이라는 폴백은 도달할 수 없다 —
+    //     도달 못 하는 폴백을 남기면 죽은 코드가 된다(변수도 남기지 않는다).
+    const gradeLabel=totalEval.grade==='great'?'대길':totalEval.grade==='good'?'길':totalEval.grade==='half'?'반길반흉':totalEval.grade==='unmeasured'?'판정 불가':'흉';
+    const totalLabel=(totalEval.grade==='unmeasured')?'총획 미상':('총 '+totalEval.value+'획');
 
     const soundCheck=checkSoundElPattern(fullHangul);
+    // ★v7.86 ③ — `checkSoundElPattern` 이 내는 `valid`·`conflictCount`·`comment` 는
+    //   지금까지 렌더에서 **한 번도 쓰이지 않았다**(죽은 산출). 화면에 노출한다.
+    const soundBadge=soundCheck.pattern
+      ? `<div style="font-size:11px;margin-top:6px;padding:6px 8px;border-radius:6px;line-height:1.6;background:${soundCheck.valid?'rgba(26,122,74,.06)':'rgba(201,68,58,.06)'};border-left:3px solid ${soundCheck.valid?'#1a7a4a':'#c9443a'}">
+          <strong style="color:var(--gold)">🎵 발음 오행</strong> ${soundCheck.pattern} · 상극 ${soundCheck.conflictCount}회 · ${soundCheck.valid?'배치 양호':'배치 재검토 필요'}<br><span style="color:var(--text2)">${soundCheck.comment}</span>
+        </div>`
+      : '';
 
     // 한자 글자별 정밀 풀이
     let hanjaDetailHTML='';
@@ -7520,10 +7866,12 @@ function renderNamingResult(result,info){
         <div style="font-size:32px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:900;min-width:80px;text-align:center">${fullHanja||fullHangul}</div>
         <div style="flex:1">
           <div style="font-size:18px;color:var(--text1);font-family:'Noto Serif KR',serif;font-weight:700">${fullHangul}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">총 ${totalEval.value}획 · ${c.soundEl||soundCheck.pattern} · ${c.yinyang||''}</div>
+          <!-- ★v7.86 ③ — 발음 오행도 엔진 산출 우선(종전에는 LLM 값 c.soundEl 이 먼저였다). -->
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${totalLabel} · ${soundCheck.pattern||c.soundEl||''} · ${c.yinyang||''}</div>
         </div>
         <div style="display:inline-block;padding:5px 12px;border-radius:14px;border:1.5px solid ${gradeColor};color:${gradeColor};font-size:12px;font-weight:700;font-family:'Noto Serif KR',serif">${gradeLabel}</div>
       </div>
+      ${soundBadge}
       ${c.summary?`<div style="font-size:12.5px;line-height:1.8;color:var(--text1);margin-bottom:8px;padding:8px 10px;background:rgba(201,165,78,.06);border-radius:6px"><strong style="color:var(--gold)">종합 의미:</strong> ${c.summary}</div>`:''}
       ${hanjaDetailHTML}
       ${c.sajuMatch?`<div style="font-size:11.5px;color:#1a7a4a;line-height:1.7;padding:6px 10px;background:rgba(26,122,74,.06);border-radius:6px;border-left:3px solid #1a7a4a;margin-top:8px"><strong>⚯ 사주 보완:</strong> ${c.sajuMatch}</div>`:''}
@@ -8021,8 +8369,12 @@ function _buildNamingContext(info){
   // ★v7.79 §2-1 — 프리미엄 작명(1·2단계 2회 호출 · 재시도 경로 포함)도 같은 6키를 싣는다.
   //   ★결정 90 — 「무료만 고치면 유료가 남는다」. 무료 ctx 와 **같은 출처**(`info`)에서 싣는다.
   const _bk=cwBirthKeys(info.cal,info.y,info.m,info.d,info.h,info.leap)||{};
+  // ★v7.86 ④ — 무료 ctx 와 **같은 출처**(`info.pillars`)에서 엔진 3키를 싣는다.
+  //   여기를 빠뜨리면 무료만 엔진 결속이 살고 유료(재시도 포함 4곳)가 죽는다(결정 90).
+  const _pk=cwPillarKeys(info.pillars)||{};
   return {
     surname:info.surname,surnameHanja:info.surnameHanja||'',
+    yearPillar:_pk.yearPillar,monthPillar:_pk.monthPillar,dayPillar:_pk.dayPillar,
     pillar:info.pillars?`${HS[info.pillars.year.stem]}${EB[info.pillars.year.branch]} ${HS[info.pillars.month.stem]}${EB[info.pillars.month.branch]} ${HS[info.pillars.day.stem]}${EB[info.pillars.day.branch]} ${info.pillars.hour?HS[info.pillars.hour.stem]+EB[info.pillars.hour.branch]:'(시간 모름)'}`:'(미입력)',
     ilgan:info.ilgan||'',ilganElement:info.ilganElement||'',
     dominant:info.dominant||'',lacking:info.lacking||'없음',
