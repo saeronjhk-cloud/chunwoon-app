@@ -170,8 +170,15 @@ function evaluateFace(input) {
   const inp = input && typeof input === 'object' ? input : {};
   const rules = Array.isArray(inp.rules) ? inp.rules : (RULES.rules || []);
   const refTier = inp.refTier == null ? '' : String(inp.refTier);
-  const measures = (inp.measures && typeof inp.measures === 'object' && !Array.isArray(inp.measures)) ? inp.measures : null;
+  const coreMeasures = (inp.measures && typeof inp.measures === 'object' && !Array.isArray(inp.measures)) ? inp.measures : null;
   const ranks = (inp.ranks && typeof inp.ranks === 'object' && !Array.isArray(inp.ranks)) ? inp.ranks : null;
+
+  // ★P-786-I — 센서 축(색·텍스처) 병합. 규약은 _v786_diag/sensor_flatten.js 가 정한다.
+  //   · 접두사 col_/tex_ 가 아닌 키는 받지 않는다 (센서 채널로 랜드마크 축을 덮어쓰는 것을 막는다).
+  //   · 랜드마크 축과 키가 겹치면 **센서 전체를 버린다**(fail-closed). 게이트 p08 I-7 이 검사한다.
+  //   · 센서 축에는 ranks 가 없다 ⟹ space=rank 조건식은 NO_MEASURE 로 떨어진다. 참고층까지만 간다.
+  const sensor = mergeSensorMeasures(coreMeasures, inp.sensorMeasures);
+  const measures = sensor.measures;
 
   const verdicts = [], references = [], withheld = [];
 
@@ -247,6 +254,7 @@ function evaluateFace(input) {
     artifact_version: RULES.artifact_version || null,
     refTier: refTier,
     population_usable: populationUsable(refTier),
+    sensor: sensor.info,
     verdicts: verdicts,
     references: references,
     withheld: withheld,
@@ -260,6 +268,38 @@ function evaluateFace(input) {
       withheld_by_reason: byReason
     }
   };
+}
+
+// ── 센서 축 병합 (P-786-I) ───────────────────────────────────────────────────
+const SENSOR_KEY_RE = /^(col|tex)_[A-Za-z0-9_]+$/;
+
+/**
+ * @returns {{measures:(object|null), info:{offered:number, accepted:number, rejected_prefix:number, collision:string[], dropped_all:boolean}}}
+ */
+function mergeSensorMeasures(core, sensorIn) {
+  const info = { offered: 0, accepted: 0, rejected_prefix: 0, collision: [], dropped_all: false };
+  const s = (sensorIn && typeof sensorIn === 'object' && !Array.isArray(sensorIn)) ? sensorIn : null;
+  if (!s) return { measures: core, info: info };
+  const keys = Object.keys(s);
+  info.offered = keys.length;
+  const ok = {};
+  for (const k of keys) {
+    if (!SENSOR_KEY_RE.test(k)) { info.rejected_prefix++; continue; }
+    if (core && Object.prototype.hasOwnProperty.call(core, k)) { info.collision.push(k); continue; }
+    const v = s[k];
+    if (typeof v !== 'number' || !isFinite(v)) continue;
+    ok[k] = v;
+  }
+  if (info.collision.length) {
+    // ★한 키라도 랜드마크 축과 겹치면 센서 입력 전체를 신뢰하지 않는다.
+    info.dropped_all = true;
+    return { measures: core, info: info };
+  }
+  info.accepted = Object.keys(ok).length;
+  if (!info.accepted) return { measures: core, info: info };
+  // ★센서만 있고 랜드마크 축이 없으면 판정하지 않는다 — 센서는 보조 채널이다.
+  if (!core) { info.dropped_all = true; info.accepted = 0; return { measures: null, info: info }; }
+  return { measures: Object.assign({}, core, ok), info: info };
 }
 
 // ── 프롬프트 블록 ────────────────────────────────────────────────────────────
@@ -393,6 +433,8 @@ module.exports = {
   WITHHELD_REASON: WITHHELD_REASON,
   ENGINE_VERSION: ENGINE_VERSION,
   tierOf: tierOf,
+  mergeSensorMeasures: mergeSensorMeasures,
+  SENSOR_KEY_RE: SENSOR_KEY_RE,
   COVERAGE: COVERAGE,
   coverageOf: coverageOf,
   normTier: normTier,

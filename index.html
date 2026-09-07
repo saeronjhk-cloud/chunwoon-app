@@ -4016,7 +4016,7 @@ function renderCompatPremium(prem,info){
 // ============================================================
 //  5. PHOTO CAPTURE (PALM & FACE)
 // ============================================================
-const photoState={face:{img:null,hash:null,w:0,h:0}};
+const photoState={face:{img:null,hash:null,w:0,h:0,faceBounds:null,aiLandmarks:null,aiAspect:null,aiFrame:null,sensor:null}};
 
 // ---- Classical sources for palm/face reading ----
 const FACE_SOURCES={
@@ -4143,6 +4143,65 @@ function detectFaceAI(imageElement){
 }
 
 // ============================================================
+//  ★v787 (P-786-I) — AI 프레임 보관·초기화 + 색·텍스처 센서 결속
+//   · FaceMesh 에 넣은 캔버스와 **같은 좌표계**의 픽셀을 보관해야 센서 마스크가 랜드마크에 맞는다.
+//     (landmarks.x 는 사진 폭, .y 는 사진 높이로 각각 정규화 — 같은 종횡비의 어떤 해상도든 px=x*W, py=y*H 로 복원된다)
+//   · 사진이 바뀌면 랜드마크·종횡비·프레임·센서 결과를 **한 번에** 지운다. 낱개로 지우다 생긴 결함 2건:
+//       ① onPhotoPicked 가 faceBounds 만 지워 이전 사진 랜드마크가 새 사진에 쓰였다
+//       ② autoSnapFace 가 aiAspect 를 저장하지 않아 세로 카메라에서 사진비 결함(§2-1)이 재발했다
+//   · 센서는 fail-closed 다: 게이트(G1~G7)에 걸리면 축을 하나도 내지 않고 사유만 sensorMeta 로 보낸다.
+//   · ★픽셀은 서버로 보내지 않는다. 보내는 것은 평탄화된 수치(col_*/tex_*)와 게이트 사유뿐이다.
+// ============================================================
+const CW_SENSOR_FRAME_MAX=1024; // 센서 프레임 최대 변 — 텍스처 센서는 얼굴 폭 256px 표준 캔버스로 재표본하므로 이 이상은 이득이 없다
+function _cwResetAIFrame(){
+  photoState.face.faceBounds=null;
+  photoState.face.aiLandmarks=null;
+  photoState.face.aiAspect=null;
+  photoState.face.aiFrame=null;
+  photoState.face.sensor=null;
+  window._cwFaceAspect=null;
+}
+// srcCanvas: FaceMesh 에 넣은 그 캔버스(또는 같은 종횡비의 원본) · lm: 그 캔버스에서 검출한 랜드마크
+function _cwStoreAIFrame(srcCanvas,lm,detectAspect){
+  if(!srcCanvas||!lm||lm.length<468){_cwResetAIFrame();return}
+  photoState.face.aiLandmarks=lm;
+  // 종횡비는 FaceMesh 에 실제로 넣은 캔버스의 것을 우선한다(정수 반올림 차이 차단)
+  photoState.face.aiAspect=(detectAspect>0)?detectAspect:srcCanvas.height/(srcCanvas.width||1);
+  window._cwFaceAspect=photoState.face.aiAspect;
+  photoState.face.faceBounds=_boundsFromAILandmarks(lm);
+  photoState.face.sensor=null;
+  try{
+    const s=Math.min(1,CW_SENSOR_FRAME_MAX/srcCanvas.width,CW_SENSOR_FRAME_MAX/srcCanvas.height);
+    const fw=Math.max(1,Math.round(srcCanvas.width*s)),fh=Math.max(1,Math.round(srcCanvas.height*s));
+    const fc=document.createElement('canvas');fc.width=fw;fc.height=fh;
+    const fctx=fc.getContext('2d',{willReadFrequently:true});
+    fctx.drawImage(srcCanvas,0,0,fw,fh);
+    photoState.face.aiFrame=fctx.getImageData(0,0,fw,fh);
+  }catch(e){photoState.face.aiFrame=null;console.warn('[관상 센서] 프레임 보관 실패:',e&&e.message)}
+}
+// 센서 실행(1회 캐시). 반환 {measures:{col_*,tex_*}, meta} · 실행 불가면 measures 는 빈 객체다.
+function _cwFaceSensorMeasures(){
+  if(photoState.face.sensor)return photoState.face.sensor;
+  const lm=photoState.face.aiLandmarks,fr=photoState.face.aiFrame,A=photoState.face.aiAspect;
+  const SC=window.CW_SENSOR_COLOR,ST=window.CW_SENSOR_TEXTURE,SF=window.CW_SENSOR_FLATTEN;
+  let out;
+  if(!SC||!ST||!SF){
+    out={measures:{},meta:{version:null,notLoaded:true,color:{ran:false,ok:false,reject:{gate:'LOAD',reason:'센서 스크립트 미적재'}},texture:{ran:false,ok:false,reject:{gate:'LOAD',reason:'센서 스크립트 미적재'}},axesEmitted:0}};
+  }else if(!lm||lm.length<468||!fr){
+    out=SF.flattenSensors(null,null);
+    out.meta.color.reject=out.meta.texture.reject={gate:'FRAME',reason:'AI 프레임 또는 랜드마크 없음'};
+  }else{
+    let col=null,tex=null;
+    try{col=SC.measureColor(fr,lm,A)}catch(e){col={ok:false,reject:{gate:'EXC',reason:String(e&&e.message||e)}}}
+    try{tex=ST.measureTexture(fr,lm,A)}catch(e){tex={ok:false,reject:{gate:'EXC',reason:String(e&&e.message||e)}}}
+    out=SF.flattenSensors(col,tex);
+    console.log('[관상 센서]',JSON.stringify({color:out.meta.color.ok?'ok':out.meta.color.reject,texture:out.meta.texture.ok?'ok':out.meta.texture.reject,axes:out.meta.axesEmitted,unreliable:out.meta.texture.unreliableRegions}));
+  }
+  photoState.face.sensor=out;
+  return out;
+}
+
+// ============================================================
 //  LLM FORTUNE INTERPRETATION (via /api/fortune)
 // ============================================================
 async function callFortuneAPI(type, features, context){
@@ -4172,7 +4231,7 @@ async function openCamera(kind){
     }
     stopCamera();
     // Reset cached bounds so stale values from a previous capture don't leak
-    if(kind==='face')photoState.face.faceBounds=null;
+    if(kind==='face')_cwResetAIFrame();
     // Clear any previous preview so video shows up
     const stage=document.getElementById(kind+'Stage');
     stage.classList.remove('has-image');
@@ -4357,7 +4416,9 @@ async function autoSnapFace(){
   stopCamera();
   setPhoto('face',dataUrl,cv);
   photoState.face.faceBounds=faceBounds;
-  photoState.face.aiLandmarks=aiLandmarks; // Store full 468-point mesh
+  // ★v787 — 랜드마크·종횡비·센서 프레임을 함께 보관 (종전엔 aiAspect 를 저장하지 않아 §2-1 이 카메라 경로로 재발했다)
+  if(aiLandmarks)_cwStoreAIFrame(cv,aiLandmarks);
+  else{_cwResetAIFrame();photoState.face.faceBounds=faceBounds}
 }
 
 // Convert AI landmarks (normalized 0-1) to bounding box
@@ -4410,7 +4471,9 @@ function pickPhoto(kind){document.getElementById(kind+'File').click()}
 function onPhotoPicked(ev,kind){
   const f=ev.target.files&&ev.target.files[0];if(!f)return;
   // Reset cached bounds for fresh analysis
-  if(kind==='face')photoState.face.faceBounds=null;
+  // ★v787 — faceBounds 만 지우고 aiLandmarks 를 남기던 결함 수리.
+  //   종전: 카메라 촬영 뒤 파일을 고르면 analyzeFace 가 캐시된 **이전 사진의 랜드마크**로 새 사진을 판정했다.
+  if(kind==='face')_cwResetAIFrame();
   const r=new FileReader();
   r.onload=e=>{
     const img=new Image();
@@ -5231,12 +5294,14 @@ async function analyzeFace(){
       tmpCv.getContext('2d').drawImage(img,0,0,tmpCv.width,tmpCv.height);
       const aiLm=await detectFaceAI(tmpCv);
       if(aiLm){
-        photoState.face.aiLandmarks=aiLm;
         // ★v786 — MediaPipe 는 x 를 사진 폭, y 를 사진 높이로 각각 정규화한다.
         //   x/y 를 섞는 비율이 사진 비율에 끌려가지 않도록 종횡비를 함께 보관한다.
-        photoState.face.aiAspect=tmpCv.height/(tmpCv.width||1);
-        window._cwFaceAspect=photoState.face.aiAspect;
-        photoState.face.faceBounds=_boundsFromAILandmarks(aiLm);
+        // ★v787 — 센서 프레임은 원본 img 에서 만든다(같은 종횡비 · ≤1024px). tmpCv(≤640) 보다 텍스처에 유리하다.
+        const sensCv=document.createElement('canvas');
+        const ss=Math.min(1,CW_SENSOR_FRAME_MAX/img.naturalWidth,CW_SENSOR_FRAME_MAX/img.naturalHeight);
+        sensCv.width=Math.max(1,Math.round(img.naturalWidth*ss));sensCv.height=Math.max(1,Math.round(img.naturalHeight*ss));
+        sensCv.getContext('2d').drawImage(img,0,0,sensCv.width,sensCv.height);
+        _cwStoreAIFrame(sensCv,aiLm,tmpCv.height/(tmpCv.width||1));
       }
     }catch(e){console.warn('FaceMesh detection failed, using fallback:',e)}
   }
@@ -5448,7 +5513,10 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
         ranks:aiScores?aiScores.ranks:null,
         signature:aiScores?aiScores.signature:null,
         refVersion:aiScores?aiScores.refVersion:null,
-        refTier:aiScores?aiScores.refTier:null
+        refTier:aiScores?aiScores.refTier:null,
+        // ★v787 (P-786-I) — 색·텍스처 센서 축. 랜드마크가 없으면 센서도 없다(빈 객체 + 사유).
+        sensorMeasures:aiScores?_cwFaceSensorMeasures().measures:null,
+        sensorMeta:aiScores?_cwFaceSensorMeasures().meta:null
       };
       const llm=await callFortuneAPI('face',llmFeatures);
       if(llm){
@@ -5580,7 +5648,10 @@ async function handlePremiumPurchase(type){
       ranks:cls?.ranks||null,
       signature:cls?.signature||null,
       refVersion:cls?.refVersion||null,
-      refTier:cls?.refTier||null
+      refTier:cls?.refTier||null,
+      // ★v787 (P-786-I) — 색·텍스처 센서 축 (무료 경로와 동일 규약)
+      sensorMeasures:cls?_cwFaceSensorMeasures().measures:null,
+      sensorMeta:cls?_cwFaceSensorMeasures().meta:null
     };
 
     // ① 클라이언트에서 십이궁·오관·삼정 즉시 생성 (API 불필요)
@@ -5682,7 +5753,10 @@ async function retryPremiumAPI(){
       ranks:cls?.ranks||null,
       signature:cls?.signature||null,
       refVersion:cls?.refVersion||null,
-      refTier:cls?.refTier||null
+      refTier:cls?.refTier||null,
+      // ★v787 (P-786-I) — 색·텍스처 센서 축 (무료 경로와 동일 규약)
+      sensorMeasures:cls?_cwFaceSensorMeasures().measures:null,
+      sensorMeta:cls?_cwFaceSensorMeasures().meta:null
     };
     const doFetch=async(apiType)=>{
       const resp=await fetch('/api/fortune',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:apiType,features:premFeatures})});
@@ -10481,6 +10555,12 @@ handleHash();
 setTimeout(insertAdSlots, 3000);
 </script>
 
+<!-- ★v787 (P-786-I) 외부 모듈 — 관상 색·텍스처 센서 + 평탄화.
+     ★정본은 _v786_diag/sensor_*.js 다. 여기 사본은 p09_bind_sensors.js 가 바이트 동일하게 만든다(직접 수정 금지).
+     ★순서 고정: color → texture(color 의 REGIONS 를 import) → flatten. async 금지. -->
+<script src="js/sensor_color.js"></script>
+<script src="js/sensor_texture.js"></script>
+<script src="js/sensor_flatten.js"></script>
 <!-- 외부 모듈 — 타로 풀스택 (3~6단계) -->
 <script src="js/tarot.js"></script>
 <!-- 외부 모듈 — 채팅 풀스택 (선녀·도사·점성술사) -->

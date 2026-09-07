@@ -1739,7 +1739,9 @@ export default async function handler(req, res) {
           cwFaceVerdict = fv.evaluateFace({
             measures: features.measurements,
             ranks: features.ranks || null,
-            refTier: features.refTier || 'C-SYNTHETIC'
+            refTier: features.refTier || 'C-SYNTHETIC',
+            // ★P-786-I — 색·텍스처 센서 축(col_*/tex_*). 병합·충돌 처리는 facever 가 한다.
+            sensorMeasures: features.sensorMeasures || null
           });
           const docs = (fv.RULES && fv.RULES.doctrines) || [];
           cwFaceAuthoritative = docs.length > 0 && docs.every((d) => d.user_output_enabled === true);
@@ -1751,9 +1753,16 @@ export default async function handler(req, res) {
         } catch (e) { cwFaceVerdict = null; cwFaceBlock = ''; }
       }
       try {
+        const sm = features && features.sensorMeta;
         console.log('[cw:facever]', JSON.stringify({
           type, loaded: !!cwFaceVerdict, authoritative: cwFaceAuthoritative,
-          tally: cwFaceVerdict ? cwFaceVerdict.tally : null
+          tally: cwFaceVerdict ? cwFaceVerdict.tally : null,
+          sensor: cwFaceVerdict ? cwFaceVerdict.sensor : null,
+          // ★클라 센서 게이트 결과(거부 사유)만 남긴다. 픽셀은 서버에 오지 않는다.
+          sensorMeta: sm ? {
+            color: sm.color ? { ok: sm.color.ok, reject: sm.color.reject } : null,
+            texture: sm.texture ? { ok: sm.texture.ok, reject: sm.texture.reject, unreliable: sm.texture.unreliableRegions, indang: sm.texture.indangStatus } : null
+          } : null
         }));
       } catch (e) { /* 로깅 실패는 판정에 영향 없다 */ }
     }
@@ -1816,7 +1825,11 @@ export default async function handler(req, res) {
       //   근거: _v786_diag/IP_face/rules/face/ogwan.json  R032(八小) → R028·R030·R031 overridden_by
       + ' 크기 하나만으로 길흉을 단정하지 마세요. 전통 관상학은 작아도 빼어나고 길면 오히려 좋다고 봅니다.'
       + ' 형태·균형·서로 걸맞음을 함께 보고 판단하세요.'
-      + ' 귀·얼굴빛·주름결은 이 앱이 계측하지 않으므로 언급하지 마세요.'
+      // ★P-786-I — 얼굴빛(색·광택)·주름결·점은 이제 센서로 계측하지만 **참고층까지만** 나간다
+      //   (센서 축에는 참조 모집단이 없어 판정 불가). 귀는 여전히 계측하지 않는다.
+      + ' 귀는 이 앱이 계측하지 않으므로 언급하지 마세요.'
+      + ' 얼굴빛·광택·주름결·점은 아래 【참고】 블록에 계측 항목이 있을 때만, 그 항목에 한해 관점으로 언급하세요.'
+      + ' 【참고】 블록에 없는 부위의 빛깔·주름·점은 사진에서 보이는 듯해도 만들어 쓰지 마세요.'
       // ★v786-V — 판정 블록 3층 취급 규칙
       + ' 아래에 【관상 엔진 판정】 블록이 있으면 그 항목은 이미 확정된 값입니다.'
       + ' 그대로 인용하고 다시 판단하거나 뒤집지 마세요.'

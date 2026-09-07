@@ -16,6 +16,8 @@
 //     H-2 귀·청수·기·요함·거동·몸통·추악 계열이 FULL 이면 FAIL (금지 목록)
 //     H-3 PARTIAL·NONE 은 어떤 tier 에서도 VERDICT 가 되지 않는다
 //     H-4 coverage_note 에 한자가 없다 (배포 한자 게이트 유지)
+//   I ★결속 검사 — fortune.js 가 실제로 적재·호출·보간·게이트·덮어쓰기 하는가
+//     I-7~I-9 ★v787 센서 채널(P-786-I): fail-closed · ranks 없이는 참고층 상한 · 모집단 생기면 승격 경로
 // ============================================================
 'use strict';
 
@@ -89,6 +91,14 @@ function loadAxes() {
   return out;
 }
 const AXES = loadAxes();
+// ★v787 (P-786-I) — 센서 축 레지스트리(두 번째 축 정본). 합성 입력에도 싣는다.
+//   ★운영에서는 센서 축의 ranks 가 **없다**(모집단 부재). 여기서 ranks 를 주는 것은
+//     「센서 모집단이 생기면 코드 수정 없이 오르는가」(C-2)를 구조로 검사하기 위한 가정이다.
+//     ranks 없는 운영 조건은 I-8 이 따로 검사한다.
+const SENSOR_AXES = (function () {
+  const S = require('./sensor_color.js'), T = require('./sensor_texture.js'), F = require('./sensor_flatten.js');
+  return F.buildRegistry(S, T).map((a) => a.axis);
+})();
 function mkMeasures(overrides) {
   const m = {};
   for (const a of AXES) m[a] = 0.5;
@@ -97,13 +107,16 @@ function mkMeasures(overrides) {
   m.jawRatio = 0.72; m.foreheadRatio = 0.61;
   return Object.assign(m, overrides || {});
 }
-function mkRanks() { const r = {}; for (const a of AXES) r[a] = 0.5; return r; }
+function mkSensor() { const m = {}; for (const a of SENSOR_AXES) m[a] = 0.5; return m; }
+function mkRanks() { const r = {}; for (const a of AXES) r[a] = 0.5; for (const a of SENSOR_AXES) r[a] = 0.5; return r; }
+function mkRanksCoreOnly() { const r = {}; for (const a of AXES) r[a] = 0.5; return r; }
+const SENS = mkSensor();
 
 const MEAS = mkMeasures();
 const RANKS = mkRanks();
 
-const runNow = FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: TIER_NOW });
-const runUp = FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: TIER_UP });
+const runNow = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_NOW });
+const runUp = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_UP });
 
 // ── 재사용 검사 함수 (★변이 시험이 이 함수들을 그대로 다시 부른다) ──────────
 function checkA(text) {
@@ -261,7 +274,7 @@ check('D-2', '★WITHHELD 는 tier B 에서도 노출되지 않는다', () => ch
 check('D-3', '★A~C 전 tier 에서 봉인 유지 (A·B·C·미상 4종)', () => {
   const bad = [];
   for (const t of ['A', 'B', 'C-SYNTHETIC', '']) {
-    const res = FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: t });
+    const res = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t });
     const r = checkD(res);
     if (!r.ok) bad.push(t + ':' + r.detail);
   }
@@ -270,7 +283,7 @@ check('D-3', '★A~C 전 tier 에서 봉인 유지 (A·B·C·미상 4종)', () =
 check('D-4', `★「醜惡者㐫」 계열 ${CHOUE_IDS.length}건이 새어나가지 않는다`, () => {
   const bad = [];
   for (const t of ['A', 'B', 'C-SYNTHETIC']) {
-    const res = FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: t });
+    const res = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t });
     const block = FV.factsBlockFace(res);
     const exposed = new Set([].concat(res.verdicts, res.references).map((x) => x.rule_id));
     for (const id of CHOUE_IDS) {
@@ -294,7 +307,7 @@ check('D-6', '★프롬프트 블록이 VERDICT 와 REFERENCE 를 명확히 구�
 // ── E ────────────────────────────────────────────────────────────────────────
 console.log('');
 check('E-1', `★귀 규칙 ${EAR_IDS.length}건은 어떤 tier 에서도 VERDICT 가 되지 않는다`, () => {
-  const results = ['A', 'B', 'C-SYNTHETIC', ''].map((t) => FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: t }));
+  const results = ['A', 'B', 'C-SYNTHETIC', ''].map((t) => FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t }));
   return checkE(results);
 });
 check('E-2', '★귀 규칙은 산출물에서도 조건식을 갖지 않는다', () => {
@@ -340,7 +353,7 @@ check('F-4', '★applyFaceVerdicts 가 LLM 의 봉인 규칙 주장을 버린다
 console.log('');
 const COV_BY_ID = new Map(ipRules.map((r) => [r.rule_id, r.condition_coverage || 'PARTIAL(미기재)']));
 const ALL_TIERS = ['A', 'B', 'C-SYNTHETIC', ''];
-const ALL_RUNS = ALL_TIERS.map((t) => FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: t }));
+const ALL_RUNS = ALL_TIERS.map((t) => FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t }));
 
 check('H-0', '★규칙 100건 전부 condition_coverage 와 coverage_note 를 갖는다', () => {
   const bad = ipRules.filter((r) => ['FULL', 'PARTIAL', 'NONE'].indexOf(r.condition_coverage) === -1 ||
@@ -404,7 +417,7 @@ mutate('醜惡 규칙(UNMEASURABLE)을 MEASURABLE+TEXT 로 승격 + 조건식 �
     c.condition.expr = { space: 'measure', op: 'gt', left: { axis: 'symmetry' }, right: { const: 0.1 } };
     return c;
   });
-  return checkD(FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: TIER_NOW, rules: rules }));
+  return checkD(FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_NOW, rules: rules }));
 });
 
 // M4 — BLOCKED 를 해제한다 (D 가 잡아야 한다)
@@ -413,7 +426,7 @@ mutate('user_exposure=BLOCKED 해제', 'D', () => {
     if (r.user_exposure !== 'BLOCKED') return r;
     const c = JSON.parse(JSON.stringify(r)); c.user_exposure = null; return c;
   });
-  return checkD(FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: TIER_NOW, rules: rules }));
+  return checkD(FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_NOW, rules: rules }));
 });
 
 // M5 — 귀 규칙을 판정 가능하게 올린다 (E 가 잡아야 한다)
@@ -425,7 +438,7 @@ mutate('귀 규칙을 MEASURABLE+TEXT 로 승격 + 조건식 부착', 'E', () =>
     c.condition.expr = { space: 'measure', op: 'gt', left: { axis: 'symmetry' }, right: { const: 0.1 } };
     return c;
   });
-  const results = ['A', 'B', 'C-SYNTHETIC'].map((t) => FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: t, rules: rules }));
+  const results = ['A', 'B', 'C-SYNTHETIC'].map((t) => FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t, rules: rules }));
   return checkE(results);
 });
 
@@ -491,7 +504,7 @@ mutate('PARTIAL 규칙을 조건식과 함께 승격시켜 VERDICT 로 만든다
     c.condition.expr = { space: 'rank', op: 'gt', left: { axis: 'foreheadRatio' }, right: { const: 0.5 } };
     return c;
   });
-  const res = ['A', 'B'].map((t) => FV.evaluateFace({ measures: MEAS, ranks: RANKS, refTier: t, rules: rules }));
+  const res = ['A', 'B'].map((t) => FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t, rules: rules }));
   return checkH3(res, COV_BY_ID);             // ★IP 원본 기준 coverage 로 대조하므로 위조가 드러난다
 });
 
@@ -549,6 +562,38 @@ if (fails.length) { console.log('실패 내역'); fails.forEach((f) => console.l
     const on = docs.filter((d) => d.user_output_enabled === true);
     return { ok: docs.length > 0, detail: `교리 ${docs.length}건 · 사용자 판정 활성 ${on.length}건` +
       (on.length ? ' ★ADR 결재 확인 필요' : ' (참고층만 노출 중)') };
+  });
+  // ── ★v787 (P-786-I) 센서 결속 검사 ──
+  check('I-7', '★센서 채널 fail-closed — 접두사 위반은 거부, 랜드마크 축과 충돌하면 센서 전체 폐기, 센서 단독이면 판정 없음', () => {
+    const a = FV.mergeSensorMeasures({ eyeSize: 0.2 }, { eyeSize: 9, col_INDANG_gloss: 1 });
+    const b = FV.mergeSensorMeasures({ eyeSize: 0.2, col_INDANG_gloss: 0 }, { col_INDANG_gloss: 1 });
+    const c = FV.evaluateFace({ sensorMeasures: SENS, ranks: RANKS, refTier: TIER_UP });
+    const ok = a.info.rejected_prefix === 1 && a.measures.eyeSize === 0.2 && a.measures.col_INDANG_gloss === 1 &&
+      b.info.dropped_all === true && b.measures.col_INDANG_gloss === 0 &&
+      c.tally.verdict === 0 && c.tally.reference === 0;
+    return { ok, detail: `접두사거부 ${a.info.rejected_prefix} · 충돌폐기 ${b.info.dropped_all} · 센서단독 V${c.tally.verdict}/R${c.tally.reference}` };
+  });
+  check('I-8', '★★운영 조건(센서 축 ranks 없음)에서는 센서 축 규칙이 어떤 tier 에서도 VERDICT 가 되지 않는다 — 참고층 상한', () => {
+    const sensorRuleIds = new Set(artifact.rules.filter((r) => /^(col|tex)_/.test(r.measure_axis || '')).map((r) => r.rule_id));
+    const bad = [];
+    let refs = 0;
+    for (const t of ['A', 'B', 'C-SYNTHETIC', '']) {
+      const res = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: mkRanksCoreOnly(), refTier: t });
+      for (const v of res.verdicts) if (sensorRuleIds.has(v.rule_id)) bad.push(v.rule_id + '@' + t);
+      refs += res.references.filter((r) => sensorRuleIds.has(r.rule_id)).length;
+    }
+    return { ok: bad.length === 0 && sensorRuleIds.size > 0 && refs > 0,
+      detail: `센서 축 규칙 ${sensorRuleIds.size}건 · VERDICT ${bad.length}건 · REFERENCE 누적 ${refs}건(4 tier)` };
+  });
+  check('I-9', '★센서 모집단이 생기면(ranks 보유 가정) FULL∩POPULATION 센서 규칙이 tier B 에서 코드 수정 없이 VERDICT 로 오른다', () => {
+    const sensorFull = artifact.rules.filter((r) => /^(col|tex)_/.test(r.measure_axis || '') && r.condition_coverage === 'FULL' &&
+      r.threshold_origin === 'POPULATION' && r.user_exposure !== 'BLOCKED' && r.condition.expr).map((r) => r.rule_id);
+    const up = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_UP });
+    const now = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_NOW });
+    const gotUp = sensorFull.filter((id) => up.verdicts.some((v) => v.rule_id === id));
+    const gotNow = sensorFull.filter((id) => now.verdicts.some((v) => v.rule_id === id));
+    return { ok: sensorFull.length > 0 && gotUp.length === sensorFull.length && gotNow.length === 0,
+      detail: `후보 ${sensorFull.join(',')} · tier C VERDICT ${gotNow.length} · tier B VERDICT ${gotUp.length}` };
   });
 }
 

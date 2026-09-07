@@ -189,6 +189,31 @@ const CONDITION_EXPR = {
     from: 'coverage_note 가 조건 전부를 덮었음을 근거와 함께 남긴다(uncovered 0). 남은 것은 「얼마나 작은가」뿐이고 ' +
       '그 컷오프는 원문이 아니라 참조 모집단이 준다 — 모집단 중앙값 미만을 「작다」로 본다. ' +
       '치수 선택이 원문에 없으므로 두 치수를 모두 요구한다(부분으로 전체를 판정하지 않는다).'
+  },
+  // ★v787 (P-786-I) · 센서 축 FULL+POPULATION 3건. R030 과 같은 규약(모집단 중앙값 컷오프 · 보수적 결합).
+  //   ★센서 축에는 아직 참조 모집단이 없다 ⟹ 운영에서 ranks 에 이 축이 없어 NO_MEASURE 로 떨어진다(참고층까지만).
+  //     식을 지금 붙이는 이유는 「센서 모집단이 생기는 순간 코드 수정 없이 판정으로 오르는」 경로를 구조로 두기 위해서다.
+  //     p09 M-6 · p08 I-8 이 「ranks 없이 VERDICT 가 되지 않는다」를 검사한다.
+  FACE_XLHZ_R046: {
+    space: 'rank', op: 'all',
+    terms: [
+      { op: 'gte', left: { axis: 'col_INDANG_lightness' }, right: { const: 0.5 } },
+      { op: 'gte', left: { axis: 'col_INDANG_gloss' }, right: { const: 0.5 } }
+    ],
+    from: '「요명윤(밝고 윤택해야 한다)」 — 명(밝기)·윤(광택) 두 어절 모두 인당 축이 덮는다(coverage FULL). 컷오프는 원문에 없어 모집단 중앙값 이상을 명·윤 으로 본다. 두 어절을 모두 요구한다.'
+  },
+  FACE_XLHZ_R049: {
+    space: 'rank', op: 'lt', left: { axis: 'col_grp_OAK_lightness_min' }, right: { const: 0.5 },
+    from: '「불의혼암(어두워서는 안 된다)」 — 조건(혼암)이 성립하면 판정(불의)이 붙는다. 오악 다섯 자리 중 최소 밝기가 모집단 중앙값 미만이면 혼암으로 본다(어느 한 자리라도 어두우면).'
+  },
+  FACE_XLHZ_R051: {
+    space: 'rank', op: 'all',
+    terms: [
+      { op: 'gte', left: { axis: 'col_INDANG_gloss' }, right: { const: 0.75 } },
+      { op: 'gte', left: { axis: 'col_INDANG_lightness' }, right: { const: 0.75 } }
+    ],
+    from: '「광명여경(거울처럼 빛나고 밝다)」 — 광(광택)·명(밝기)을 인당 축이 덮고 「여경(거울 같다)」은 최상급 직유라 정도(컷오프)가 R046 「명윤」보다 높아야 한다. ' +
+      '모집단 상위 사분위(랭크 0.75 이상)를 두 어절 모두에 요구한다(보수적 결합). ★0.75 는 우리 저작이다 — 원문은 「거울 같다」까지만 준다.'
   }
 };
 
@@ -210,7 +235,12 @@ function loadAxes() {
   let g;
   while ((g = re.exec(m[1]))) axes.push(g[1]);
   if (!axes.length) throw new Error('CW_FACE_AXES 파싱 실패');
-  return axes;
+  // ★v787 (P-786-I) — 두 번째 축 정본: 센서 축 레지스트리(sensor_flatten.buildRegistry).
+  //   접두사 col_/tex_ 로 랜드마크 축과 겹치지 않는다. 겹치면 컴파일 실패(두 정본 충돌).
+  const S = require('./sensor_color.js'), T = require('./sensor_texture.js'), F = require('./sensor_flatten.js');
+  const sensorAxes = F.buildRegistry(S, T).map((a) => a.axis);
+  for (const a of sensorAxes) if (axes.indexOf(a) !== -1) throw new Error('센서 축 ' + a + ' 가 CW_FACE_AXES 와 겹친다');
+  return axes.concat(sensorAxes);
 }
 
 // ── 4. 컴파일 ────────────────────────────────────────────────────────────────

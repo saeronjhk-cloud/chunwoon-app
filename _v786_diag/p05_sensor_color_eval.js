@@ -649,10 +649,13 @@ let promoOK = true;
 for (const [rid, to, axes, regs, why, conf] of CAND) {
   const cur = RULES[rid];
   if (!cur) { promoOK = false; console.log('  ★' + rid + ' 없음'); continue; }
-  if (cur.measurability !== 'UNMEASURABLE') { promoOK = false; console.log('  ★' + rid + ' 는 현재 ' + cur.measurability + ' 다'); continue; }
+  // ★v787: 결속 후에는 p10 이 후보를 PARTIAL 로 올리고 sensor_binding 을 남긴다. 그 상태도 정상이다.
+  //   (UNMEASURABLE 도 아니고 sensor_binding 도 없는 등급이면 — 누군가 손으로 올린 것 — 실패)
+  const bound = cur.measurability === 'PARTIAL' && cur.sensor_binding && cur.sensor_binding.since;
+  if (cur.measurability !== 'UNMEASURABLE' && !bound) { promoOK = false; console.log('  ★' + rid + ' 는 현재 ' + cur.measurability + ' 다(센서 결속 표시 없음)'); continue; }
   console.log('  ' + pad(rid, 20) + pad(cur.measurability, 14) + pad(to, 10) + pad(conf, 7) + axes.join('·'));
 }
-check('6', '승격 후보가 전부 현재 UNMEASURABLE 이다', promoOK, '');
+check('6', '승격 후보가 전부 현재 UNMEASURABLE(결속 전) 이거나 sensor_binding 을 가진 PARTIAL(결속 후 · p10 적용) 이다', promoOK, '');
 check('6', '승격 후보 중 MEASURABLE 로 올라가는 것은 0건이다 (컷오프가 전부 POPULATION 이므로)',
   CAND.every(c => c[1] === 'PARTIAL'), '');
 
@@ -662,7 +665,7 @@ const payload = {
     '규칙 파일(ogwan.json·xlhz.json)은 고치지 않았다. 승격은 사람이 판단해 반영한다.',
   generated_by: '_v786_diag/p05_sensor_color_eval.js',
   sensor: '_v786_diag/sensor_color.js v' + S.VERSION,
-  binding_status: 'NOT_BOUND — index.html · api/* · face_core_v786.js 어디에도 연결되어 있지 않다.',
+  binding_status: 'BOUND(v787 · P-786-I) — js/sensor_*.js 사본을 index.html 이 싣고, 평탄화 축(col_*/tex_*)이 api/fortune.js → facever.js 로 간다. 결속 게이트 p09. ★센서 축 모집단은 없다(참고층 상한).',
   generated_at: new Date().toISOString().slice(0, 10),
   _principle: [
     '★억지 승격 금지. 「清(맑다)」처럼 색 축이 생겨도 여전히 판정 불가한 것은 still_unmeasurable 에 남긴다.',

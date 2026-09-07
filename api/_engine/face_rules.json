@@ -2,7 +2,7 @@
  "_note": "★배포 산출물. 고전 원문(한자)은 들어 있지 않다. 인용은 서지 ID(source_edition_id · corpus_id)와 음역된 locus 로만 한다. 이 파일은 _v786_diag/compile_face_rules.js 가 생성한다 — 손으로 고치지 말 것.",
  "_source": "IP_face/rules/face/{ogwan,xlhz}.json (배포 제외 · .gitignore)",
  "artifact_version": "face_rules/1.0.0",
- "axes_source": "face_core_v786.js · CW_FACE_AXES (30축)",
+ "axes_source": "face_core_v786.js · CW_FACE_AXES (414축)",
  "doctrines": [
   {
    "doctrine_id": "FACE_OGWAN",
@@ -36,23 +36,23 @@
  "tally": {
   "rules_total": 100,
   "measurability": {
-   "PARTIAL": 45,
-   "UNMEASURABLE": 50,
+   "PARTIAL": 62,
+   "UNMEASURABLE": 33,
    "MEASURABLE": 5
   },
   "threshold_origin": {
-   "POPULATION": 33,
-   "NONE": 50,
-   "TEXT": 17
+   "POPULATION": 48,
+   "NONE": 33,
+   "TEXT": 19
   },
   "condition_coverage": {
-   "PARTIAL": 34,
-   "NONE": 58,
-   "FULL": 8
+   "PARTIAL": 46,
+   "NONE": 41,
+   "FULL": 13
   },
-  "user_exposure_blocked": 19,
-  "expr_present": 5,
-  "measure_axis_null": 63
+  "user_exposure_blocked": 20,
+  "expr_present": 8,
+  "measure_axis_null": 46
  },
  "rules": [
   {
@@ -328,7 +328,8 @@
     "axes": [
      "gwanGol",
      "foreheadRatio",
-     "jeonTaek"
+     "jeonTaek",
+     "col_grp_YUKBU_gloss_mean"
     ],
     "expr": null,
     "expr_basis": null,
@@ -339,14 +340,13 @@
     "covered": [
      "관골",
      "이마 폭 비",
-     "전택"
+     "전택",
+     "빛남(광이영 — 육부 광택 평균)"
     ],
     "uncovered": [
-     "평평하고 그득함",
-     "빛남",
-     "맑음"
+     "평평하고 그득함"
     ],
-    "basis": "평평하고 그득함은 부피와 깊이이고 광택 축은 결속 전이다"
+    "basis": "평평하고 그득함은 부피와 깊이이고 광택 축은 결속 전이다 v787: 광택 어절은 col_grp_YUKBU_gloss_mean 으로 덮인다. 평만(평평하고 그득함)은 여전히 불가."
    },
    "measurability": "PARTIAL",
    "threshold_origin": "POPULATION",
@@ -365,26 +365,30 @@
    "verdict_ko": "흉하다",
    "condition": {
     "key": "yukbu.gyeolham_jiban_heukji",
-    "axes": [],
+    "axes": [
+     "col_grp_YUKBU_darkSpot_max",
+     "tex_grp_YUKBU_blobCount_total"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "결함",
-     "흉터",
-     "검은 점"
+    "covered": [
+     "검은 점(비율·개수)"
     ],
-    "basis": "점과 흉터 축은 색과 텍스처 센서에 후보로만 있고 결속 전이다"
+    "uncovered": [
+     "결함(꺼짐 — 3D)",
+     "흉터(덩어리 형상은 재나 흉터 여부는 못 가른다)"
+    ],
+    "basis": "육부 여섯 부위의 검은점 비율 최대값(색)과 덩어리 개수 합(텍스처)을 잰다. 결함은 깊이라 2D 에서 불가. 흉터은 blobElongation 으로 길쭉함까지만 본다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_grp_YUKBU_darkSpot_max",
    "confidence": null,
-   "user_exposure": null
+   "user_exposure": "BLOCKED"
   },
   {
    "rule_id": "FACE_OGWAN_R010",
@@ -948,23 +952,28 @@
    "verdict_ko": "부귀하다 / 가난하고 고생한다",
    "condition": {
     "key": "mi.sang_jikri_hoengri",
-    "axes": [],
+    "axes": [
+     "tex_grp_FOREHEAD_directionality_mean",
+     "tex_CHEONJEONG_directionality",
+     "tex_INDANG_vertFrac"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "세로결",
-     "가로결"
+    "covered": [
+     "세로결/가로결의 구분(directionality: +세로 −가로)"
     ],
-    "basis": "주름 축은 텍스처 센서에 후보로만 있고 결속 전이며 눈썹 위 전용 마스크도 없다"
+    "uncovered": [
+     "자리(미상(눈썹 위)) — 전용 마스크가 없어 천정·보각(이마)으로 근사"
+    ],
+    "basis": "결의 방향 자체는 directionality 축이 정확히 대응한다(p06: 횡리 −1.000 / 직리 +0.940). 그러나 원문 자리 「미상(눈썹 위)」 마스크가 없어 이마로 근사한다 — 자리 어절이 안 덮인다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "tex_grp_FOREHEAD_directionality_mean",
    "confidence": null,
    "user_exposure": null
   },
@@ -1016,23 +1025,30 @@
    "verdict_ko": "크게 귀한 상이다",
    "condition": {
     "key": "an.baek_yeook_heuk_yeochil",
-    "axes": [],
+    "axes": [
+     "col_eye_irisScleraContrast",
+     "col_eye_scleraLightness",
+     "col_eye_irisDarkness"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
+    "covered": [
      "흰자 밝기",
-     "검은자 어둡기"
+     "검은자 어둡기",
+     "흑백 대비"
     ],
-    "basis": "색 축이 후보로만 있고 결속 전이다"
+    "uncovered": [
+     "솟은 귀가 귀밑머리에 든다(인용문의 같은 조건절 — 귀 조건)"
+    ],
+    "basis": "「흰자 옥 · 검은자 옻」은 흰자·홍채 축 3개로 덮인다. 그러나 인용문이 「솟은 귀가 귀밑머리에 든다」을 같은 조건절로 잇고 있어 귀 없이는 FULL 이 아니다(p07 T-5b)."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_eye_irisScleraContrast",
    "confidence": null,
    "user_exposure": null
   },
@@ -1419,25 +1435,32 @@
    "verdict_ko": "총명과 학식을 주관한다",
    "condition": {
     "key": "hakdang.earfront.pyeongman_gwangyeong",
-    "axes": [],
+    "axes": [
+     "col_MYEONGMUN_R_gloss",
+     "col_MYEONGMUN_L_gloss",
+     "col_MYEONGMUN_R_lightness",
+     "col_MYEONGMUN_L_lightness"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "귀 앞 부위의 위치",
-     "평평함",
-     "그득함",
-     "빛남"
+    "covered": [
+     "빛남(광)",
+     "맑음(영 — 광택으로 근사)"
     ],
-    "basis": "부위의 위치가 귀를 기준으로 정의되는데 귀 랜드마크가 없다"
+    "uncovered": [
+     "평평함(3D)",
+     "그득함(3D)",
+     "부위 위치의 정확성(귀 기준 정의 → 얼굴 윤곽 127/356/454 로 근사)"
+    ],
+    "basis": "이문지전(귀 앞) 을 FaceMesh 윤곽점으로 근사한 마스크(MYEONGMUN)에서 광택·밝기를 잰다. 위치가 근사이고 평만 은 깊이라 FULL 불가."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_MYEONGMUN_R_gloss",
    "confidence": null,
    "user_exposure": null
   },
@@ -1659,23 +1682,26 @@
    "verdict_ko": "그 중도를 얻었다",
    "condition": {
     "key": "xlhz.geum.saek_baek_gi_gang",
-    "axes": [],
+    "axes": [
+     "col_abs_skinLightVsSclera"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "색이 흼",
-     "기가 굳셈"
+    "covered": [
+     "색이 흼(흰자 기준 · confidence LOW)"
     ],
-    "basis": "색 축은 결속 전이고 기는 계측 대상이 아니다"
+    "uncovered": [
+     "기가 굳셈(기 — 계측량 아님)"
+    ],
+    "basis": "「색백」은 흰자를 화이트 레퍼런스로 삼은 ABS 축으로만 잡힌다. 흰자는 완전한 중성이 아니므로 LOW. 「기강」은 남는다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_abs_skinLightVsSclera",
    "confidence": null,
    "user_exposure": null
   },
@@ -2091,23 +2117,30 @@
    "verdict_ko": "그 중도를 얻었다",
    "condition": {
     "key": "xlhz.hwa.saek_jeok",
-    "axes": [],
+    "axes": [
+     "col_abs_skinRedVsSclera",
+     "col_grp_OAK_lightness_mean",
+     "col_GWAN_R_gloss",
+     "col_GWAN_L_gloss"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "색이 붉음",
-     "기가 마름"
+    "covered": [
+     "색이 붉음(흰자 기준 · LOW)",
+     "마름(고 — 광택 낮음)"
     ],
-    "basis": "색 축은 결속 전이고 기는 계측 대상이 아니다"
+    "uncovered": [
+     "기(기운 — 기운은 계측량이 아니다)"
+    ],
+    "basis": "「색적」은 ABS 붉은기, 「고」는 관골 광택의 낮은 값. 「기」는 색이 아니다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_abs_skinRedVsSclera",
    "confidence": null,
    "user_exposure": null
   },
@@ -2184,24 +2217,29 @@
    "verdict_ko": "곧 진짜 양의 화형이다",
    "condition": {
     "key": "xlhz.hwa.jinyang_hwahyeong",
-    "axes": [],
+    "axes": [
+     "col_abs_skinRedVsSclera",
+     "col_GWAN_R_gloss",
+     "col_GWAN_L_gloss"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "붉게 핌",
-     "메마르지 않음",
-     "윤택함"
+    "covered": [
+     "붉게 핌(흰자 기준 · LOW)",
+     "메마르지 않음·윤택함(광택)"
     ],
-    "basis": "색과 광택 축이 결속 전이다"
+    "uncovered": [
+     "ABS 붉은기의 신뢰도(흰자 기준이라 LOW — 어절은 덮였으나 축이 조건을 떠받치기에 약하다)"
+    ],
+    "basis": "어절은 전부 대응 축이 있으나 「발홍」이 ABS(흰자 기준) 축에 기대므로 FULL 로 올리지 않는다(sensor_color.js: ABS 계열은 PARTIAL 상한)."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_abs_skinRedVsSclera",
    "confidence": null,
    "user_exposure": null
   },
@@ -2346,22 +2384,26 @@
    "verdict_ko": "그 걸맞음을 얻었다",
    "condition": {
     "key": "xlhz.to.saek_hwang",
-    "axes": [],
+    "axes": [
+     "col_abs_skinYellowVsSclera"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "색이 누름"
+    "covered": [
+     "색이 누름(흰자 기준 · LOW)"
     ],
-    "basis": "색 축은 결속 전이고 절대 색 기준의 신뢰도도 낮다"
+    "uncovered": [
+     "ABS 누런기의 신뢰도(흰자까지 함께 누레지는 황달·유색 조명과 구분 불가 — p05 실측 한계)"
+    ],
+    "basis": "「색황」 한 어절이고 축은 있으나 흰자 기준 ABS 라 PARTIAL 상한. 전역 색이동과 원리상 구분 못 한다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_abs_skinYellowVsSclera",
    "confidence": null,
    "user_exposure": null
   },
@@ -2407,25 +2449,33 @@
    "verdict_ko": "두텁고 무거우면 토가 실하다",
    "condition": {
     "key": "xlhz.to.hujung_tosil",
-    "axes": [],
+    "axes": [
+     "col_abs_skinRedVsSclera",
+     "col_GWAN_R_gloss",
+     "col_GWAN_L_gloss"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
+    "covered": [
+     "색이 붉고 윤택함(LOW)",
+     "마르지 않음(광택)"
+    ],
     "uncovered": [
      "두텁고 무거움",
-     "살짐",
-     "붉고 윤택함",
-     "거동"
+     "살짐(육비)",
+     "흐르지도 막히지도 않음",
+     "순정",
+     "거동(활동)"
     ],
-    "basis": "부피와 색과 거동뿐이다"
+    "basis": "색·광택 어절만 덮인다. 부피·거동 어절이 다수 남는다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_abs_skinRedVsSclera",
    "confidence": null,
    "user_exposure": null
   },
@@ -3030,23 +3080,49 @@
    "verdict_ko": "수명이 길다",
    "condition": {
     "key": "xlhz.myeonggung.myeongyun",
-    "axes": [],
-    "expr": null,
-    "expr_basis": null,
+    "axes": [
+     "col_INDANG_lightness",
+     "col_INDANG_gloss"
+    ],
+    "expr": {
+     "space": "rank",
+     "op": "all",
+     "terms": [
+      {
+       "op": "gte",
+       "left": {
+        "axis": "col_INDANG_lightness"
+       },
+       "right": {
+        "const": 0.5
+       }
+      },
+      {
+       "op": "gte",
+       "left": {
+        "axis": "col_INDANG_gloss"
+       },
+       "right": {
+        "const": 0.5
+       }
+      }
+     ]
+    },
+    "expr_basis": "「요명윤(밝고 윤택해야 한다)」 — 명(밝기)·윤(광택) 두 어절 모두 인당 축이 덮는다(coverage FULL). 컷오프는 원문에 없어 모집단 중앙값 이상을 명·윤 으로 본다. 두 어절을 모두 요구한다.",
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "FULL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "밝음",
-     "윤택함"
+    "covered": [
+     "밝음(명) — col_INDANG_lightness",
+     "윤택함(윤) — col_INDANG_gloss"
     ],
-    "basis": "밝기와 광택 축은 색 센서에 후보로만 있고 결속 전이다"
+    "uncovered": [],
+    "basis": "「요명윤」 두 어절 모두 인당 마스크 위의 상대 밝기·광택 축이 정확히 대응한다. 남은 것은 「얼마나」뿐이고 그 컷오프는 원문이 아니라 모집단이 준다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_INDANG_lightness",
    "confidence": null,
    "user_exposure": null
   },
@@ -3061,22 +3137,29 @@
    "verdict_ko": "몸과 목숨이 일찍 기운다",
    "condition": {
     "key": "xlhz.myeonggung.mungyo",
-    "axes": [],
+    "axes": [
+     "tex_INDANG_crossingIndex",
+     "tex_INDANG_wrinkleEnergy",
+     "tex_INDANG_orientationConcentration"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "주름의 교차"
+    "covered": [
+     "주름(에너지)",
+     "교차(세로·가로 동시 에너지 — crossingIndex)"
     ],
-    "basis": "텍스처 축이 결속 전이다"
+    "uncovered": [
+     "「교차하는 두 주름」과 「방향이 어지러운 잔주름」의 구분"
+    ],
+    "basis": "crossingIndex 는 세로·가로 에너지가 함께 클 때 커지므로 어지러운 잔주름도 같은 값을 낸다. 두 현상을 못 가르므로 FULL 아님. BLOCKED 유지."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "tex_INDANG_crossingIndex",
    "confidence": null,
    "user_exposure": "BLOCKED"
   },
@@ -3091,22 +3174,26 @@
    "verdict_ko": "현침은 극(尅)을 주관한다 — 다음 葉으로 이어져 「妻害子」",
    "condition": {
     "key": "xlhz.myeonggung.hyeonchim",
-    "axes": [],
+    "axes": [
+     "tex_indang_verticalLineCount",
+     "tex_INDANG_vertFrac",
+     "tex_INDANG_wrinkleEnergy"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "FULL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "세로 주름"
+    "covered": [
+     "인당 세로선 1개 — tex_indang_verticalLineCount (신뢰조건 미달이면 값을 내지 않는다)"
     ],
-    "basis": "텍스처 축이 결속 전이다"
+    "uncovered": [],
+    "basis": "「현침」= 인당에 세로로 선 주름 하나. 개수 축이 어절을 전부 덮고 컷오프(1)는 원문이 준다(TEXT). ★MEASURABLE 보류: 개수 센서가 실사진 검증 0건(p06 합성만). BLOCKED 유지."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": "tex_indang_verticalLineCount",
    "confidence": null,
    "user_exposure": "BLOCKED"
   },
@@ -3121,22 +3208,39 @@
    "verdict_ko": "어두우면 마땅치 않다",
    "condition": {
     "key": "xlhz.myeonggung.sanak_honam",
-    "axes": [],
-    "expr": null,
-    "expr_basis": null,
+    "axes": [
+     "col_grp_OAK_lightness_min",
+     "col_CHEONJEONG_lightness",
+     "col_GWAN_R_lightness",
+     "col_GWAN_L_lightness",
+     "col_JUNDU_lightness",
+     "col_JIGAK_lightness"
+    ],
+    "expr": {
+     "space": "rank",
+     "op": "lt",
+     "left": {
+      "axis": "col_grp_OAK_lightness_min"
+     },
+     "right": {
+      "const": 0.5
+     }
+    },
+    "expr_basis": "「불의혼암(어두워서는 안 된다)」 — 조건(혼암)이 성립하면 판정(불의)이 붙는다. 오악 다섯 자리 중 최소 밝기가 모집단 중앙값 미만이면 혼암으로 본다(어느 한 자리라도 어두우면).",
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "FULL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "어둡고 컴컴함"
+    "covered": [
+     "산악 다섯 자리(이마·좌우 관골·코·턱) 전부 마스크 있음",
+     "혼암 — 얼굴 피부 기준 상대 밝기(조명장 제거 후)"
     ],
-    "basis": "밝기 축이 결속 전이다"
+    "uncovered": [],
+    "basis": "오악 다섯 부위 모두 마스크가 있고 「혼암」은 조명장(저주파 밝기장)을 뺀 상대 밝기 축이 대응한다. 종전 notes 가 요구한 「촬영 조건 정규화」는 sensor_color 의 log·detrend·σ 정규화가 이행한다(p05 조명 불변성 최악 7.1%). 어느 한 자리라도 어두우면 「혼암」이므로 다섯 자리의 최소값을 대표축으로 둔다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_grp_OAK_lightness_min",
    "confidence": null,
    "user_exposure": null
   },
@@ -3151,22 +3255,26 @@
    "verdict_ko": "재상을 주관한다",
    "condition": {
     "key": "xlhz.myeonggung.cheonja",
-    "axes": [],
+    "axes": [
+     "tex_indang_verticalLineCount",
+     "tex_INDANG_vertFrac",
+     "tex_INDANG_wrinkleEnergy"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "FULL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "세로 주름 세 줄"
+    "covered": [
+     "인당 세로선 3개(천) — tex_indang_verticalLineCount (신뢰조건 미달이면 값을 내지 않는다)"
     ],
-    "basis": "텍스처 축이 결속 전이다"
+    "uncovered": [],
+    "basis": "「천자」= 세로선 셋. 개수 축이 어절을 전부 덮고 컷오프(3)는 글자 자체가 준다(TEXT). ★MEASURABLE 승격 요건: 실사진(동의 확보분)에서 세로선 개수 정답률 실측 — 지금은 0건이라 보류한다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": "tex_indang_verticalLineCount",
    "confidence": null,
    "user_exposure": null
   },
@@ -3181,23 +3289,50 @@
    "verdict_ko": "학문에 두루 통한 선비",
    "condition": {
     "key": "xlhz.myeonggung.gwangmyeong_yeogyeong",
-    "axes": [],
-    "expr": null,
-    "expr_basis": null,
+    "axes": [
+     "col_INDANG_gloss",
+     "col_INDANG_lightness"
+    ],
+    "expr": {
+     "space": "rank",
+     "op": "all",
+     "terms": [
+      {
+       "op": "gte",
+       "left": {
+        "axis": "col_INDANG_gloss"
+       },
+       "right": {
+        "const": 0.75
+       }
+      },
+      {
+       "op": "gte",
+       "left": {
+        "axis": "col_INDANG_lightness"
+       },
+       "right": {
+        "const": 0.75
+       }
+      }
+     ]
+    },
+    "expr_basis": "「광명여경(거울처럼 빛나고 밝다)」 — 광(광택)·명(밝기)을 인당 축이 덮고 「여경(거울 같다)」은 최상급 직유라 정도(컷오프)가 R046 「명윤」보다 높아야 한다. 모집단 상위 사분위(랭크 0.75 이상)를 두 어절 모두에 요구한다(보수적 결합). ★0.75 는 우리 저작이다 — 원문은 「거울 같다」까지만 준다.",
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "FULL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "빛남",
-     "밝음"
+    "covered": [
+     "빛남(광) — col_INDANG_gloss",
+     "밝음(명) — col_INDANG_lightness",
+     "거울 같음(여경 — 정도 표현, 컷오프에 해당)"
     ],
-    "basis": "광택과 밝기 축이 결속 전이다"
+    "uncovered": [],
+    "basis": "「광명여경」에서 광·명 은 축이 있고 「여경」은 정도(얼마나)를 말하는 직유다. 정도는 모집단이 준다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_INDANG_gloss",
    "confidence": null,
    "user_exposure": null
   },
@@ -3277,23 +3412,28 @@
    "verdict_ko": "몸이 반드시 옥에 갇힌다",
    "condition": {
     "key": "xlhz.myeonggung.akji",
-    "axes": [],
+    "axes": [
+     "tex_INDANG_blob_count",
+     "col_INDANG_darkSpotFrac",
+     "tex_INDANG_blob_edgeSharpness"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "점",
-     "나쁨의 판정"
+    "covered": [
+     "점(개수·비율·경계 선명도)"
     ],
-    "basis": "점 축은 결속 전이고 나쁨은 계측량이 아니다"
+    "uncovered": [
+     "나쁨(악)의 판정 — 계측량이 아니다"
+    ],
+    "basis": "점의 존재·개수·모양까지 잰다. 「악」은 길흉 형용이라 원천적으로 불가. 노출 차단 유지."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "tex_INDANG_blob_count",
    "confidence": null,
    "user_exposure": "BLOCKED"
   },
@@ -3308,23 +3448,31 @@
    "verdict_ko": "3년 안에 송사를 주관한다",
    "condition": {
     "key": "xlhz.myeonggung.gisaek_jeoksaek",
-    "axes": [],
+    "axes": [
+     "col_INDANG_redness",
+     "col_INDANG_chromaDispersion",
+     "tex_INDANG_blob_count"
+    ],
     "expr": null,
     "expr_basis": null,
     "expr_absent_reason": null
    },
-   "condition_coverage": "NONE",
+   "condition_coverage": "PARTIAL",
    "coverage_note": {
-    "covered": [],
-    "uncovered": [
-     "실 같은 붉은 색",
-     "점"
+    "covered": [
+     "붉은 색(인당 붉은기)",
+     "얼룩(색 산포)",
+     "점(개수)"
     ],
-    "basis": "색과 점 축이 결속 전이다"
+    "uncovered": [
+     "실 같음(여사 — 형상)",
+     "돋음(기(돋음) — 융기, blobRelief 는 조명 의존 LOW)"
+    ],
+    "basis": "붉은기·산포·점 개수는 잰다. 「여사」의 선형 형상과 「기(돋음)」의 융기는 못 가른다."
    },
-   "measurability": "UNMEASURABLE",
-   "threshold_origin": "NONE",
-   "measure_axis": null,
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "col_INDANG_redness",
    "confidence": null,
    "user_exposure": "BLOCKED"
   },
