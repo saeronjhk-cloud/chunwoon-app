@@ -279,7 +279,7 @@
     },
     "eval_engine_binding.js": {
       "checks_min": 21,
-      "sha256": "cf6e5f5711ad92cdf6a08967cffdffd35ad8a949a68390980af0aa3156b63b67",
+      "sha256": "d272735f8b77a3679dc5c3891285cf29df658a4275c8625663308c75e39b53ab",
       "bytes_min": 21804
     },
     "eval_ctxguard.js": {
@@ -299,7 +299,7 @@
     },
     "eval_gate_asset_commit.js": {
       "checks_min": 11,
-      "sha256": "ecac8b830d776c2738619dba6b848e7e2740f88a90b969f8e57afda976605fee",
+      "sha256": "7d99b2c9c93b39e75579ee524e3d003d5581874caac39bf48e0e533b630ea83e",
       "bytes_min": 13104
     },
     "eval_lunar_ui_dom.js": {
@@ -376,7 +376,7 @@
   },
   "sources": {
     "api/fortune.js": {
-      "sha256": "f25d24b863a4e469038c6a6406580b787f9fbb8fbcf832607681ef08a104a6a4",
+      "sha256": "c1af3dcbba960c96dbf384aa6792f764e6ff537d4a126ff969d808db7f3ae3ef",
       "bytes_min": 117252,
       "root": "front"
     },
@@ -391,7 +391,7 @@
       "root": "front"
     },
     "api/_engine/ctxguard.js": {
-      "sha256": "99453869bc32a5003cb1ef66ff6fdf46b7e799027a7811526712e7952c820526",
+      "sha256": "75008af8e3edb370f7d8c7ade8f54a8cea3199f245aecfb6b301ef69529ba7ff",
       "bytes_min": 49837,
       "root": "front"
     },

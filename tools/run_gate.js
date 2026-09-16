@@ -66,7 +66,9 @@ const GATE_PINS_FILE = path.join(EVAL_DIR, '_gate_pins.json');
 //   compat/tojeong payload 와 토정 작괘식이 **의도적으로** 바뀐 것이다(인수인계 v786 §5-2).
 //   ★checks_min(24·21)은 건드리지 않았고 regen_gate_pins.js 도 돌리지 않았다
 //     — 돌리면 소멸한 eval 39종의 침식 기록이 통째로 지워진다(§5-3).
-const GATE_PINS_SHA256 = '1495ed8fe338a08d4e727be3d54da905715ca4fbd9a1ac9ef577368d95139011';
+// ★v787(2026-09-07) 갱신 — sources: api/fortune.js · api/_engine/ctxguard.js sha256 (v786 다양성 수리 + v787 센서 결속으로 의도적 변경 · bytes_min 불변)
+//   + eval_engine_binding.js sha256 (패키지 engine/ 해석 경로 추가) + eval_gate_asset_commit.js sha256 (REQUIRED 2건 추가) · P-786-D. checks_min 불변.
+const GATE_PINS_SHA256 = 'b832112601ab60c9c4b9ec62df28a6947f54fe08c00234fa3d069f3e95e023c9';
 
 function readPins() {
   if (!fs.existsSync(GATE_PINS_FILE)) return { err: '외부 pin 파일 부재: eval/_gate_pins.json — 판정 불가(통과 아님)' };
@@ -91,15 +93,54 @@ const NOT_A_GATE = /^(_|run_eval\.js$|mutation_kill_)/;
 
 function sha256(p) { return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex'); }
 
+// ── ★v787 P-786-D 게이트 침식 복구 — 외부 게이트 패키지 해석 ─────────────────────
+//   【실측된 원인】 pin 표 72종 중 51종(metamorphic 16 · mutation_kill 13 · naming/wonmun/rl/vercel …)은
+//     배포 리포에 **한 번도 커밋된 적이 없다**(git log --all 0건). 전부 게이트 패키지
+//     chunwoon_iljin_engine_poc_v7.70 zip 안에 있고 **51/51 sha256 이 pin 표와 일치**한다.
+//     그것들은 패키지의 engine/ · IP/rules/ · eval/fixtures 를 상대경로로 읽으므로 리포 eval/ 에
+//     옮겨 놓아도 돌지 않으며, IP/rules 는 원문 한자(root_system.json 786자)라 pre-commit 훅이 막는다.
+//     ⟹ 「리포에 복사」는 복구가 아니다. 패키지를 **git 밖**(_gate_pkg/ · 이관 대상 D:\ChunWoon_IP\gate_pkg\)에
+//        두고 러너가 두 뿌리를 합쳐 돈다. 리포에 있는 eval 은 리포가 정본(더 새 버전), 없는 것만 패키지에서.
+//   【규약】 CHUNWOON_GATE_PKG 환경변수 > <ROOT>/_gate_pkg. engine/ 과 eval/ 이 있어야 패키지로 인정.
+//     패키지 eval 은 cwd=패키지, CHUNWOON_FRONT_ROOT=배포 트리로 실행한다(패키지 설계 그대로).
+//   【fail-closed 유지】 패키지가 없으면 종전과 똑같이 「파일 소멸 — 게이트 침식」으로 FAIL 한다.
+function resolveGatePkg() {
+  const cands = [process.env.CHUNWOON_GATE_PKG, path.join(ROOT, '_gate_pkg')].filter(Boolean);
+  for (const c of cands) {
+    if (fs.existsSync(path.join(c, 'engine')) && fs.existsSync(path.join(c, 'eval'))) return path.resolve(c);
+  }
+  return null;
+}
+const GATE_PKG = resolveGatePkg();
+const PKG_EVAL_DIR = GATE_PKG ? path.join(GATE_PKG, 'eval') : null;
+// ★리포와 패키지에 **둘 다** 있는 eval(response_scrub · prompt_citation_guard · token_roundtrip · engine_binding)은
+//   패키지 뿌리(IP/policy · engine/)를 상대경로로 읽으므로 **패키지에서** 돈다. 두 사본은 sync_gate_pkg 가 바이트 동일하게
+//   맞추고 드리프트면 위에서 FAIL 하므로, 어느 쪽을 실행해도 같은 코드다. sha256 pin 대조는 리포 사본으로 한다.
+function inPkg(f) { return !!(PKG_EVAL_DIR && fs.existsSync(path.join(PKG_EVAL_DIR, f))); }
+function evalPath(f) {
+  if (inPkg(f)) return path.join(PKG_EVAL_DIR, f);
+  return path.join(EVAL_DIR, f);   // 부재 — 호출자가 existsSync 로 판정한다
+}
+function evalPinPath(f) { const p = path.join(EVAL_DIR, f); return fs.existsSync(p) ? p : evalPath(f); }
+function evalCwd(f) { return inPkg(f) ? GATE_PKG : ROOT; }
+function unionEvalNames(pred) {
+  const names = new Set(fs.readdirSync(EVAL_DIR).filter(pred));
+  if (PKG_EVAL_DIR) for (const f of fs.readdirSync(PKG_EVAL_DIR).filter(pred)) names.add(f);
+  return [...names].sort();
+}
+
 function listEvals() {
-  return fs.readdirSync(EVAL_DIR).filter(f => f.endsWith('.js') && !NOT_A_GATE.test(f)).sort();
+  return unionEvalNames(f => f.endsWith('.js') && !NOT_A_GATE.test(f));
 }
 function listMutations() {
-  return fs.readdirSync(EVAL_DIR).filter(f => /^mutation_kill_.*\.js$/.test(f)).sort();
+  return unionEvalNames(f => /^mutation_kill_.*\.js$/.test(f));
 }
 
 function run(label, file, cwd) {
-  const r = spawnSync(process.execPath, [file], { cwd: cwd || ROOT, env: process.env, encoding: 'utf8' });
+  // 패키지 eval 은 배포 트리를 CHUNWOON_FRONT_ROOT 로 받아야 한다(환경변수가 이미 있으면 그것을 존중).
+  const env = Object.assign({}, process.env);
+  if (!env.CHUNWOON_FRONT_ROOT && cwd && GATE_PKG && cwd === GATE_PKG) env.CHUNWOON_FRONT_ROOT = ROOT;
+  const r = spawnSync(process.execPath, [file], { cwd: cwd || ROOT, env: env, encoding: 'utf8' });
   const ok = r.status === 0;
   const out = String(r.stdout || '');
   if (!ok) {
@@ -127,13 +168,28 @@ function parseMutSlice(w) {
 }
 
 const which = (process.argv[2] || 'all').toLowerCase();
+console.log('[gate] pkg=' + (GATE_PKG || '(없음 — 패키지 전용 eval 은 침식으로 FAIL)'));
 const MUT_SLICE = parseMutSlice(which);
+// ★v787 — eval 도 분할 실행(eval:k/n). 패키지 51종이 합류해 eval 전건이 10분을 넘겨 샌드박스 도구 시간(180s)에 걸린다.
+//   mut:k/n 과 같은 비율 슬라이스 · 같은 합집합 자기검증 · 침식 하한은 전체 목록으로 검사한다.
+function parseEvalSlice(w) { const m = /^eval:(\d+)\/(\d+)$/.exec(w); return m ? { k: parseInt(m[1], 10), n: parseInt(m[2], 10) } : null; }
+const EVAL_SLICE = parseEvalSlice(which);
 let fail = 0, total = 0;
 const pinFail = [];
+// ★v787 — 패키지 안의 리포 공유 파일(eval 4종 · pin 표 · 러너)이 리포와 다르면 FAIL.
+//   패키지의 run_eval.js 가 **패키지 안의** 사본을 부르므로, 낡은 사본이면 낡은 게이트로 통과한 셈이 된다.
+//   수리: node tools/sync_gate_pkg.js (리포 → 패키지 한 방향 복사)
+if (GATE_PKG) {
+  try {
+    const sync = require('./sync_gate_pkg.js');
+    const drift = sync.plan(GATE_PKG).filter(([src, dst]) => !(fs.existsSync(dst) && fs.readFileSync(src).equals(fs.readFileSync(dst))));
+    if (drift.length) pinFail.push('게이트 패키지 사본 드리프트 ' + drift.length + '건 (' + drift.map((d) => d[2]).join(',') + ') — node tools/sync_gate_pkg.js 로 동기화하라');
+  } catch (e) { pinFail.push('게이트 패키지 동기화 검사 불가: ' + (e && e.message)); }
+}
 
 // ★v7.67 — 미지의 scope 인자는 아무 것도 실행하지 않고 exit 0 이었다(total=0 fail=0).
 //   오타 하나가 「전건 통과」로 보이는 fail-open 이므로 명시 화이트리스트로 닫는다.
-if (['all', 'tools', 'eval', 'mut'].indexOf(which) === -1 && !MUT_SLICE) {
+if (['all', 'tools', 'eval', 'mut'].indexOf(which) === -1 && !MUT_SLICE && !EVAL_SLICE) {
   pinFail.push('알 수 없는 scope 인자 "' + which + '" — 사용: all|tools|eval|mut|mut:k[/n] (판정 불가, 통과 아님)');
 }
 if (MUT_SLICE && !(MUT_SLICE.n >= 1 && MUT_SLICE.k >= 1 && MUT_SLICE.k <= MUT_SLICE.n)) {
@@ -181,7 +237,9 @@ if (PINS) {
       for (const rel of Object.keys(SRC_TABLE)) {
         const spec = SRC_TABLE[rel] || {};
         const base = (spec.root === 'gate') ? ROOT : FR;
-        const fp = path.join(base, rel.split('/').join(path.sep));
+        let fp = path.join(base, rel.split('/').join(path.sep));
+        // ★v787 — gate 뿌리 자산(IP/policy 등)이 리포에 없으면 외부 게이트 패키지에서 찾는다.
+        if (spec.root === 'gate' && !fs.existsSync(fp) && GATE_PKG) fp = path.join(GATE_PKG, rel.split('/').join(path.sep));
         if (!fs.existsSync(fp)) { pinFail.push('외부 pin(src): ' + rel + ' 파일 부재 — 소스 소멸'); continue; }
         let h = null, sz = 0;
         try { h = sha256(fp); sz = fs.statSync(fp).size; }
@@ -203,8 +261,8 @@ if (PINS) {
 // ★R5-6 ①소스 sha256 pin — scope 무관하게 항상 검증한다.
 for (const f of Object.keys(EVAL_PIN_TABLE)) {
   const spec = EVAL_PIN_TABLE[f];
-  const p = path.join(EVAL_DIR, f);
-  if (!fs.existsSync(p)) { pinFail.push('외부 pin: ' + f + ' 파일 소멸 — 게이트 침식'); continue; }
+  const p = evalPinPath(f);
+  if (!fs.existsSync(p)) { pinFail.push('외부 pin: ' + f + ' 파일 소멸 — 게이트 침식' + (GATE_PKG ? '' : ' (외부 게이트 패키지 미해석: CHUNWOON_GATE_PKG 또는 _gate_pkg/)')); continue; }
   let h = null;
   try { h = sha256(p); } catch (e) { pinFail.push('외부 pin: ' + f + ' 판독 실패 ' + (e && e.message)); continue; }
   if (h !== spec.sha256) {
@@ -279,16 +337,28 @@ function checksMin(f, stdout) {
 if (which === 'all' || which === 'tools') {
   console.log('[gate] tools');
   for (const t of ['tools/validate_ip.js', 'tools/verify_schema_v2.js', 'eval/run_eval.js']) {
-    total++; if (!run(t, path.join(ROOT, t)).ok) fail++;
+    // ★v787 — tools 구획도 리포에 없으면 외부 게이트 패키지에서(cwd=패키지). 없으면 종전대로 FAIL.
+    const inRepo = fs.existsSync(path.join(ROOT, t));
+    const fp = inRepo ? path.join(ROOT, t) : (GATE_PKG ? path.join(GATE_PKG, t) : path.join(ROOT, t));
+    total++; if (!run(t + (inRepo ? '' : ' [pkg]'), fp, inRepo ? ROOT : GATE_PKG).ok) fail++;
   }
 }
-if (which === 'all' || which === 'eval') {
-  const files = listEvals();
-  console.log('[gate] eval ' + files.length + '종');
-  if (files.length < EVAL_PIN) pinFail.push('eval ' + files.length + ' < 하한 pin ' + EVAL_PIN + ' — 게이트 침식');
+if (which === 'all' || which === 'eval' || EVAL_SLICE) {
+  const all = listEvals();
+  if (all.length < EVAL_PIN) pinFail.push('eval ' + all.length + ' < 하한 pin ' + EVAL_PIN + ' — 게이트 침식');
+  let files = all;
+  if (EVAL_SLICE) {
+    if (!(EVAL_SLICE.n >= 1 && EVAL_SLICE.k >= 1 && EVAL_SLICE.k <= EVAL_SLICE.n)) pinFail.push('eval 분할 지정 오류 k=' + EVAL_SLICE.k + ' n=' + EVAL_SLICE.n);
+    let union = [];
+    for (let i = 1; i <= EVAL_SLICE.n; i++) union = union.concat(sliceOf(all, i, EVAL_SLICE.n));
+    const same = union.length === all.length && union.every((f, i) => f === all[i]);
+    if (!same) pinFail.push('★eval 분할 합집합(' + union.length + ') != 전건(' + all.length + ') — 검사 누락');
+    files = sliceOf(all, EVAL_SLICE.k, EVAL_SLICE.n);
+    console.log('[gate] eval ' + all.length + '종 · 분할 ' + EVAL_SLICE.k + '/' + EVAL_SLICE.n + ' = ' + files.length + '건 [' + (files[0] || '-') + ' … ' + (files[files.length - 1] || '-') + '] · 합집합 대조 ' + (same ? 'OK' : 'FAIL'));
+  } else console.log('[gate] eval ' + files.length + '종');
   for (const f of files) {
     total++;
-    const r = run('eval/' + f, path.join(EVAL_DIR, f));
+    const r = run('eval/' + f + (evalCwd(f) === ROOT ? '' : ' [pkg]'), evalPath(f), evalCwd(f));
     if (!r.ok) fail++;
     // ★R5-6 ②검사 수 외부 하한 — eval 이 스스로 EXPECTED_TOTAL 을 낮추는 공허 통과를 잡는다.
     checksMin(f, r.stdout);
@@ -316,7 +386,7 @@ if (which === 'all' || which === 'mut' || MUT_SLICE) {
   }
   for (const f of files) {
     total++;
-    const r = run('eval/' + f, path.join(EVAL_DIR, f));
+    const r = run('eval/' + f + (evalCwd(f) === ROOT ? '' : ' [pkg]'), evalPath(f), evalCwd(f));
     if (!r.ok) fail++;
     checksMin(f, r.stdout);
   }

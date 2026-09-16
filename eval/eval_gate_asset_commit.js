@@ -123,6 +123,10 @@ const REQUIRED = Object.freeze([
   'eval/eval_policy_binding.js',
   'tools/run_gate.js',
   'tools/regen_gate_pins.js',
+  // ★v787 P-786-D — 외부 게이트 패키지 동기화기 + fail-closed 헬퍼(패키지에서 복원 · pin 표 sha 일치).
+  //   eval_response_scrub · eval_prompt_citation_guard 가 _failclosed 를 require 한다 — 부재면 두 게이트가 실행 불가였다(v786 §5-3).
+  'tools/sync_gate_pkg.js',
+  'eval/_failclosed.js',
   'tools/gen_client_astro.js',
   'tools/cw_engine_port.pins.json',
   'tools/mutation_probe_v773.js',

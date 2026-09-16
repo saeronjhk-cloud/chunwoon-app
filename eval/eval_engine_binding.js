@@ -37,7 +37,17 @@ function resolveFrontRoot() {
 const FRONT_ROOT = (() => { try { return resolveFrontRoot(); } catch (e) { return null; } })();
 const ENG_DIR = FRONT_ROOT ? path.join(FRONT_ROOT, 'api', '_engine') : null;
 // 패키지 정본(단일 출처 대조용) — 이 파일 기준 ../engine
-const PKG_ENG_DIR = path.resolve(__dirname, '..', 'engine');
+// ★v787 P-786-D — 배포 리포에는 engine/ 이 없다(원문 한자 자산과 함께 git 밖 게이트 패키지에 있다).
+//   ../engine 이 없으면 CHUNWOON_GATE_PKG > ../_gate_pkg 의 engine/ 을 정본으로 본다(tools/run_gate.js 와 같은 규약).
+//   둘 다 없으면 종전대로 「패키지 정본 부재」FAIL 이다(fail-closed 유지).
+const PKG_ENG_DIR = (() => {
+  const local = path.resolve(__dirname, '..', 'engine');
+  if (fs.existsSync(local)) return local;
+  for (const c of [process.env.CHUNWOON_GATE_PKG, path.resolve(__dirname, '..', '_gate_pkg')]) {
+    if (c && fs.existsSync(path.join(c, 'engine')) && fs.existsSync(path.join(c, 'eval'))) return path.join(c, 'engine');
+  }
+  return local;
+})();
 
 const OKCTX_EARLY = { yearPillar: '戊辰', monthPillar: '丙辰', dayPillar: '庚申', hourPillar: '壬午', gender: 'male' };
 const results = [];

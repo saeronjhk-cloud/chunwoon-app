@@ -168,3 +168,7 @@ HANDOVER.md
 # ══════════════════════════════════════════════════════════════════
 _v786_diag/IP_face/
 _v786_diag/face_sources_candidates_*.json
+
+# ★v787 P-786-D — 게이트 패키지(chunwoon_iljin_engine_poc v7.70 + 리포 동기화본). git 밖. 이관 대상 D:\ChunWoon_IP\gate_pkg\
+#   원문 한자 자산(IP/rules/saju/root_system.json 등)을 포함하므로 커밋 금지. tools/run_gate.js 가 여기서 패키지 전용 eval 51종을 돈다.
+_gate_pkg/

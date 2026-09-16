@@ -84,6 +84,21 @@ _v7.57_재작성/
 _work_v*/
 _archive_*/
 _mvtest/
+# ★v787 — eval_response_scrub V2 는 .gitignore 와 .vercelignore 의 `_` 접두 배제 항목을 **문자열 집합**으로 대조한다.
+#   손금 v7.2(_v785_palm·_ruler) · v786(_v786_diag/IP_face) 세션이 .gitignore 에만 추가해 V2 가 붉어졌다(v787 P-786-D 에서 적발).
+#   /* 가 이미 전부 배제하지만 집합 동일성을 위해 아래를 명시 유지한다. .gitignore 에 `_` 항목을 더하면 여기도 더하라.
+_v785_palm/*
+_v785_palm/probe/*
+_v785_palm/probe/*.png
+_v785_palm/probe/*.jpg
+_v785_palm/probe/*.npz
+_v785_palm/probe/*.csv
+_v785_palm/probe/report_*.json
+_v785_palm/probe/thresholds_frozen.json
+_ruler/
+_v786_diag/IP_face/
+_v786_diag/face_sources_candidates_*.json
+_gate_pkg/
 chunwoon_ip_poc*.json
 *.zip
 *.pth
