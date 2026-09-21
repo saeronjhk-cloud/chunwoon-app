@@ -882,7 +882,7 @@ console.log('  5. 축 ↔ 원문 대응 무결성 — 대응 rule 이 없는 축
 console.log(line('-'));
 const RULES = {};
 for (const f of ['ogwan', 'xlhz']) {
-  const j = JSON.parse(fs.readFileSync(path.join(__dirname, 'IP_face/rules/face/' + f + '.json'), 'utf8'));
+  const j = JSON.parse(fs.readFileSync(path.join(require('./_ip_face_root.js')(), 'rules/face/' + f + '.json'), 'utf8'));
   for (const r of j.rules) RULES[r.rule_id] = r;
 }
 const axisBad = [];
@@ -1032,7 +1032,7 @@ check('7', '★凹陷(R053)은 승격시키지 않았다 — 깊이는 2D 로 �
   !CAND.some(c => c[0] === 'FACE_XLHZ_R053') && STILL.some(s => s[0].indexOf('R053') >= 0), '');
 
 /* 색 센서 후보와 겹치는지 확인 — 겹치면 「색+텍스처」로 근거가 늘어난 것이지 새 승격이 아니다 */
-const colorCandPath = path.join(__dirname, 'IP_face/promote_candidates_color.json');
+const colorCandPath = path.join(require('./_ip_face_root.js')(), 'promote_candidates_color.json');
 let colorCand = [];
 if (fs.existsSync(colorCandPath)) colorCand = JSON.parse(fs.readFileSync(colorCandPath, 'utf8')).candidates.map(c => c.rule_id);
 const overlap = CAND.map(c => c[0]).filter(r => colorCand.indexOf(r) >= 0);
@@ -1040,7 +1040,7 @@ const fresh = CAND.map(c => c[0]).filter(r => colorCand.indexOf(r) < 0);
 console.log('\n  색 센서 후보와 겹치는 것 ' + overlap.length + '건 (' + (overlap.join(',') || '없음') + ') — 근거 축이 늘어난 것이지 새 승격이 아니다');
 console.log('  ★텍스처만으로 새로 승격 가능해진 것 ' + fresh.length + '건: ' + fresh.join(', '));
 
-const outPath = path.join(__dirname, 'IP_face/promote_candidates_texture.json');
+const outPath = path.join(require('./_ip_face_root.js')(), 'promote_candidates_texture.json');
 const payload = {
   _note: '★텍스처 축(sensor_texture.js) 신설로 UNMEASURABLE → 승격이 가능해지는 규칙의 「후보」 목록이다. ' +
     '규칙 파일(ogwan.json·xlhz.json)은 고치지 않았다. 승격은 사람이 판단해 반영한다.',

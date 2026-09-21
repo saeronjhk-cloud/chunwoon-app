@@ -34,7 +34,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const IP = path.join(__dirname, 'IP_face');
+const IP = require('./_ip_face_root.js')(); // ★v788 P-786-H — 정본은 D:\ChunWoon_IP\face (해석기 참조)
 const OUT = path.join(ROOT, 'api', '_engine', 'face_rules.json');
 const CORE = path.join(__dirname, 'face_core_v786.js');
 

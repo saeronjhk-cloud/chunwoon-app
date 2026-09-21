@@ -20,7 +20,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const R  = (p) => JSON.parse(fs.readFileSync(path.join(__dirname, p), 'utf8'));
+const IPR = require('./_ip_face_root.js')(); // ★v788 P-786-H — IP_face/ 접두는 정본(D:\ChunWoon_IP\face)으로 해석
+const R  = (p) => JSON.parse(fs.readFileSync(p.startsWith('IP_face/') ? path.join(IPR, p.slice(8)) : path.join(__dirname, p), 'utf8'));
 const RULES     = R('IP_face/rules/face/ogwan.json');
 const GT        = R('IP_face/eval/ogwan_gt.json');
 const XRULES    = R('IP_face/rules/face/xlhz.json');

@@ -6,7 +6,7 @@
 //    실제 승격은 각 축의 결속·검증이 끝난 뒤 별도 커밋으로 한다.
 // ============================================================
 const fs = require('fs'), path = require('path');
-const D = path.join(__dirname, 'IP_face');
+const D = require('./_ip_face_root.js')(); // ★v788 P-786-H
 const rd = p => JSON.parse(fs.readFileSync(path.join(D, p), 'utf8'));
 const arr = o => o.rules || o;
 

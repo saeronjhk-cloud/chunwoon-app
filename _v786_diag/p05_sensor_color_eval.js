@@ -556,7 +556,7 @@ console.log('  4. 축 ↔ 원문 대응 무결성 — 대응 rule 이 없는 축
 console.log(line('-'));
 const RULES = {};
 for (const f of ['ogwan', 'xlhz']) {
-  const j = JSON.parse(fs.readFileSync(path.join(__dirname, 'IP_face/rules/face/' + f + '.json'), 'utf8'));
+  const j = JSON.parse(fs.readFileSync(path.join(require('./_ip_face_root.js')(), 'rules/face/' + f + '.json'), 'utf8'));
   for (const r of j.rules) RULES[r.rule_id] = r;
 }
 let axisBad = [];
@@ -659,7 +659,7 @@ check('6', '승격 후보가 전부 현재 UNMEASURABLE(결속 전) 이거나 se
 check('6', '승격 후보 중 MEASURABLE 로 올라가는 것은 0건이다 (컷오프가 전부 POPULATION 이므로)',
   CAND.every(c => c[1] === 'PARTIAL'), '');
 
-const outPath = path.join(__dirname, 'IP_face/promote_candidates_color.json');
+const outPath = path.join(require('./_ip_face_root.js')(), 'promote_candidates_color.json');
 const payload = {
   _note: '★색 축(sensor_color.js) 신설로 UNMEASURABLE → 승격이 가능해지는 규칙의 「후보」 목록이다. ' +
     '규칙 파일(ogwan.json·xlhz.json)은 고치지 않았다. 승격은 사람이 판단해 반영한다.',

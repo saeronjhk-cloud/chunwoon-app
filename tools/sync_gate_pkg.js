@@ -17,7 +17,8 @@ const ROOT = path.join(__dirname, '..');
 const CHECK = process.argv.indexOf('--check') !== -1;
 
 function resolvePkg() {
-  for (const c of [process.env.CHUNWOON_GATE_PKG, path.join(ROOT, '_gate_pkg')]) {
+  // ★v788 P-786-H — 정본 <ROOT>/../ChunWoon_IP/gate_pkg 를 두 번째 후보로 (run_gate.resolveGatePkg 와 같은 순서)
+  for (const c of [process.env.CHUNWOON_GATE_PKG, path.join(ROOT, '..', 'ChunWoon_IP', 'gate_pkg'), path.join(ROOT, '_gate_pkg')]) {
     if (c && fs.existsSync(path.join(c, 'engine')) && fs.existsSync(path.join(c, 'eval'))) return path.resolve(c);
   }
   return null;

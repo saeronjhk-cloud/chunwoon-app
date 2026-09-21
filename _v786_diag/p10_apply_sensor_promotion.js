@@ -25,7 +25,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const IP = path.join(__dirname, 'IP_face', 'rules', 'face');
+const IP = path.join(require('./_ip_face_root.js')(), 'rules', 'face'); // ★v788 P-786-H
 const S = require('./sensor_color.js'), T = require('./sensor_texture.js'), F = require('./sensor_flatten.js');
 const REG = new Set(F.buildRegistry(S, T).map((a) => a.axis));
 

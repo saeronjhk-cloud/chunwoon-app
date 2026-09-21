@@ -107,7 +107,8 @@ function sha256(p) { return crypto.createHash('sha256').update(fs.readFileSync(p
 //     패키지 eval 은 cwd=패키지, CHUNWOON_FRONT_ROOT=배포 트리로 실행한다(패키지 설계 그대로).
 //   【fail-closed 유지】 패키지가 없으면 종전과 똑같이 「파일 소멸 — 게이트 침식」으로 FAIL 한다.
 function resolveGatePkg() {
-  const cands = [process.env.CHUNWOON_GATE_PKG, path.join(ROOT, '_gate_pkg')].filter(Boolean);
+  // ★v788 P-786-H — 정본은 <ROOT>/../ChunWoon_IP/gate_pkg (= D:\ChunWoon_IP\gate_pkg · git 밖). _gate_pkg/ 는 구 위치(이관 후 없음).
+  const cands = [process.env.CHUNWOON_GATE_PKG, path.join(ROOT, '..', 'ChunWoon_IP', 'gate_pkg'), path.join(ROOT, '_gate_pkg')].filter(Boolean);
   for (const c of cands) {
     if (fs.existsSync(path.join(c, 'engine')) && fs.existsSync(path.join(c, 'eval'))) return path.resolve(c);
   }

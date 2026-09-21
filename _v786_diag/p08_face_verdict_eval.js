@@ -25,7 +25,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const IP = path.join(__dirname, 'IP_face');
+const IP = require('./_ip_face_root.js')(); // ★v788 P-786-H
 const ART = path.join(ROOT, 'api', '_engine', 'face_rules.json');
 
 const compiler = require('./compile_face_rules.js');
