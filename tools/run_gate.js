@@ -68,7 +68,9 @@ const GATE_PINS_FILE = path.join(EVAL_DIR, '_gate_pins.json');
 //     — 돌리면 소멸한 eval 39종의 침식 기록이 통째로 지워진다(§5-3).
 // ★v787(2026-09-07) 갱신 — sources: api/fortune.js · api/_engine/ctxguard.js sha256 (v786 다양성 수리 + v787 센서 결속으로 의도적 변경 · bytes_min 불변)
 //   + eval_engine_binding.js sha256 (패키지 engine/ 해석 경로 추가) + eval_gate_asset_commit.js sha256 (REQUIRED 2건 추가) · P-786-D. checks_min 불변.
-const GATE_PINS_SHA256 = 'b832112601ab60c9c4b9ec62df28a6947f54fe08c00234fa3d069f3e95e023c9';
+// ★v788(2026-09-21) 갱신 — sources: api/fortune.js sha256 (P-786-C: daily_message 가 전용 키 `variance` 를 읽는다 · bytes_min 불변)
+//   + eval_dream_daily_guard.js sha256 (PROMPT_KEYS_KNOWN 에 `variance` 등재 · checks_min 48 불변). regen_gate_pins.js 미실행.
+const GATE_PINS_SHA256 = 'a1362f2c70eb1a1f377c81898abdff4644066a1701b815f17d7e027ffce5118f';
 
 function readPins() {
   if (!fs.existsSync(GATE_PINS_FILE)) return { err: '외부 pin 파일 부재: eval/_gate_pins.json — 판정 불가(통과 아님)' };

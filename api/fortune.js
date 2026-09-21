@@ -2443,7 +2443,11 @@ ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
       const c = context || {};
       const personaTone = c.personaTone || '따뜻하고 친근한 운세 해설자. 신비로운 해요체';
       const personaName = c.personaName || '선녀';
-      systemPrompt = `당신은 "${personaName}"입니다. 캐릭터: ${personaTone}.
+      // ★v788 P-786-C — 결정변수(일진·시진·성향 버킷·회차)는 클라 `js/chat.js:_cwDailyVariance()` 가
+      //   전용 키 `variance` 로 싣는다(종전 v7.86 ③ 은 personaTone 접미로 반송했다). 없으면 줄 자체가 빠진다.
+      //   2층 평탄화(개행 제거·400자 상한)를 이미 거친 문자열이다. 값을 지어내지 않는다.
+      const variance = (typeof c.variance === 'string' && c.variance.trim()) ? '\n' + c.variance.trim() : '';
+      systemPrompt = `당신은 "${personaName}"입니다. 캐릭터: ${personaTone}.${variance}
 사용자의 오늘 운세를 짧고 임팩트 있게 전합니다.
 
 ⚠️ 절대 규칙:

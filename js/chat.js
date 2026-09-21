@@ -289,7 +289,7 @@ function _cwSeedBucket(){
  * ★세 축을 「사용자의 사주」로 오독하지 못하도록 **공통 정보임을 명시**하고
  *   문장에 옮기지 말라고 지시한다. 이것이 없으면 사주 없는 사용자에게
  *   일진이 「당신의 일간」으로 둔갑할 수 있다.
- * @returns {string} personaTone 뒤에 붙일 접미 문자열 (붙일 것이 없으면 '')
+ * @returns {string} ★v788 — 전용 ctx 키 `variance` 값 (붙일 것이 없으면 ''). 종전의 personaTone 접미가 아니다.
  */
 function _cwDailyVariance(){
   const parts = [];
@@ -303,7 +303,7 @@ function _cwDailyVariance(){
   //   이 축이 닫는다. 값은 이미 `_getDailyCount` 가 세고 있던 것이라 새로 만든 정보가 아니다.
   try { parts.push('오늘 ' + (_getDailyCount() + 1) + '번째 청'); } catch(e) {}
   if (!parts.length) return '';
-  return ' · 【오늘의 변주 씨앗】' + parts.join(' · ') +
+  return '【오늘의 변주 씨앗】' + parts.join(' · ') +
     '. 이 값들은 사용자의 사주가 아니라 오늘·지금의 공통 정보와 무작위 버킷이며, ' +
     '어조·비유·소재·시작 문장을 남과 다르게 고르는 씨앗으로만 쓰십시오. ' +
     '값이나 숫자를 답변 문장에 그대로 옮기지 말고, 사용자 개인의 사주로 해석하지 마십시오.';
@@ -445,12 +445,17 @@ async function fetchDailyMessage(category){
   }
   const persona = CHAT_PERSONAS.find(function(p){return p.k === chatPersona;}) || CHAT_PERSONAS[0];
   const ctxData = _gatherChatContext();
-  // ★★v7.86 ③ — 결정변수 3축을 `personaTone` 에 **덧붙인다**(새 키를 만들지 않는다).
+  // ★★v7.86 ③ — 결정변수 4축(일진·시진·버킷·회차)을 싣는다.
+  //   ★v788 P-786-C — 종전엔 `personaTone` 에 **덧붙여** 반송했다(v7.86 당시 서버가 작업 범위 밖이라).
+  //     이제 서버(`api/fortune.js` daily_message 분기)가 **전용 키 `variance`** 를 읽어 systemPrompt 에
+  //     별도 줄로 보간한다. `personaTone` 은 다시 순수 캐릭터 문안이다.
+  //     새 키가 dangling 이 아님은 eval_ctx_key_surface K-2 · eval_dream_daily_guard C-2(PROMPT_KEYS_KNOWN) 가 못박는다.
   //   ★사주가 있는 사용자도 동일하다 — 기존 `ctxData`(=`ctxBlock` 재료)는 그대로 두고
   //     이 축을 **추가**만 한다. 사주 유무로 코드 경로가 갈리지 않는다.
   const ctx = Object.assign({}, ctxData, {
     personaName: persona.n,
-    personaTone: persona.tone + _cwDailyVariance(),
+    personaTone: persona.tone,
+    variance: _cwDailyVariance(),
     category: (DAILY_CATEGORIES.find(function(x){return x.k === category;}) || {n:'전반'}).n
   });
   _showLoading(category);

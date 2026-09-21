@@ -179,7 +179,9 @@ function promptKeysByType() {
 // ★무방비 보간 자리가 조용히 늘지 못하게 못박는다(결정 90 · I-43 유형).
 const PROMPT_KEYS_KNOWN = ['birth', 'categories', 'category', 'dayPillar', 'dominantElement',
   'emotion', 'faceSummary', 'gender', 'hourBranch', 'ilgan', 'ilganElement', 'lacking',
-  'personaName', 'personaTone', 'sajuLinked', 'story', 'tarotSummary', 'time', 'weakElement'];
+  'personaName', 'personaTone', 'sajuLinked', 'story', 'tarotSummary', 'time',
+  // ★v788 P-786-C — daily_message 결정변수 전용 키(클라 소유 문안 · 사람 사실 아님 · ctxguard 1층 대상 아님)
+  'variance', 'weakElement'];
 
 check('C-2', '★4종 프롬프트의 context 보간 키 표면이 알려진 목록과 일치한다 (무방비 자리가 조용히 늘지 않는다)', () => {
   const per = promptKeysByType();

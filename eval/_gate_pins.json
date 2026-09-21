@@ -349,7 +349,7 @@
     },
     "eval_dream_daily_guard.js": {
       "checks_min": 48,
-      "sha256": "ef96a43429f71a66446b5c6cd32943a26f8fc0abae06c740ebf0fbcbc005a61e",
+      "sha256": "db1a55c190ce7ead9653768731a28f355d15422d47ab1c78ca8e1dcb9f1f30cd",
       "bytes_min": 39662
     },
     "eval_naming_company_guard.js": {
@@ -376,7 +376,7 @@
   },
   "sources": {
     "api/fortune.js": {
-      "sha256": "c1af3dcbba960c96dbf384aa6792f764e6ff537d4a126ff969d808db7f3ae3ef",
+      "sha256": "6846eb2421016e5977109be3d4dbd4590671cf3ff3c54b123a5e2054fa01b224",
       "bytes_min": 117252,
       "root": "front"
     },
