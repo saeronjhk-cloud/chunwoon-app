@@ -6822,6 +6822,12 @@ async function analyzeDream(){
   const catNames=cats.map(k=>{const d=DREAM_CATEGORIES.find(x=>x.k===k);return d?`${d.e}${d.n}`:''}).filter(Boolean).join(', ');
   const emoName=DREAM_EMOTIONS.find(e=>e.k===emo)?.n||'';
 
+  // ★v788 P-786-B — 꿈 모티브 엔진(js/dream_engine.js). DREAM_KEYS 12항목을 줄거리에 대조한다.
+  //   엔진이 잡은 것은 LLM 성패와 **무관하게** 화면에 실린다(플레이북 ⑤ · 엔진 우선 · AI 는 보강/폴백).
+  //   히트 0 이면 빈 배열 — 지어내지 않는다. 정답률은 _v788_work/p11_dream_engine_eval.js 가 못박는다.
+  //   ★서버로 보내지 않는다 — ctx 키를 늘리면 eval_ctx_key_surface K-2·eval_dream_daily_guard C-2 가 붉어진다.
+  const engineHits=(window.CW_DREAM_ENGINE&&typeof window.CW_DREAM_ENGINE.matchDreamKeys==='function')?window.CW_DREAM_ENGINE.matchDreamKeys(story,DREAM_KEYS):[];
+
   // 사주 연계 정보 추출
   let sajuLinked=false, ilgan='', ilganElement='', dayPillar='', dominantElement='', weakElement='';
   // ★v7.79 계약 §2-1 (파 ⓑ) — 생년월일 **원본 6키**.
@@ -6854,7 +6860,7 @@ async function analyzeDream(){
 
   // ★`birthKeys` 는 프리미엄·재시도 경로(`_buildDreamContext`)가 같은 값을 쓰기 위한 운반이다.
   //   서버로 나가는 것은 아래 `ctx` 의 **명시 리터럴 6키**이지 이 객체가 아니다.
-  const info={time,timeName,cats,catNames,emo,emoName,story,sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,birthKeys:_bkDr,pillarKeys:_pkDr};
+  const info={time,timeName,cats,catNames,emo,emoName,story,sajuLinked,ilgan,ilganElement,dayPillar,dominantElement,weakElement,birthKeys:_bkDr,pillarKeys:_pkDr,engineHits};
   window._dreamResultData=info;
 
   // 로딩 UI
@@ -6938,6 +6944,9 @@ function renderDreamResult(result,info){
       ${symbolsHTML}
     </div>`:''}
 
+    <!-- ★v788 엔진 풀이 (DREAM_KEYS · LLM 과 독립) -->
+    ${_cwDreamEngineBlock(info.engineHits,false)}
+
     <!-- 감정 상태 -->
     ${result.emotionalState?`<div style="padding:12px;background:rgba(173,216,230,.05);border:1px solid rgba(173,216,230,.1);border-radius:8px;font-size:12px;line-height:1.8;margin-bottom:12px">💭 ${result.emotionalState}</div>`:''}
 
@@ -6964,6 +6973,26 @@ function renderDreamResult(result,info){
   window._dreamResultData={...info,result};
 }
 
+/** ★v788 P-786-B — 엔진 히트 블록. hits 가 비면 '' (아무것도 그리지 않는다).
+ *  primary=true(LLM 실패 폴백)면 「AI 없이 전통 해몽 사전으로 풀이했다」고 밝힌다.
+ *  msg·num 은 DREAM_KEYS 의 값 그대로 — 여기서 문구를 만들지 않는다. */
+function _cwDreamEngineBlock(hits,primary){
+  if(!Array.isArray(hits)||!hits.length)return '';
+  const E=window.CW_DREAM_ENGINE;
+  const sum=(E&&E.summarize)?E.summarize(hits):{fortuneType:null,numbers:[]};
+  const fcolor=sum.fortuneType==='길몽'?'#1a7a4a':sum.fortuneType==='흉몽'?'#c9443a':'#8b6914';
+  const rows=hits.map(h=>`<div style="padding:10px 12px;margin-bottom:8px;background:rgba(201,165,78,.04);border-radius:8px;border-left:3px solid ${h.good===true?'#1a7a4a':h.good===false?'#c9443a':'var(--gold)'}">
+      <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:4px">${h.e||''} ${h.k}${h.good===true?' <span style="font-size:10px;color:#1a7a4a">길</span>':h.good===false?' <span style="font-size:10px;color:#c9443a">흉</span>':''}</div>
+      <div style="font-size:12px;color:var(--text1);line-height:1.7">${h.msg||''}</div>
+    </div>`).join('');
+  return `<div style="margin-bottom:14px">
+      <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:8px">📖 전통 해몽 사전 풀이${primary?' <span style="font-size:10px;color:var(--text2);font-weight:400">(AI 없이 사전 대조)</span>':''}${sum.fortuneType?` <span style="display:inline-block;padding:1px 8px;border-radius:10px;border:1px solid ${fcolor};color:${fcolor};font-size:10px;font-weight:700;margin-left:4px">${sum.fortuneType}</span>`:''}</div>
+      ${rows}
+      ${sum.numbers&&sum.numbers.length?`<div style="display:flex;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap">${sum.numbers.map(n=>`<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:12px;font-weight:600">${n}</span>`).join('')}</div>`:''}
+      <div style="font-size:10px;color:var(--text2);margin-top:6px;text-align:center">줄거리에서 찾은 모티브를 전통 해몽 사전에 대조한 결과입니다.</div>
+    </div>`;
+}
+
 function renderDreamFallback(info,errMsg){
   // LLM 실패 시 — 입력 정보 요약 + 안내
   const r=document.getElementById('dreamResult');
@@ -6976,6 +7005,7 @@ function renderDreamFallback(info,errMsg){
       ${info.emoName?`<div style="font-size:12px;margin-bottom:4px"><strong>정서:</strong> ${info.emoName}</div>`:''}
       ${info.story?`<div style="font-size:12px;line-height:1.7;margin-top:6px;padding:8px;background:rgba(0,0,0,.15);border-radius:6px">${info.story}</div>`:''}
     </div>
+    ${_cwDreamEngineBlock(info.engineHits,true)}
     <div style="padding:12px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.2);border-radius:8px;font-size:11px;color:var(--text2);text-align:center">⚠️ AI 풀이를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.<br><span style="font-size:9px;opacity:.6">${(errMsg||'').substring(0,150)}</span></div>
     <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
       <button class="share-btn" onclick="analyzeDream()" style="flex:1;max-width:140px;display:flex;align-items:center;justify-content:center;gap:6px">🔄 다시 시도</button>
@@ -10561,6 +10591,7 @@ setTimeout(insertAdSlots, 3000);
 <script src="js/sensor_color.js"></script>
 <script src="js/sensor_texture.js"></script>
 <script src="js/sensor_flatten.js"></script>
+<script src="js/dream_engine.js"></script>
 <!-- 외부 모듈 — 타로 풀스택 (3~6단계) -->
 <script src="js/tarot.js"></script>
 <!-- 외부 모듈 — 채팅 풀스택 (선녀·도사·점성술사) -->
