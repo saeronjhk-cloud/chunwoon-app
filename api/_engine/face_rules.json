@@ -34,25 +34,25 @@
   }
  ],
  "tally": {
-  "rules_total": 100,
+  "rules_total": 113,
   "measurability": {
-   "PARTIAL": 62,
-   "UNMEASURABLE": 33,
-   "MEASURABLE": 5
+   "PARTIAL": 72,
+   "UNMEASURABLE": 34,
+   "MEASURABLE": 7
   },
   "threshold_origin": {
-   "POPULATION": 48,
-   "NONE": 33,
-   "TEXT": 19
+   "POPULATION": 57,
+   "NONE": 34,
+   "TEXT": 22
   },
   "condition_coverage": {
-   "PARTIAL": 46,
-   "NONE": 41,
-   "FULL": 13
+   "PARTIAL": 52,
+   "NONE": 44,
+   "FULL": 17
   },
-  "user_exposure_blocked": 20,
+  "user_exposure_blocked": 22,
   "expr_present": 8,
-  "measure_axis_null": 46
+  "measure_axis_null": 49
  },
  "rules": [
   {
@@ -3562,6 +3562,436 @@
    },
    "measurability": "PARTIAL",
    "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R059",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J02",
+   "locus": "권4 미위보수관첩경(엽2)",
+   "gloss_ko": "눈썹 길이가 눈을 넘는다",
+   "verdict_code": "MI_JANG_BUGWI",
+   "verdict_ko": "부귀하다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.jang_gwa_mok",
+    "axes": [
+     "browLength",
+     "eyeSize"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": "조건식은 OGWAN R020 과 같다(눈썹 길이 > 눈 너비). 판정층 진입이 ADR-FACE-001 결재 범위 밖이라 결재 추기 전까지 식을 붙이지 않는다."
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 길이",
+     "눈 너비"
+    ],
+    "uncovered": [],
+    "basis": "원문이 비교 대상(눈)을 준다. 꼬리 끝까지 재는 정정 축과 눈 폭의 분모가 같아 조건 전부가 덮인다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "browLength",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R060",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J02",
+   "locus": "권4 미위보수관첩경(엽2)",
+   "gloss_ko": "눈썹이 짧아 눈에 미치지 못한다",
+   "verdict_code": "MI_DAN_PIPJAE",
+   "verdict_ko": "재물이 모자란다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.dan_bulgeup_mok",
+    "axes": [
+     "browLength",
+     "eyeSize"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": "조건식은 OGWAN R021 과 같다(눈썹 길이 ≤ 눈 너비). 판정층 진입이 ADR-FACE-001 결재 범위 밖이라 결재 추기 전까지 식을 붙이지 않는다."
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 길이",
+     "눈 너비"
+    ],
+    "uncovered": [],
+    "basis": "앞 규칙의 여집합이며 같은 비교로 조건 전부가 덮인다"
+   },
+   "measurability": "MEASURABLE",
+   "threshold_origin": "TEXT",
+   "measure_axis": "browLength",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R061",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J04",
+   "locus": "권4 미위보수관첩경(엽4)",
+   "gloss_ko": "눈썹 머리가 높고 꼬리가 낮다",
+   "verdict_code": "MI_DUGO_NUYAK",
+   "verdict_ko": "유약하다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.dugo_migeo",
+    "axes": [
+     "browAngle"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 머리와 꼬리의 높낮이"
+    ],
+    "uncovered": [],
+    "basis": "머리 대 꼬리 높이는 정정 축 하나가 전부 덮는다. 없는 것은 얼마나 낮아야 하는가뿐이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "browAngle",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R062",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J04",
+   "locus": "권4 미위보수관첩경(엽4)",
+   "gloss_ko": "눈썹 머리가 낮고 꼬리가 높다",
+   "verdict_code": "MI_DUJE_SEONGGANG",
+   "verdict_ko": "성품이 굳세다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.duje_migo",
+    "axes": [
+     "browAngle"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "FULL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 머리와 꼬리의 높낮이"
+    ],
+    "uncovered": [],
+    "basis": "앞 규칙과 같은 축의 반대 방향이며 컷오프만 모집단에 맡긴다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "browAngle",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R063",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J02",
+   "locus": "권4 미위보수관첩경(엽2)",
+   "gloss_ko": "눈썹이 높이 자리한다",
+   "verdict_code": "MI_GO_DAEGWI",
+   "verdict_ko": "크게 귀하다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.go",
+    "axes": [
+     "jeonTaek"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈과 눈썹 사이 거리"
+    ],
+    "uncovered": [
+     "이마 전체 대비 눈썹 위치"
+    ],
+    "basis": "눈-눈썹 간격은 높이의 한 성분일 뿐이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "jeonTaek",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R064",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J02",
+   "locus": "권4 미위보수관첩경(엽2)",
+   "gloss_ko": "눈썹 머리가 서로 맞닿았다",
+   "verdict_code": "MI_DUGYO_BINBAK",
+   "verdict_ko": "가난하고 박하다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.dugyo",
+    "axes": [
+     "myungGung"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈썹 사이 폭"
+    ],
+    "uncovered": [
+     "털이 이어졌는가"
+    ],
+    "basis": "고정 랜드마크 사이 거리는 털의 이어짐에 대한 대용이지 등가가 아니다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "myungGung",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R065",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J03",
+   "locus": "권4 미위보수관첩경(엽3)",
+   "gloss_ko": "눈썹이 짙고 눈을 누른다",
+   "verdict_code": "MI_NONG_ABAN",
+   "verdict_ko": "젊어서 고생한다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.nong_abban",
+    "axes": [
+     "jeonTaek",
+     "browThick"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈과 눈썹 사이 거리"
+    ],
+    "uncovered": [
+     "눈썹 털의 짙음"
+    ],
+    "basis": "짙음은 털 밀도라 랜드마크로 잡히지 않는다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "jeonTaek",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R066",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J02",
+   "locus": "권4 미위보수관첩경(엽2)",
+   "gloss_ko": "눈썹 속에 검은 점이 있다",
+   "verdict_code": "MI_HEUKJA_CHONGMYEONG",
+   "verdict_ko": "총명하고 어질다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.mi.jung_heukja",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "눈썹 부위의 점"
+    ],
+    "basis": "눈썹 부위 점 센서가 없다"
+   },
+   "measurability": "UNMEASURABLE",
+   "threshold_origin": "NONE",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R067",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J09",
+   "locus": "권4 안위감찰관첩경(엽9)",
+   "gloss_ko": "눈 아래 와잠(도톰한 살)이 있다",
+   "verdict_code": "AN_HWAJAM_GWIJA",
+   "verdict_ko": "귀한 자식을 둔다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.an.hwajam",
+    "axes": [
+     "jaNyeo"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "눈 아래 영역의 세로 거리"
+    ],
+    "uncovered": [
+     "와잠의 도톰한 융기"
+    ],
+    "basis": "융기는 깊이 성분이라 평면 거리로는 대용만 된다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "jaNyeo",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R068",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J20",
+   "locus": "권4 비위심변관첩경(엽20)",
+   "gloss_ko": "얼굴이 크고 코가 작다",
+   "verdict_code": "BI_SO_IJO",
+   "verdict_ko": "끝내 고향을 떠나고 무너진다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.bi.myeondae_biso",
+    "axes": [
+     "noseWRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "얼굴 대비 코 폭"
+    ],
+    "uncovered": [
+     "얼굴의 절대 크기",
+     "코 높이"
+    ],
+    "basis": "사진에는 절대 크기가 없고 코 크기는 폭 하나로 대용된다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "noseWRatio",
+   "confidence": null,
+   "user_exposure": "BLOCKED"
+  },
+  {
+   "rule_id": "FACE_XLHZ_R069",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J25",
+   "locus": "권4 구위출납관첩경(엽25)",
+   "gloss_ko": "입이 주먹을 넣을 만하다",
+   "verdict_code": "GU_YONGGWON_JANGSANG",
+   "verdict_ko": "나가면 장수, 들면 재상",
+   "condition": {
+    "key": "xlhz.jeopgyeong.gu.yong_gwon",
+    "axes": [
+     "mouthRatio"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "PARTIAL",
+   "coverage_note": {
+    "covered": [
+     "다문 입의 폭"
+    ],
+    "uncovered": [
+     "벌린 입의 크기"
+    ],
+    "basis": "용권은 벌린 입의 크기라 다문 입 폭은 대용이다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
+   "measure_axis": "mouthRatio",
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R070",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J25",
+   "locus": "권4 구위출납관첩경(엽25)",
+   "gloss_ko": "윗입술과 아랫입술이 서로 걸맞다",
+   "verdict_code": "GU_SANGCHING_JEONGJIK",
+   "verdict_ko": "말이 바르고 곧다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.gu.sangha_sangching",
+    "axes": [
+     "lipThickness"
+    ],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "윗입술 대 아랫입술 두께 비"
+    ],
+    "basis": "두 성분을 나눈 축이 엔진에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "TEXT",
+   "measure_axis": null,
+   "confidence": null,
+   "user_exposure": null
+  },
+  {
+   "rule_id": "FACE_XLHZ_R071",
+   "doctrine_id": "FACE_XLHZ",
+   "source_edition_id": "SRC_XLHZ_A",
+   "corpus_id": "J28",
+   "locus": "권4 구위출납관첩경(엽28)",
+   "gloss_ko": "입꼬리가 위로 휘었다",
+   "verdict_code": "GU_GAK_HYANGSANG",
+   "verdict_ko": "평생 어려움을 두려워하지 않는다",
+   "condition": {
+    "key": "xlhz.jeopgyeong.gu.gak_hyangsang",
+    "axes": [],
+    "expr": null,
+    "expr_basis": null,
+    "expr_absent_reason": null
+   },
+   "condition_coverage": "NONE",
+   "coverage_note": {
+    "covered": [],
+    "uncovered": [
+     "입꼬리 높이"
+    ],
+    "basis": "입꼬리 높이 축이 엔진에 없다"
+   },
+   "measurability": "PARTIAL",
+   "threshold_origin": "POPULATION",
    "measure_axis": null,
    "confidence": null,
    "user_exposure": null

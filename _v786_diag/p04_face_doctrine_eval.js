@@ -248,11 +248,12 @@ if (MUTATION_MODE) {
   results.push(trial('M4 축 억지 배당 2 — 命宮凹陷(R053, 깊이)에 myungGung(폭)을 붙인다',
     (rs) => { rs.rules.find(r => r.rule_id === 'FACE_XLHZ_R053').measure_axis = 'myungGung'; }, 'B'));
 
-  results.push(trial('M5 등급 위조 — R024(色黃)를 UNMEASURABLE 인 채 threshold_origin 만 POPULATION 으로 올린다',
-    (rs) => { rs.rules.find(r => r.rule_id === 'FACE_XLHZ_R024').threshold_origin = 'POPULATION'; }, 'B'));
+  // ★v789 — 구 표적 R024(色黃)는 v787 센서 결속으로 PARTIAL 이 되어 이 변이가 MISSED 였다(전제 소멸). UNMEASURABLE 인 R022 로 옮긴다.
+  results.push(trial('M5 등급 위조 — R022(계측 불가)를 UNMEASURABLE 인 채 threshold_origin 만 POPULATION 으로 올린다',
+    (rs) => { rs.rules.find(r => r.rule_id === 'FACE_XLHZ_R022').threshold_origin = 'POPULATION'; }, 'B'));
 
-  results.push(trial('M6 tally 조작 — rules_total 을 58 → 57 로 낮춘다',
-    (rs) => { rs.tally.rules_total = 57; }, 'B'));
+  results.push(trial('M6 tally 조작 — rules_total 을 1 낮춘다',
+    (rs) => { rs.tally.rules_total -= 1; }, 'B'));
 
   results.push(trial('M7 음성 대조군 오염 — 「역삼각형이면 火形」 조건에 규칙을 만들어 붙인다',
     (rs) => {

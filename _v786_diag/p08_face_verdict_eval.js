@@ -4,9 +4,9 @@
 // ------------------------------------------------------------
 //  검사 항목
 //   A 배포 산출물에 원문이 없다 (한자 연속 10자 구간 0건)
-//   B 규칙 수 보존 (IP 100건 → 컴파일 100건)
+//   B 규칙 수 보존 (IP N건 → 컴파일 N건 · N = EXPECTED_RULES · v789 100→113: 相理衡眞 捷徑 13건)
 //   C 업그레이드 경로 — refTier 'C-SYNTHETIC' → 'B' 로 VERDICT 가 실제로 늘어나는가
-//     C-1 코드 경로가 살아 있는가(합성 탐침 규칙)  C-2 실규칙 100건에서 실제로 느는가
+//     C-1 코드 경로가 살아 있는가(합성 탐침 규칙)  C-2 실규칙 전건에서 실제로 느는가
 //   D WITHHELD 는 어떤 tier 에서도 노출되지 않는다 (UNMEASURABLE·BLOCKED, 醜惡 계열 포함)
 //   E 귀 규칙은 어떤 tier 에서도 VERDICT 가 되지 않는다 (센서가 없다)
 //   F fail-closed — measures 가 없거나 축이 모자라면 판정하지 않는다
@@ -119,13 +119,15 @@ const runNow = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RA
 const runUp = FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: TIER_UP });
 
 // ── 재사용 검사 함수 (★변이 시험이 이 함수들을 그대로 다시 부른다) ──────────
+// ★v789 — 규칙 수 기대값. 규칙을 의도적으로 늘리거나 줄일 때만 바꾼다(바꾼 사유를 인수인계에 남긴다).
+const EXPECTED_RULES = 113;
 function checkA(text) {
   const s = compiler.scanArtifact(text);
   return { ok: s.runCount === 0, detail: `한자 ${s.totalHanja}자 · 최장연속 ${s.maxRun}자 · 연속10자↑ 구간 ${s.runCount}건(합 ${s.runCharSum}자)` };
 }
 function checkB(art) {
   return {
-    ok: art.rules.length === ipRules.length && ipRules.length === 100,
+    ok: art.rules.length === ipRules.length && ipRules.length === EXPECTED_RULES,
     detail: `IP ${ipRules.length}건 → 산출물 ${art.rules.length}건`
   };
 }
@@ -205,7 +207,7 @@ check('A-2', '★원문 필드명이 산출물에 아예 없다 (text_original·
 });
 
 // ── B ────────────────────────────────────────────────────────────────────────
-check('B-1', '★규칙 수 보존 — IP 100건이 컴파일 후에도 100건', () => checkB(artifact));
+check('B-1', `★규칙 수 보존 — IP ${EXPECTED_RULES}건이 컴파일 후에도 ${EXPECTED_RULES}건`, () => checkB(artifact));
 check('B-2', '★rule_id 가 IP 와 완전히 일치한다 (누락·유령 0)', () => {
   const a = new Set(artifact.rules.map((r) => r.rule_id));
   const b = new Set(ipRules.map((r) => r.rule_id));
@@ -221,7 +223,7 @@ check('B-3', '★등급 필드가 IP 와 동일하다 (컴파일러가 등급을
       (s.condition_coverage || null) !== (r.condition_coverage || null) ||
       (s.user_exposure || null) !== (r.user_exposure || null);
   });
-  return { ok: bad.length === 0, detail: bad.length ? '★변조: ' + bad.map((x) => x.rule_id).join(',') : '100건 동일' };
+  return { ok: bad.length === 0, detail: bad.length ? '★변조: ' + bad.map((x) => x.rule_id).join(',') : `${artifact.rules.length}건 동일` };
 });
 
 // ── C ★★업그레이드 경로 ─────────────────────────────────────────────────────
@@ -247,7 +249,7 @@ check('C-1', '★코드 경로 — coverage=FULL + POPULATION 규칙이 tier C �
   const ok = c.tally.verdict === 0 && c.tally.reference === 1 && b.tally.verdict === 1 && b.tally.reference === 0;
   return { ok: ok, detail: `C: V${c.tally.verdict}/R${c.tally.reference} → B: V${b.tally.verdict}/R${b.tally.reference}` };
 });
-check('C-2', `★★실규칙 100건 — refTier ${TIER_NOW}→${TIER_UP} 로 VERDICT 가 실제로 늘어난다`, () => {
+check('C-2', `★★실규칙 ${EXPECTED_RULES}건 — refTier ${TIER_NOW}→${TIER_UP} 로 VERDICT 가 실제로 늘어난다`, () => {
   const a = runNow.tally.verdict, b = runUp.tally.verdict;
   // ★승격 대상 = condition_coverage=FULL ∩ threshold_origin=POPULATION ∩ 봉인되지 않음.
   const cand = artifact.rules.filter((r) => r.condition_coverage === 'FULL' && r.threshold_origin === 'POPULATION');
@@ -355,7 +357,7 @@ const COV_BY_ID = new Map(ipRules.map((r) => [r.rule_id, r.condition_coverage ||
 const ALL_TIERS = ['A', 'B', 'C-SYNTHETIC', ''];
 const ALL_RUNS = ALL_TIERS.map((t) => FV.evaluateFace({ measures: MEAS, sensorMeasures: SENS, ranks: RANKS, refTier: t }));
 
-check('H-0', '★규칙 100건 전부 condition_coverage 와 coverage_note 를 갖는다', () => {
+check('H-0', `★규칙 ${EXPECTED_RULES}건 전부 condition_coverage 와 coverage_note 를 갖는다`, () => {
   const bad = ipRules.filter((r) => ['FULL', 'PARTIAL', 'NONE'].indexOf(r.condition_coverage) === -1 ||
     !r.coverage_note || !Array.isArray(r.coverage_note.covered) || !Array.isArray(r.coverage_note.uncovered) || !r.coverage_note.basis);
   const d = {}; for (const r of ipRules) d[r.condition_coverage] = (d[r.condition_coverage] || 0) + 1;
@@ -372,7 +374,7 @@ check('H-4', '★coverage_note 에 한자가 없다 (배포 한자 게이트 유
     const t = n.covered.concat(n.uncovered, [n.basis]).join(' ');
     if (compiler.countHanja(t) > 0) bad.push(r.rule_id + '(' + compiler.countHanja(t) + '자)');
   }
-  return { ok: bad.length === 0, detail: bad.length ? '★한자 혼입: ' + bad.join(',') : '산출물 100건 coverage_note 한자 0자' };
+  return { ok: bad.length === 0, detail: bad.length ? '★한자 혼입: ' + bad.join(',') : `산출물 ${artifact.rules.length}건 coverage_note 한자 0자` };
 });
 check('H-5', '★조건식은 MEASURABLE 이거나 FULL+POPULATION 인 규칙에만 붙어 있다', () => {
   const bad = artifact.rules.filter((r) => r.condition.expr &&
