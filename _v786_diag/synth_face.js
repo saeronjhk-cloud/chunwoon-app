@@ -54,9 +54,9 @@ const MU = {
   noseDorsum: 0.000,   // 콧대 볼록도(+ 면 매부리) — 개인차 축, 평균 0
   myungGungW: 0.110,   // 명궁(미간폭)/얼굴폭
   sanGeunW: 0.070,     // 질액궁(산근폭)/얼굴폭
-  browLenR: 0.215,     // 보수관 길이/얼굴폭
+  browLenR: 0.263,     // ★v789 보수관 길이(머리 LM55 → 꼬리 LM46 수평거리)/얼굴폭 — canonical (5.253−1.221)/15.33
   browThickR: 0.030,   // 보수관 두께/얼굴높이
-  browTiltR: 0.014,    // 보수관 기울기(얼굴높이 대비 좌우 낙차)
+  browTiltR: -0.0147,  // ★v789 꼬리 높이 − 머리 높이 (얼굴높이 대비, + = 꼬리가 위) — canonical (3.882−4.142)/17.665
   browEyeGap: 0.037,   // 전택궁(눈썹-눈 거리)/얼굴높이
   underEyeR: 0.075,    // 자녀궁(와잠)/얼굴높이
   mouthOverIP: 0.790,  // 구각폭 / 동공간거리
@@ -68,9 +68,11 @@ const MU = {
 const REL = {
   whRatioPhys: 1.0, jawRatio: 0.4, trueJawRatio: 1.4, fhOverJaw: 0.8, interPupil: 0.8,
   eyeW: 1.0, eyeAspect: 1.2, canthalTilt: 0, noseWRatio: 1.0,
-  noseHRatio: 1.0, bridgeZ: 1.2, noseDorsum: 0, myungGungW: 1.3, sanGeunW: 1.3, browLenR: 1.1, browThickR: 1.5, browTiltR: 1.5, browEyeGap: 1.4, underEyeR: 1.3, mouthOverIP: 0.9, lipThick: 1.3, asym: 0
+  noseHRatio: 1.0, bridgeZ: 1.2, noseDorsum: 0, myungGungW: 1.3, sanGeunW: 1.3, browLenR: 1.1, browThickR: 1.5, browTiltR: 11.9, browEyeGap: 1.4, underEyeR: 1.3, mouthOverIP: 0.9, lipThick: 1.3, asym: 0
 };
 
+// ★v789 browTiltR 의 REL 11.9 — 평균이 0 에 가까워 비례 CV 로는 부호가 바뀌지 않는다. canthalTilt 와 같은
+//   절대 산포(cv 8% 에서 sd ≈ 0.014 faceH)가 되도록 잡았다(|−0.0147|×0.08×11.9 ≈ 0.014). 추가 난수 없음 → 다른 축 불변.
 function sampleParams(rnd, cv) {
   const p = {};
   for (const k of Object.keys(MU)) {
@@ -176,8 +178,11 @@ function makeLandmarks(p, A) {
   set(55, -mg / 2, yBrowIn);
   set(285, mg / 2, yBrowIn);
   const bl = p.browLenR * faceW, bt = p.browThickR * faceH, btl = p.browTiltR * faceH;
-  set(53, -(mg / 2 + bl), yBrowIn - btl);                // 좌 눈썹 끝(꼬리)
-  set(283, (mg / 2 + bl), yBrowIn - btl);
+  // ★v789 꼬리 끝은 LM46/276 (구: 53/283 을 꼬리로 잘못 둠). 53/283 은 canonical 비율 위치(수평 0.835 · 머리보다 0.009 faceH 위).
+  set(46, -(mg / 2 + bl), yBrowIn - btl);                // 좌 눈썹 끝(꼬리)
+  set(276, (mg / 2 + bl), yBrowIn - btl);
+  set(53, -(mg / 2 + bl * 0.835), yBrowIn - 0.009 * faceH);
+  set(283, (mg / 2 + bl * 0.835), yBrowIn - 0.009 * faceH);
   set(63, -(mg / 2 + bl * 0.5), yBrowIn - bt / 2);       // 좌 눈썹 상단
   set(66, -(mg / 2 + bl * 0.5), yBrowIn + bt / 2);       // 좌 눈썹 하단
   set(293, (mg / 2 + bl * 0.5), yBrowIn - bt / 2);

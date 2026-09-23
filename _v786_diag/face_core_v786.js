@@ -74,10 +74,16 @@ function _cwFaceMeasure(aiRaw, A) {
   var t1 = p[168].y - p[10].y, t2 = p[1].y - p[168].y, t3 = p[152].y - p[1].y;
   var tot = (t1 + t2 + t3) || 1e-6, id = tot / 3;
   var thirds = 1 - Math.min(1, (Math.abs(t1 - id) + Math.abs(t2 - id) + Math.abs(t3 - id)) / tot * 2);
-  var browLen = (Math.sqrt(Math.pow(p[53].x - p[55].x, 2) + Math.pow(p[53].y - p[55].y, 2)) +
-    Math.sqrt(Math.pow(p[283].x - p[285].x, 2) + Math.pow(p[283].y - p[285].y, 2))) / 2;
-  var browAng = (Math.atan2(p[53].y - p[55].y, p[53].x - p[55].x) * 180 / Math.PI +
-    Math.atan2(p[283].y - p[285].y, p[285].x - p[283].x) * 180 / Math.PI) / 2;
+  /* ★v789 P-789-A/B — 눈썹 축 정정 (근거: _v789_work/p13_brow_axis_eval.js · canonical_face_model 실측)
+     A. 꼬리 끝은 LM46/276 이다(하단 윤곽 46→53→52→65→55). 구 식은 LM53 까지만 재서 길이의 83% 만 잡았다
+        (표준 얼굴 눈썹/눈 폭 1.30 → 정정 1.56). 眉過眼(OGWAN R020/R021) 판정이 乏財 쪽으로 기울었다.
+     B. 구 식 atan2(dy, 음수 dx) 는 ±180° 근처 값을 내고 꼬리가 머리보다 내려가면 +178↔−178 로 뒤집혔다
+        (셀카 반전 −2.7° vs 업로드 −177.3°). ⟹ 수평 거리는 절댓값, 높이는 머리−꼬리.
+        + = 꼬리가 머리보다 위(頭低尾高) · − = 아래(頭高尾低) · 0 = 수평. 좌우 반전·사진 비율 불변. */
+  var bLen = function (t, h) { return Math.sqrt(Math.pow(p[t].x - p[h].x, 2) + Math.pow(p[t].y - p[h].y, 2)); };
+  var bAng = function (t, h) { return Math.atan2(p[h].y - p[t].y, Math.abs(p[t].x - p[h].x) || 1e-6) * 180 / Math.PI; };
+  var browLen = (bLen(46, 55) + bLen(276, 285)) / 2;
+  var browAng = (bAng(46, 55) + bAng(276, 285)) / 2;
 
   return {
     whRatio: faceW / faceH,
