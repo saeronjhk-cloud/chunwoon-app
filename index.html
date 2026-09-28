@@ -5551,25 +5551,26 @@ function _showFacePaywall(fiveElement,aiScores){
    try{
     const fiveEl=fiveElement?.el||'';
     const ra=aiScores?aiScores.ratios:null;
-    let warningMsg='얼굴에서 재물이 새어나가는 특징';
-    let warningDetail='코와 눈의 비율을 분석한 결과, 40대 중반에 큰 금전적 위기가 올 수 있는 징후가...';
+    // ★v790 — 근거 없는 공포 문구 제거(제이 지시 2026-09-28 · 가드 _v789_work/p14). 계측값을 사실대로만 말한다.
+    let warningMsg='부위별 비율 — 더 살펴볼 곳';
+    let warningDetail='계측한 부위별 비율이 전통 관상에서 어떻게 읽히는지 함께 풀어 드립니다...';
     if(ra){
-      if(ra.noseWRatio<0.25) {warningMsg='코(재백궁)가 좁아 재물이 새어나가는 관상';warningDetail=`코 너비가 얼굴의 ${(ra.noseWRatio*100).toFixed(1)}%로, 재백궁이 좁은 편입니다. 중년 이후 재물 손실의 위험이...`}
-      else if(ra.symmetry<0.85) {warningMsg='좌우 비대칭으로 인한 운의 불균형';warningDetail=`안면 대칭도 ${(ra.symmetry*100).toFixed(0)}%로 약간의 불균형이 감지되었습니다. 이는 대인관계에서...`}
-      else if(ra.lipThicknessRatio<0.04) {warningMsg='얇은 입술로 인한 말년 인복 약화';warningDetail=`입술 두께 비율 ${(ra.lipThicknessRatio*100).toFixed(1)}%는 평균 이하입니다. 출납관이 약해 말년에...`}
-      else if(ra.thirdsScore<0.8) {warningMsg='삼정 불균형으로 인한 운세 편차';warningDetail=`삼정 균형도 ${(ra.thirdsScore*100).toFixed(0)}%로, 초년·중년·말년 운의 편차가 큰 편입니다...`}
+      if(ra.noseWRatio<0.25) {warningMsg='코(재백궁) — 너비 비율 살펴보기';warningDetail=`코 너비가 얼굴의 ${(ra.noseWRatio*100).toFixed(1)}%입니다. 전통 관상에서 재백궁을 어떻게 보는지, 이 비율이 어떻게 읽히는지...`}
+      else if(ra.symmetry<0.85) {warningMsg='좌우 균형 — 대칭도 살펴보기';warningDetail=`안면 대칭도는 ${(ra.symmetry*100).toFixed(0)}%입니다. 전통 관상에서 좌우 균형을 어떻게 보는지...`}
+      else if(ra.lipThicknessRatio<0.04) {warningMsg='입술(출납관) — 두께 비율 살펴보기';warningDetail=`입술 두께 비율은 ${(ra.lipThicknessRatio*100).toFixed(1)}%입니다. 전통 관상에서 출납관을 어떻게 보는지...`}
+      else if(ra.thirdsScore<0.8) {warningMsg='삼정(三停) — 이마·코·턱 균형 살펴보기';warningDetail=`삼정 균형도는 ${(ra.thirdsScore*100).toFixed(0)}%입니다. 이마·코·턱 세 구간이 초년·중년·말년으로 어떻게 읽히는지...`}
     }
 
     const paywallBox=document.createElement('div');
     paywallBox.setAttribute('data-paywall','face');
-    paywallBox.style.cssText='margin-top:20px;position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(232,90,79,.3);opacity:0;transform:translateY(12px);transition:all .8s ease';
+    paywallBox.style.cssText='margin-top:20px;position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(201,165,78,.3);opacity:0;transform:translateY(12px);transition:all .8s ease';
     paywallBox.innerHTML=`
-      <div style="padding:16px 18px;background:rgba(232,90,79,.06)">
-        <div style="font-size:13px;color:#e85a4f;font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">⚠️ AI가 당신의 얼굴에서 치명적인 특징을 발견했습니다</div>
+      <div style="padding:16px 18px;background:rgba(201,165,78,.05)">
+        <div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:8px;font-family:'Noto Serif KR',serif">🔍 AI가 더 자세히 살펴볼 부위를 찾았습니다</div>
         <div style="position:relative;overflow:hidden;border-radius:8px;margin-bottom:12px">
           <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:10px;background:rgba(0,0,0,.3)">
-            <strong style="color:#e85a4f">${warningMsg}</strong><br>
-            <span style="filter:blur(3px);user-select:none">${warningDetail} 구체적인 시기와 보완법, 그리고 당신과 절대로 동업하면 안 되는 상극의 관상까지 프리미엄 리포트에서 확인하세요.</span>
+            <strong style="color:var(--gold)">${warningMsg}</strong><br>
+            <span style="filter:blur(3px);user-select:none">${warningDetail} 부위별 상세 해석과 보완 포인트, 잘 맞는 인연의 관상까지 프리미엄 리포트에서 확인하세요.</span>
           </div>
         </div>
       </div>
