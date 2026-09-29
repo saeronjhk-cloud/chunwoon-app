@@ -52,14 +52,16 @@ const pz = SY.sampleParams(zr, 0.08);
 const sz = C._cwFaceMeasure(SY.makeLandmarks(pz, 1.25), 1.25);
 const offA = C.CW_FACE_AXES.filter(k => {
   const a = sz[k], b = can[k];
+  if (a == null && b == null) return false;          // ★v792 머리선 없는 입력 — 上停 계열 축은 둘 다 null(계측 불가)이 정상
+  if (a == null || b == null) return true;
   if (ANG.has(k) || PCT.has(k)) return Math.abs(a - b) > 0.5;
   if (k === 'noseDorsum') return Math.abs(a - b) > 0.003;
   return Math.abs(a / (b || 1e-9) - 1) > 0.03;
 });
-check('A1', '합성 생성기 무잡음(중심값) 계측 == 표준 얼굴 계측 (30축 · 비 3% / 각·% 0.5)', offA.length === 0,
+check('A1', '합성 생성기 무잡음(중심값) 계측 == 표준 얼굴 계측 (전 축 · 비 3% / 각·% 0.5 · 上停 계열은 둘 다 null)', offA.length === 0,
   offA.length ? `어긋난 ${offA.length}축: ` + offA.map(k => `${k} ${f(sz[k], 4)}≠${f(can[k], 4)}`).join(' · ') : '30축 일치');
 const REL = C.CW_FACE_AXES.filter(k => C.CW_FACE_AXIS_KIND[k] === 'REL');
-const offR = REL.filter(k => { const r = C._cwRank(can[k], C.CW_FACE_REF.q[k]); return r < 0.2 || r > 0.8; });
+const offR = REL.filter(k => { if (can[k] == null) return false; const r = C._cwRank(can[k], C.CW_FACE_REF.q[k]); return r < 0.2 || r > 0.8; });   // ★v792 null(上停 계측 불가) 제외
 check('A2', `index.html 참조표에서 표준 얼굴 랭크 ∈ [0.2,0.8] (REL ${REL.length}축)`, offR.length === 0,
   offR.length ? `${offR.length}축 이탈: ` + offR.map(k => `${k} ${f(C._cwRank(can[k], C.CW_FACE_REF.q[k]), 2)}`).join(' · ') : '전 축 중앙권');
 check('A3', 'index.html 내장 참조표 == face_core built', built.indexOf(JSON.stringify(C.CW_FACE_REF)) >= 0, C.CW_FACE_REF.version);
@@ -76,7 +78,8 @@ const slots = {}, grades = {}, pw = new Map();
 const add = (m, k, v) => { if (!m[k]) m[k] = new Map(); m[k].set(v, (m[k].get(v) || 0) + 1); };
 for (let i = 0; i < N; i++) {
   const cv = CVS[i % CVS.length], A = RATIOS[(i / CVS.length | 0) % RATIOS.length];
-  const ra = C._cwFaceMeasure(SY.makeLandmarks(SY.sampleParams(rnd, cv), A), A);
+  const L0 = SY.makeLandmarks(SY.sampleParams(rnd, cv), A);
+  const ra = C._cwFaceMeasure(L0, A, L0.__hair);   // ★v792 운영처럼 머리선 포함
   const P = C._generateClientPremium(ra, '');
   for (const p of P.twelvePalaces.palaces) { add(slots, p.name, p.interpretation); add(grades, p.name, p.grade); }
   for (const o of P.fiveOfficials.officials) add(slots, o.name, o.interpretation);

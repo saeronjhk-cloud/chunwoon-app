@@ -39,7 +39,7 @@ const CAL = 60000, rndC = mulberry32(20260904);
 const rows = [];
 for (let i = 0; i < CAL; i++) {
   const cv = CVS[i % CVS.length], A = RATIOS[(i / CVS.length | 0) % RATIOS.length];
-  rows.push(tmp._cwFaceMeasure(makeLandmarks(sampleParams(rndC, cv), A), A));
+  { const L0 = makeLandmarks(sampleParams(rndC, cv), A); rows.push(tmp._cwFaceMeasure(L0, A, L0.__hair)); }   // ★v792 머리선 포함
 }
 // ★v792 — 생성기를 표준 얼굴 앵커로 재작성(synth_face.js). 등급은 여전히 C(합성).
 const REF = { version: 'REF-SYNTH-v792-CANON-20260929', tier: 'C-SYNTHETIC', n: CAL, q: {} };
@@ -59,7 +59,7 @@ for (let i = 0; i < N; i++) {
   const a = asis(L);
   A_.shape.push(a.shapeOpt.v); A_.eyes.push(a.eyeOpt.v); A_.nose.push(a.noseOpt.v); A_.mouth.push(a.mouthOpt.v);
   A_.combo.push([a.shapeOpt.v, a.eyeOpt.v, a.noseOpt.v, a.mouthOpt.v].join('/')); A_.score.push(a.overallScore);
-  const b = V2.classifyFaceFromLandmarks(L, A);
+  const b = V2.classifyFaceFromLandmarks(L, A, L.__hair);
   (B_.harm = B_.harm || []).push(b.harmonyScore);
   (B_.dsig = B_.dsig || []).push(b.distinctAxes.map(d => d.axis + (d.rank > .5 ? '+' : '-')).join(','));
   (B_.wux = B_.wux || []).push(b.wuxingTop);
@@ -115,7 +115,7 @@ for (let i = 0; i < M; i++) {
   for (const A of RATIOS) {
     const L = makeLandmarks(p, A);
     const a = asis(L); sa.add([a.shapeOpt.v, a.eyeOpt.v, a.noseOpt.v, a.mouthOpt.v].join('/'));
-    const b = V2.classifyFaceFromLandmarks(L, A); sb.add([b.shapeOpt.v, b.eyeOpt.v, b.noseOpt.v, b.mouthOpt.v].join('/'));
+    const b = V2.classifyFaceFromLandmarks(L, A, L.__hair); sb.add([b.shapeOpt.v, b.eyeOpt.v, b.noseOpt.v, b.mouthOpt.v].join('/'));
   }
   if (sa.size === 1) ka++; if (sb.size === 1) kb++;
 }

@@ -17,7 +17,7 @@
 var CW_FACE_REF = __REF__;
 
 function _cwRank(v, qs) {
-  if (!qs || qs.length < 3 || !isFinite(v)) return 0.5;
+  if (!qs || qs.length < 3 || v == null || !isFinite(v)) return 0.5;   // ★v792 null(계측 불가) → 중립
   if (v <= qs[0]) return 0;
   if (v >= qs[qs.length - 1]) return 1;
   var n = qs.length - 1;
@@ -37,8 +37,73 @@ function _cwFaceIso(ai, A) {
   return out;
 }
 
-/* 순수 계측 26축 — 분류·점수 이전 단계 */
-function _cwFaceMeasure(aiRaw, A) {
+/* ★v792 P-792-A — 머리선(髮際) 탐지. 평가: _v792_work/p16 (실사진 23장 · D:\ChunWoon_IP\face\eval_hairline)
+   입력 mask 는 머리카락 확률 0..255(hair_segmenter confidenceMasks[1]×255), 사진과 같은 종횡비·해상도.
+   이마 가운데(LM10)에서 얼굴 위쪽(152→10 방향)으로 5개 열을 훑어 머리카락이 시작되는 지점을 찾는다.
+   · 3열 이상이 LM10 에서 이미 머리카락 → BANGS(앞머리) · 3열 이상이 끝까지 없음/얇은 테두리뿐 → NO_HAIR(모자·민머리)
+   · 머리선이 LM10 바로 위(얼굴길이 10% 미만)면 BANGS · 45% 초과면 NO_HAIR */
+/* _cwHairline — 머리선(髮際) 탐지 · 순수 함수(브라우저·node 공용)
+   mask: 머리카락 확률 0..255 (Uint8Array, 길이 mw*mh, 사진과 같은 종횡비) · ai: FaceMesh 정규화 랜드마크
+   반환 {status:'OK'|'BANGS'|'NO_HAIR', hairline:{x,y}(정규화)|null, rel:(LM10→머리선)/(LM152→LM10), per:[...]} */
+function _cwHairline(mask, mw, mh, ai, opt) {
+  opt = opt || {};
+  var P = function (i) { return { x: ai[i].x * mw, y: ai[i].y * mh }; };
+  var p10 = P(10), p152 = P(152), p234 = P(234), p454 = P(454);
+  var ux = p10.x - p152.x, uy = p10.y - p152.y, fh = Math.sqrt(ux * ux + uy * uy) || 1e-6;
+  ux /= fh; uy /= fh;
+  var qx = -uy, qy = ux;
+  var fw = Math.sqrt(Math.pow(p454.x - p234.x, 2) + Math.pow(p454.y - p234.y, 2));
+  var THR = opt.thr != null ? opt.thr : 128;
+  var RUN = Math.max(2, Math.round((opt.run != null ? opt.run : 0.02) * fh));
+  var TMAX = (opt.tmax != null ? opt.tmax : 0.9) * fh;
+  var LOW = opt.low != null ? opt.low : 0.10, HIGH = opt.high != null ? opt.high : 0.45;
+  var OFF = opt.off || [-0.08, -0.04, 0, 0.04, 0.08];
+  var THICK = (opt.thick != null ? opt.thick : 0.06) * fh;   // 머리카락 층 최소 두께 — 민머리 윤곽 테두리(가장자리 잡음) 배제
+  var at = function (x, y) {
+    var xi = Math.round(x), yi = Math.round(y);
+    if (xi < 0 || yi < 0 || xi >= mw || yi >= mh) return -1;
+    return mask[yi * mw + xi];
+  };
+  var per = [], i, t;
+  for (i = 0; i < OFF.length; i++) {
+    var sx = p10.x + qx * OFF[i] * fw, sy = p10.y + qy * OFF[i] * fw;
+    if (at(sx, sy) >= THR) { per.push({ k: 'covered' }); continue; }
+    var cnt = 0, found = null;
+    for (t = 1; t <= TMAX; t++) {
+      var v = at(sx + ux * t, sy + uy * t);
+      if (v < 0) break;
+      if (v >= THR) { if (++cnt >= RUN) { found = t - RUN + 1; break; } } else cnt = 0;
+    }
+    if (found != null) {
+      // 머리카락 층 두께: 찾은 지점부터 위로 머리카락이 이어지는 길이. 사진 위 경계에 닿으면 충분한 것으로 본다.
+      var gap = 0, ext = 0, edge = false;
+      for (t = found; ; t++) {
+        var w2 = at(sx + ux * t, sy + uy * t);
+        if (w2 < 0) { edge = true; break; }
+        if (w2 >= THR) { ext = t - found + 1; gap = 0; } else if (++gap > RUN) break;
+      }
+      if (!edge && ext < THICK) { per.push({ k: 'none', thin: ext }); continue; }
+    }
+    per.push(found == null ? { k: 'none' } : { k: 'hair', t: found });
+  }
+  var nC = per.filter(function (p) { return p.k === 'covered'; }).length;
+  var nN = per.filter(function (p) { return p.k === 'none'; }).length;
+  var ts = per.filter(function (p) { return p.k === 'hair'; }).map(function (p) { return p.t; }).sort(function (a, b) { return a - b; });
+  var out = { status: 'OK', hairline: null, rel: null, per: per };
+  if (nC >= 3) { out.status = 'BANGS'; return out; }
+  if (nN >= 3 || !ts.length) { out.status = 'NO_HAIR'; return out; }
+  var med = ts[(ts.length - 1) >> 1];
+  if (ts.length % 2 === 0) med = (ts[ts.length / 2 - 1] + ts[ts.length / 2]) / 2;
+  out.rel = med / fh;
+  if (out.rel < LOW) { out.status = 'BANGS'; return out; }
+  if (out.rel > HIGH) { out.status = 'NO_HAIR'; return out; }
+  out.hairline = { x: (p10.x + ux * med) / mw, y: (p10.y + uy * med) / mh };
+  return out;
+}
+
+/* 순수 계측 26축 — 분류·점수 이전 단계
+   ★v792 — 세 번째 인자 hair = _cwHairline 결과(선택). 없거나 OK 가 아니면 上停은 계측 불가(null). */
+function _cwFaceMeasure(aiRaw, A, hair) {
   var p = _cwFaceIso(aiRaw, A);
   var dx = function (a, b) { return Math.abs(p[a].x - p[b].x); };
   var dy = function (a, b) { return Math.abs(p[a].y - p[b].y); };
@@ -71,9 +136,29 @@ function _cwFaceMeasure(aiRaw, A) {
   var lc = (p[33].x + p[133].x) / 2, rc = (p[362].x + p[263].x) / 2;
   var noseCx = p[1].x, faceCx = (p[234].x + p[454].x) / 2;
   var symmetry = 1 - Math.min(1, Math.abs(Math.abs(noseCx - lc) - Math.abs(rc - noseCx)) / faceW * 5);
-  var t1 = p[168].y - p[10].y, t2 = p[1].y - p[168].y, t3 = p[152].y - p[1].y;
-  var tot = (t1 + t2 + t3) || 1e-6, id = tot / 3;
-  var thirds = 1 - Math.min(1, (Math.abs(t1 - id) + Math.abs(t2 - id) + Math.abs(t3 - id)) / tot * 2);
+  /* ★v792 P-792-A — 삼정(三停) 재정의 (근거·평가: _v792_work/p16 · 실사진 23장)
+     구 대용 10(메시 꼭대기·髮際 아님)→168(콧부리)→1(코끝)→152 는 표준 얼굴에서 28/25/47% · thirds 0.46 이라
+     거의 전원이 「삼정 편차」를 받았다. 원문 「髮際~眉 · 眉~鼻 · 鼻~頦」에 맞춰
+       上停 = 머리선(hair_segmenter 로 검출)→눈썹선 · 中停 = 눈썹선→코 밑(LM2) · 下停 = LM2→턱(LM152)
+     눈썹선 = 눈썹 머리 윗·아랫점(107/55 · 336/285) 평균 높이. 길이는 얼굴 세로축(152→10) 위 투영이라 고개 기울기에 불변.
+     머리선이 가려지면(앞머리·모자·민머리) 上停 = null, 균형은 中·下停 2분으로 낸다(thirdsParts=2). */
+  var aux = p[10].x - p[152].x, auy = p[10].y - p[152].y, aun = Math.sqrt(aux * aux + auy * auy) || 1e-6;
+  aux /= aun; auy /= aun;
+  var sAx = function (q) { return (q.x - p[152].x) * aux + (q.y - p[152].y) * auy; };
+  var browLv = (sAx(p[55]) + sAx(p[285]) + sAx(p[107]) + sAx(p[336])) / 4;
+  var tMid = browLv - sAx(p[2]), tLow = sAx(p[2]), tUp = null;
+  if (hair && hair.status === 'OK' && hair.hairline) {
+    var hu = sAx({ x: hair.hairline.x, y: hair.hairline.y * (A && A > 0 ? A : 1) }) - browLv;
+    if (hu > 0) tUp = hu;
+  }
+  var thirdsParts = tUp != null ? 3 : 2, thirds, tTot;
+  if (tUp != null) {
+    tTot = tUp + tMid + tLow;
+    var tId = tTot / 3;
+    thirds = 1 - Math.min(1, (Math.abs(tUp - tId) + Math.abs(tMid - tId) + Math.abs(tLow - tId)) / tTot * 2);
+  } else {
+    thirds = 1 - Math.min(1, Math.abs(tMid - tLow) / ((tMid + tLow) || 1e-6) * 2);
+  }
   /* ★v789 P-789-A/B — 눈썹 축 정정 (근거: _v789_work/p13_brow_axis_eval.js · canonical_face_model 실측)
      A. 꼬리 끝은 LM46/276 이다(하단 윤곽 46→53→52→65→55). 구 식은 LM53 까지만 재서 길이의 83% 만 잡았다
         (표준 얼굴 눈썹/눈 폭 1.30 → 정정 1.56). 眉過眼(OGWAN R020/R021) 판정이 乏財 쪽으로 기울었다.
@@ -104,9 +189,12 @@ function _cwFaceMeasure(aiRaw, A) {
     mouthCenter: 1 - Math.min(1, Math.abs((p[61].x + p[291].x) / 2 - faceCx) / faceW * 8),
     symmetry: symmetry,
     thirds: thirds,
-    upperThirdPct: t1 / tot * 100,
-    middleThirdPct: t2 / tot * 100,
-    lowerThirdPct: t3 / tot * 100,
+    thirdsParts: thirdsParts,                         // ★v792 3 = 上停 포함 · 2 = 上停 계측 불가
+    upperThirdPct: tUp != null ? tUp / tTot * 100 : null,
+    middleThirdPct: tUp != null ? tMid / tTot * 100 : null,
+    lowerThirdPct: tUp != null ? tLow / tTot * 100 : null,
+    upperOverRest: tUp != null ? tUp / ((tMid + tLow) || 1e-6) : null,   // ★v792 上停 / (中+下) — REL
+    midOverLow: tMid / (tLow || 1e-6),                                   // ★v792 中停 / 下停 — REL · 항상 계측
     myungGung: dx(55, 285) / faceW,
     cheonI: 1 - Math.min(1, Math.abs(dx(21, 234) - dx(454, 251)) / faceW * 5),
     jaNyeo: (dy(117, 145) + dy(346, 374)) / 2 / faceH,
@@ -131,7 +219,7 @@ function _cwFaceMeasure(aiRaw, A) {
        ★이 세 축은 분모가 같으므로 ★분위수 랭크가 아니라 원시값으로 비교해야 TEXT 등급이 유지된다. */
     lowerUpperWidth: jawW / (foreheadW || 1e-6),   // 하악각폭 / 이마폭 — 「上尖下豐」의 방향
     cheonJiWidth: foreheadW / (jawW || 1e-6),      // 天庭 / 地角 (폭)
-    cheonJiHeight: t1 / (t3 || 1e-6),              // 上停 / 下停 (높이) — 둘 다 세로라 정합
+    cheonJiHeight: tUp != null ? tUp / (tLow || 1e-6) : null,   // 上停 / 下停 (높이) · ★v792 머리선 기준 · 계측 불가면 null
 
     /* ── 구 명칭 별칭 (기존 화면·프리미엄 렌더러 호환) ──
        ★jawRatio 는 이제 진짜 하악각 폭이다. 화면의 '턱비율' 표기가 비로소 맞다. */
@@ -166,7 +254,8 @@ var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSiz
   'browLength', 'browAngle', 'browThick', 'gwanGol', 'inJung', 'chin',
   /* ★v786-c · G5 — 재고 있으면서 분류에 안 쓰던 삼정 3축을 승격.
      「고른가(thirds)」만 묻고 「긴가」는 안 묻던 구조였다. */
-  'upperThirdPct', 'middleThirdPct', 'lowerThirdPct',
+  /* ★v792 P-792-A — 삼정 3축(비율 %)은 上停이 계측 불가면 셋 다 null 이 된다. 상대축은 항상 계측되는 비로 바꾼다. */
+  'upperOverRest', 'midOverLow',
   /* ★v786-c · G4 — 차원 정합 비교축 */
   'lowerUpperWidth', 'cheonJiWidth', 'cheonJiHeight'];
 
@@ -195,7 +284,7 @@ var CW_FACE_AXIS_KIND = {
   eyeTilt: 'REL', noseWRatio: 'REL', noseHRatio: 'REL', noseDorsum: 'REL', mouthRatio: 'REL',
   lipThickness: 'REL', myungGung: 'REL', jaNyeo: 'REL', jilAek: 'REL', jeonTaek: 'REL',
   browLength: 'REL', browAngle: 'REL', browThick: 'REL', gwanGol: 'REL', inJung: 'REL', chin: 'REL',
-  upperThirdPct: 'REL', middleThirdPct: 'REL', lowerThirdPct: 'REL',
+  upperOverRest: 'REL', midOverLow: 'REL',
   /* ★G4 세 축은 ABS 다 — 원문이 「相應(서로 걸맞다)」이라는 기준을 스스로 주기 때문이다.
      1.0 에서 얼마나 벗어났는가가 곧 판정이고, 모집단이 필요 없다. */
   lowerUpperWidth: 'ABS', cheonJiWidth: 'ABS', cheonJiHeight: 'ABS'
@@ -227,10 +316,11 @@ var CW_WUXING = {
 };
 
 /* 메인 — 반환 형상은 종전 코드와 호환 유지 (shapeOpt/eyeOpt/noseOpt/mouthOpt/…/ratios) */
-function classifyFaceFromLandmarks(ai, aspect) {
+function classifyFaceFromLandmarks(ai, aspect, hair) {
   var A = aspect;
   if (!(A > 0)) A = (typeof window !== 'undefined' && window._cwFaceAspect) || 1;
-  var m = _cwFaceMeasure(ai, A);
+  if (hair === undefined) hair = (typeof window !== 'undefined' && window._cwHair) || null;   // ★v792 머리선(선택)
+  var m = _cwFaceMeasure(ai, A, hair);
   var R = {}, i;
   for (i = 0; i < CW_FACE_AXES.length; i++) {
     var k = CW_FACE_AXES[i];

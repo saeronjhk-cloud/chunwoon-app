@@ -72,6 +72,7 @@ const DORS0 = dorsumOffsets(CAN);
 const CONV0 = Math.max(0, ...DORS0.map(o => o.d)) / H0;
 const BROW_L = [46, 53, 52, 65, 55, 70, 63, 105, 66, 107], BROW_R = [276, 283, 282, 295, 285, 300, 293, 334, 296, 336];
 const TIP = [1, 2, 4, 94, 129, 358];
+const HAIR_UP_MU = 0.1486, HAIR_UP_REL = 2.44;
 
 // 중심값 — ★전부 표준 얼굴에서 계산 (얼굴 물리 단위 faceW=1)
 const MU = {
@@ -121,6 +122,10 @@ function sampleParams(rnd, cv) {
   p.noseDorsum = MU.noseDorsum + gauss(rnd) * (0.012 * (cv / 0.08)) + Math.max(0, gauss(rnd)) * (0.010 * (cv / 0.08));
   // 천이궁(관자놀이 좌우 비대칭) — 절대 스케일
   p.templeAsym = gauss(rnd) * (0.012 * (cv / 0.08));
+  // ★v792 P-792-A 머리선 높이 = (LM10 → 머리선)/(LM152→LM10) — 표준 얼굴 모델엔 머리카락이 없어
+  //   중심·산포를 ★실사진 13장(p16 평가셋 M 군, _cwHairline 검출값) 에서 잡았다: 평균 0.1486 · sd 0.0290 (cv 8% 기준 REL 2.44).
+  //   ★TIER-C — 실사진 모집단(B-5) 확보 시 교체.
+  p.hairUp = HAIR_UP_MU + gauss(rnd) * HAIR_UP_MU * cv * HAIR_UP_REL;
   return p;
 }
 
@@ -198,7 +203,14 @@ function makeLandmarks(p, A) {
   P[0].y = P[13].y - (CAN[13].y - CAN[0].y) * k * s0;
   P[17].y = P[14].y + (CAN[17].y - CAN[14].y) * k * s0;
 
-  return P.map(q => ({ x: 0.5 + q.x, y: 0.5 + q.y / A, z: q.z }));
+  const L = P.map(q => ({ x: 0.5 + q.x, y: 0.5 + q.y / A, z: q.z }));
+  // ★v792 머리선 — p.hairUp 이 있으면 LM10 에서 얼굴 세로축 위로 hairUp×얼굴길이 지점 (_cwHairline 결과와 같은 형상)
+  if (p.hairUp != null) {
+    const vx = P[10].x - P[152].x, vy = P[10].y - P[152].y, fh = Math.hypot(vx, vy);
+    const hx = P[10].x + vx / fh * p.hairUp * fh, hy = P[10].y + vy / fh * p.hairUp * fh;
+    Object.defineProperty(L, '__hair', { value: { status: 'OK', hairline: { x: 0.5 + hx, y: 0.5 + hy / A }, rel: p.hairUp }, enumerable: false });
+  }
+  return L;
 }
 
 module.exports = { MU, REL, sampleParams, makeLandmarks, mulberry32, CANON_OBJ };

@@ -1,0 +1,25 @@
+[H] 머리선 검출 — 실사진 평가셋
+  FAIL H1 계측 가능(M 13장) 중 머리선 검출 ≥ 11 — 0/13
+  FAIL H2 머리선 오차 |Δy|/(머리선→턱) ≤ 0.05 가 80% 이상 · 중앙 ≤ 0.03 — 0/0 · 중앙 NaN
+  FAIL H3 모자·민머리 4장 전부 「머리카락 없음」 — h04:NONE h05:NONE h08:NONE h10:NONE
+  ok   H4 앞머리 6장 중 계측 불가 판정 ≥ 4 — 6/6 · 놓침 없음
+[T] 삼정 — 머리선→눈썹선→코 밑(2)→턱(152)
+  FAIL T1 머리선 검출된 실사진은 3분 삼정(thirdsParts=3) — 0/0
+  FAIL T2 실사진 상·중·하정 평균이 각각 [28,38]% (원문 三停均等에 근접) — 없음
+  FAIL T3 실사진 삼정 균형 문장 — 한 문장 ≤ 80% — {}
+  FAIL T4 표준 얼굴(머리카락 없음) → 上停 계측 불가 · 2분 삼정 — parts=undefined upper=28.25194977049737
+  FAIL T5 표준 얼굴 中停/下停 비 ∈ [0.85,1.15] · 2분 균형 ≥ 0.8 (구 0.46) — mid/low undefined · thirds 0.459
+  FAIL T6 앞머리로 계측 불가인 사진은 2분 삼정 · 上停 null — h01:undefined h09:undefined h13:undefined h15:undefined h17:undefined h23:undefined
+[P] 프리미엄 삼정 칸
+  FAIL P1 上停 계측 불가 시 상정 칸이 「계측하지 못했」 안내 — 상정이 길어 초년에 학업운과 부모 복이 좋습니다. 어린
+  FAIL P2 2분 삼정일 때 균형 문장에 「상정 제외」 표기 — 삼정에 편차가 있어 인생의 기복이 다소 클 
+  FAIL P3 3분 삼정일 때 상정 칸은 해석 문장(계측 불가 아님) — -
+  ok   P-upper 합성 모집단(머리선 포함) upper 칸 최다 문장 ≤ 90% — 51.3% · 2종
+  ok   P-middle 합성 모집단(머리선 포함) middle 칸 최다 문장 ≤ 90% — 51.4% · 2종
+  ok   P-lower 합성 모집단(머리선 포함) lower 칸 최다 문장 ≤ 90% — 50.0% · 2종
+  INFO 합성 균형(ABS) 최다 99.7% · 3종
+[W] 운영 결속
+  FAIL W1 index.html 이 hair_segmenter float32/1 과 tasks-vision 버전 고정 URL 을 쓴다 — 
+  FAIL W2 분석 전 머리선 측정(_cwEnsureHair)을 기다린 뒤 분류한다 — 
+  FAIL W3 사진이 바뀌면 머리선 결과도 지운다(_cwResetAIFrame) — 
+[p16_hairline_thirds] total=19 pass=4 fail=15 · FAIL H1,H2,H3,T1,T2,T3,T4,T5,T6,P1,P2,P3,W1,W2,W3
