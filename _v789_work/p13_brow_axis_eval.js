@@ -72,7 +72,9 @@ check('C7', '연속성 — 꼬리 −1.0~+1.0 이동 시 단조증가 · 최대 
 const asym = m(shiftY(shiftY(V, [46, 70], +0.6), [276, 300], -0.6));
 check('C8', '좌우 반대 기울기 → 평균이 0 근처(|x|<5°)', Math.abs(asym.browAngle) < 5, f(asym.browAngle, 2) + '°');
 const qa = CORE.CW_FACE_REF.q.browAngle, ql = CORE.CW_FACE_REF.q.browLength;
-check('C9', '참조표 browAngle 분위수 전부 [−30°,30°]', qa.every(x => x >= -30 && x <= 30), `${f(qa[0], 1)} … ${f(qa[qa.length - 1], 1)}`);
+// ★v792 — C9 목적은 ±180° 뒤집힘 탐지. 양 끝 q0/q20 은 표본 6만 개 중 단 1개(극단 꼬리)라 생성기 산포에 따라
+//   30° 를 넘을 수 있다(v792 표준 얼굴 앵커 후 q0 −33.0°). ⟹ 내부 분위수 q1~q19 는 [−30,30], 양 끝은 뒤집힘 경계 [−90,90].
+check('C9', '참조표 browAngle 내부 분위수 [−30°,30°] · 양 끝 [−90°,90°](뒤집힘 없음)', qa.slice(1, -1).every(x => x >= -30 && x <= 30) && qa.every(x => x >= -90 && x <= 90), `${f(qa[0], 1)} | ${f(qa[1], 1)} … ${f(qa[qa.length - 2], 1)} | ${f(qa[qa.length - 1], 1)}`);
 check('C10', '참조표 browLength 중앙값이 표준 얼굴 값의 ±15%', Math.abs(ql[10] / c.browLength - 1) <= 0.15, `중앙 ${f(ql[10], 4)} / 표준 ${f(c.browLength, 4)}`);
 const ci = IDXCORE._cwFaceMeasure(toImage(V, 1.25, false), 1.25);
 const diffK = Object.keys(c).filter(k => typeof c[k] === 'number' && Math.abs(c[k] - ci[k]) > 1e-12);

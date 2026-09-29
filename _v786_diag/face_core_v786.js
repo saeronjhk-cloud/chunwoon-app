@@ -111,10 +111,14 @@ function _cwFaceMeasure(aiRaw, A) {
     cheonI: 1 - Math.min(1, Math.abs(dx(21, 234) - dx(454, 251)) / faceW * 5),
     jaNyeo: (dy(117, 145) + dy(346, 374)) / 2 / faceH,
     jilAek: dx(188, 412) / faceW,
-    jeonTaek: (dy(159, 66) + dy(386, 296)) / 2 / faceH,
+    /* ★v792 P-790-H — 눈썹 윤곽 정정(근거: canonical_face_model · _v790_work/p15 B1·B2)
+       63/66(좌)·293/296(우)은 ★둘 다 윗윤곽(70→63→105→66→107)이다. 아랫윤곽은 46→53→52→65→55.
+       구 전택궁 = 상안검↔눈썹 ★윗선(표준 0.121) · 구 두께 = 윗선 두 점의 높이차(표준 0.017, 두께 아님).
+       ⟹ 전택궁 = 상안검 159 ↔ 눈썹 아랫선 52(우 386↔282) · 두께 = 윗선 105 ↔ 아랫선 52(우 334↔282), 눈썹 중앙. */
+    jeonTaek: (dy(159, 52) + dy(386, 282)) / 2 / faceH,
     browLength: browLen / faceW,
     browAngle: browAng,
-    browThick: (dy(63, 66) + dy(293, 296)) / 2 / faceH,
+    browThick: (dy(105, 52) + dy(334, 282)) / 2 / faceH,
     gwanGol: faceW / templeW,
     inJung: dy(0, 2) / faceH,
     chin: dy(152, 17) / faceH,
@@ -143,10 +147,10 @@ function _cwFaceMeasure(aiRaw, A) {
     eyeTailAngle: tilt,
     underEyeRatio: (dy(117, 145) + dy(346, 374)) / 2 / faceH,
     sanGeunRatio: dx(188, 412) / faceW,
-    jeonTaekRatio: (dy(159, 66) + dy(386, 296)) / 2 / faceH,
+    jeonTaekRatio: (dy(159, 52) + dy(386, 282)) / 2 / faceH,
     browLengthRatio: browLen / faceW,
     browGapRatio: dx(55, 285) / faceW,
-    browThicknessRatio: (dy(63, 66) + dy(293, 296)) / 2 / faceH,
+    browThicknessRatio: (dy(105, 52) + dy(334, 282)) / 2 / faceH,
     gwanGolProminence: faceW / templeW,
     inJungRatio: dy(0, 2) / faceH,
     chinRatio: dy(152, 17) / faceH,

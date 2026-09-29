@@ -38,52 +38,87 @@ function mulberry32(a) {
   };
 }
 
-// 중심값 — 얼굴 물리 단위(faceW=1 기준)
+// ============================================================
+//  ★v792 P-790-H — 표준 얼굴 앵커 생성기로 재작성 (구 막대 모형 폐기)
+//  근본 원인(2026-09-29 실측 · _v790_work/p15): 구 생성기는 고정 비율 위치(눈 0.42·코뿌리 0.38·입 0.78 …)와
+//    손으로 잡은 중심값을 썼는데, 이것이 MediaPipe 실제 기하와 어긋나 ★표준 얼굴이 참조표 30축 중 14축에서
+//    양 끝(랭크<0.1·>0.9)에 놓였다(전택궁 1.00 · 눈 크기 0.04 · 입술 0.09 · 상정 38% 고정 …).
+//    ⟹ 무료 화면에서 평균 얼굴이 「역삼각형 / 가늘고 긴 눈 / 얇은 입술」, 프리미엄 칸 9개가 90% 이상 한쪽.
+//  새 방식: MediaPipe canonical_face_model(468 정점, Apache-2.0) 을 그대로 출발점으로 두고,
+//    계측에 쓰이는 랜드마크만 파라미터 편차만큼 옮긴다. 중심값(MU)은 ★표준 얼굴에서 직접 계산한다.
+//    ⟹ 무잡음(파라미터 = MU)이면 30축 전부가 표준 얼굴 계측과 일치한다(p15 A1).
+//  ★좌표 부호: 모델 +y 위·+z 관찰자 쪽 → MediaPipe 정규화(+y 아래 · z 작을수록 카메라 쪽)로 y·z 둘 다 뒤집는다.
+//  ★여전히 TIER-C(합성): 중심은 표준 얼굴, ★산포(REL)는 가정이다. 실사진 모집단(B-5) 확보 시 교체한다.
+// ============================================================
+const fs = require('fs'), path = require('path');
+const CANON_OBJ = path.join(__dirname, '..', '_v789_work', 'fixtures', 'canonical_face_model.obj');
+const CV0 = fs.readFileSync(CANON_OBJ, 'utf8').split('\n').filter(l => l.startsWith('v ')).map(l => l.split(/\s+/).slice(1, 4).map(Number));
+if (CV0.length !== 468) throw new Error('canonical 468 정점 아님');
+// 물리 좌표: 광대폭(234↔454)=1 · 원점 = 얼굴 중심 · +Y 아래 · Z 는 MediaPipe 부호(카메라 쪽 −)
+const W0 = Math.abs(CV0[454][0] - CV0[234][0]), CY0 = (CV0[10][1] + CV0[152][1]) / 2;
+const CAN = CV0.map(([x, y, z]) => ({ x: x / W0, y: -(y - CY0) / W0, z: -z / W0 }));
+const cdx = (a, b) => Math.abs(CAN[a].x - CAN[b].x), cdy = (a, b) => Math.abs(CAN[a].y - CAN[b].y);
+const H0 = cdy(10, 152);
+const eyeC = (o, i) => (CAN[o].x + CAN[i].x) / 2;
+const IP0 = Math.abs(eyeC(362, 263) - eyeC(33, 133));
+const EW0 = (cdx(33, 133) + cdx(362, 263)) / 2, EH0 = (cdy(159, 145) + cdy(386, 374)) / 2;
+// 콧대 볼록도(계측식과 동일한 부호 규약)
+const NOSE_MIDS = [6, 197, 195, 5];
+function dorsumOffsets(P) {
+  const A = P[168], B = P[1], vy = B.y - A.y, vz = B.z - A.z, len = Math.hypot(vy, vz) || 1e-9;
+  return NOSE_MIDS.map(i => ({ i, t: (P[i].y - A.y) / (vy || 1e-9), d: ((P[i].y - A.y) * vz - (P[i].z - A.z) * vy) / len }));
+}
+const DORS0 = dorsumOffsets(CAN);
+const CONV0 = Math.max(0, ...DORS0.map(o => o.d)) / H0;
+const BROW_L = [46, 53, 52, 65, 55, 70, 63, 105, 66, 107], BROW_R = [276, 283, 282, 295, 285, 300, 293, 334, 296, 336];
+const TIP = [1, 2, 4, 94, 129, 358];
+
+// 중심값 — ★전부 표준 얼굴에서 계산 (얼굴 물리 단위 faceW=1)
 const MU = {
-  whRatioPhys: 0.810,  // V-anchor: canonical faceW 14.32 / faceH 17.665
-  jawRatio: 1.000,     // V1: 관자폭/광대폭 ≈ 1.0 (canonical 14.60/14.32=1.019)
-  trueJawRatio: 0.780, // ★실제 하악각폭(172↔397)/광대폭 — 개인차가 큰 축
-  fhOverJaw: 0.930,    // V1: 이마폭 < 관자폭
-  interPupil: 0.440,   // 동공간거리 / 얼굴폭
-  eyeW: 0.215,         // 눈 가로 / 얼굴폭
-  eyeAspect: 3.10,     // 눈 가로/세로 (물리)
-  canthalTilt: -0.010, // 외안각이 내안각보다 '위'(-) = 몽골리안 상향 경사, faceH 대비
-  noseWRatio: 0.265,   // 비익폭 / 얼굴폭
-  noseHRatio: 0.250,   // LM168→LM1 / faceH
-  bridgeZ: 0.035,      // |ai[6].z| (MediaPipe z 는 x 스케일과 유사)
-  noseDorsum: 0.000,   // 콧대 볼록도(+ 면 매부리) — 개인차 축, 평균 0
-  myungGungW: 0.110,   // 명궁(미간폭)/얼굴폭
-  sanGeunW: 0.070,     // 질액궁(산근폭)/얼굴폭
-  browLenR: 0.263,     // ★v789 보수관 길이(머리 LM55 → 꼬리 LM46 수평거리)/얼굴폭 — canonical (5.253−1.221)/15.33
-  browThickR: 0.030,   // 보수관 두께/얼굴높이
-  browTiltR: -0.0147,  // ★v789 꼬리 높이 − 머리 높이 (얼굴높이 대비, + = 꼬리가 위) — canonical (3.882−4.142)/17.665
-  browEyeGap: 0.037,   // 전택궁(눈썹-눈 거리)/얼굴높이
-  underEyeR: 0.075,    // 자녀궁(와잠)/얼굴높이
-  mouthOverIP: 0.790,  // 구각폭 / 동공간거리
-  lipThick: 0.104,     // (상+하 순적 높이) / faceH
-  asym: 0.000          // 코 중심 좌우 편차 / 얼굴폭
+  whRatioPhys: 1 / H0,                                   // 광대폭/얼굴높이
+  upperR: cdy(10, 168) / H0,                             // ★v792 신설 — 上停 대용(10→168)/얼굴높이. 구 생성기는 38% 고정(합성 결함)
+  jawRatio: cdx(127, 356),                               // 관자폭/광대폭
+  trueJawRatio: cdx(172, 397),                           // 하악각폭/광대폭
+  fhOverJaw: cdx(21, 251) / cdx(127, 356),               // 이마폭/관자폭
+  interPupil: IP0,                                       // 두 눈 중심 거리/광대폭
+  eyeW: EW0,                                             // 눈 가로/광대폭
+  eyeAspect: EW0 / EH0,                                  // 눈 가로/세로
+  canthalTilt: (CAN[33].y - CAN[133].y) / H0,            // + = 외안각이 아래(처짐)
+  noseWRatio: cdx(129, 358),                             // 비익폭/광대폭
+  noseHRatio: cdy(168, 1) / H0,                          // 168→1 / 얼굴높이
+  noseDorsum: CONV0,                                     // 콧대 볼록도
+  myungGungW: cdx(55, 285),                              // 명궁(미간폭)
+  sanGeunW: cdx(188, 412),                               // 질액궁(산근폭)
+  browLenR: Math.hypot(CAN[46].x - CAN[55].x, CAN[46].y - CAN[55].y),   // 보수관 길이(머리 55 → 꼬리 46)
+  browThickR: cdy(105, 52) / H0,                         // ★v792 눈썹 두께 = 윗윤곽 105 ↔ 아랫윤곽 52 (구 63↔66 은 둘 다 윗윤곽)
+  browTiltR: (CAN[55].y - CAN[46].y) / H0,               // + = 꼬리가 위
+  browEyeGap: cdy(159, 52) / H0,                         // ★v792 전택궁 = 눈썹 아랫윤곽 52 ↔ 상안검 159 (구 66 은 윗윤곽)
+  underEyeR: cdy(117, 145) / H0,                         // 자녀궁
+  mouthOverIP: cdx(61, 291) / IP0,                       // 구각폭/두 눈 중심 거리
+  lipThick: (cdy(13, 0) + cdy(17, 14)) / H0,             // 상+하 순적 높이/얼굴높이
+  asym: 0
 };
 
-// 각 파라미터의 상대 변동폭 배수 (CV = cv * REL)
+// 각 파라미터의 상대 변동폭 배수 (CV = cv * REL) — ★가정. 구 생성기 값을 그대로 승계(신설 upperR 만 1.0)
 const REL = {
-  whRatioPhys: 1.0, jawRatio: 0.4, trueJawRatio: 1.4, fhOverJaw: 0.8, interPupil: 0.8,
+  whRatioPhys: 1.0, upperR: 1.0, jawRatio: 0.4, trueJawRatio: 1.4, fhOverJaw: 0.8, interPupil: 0.8,
   eyeW: 1.0, eyeAspect: 1.2, canthalTilt: 0, noseWRatio: 1.0,
-  noseHRatio: 1.0, bridgeZ: 1.2, noseDorsum: 0, myungGungW: 1.3, sanGeunW: 1.3, browLenR: 1.1, browThickR: 1.5, browTiltR: 11.9, browEyeGap: 1.4, underEyeR: 1.3, mouthOverIP: 0.9, lipThick: 1.3, asym: 0
+  noseHRatio: 1.0, noseDorsum: 0, myungGungW: 1.3, sanGeunW: 1.3, browLenR: 1.1, browThickR: 1.5, browTiltR: 11.9, browEyeGap: 1.4, underEyeR: 1.3, mouthOverIP: 0.9, lipThick: 1.3, asym: 0
 };
 
 // ★v789 browTiltR 의 REL 11.9 — 평균이 0 에 가까워 비례 CV 로는 부호가 바뀌지 않는다. canthalTilt 와 같은
-//   절대 산포(cv 8% 에서 sd ≈ 0.014 faceH)가 되도록 잡았다(|−0.0147|×0.08×11.9 ≈ 0.014). 추가 난수 없음 → 다른 축 불변.
+//   절대 산포(cv 8% 에서 sd ≈ 0.014 faceH)가 되도록 잡았다.
 function sampleParams(rnd, cv) {
   const p = {};
   for (const k of Object.keys(MU)) {
     const sd = Math.abs(MU[k]) * cv * REL[k];
     p[k] = MU[k] + gauss(rnd) * sd;
   }
-  // canthalTilt 는 절대 스케일 (faceH 대비), 별도 분포
+  // 절대 스케일 축 (faceH 대비)
   p.canthalTilt = MU.canthalTilt + gauss(rnd) * (0.014 * (cv / 0.08));
   p.asym = gauss(rnd) * (0.010 * (cv / 0.08));
-  // 콧대 볼록도: 평균 0 · 우측 꼬리(매부리)를 가진 비대칭 분포
-  p.noseDorsum = gauss(rnd) * (0.012 * (cv / 0.08)) + Math.max(0, gauss(rnd)) * (0.010 * (cv / 0.08));
+  // 콧대 볼록도: 표준 얼굴 값 중심 · 우측 꼬리(매부리)를 가진 비대칭 분포
+  p.noseDorsum = MU.noseDorsum + gauss(rnd) * (0.012 * (cv / 0.08)) + Math.max(0, gauss(rnd)) * (0.010 * (cv / 0.08));
   // 천이궁(관자놀이 좌우 비대칭) — 절대 스케일
   p.templeAsym = gauss(rnd) * (0.012 * (cv / 0.08));
   return p;
@@ -91,109 +126,79 @@ function sampleParams(rnd, cv) {
 
 /**
  * 물리 파라미터 → MediaPipe 정규화 랜드마크(468개)
- * @param p  sampleParams 결과
+ * @param p  sampleParams 결과 (파라미터 = MU 이면 표준 얼굴 그대로)
  * @param A  이미지 종횡비 = imgH / imgW  (정사각 사진이면 1.0)
  */
 function makeLandmarks(p, A) {
-  const L = new Array(468);
-  for (let i = 0; i < 468; i++) L[i] = { x: 0.5, y: 0.5, z: 0 };
-  const set = (i, xp, yp, z) => { L[i] = { x: 0.5 + xp, y: 0.5 + yp / A, z: z || 0 }; };
+  const P = CAN.map(q => ({ x: q.x, y: q.y, z: q.z }));
+  const sgn = v => (v < 0 ? -1 : 1);
+  const setX = (ids, cx) => ids.forEach(i => { P[i].x = cx(i); });
+  const shift = (ids, dx, dy) => ids.forEach(i => { P[i].x += dx; P[i].y += dy; });
 
-  const faceW = 1.0;                      // 물리 폭 (x, 이미지 폭 대비 임의 스케일)
-  const faceH = faceW / p.whRatioPhys;    // 물리 높이 (y)
-  const halfW = faceW / 2;
-  const jawW = p.jawRatio * faceW;
-  const fhW = p.fhOverJaw * jawW;
+  // 1) 얼굴 세로 비 — 전체 y 를 중심 기준으로 늘인다
+  const k = (1 / p.whRatioPhys) / H0;
+  P.forEach(q => { q.y *= k; q.z *= 1; });
+  let faceH = H0 * k;
+  // 2) 上停(10→168) — 10 만 옮긴다(이마 높이). faceH 가 따라 바뀐다.
+  P[10].y = P[168].y - p.upperR * faceH;
+  faceH = Math.abs(P[152].y - P[10].y);
 
-  // 세로 기준선 (얼굴 상단 y=-0.5*faceH, 턱끝 y=+0.5*faceH)
-  const yTop = -0.5 * faceH, yChin = 0.5 * faceH;
-  set(10, 0, yTop);
-  set(152, 0, yChin);
-  // 광대(최대폭) — 얼굴 세로 중앙보다 약간 위
-  set(234, -halfW, yTop + 0.46 * faceH);
-  set(454, halfW, yTop + 0.46 * faceH);
-  // 관자(V1: 광대보다 위)
-  set(127, -jawW / 2, yTop + 0.36 * faceH);
-  set(356, jawW / 2, yTop + 0.36 * faceH);
-  // 이마 옆(V1: 관자보다 위)
-  set(21, -fhW / 2, yTop + 0.22 * faceH);
-  set(251, fhW / 2, yTop + 0.22 * faceH);
-  // ★실제 하악각 (FACE_OVAL 상 광대보다 아래) — v2 분류기가 쓰는 축
-  const tjW = p.trueJawRatio * faceW;
-  set(172, -tjW / 2, yTop + 0.74 * faceH);
-  set(397, tjW / 2, yTop + 0.74 * faceH);
+  // 3) 윤곽 폭
+  setX([127, 356], i => sgn(CAN[i].x) * p.jawRatio / 2);
+  setX([172, 397], i => sgn(CAN[i].x) * p.trueJawRatio / 2);
+  const fhW = p.fhOverJaw * p.jawRatio;
+  setX([21, 251], i => sgn(CAN[i].x) * fhW / 2);
+  P[21].x -= p.templeAsym;                                  // 천이궁 비대칭
 
-  // ── 눈 ──
-  const yEye = yTop + 0.42 * faceH;
-  const ip = p.interPupil * faceW;
-  const ew = p.eyeW * faceW;
-  const eh = ew / p.eyeAspect;            // 물리 눈 세로
-  const tilt = p.canthalTilt * faceH;     // + 면 외안각이 아래(처짐)
-  // 좌안: 33=외안각(바깥=왼쪽), 133=내안각
-  set(33, -(ip / 2 + ew / 2), yEye + tilt);
-  set(133, -(ip / 2 - ew / 2), yEye);
-  set(159, -ip / 2, yEye - eh / 2);
-  set(145, -ip / 2, yEye + eh / 2);
-  // 우안: 362=내안각, 263=외안각
-  set(362, (ip / 2 - ew / 2), yEye);
-  set(263, (ip / 2 + ew / 2), yEye + tilt);
-  set(386, ip / 2, yEye - eh / 2);
-  set(374, ip / 2, yEye + eh / 2);
-
-  // ── 코 ──
-  const yBridge = yTop + 0.38 * faceH;
-  const noseH = p.noseHRatio * faceH;
-  const yTip = yBridge + noseH;
-  set(168, p.asym * faceW, yBridge);
-  set(1, p.asym * faceW, yTip);
-  set(2, p.asym * faceW, yTip + 0.020 * faceH);       // V2: LM2 는 LM1 보다 아래
-  const nw = p.noseWRatio * faceW;
-  set(129, p.asym * faceW - nw / 2, yTip);
-  set(358, p.asym * faceW + nw / 2, yTip);
-  set(6, 0, yBridge - 0.03 * faceH, p.bridgeZ);
-  // 콧대 중간점 4개 (168→1 사이). z 에 볼록도(dorsum) 를 실어 매부리코를 표현
-  [[197, 0.28], [195, 0.50], [5, 0.72], [4, 0.88]].forEach(([idx, t]) => {
-    const bulge = p.noseDorsum * Math.sin(Math.PI * t) * faceH;
-    set(idx, p.asym * faceW, yBridge + noseH * t, -bulge);
+  // 4) 눈 — 중심 간격·폭·세로·기울기
+  const ew = p.eyeW, eh = ew / p.eyeAspect;
+  [[33, 133, 159, 145, -1], [263, 362, 386, 374, 1]].forEach(([o, i, up, dn, s]) => {
+    const c = s * p.interPupil / 2;
+    const cOld = (CAN[o].x + CAN[i].x) / 2;
+    P[o].x = c + s * ew / 2; P[i].x = c - s * ew / 2;
+    [up, dn].forEach(j => { P[j].x = c + (CAN[j].x - cOld); });
+    const yc = (P[up].y + P[dn].y) / 2;
+    P[up].y = yc - eh / 2; P[dn].y = yc + eh / 2;
+    P[o].y = P[i].y + p.canthalTilt * faceH;
   });
-  set(188, -0.035 * faceW, yBridge);
-  set(412, 0.035 * faceW, yBridge);
 
-  // ── 입 ──
-  const yMouth = yTop + 0.78 * faceH;
-  const mw = p.mouthOverIP * ip;
-  set(61, -mw / 2, yMouth);
-  set(291, mw / 2, yMouth);
-  const lipTot = p.lipThick * faceH;
-  set(0, 0, yMouth - lipTot * 0.55);   // 윗입술 바깥 위
-  set(13, 0, yMouth - lipTot * 0.10);  // 윗입술 안쪽
-  set(14, 0, yMouth + lipTot * 0.10);  // 아랫입술 안쪽
-  set(17, 0, yMouth + lipTot * 0.55);  // 아랫입술 바깥 아래
+  // 5) 코 — 길이(168→1)·폭·콧대·좌우 편차
+  const dyTip = (P[168].y + p.noseHRatio * faceH) - P[1].y;
+  shift(TIP, 0, dyTip);
+  const ncx = P[1].x;
+  setX([129, 358], i => ncx + sgn(CAN[i].x) * p.noseWRatio / 2);
+  setX([188, 412], i => sgn(CAN[i].x) * p.sanGeunW / 2);
+  {
+    const A0 = P[168], B0 = P[1], vy = B0.y - A0.y, vz = B0.z - A0.z, len = Math.hypot(vy, vz) || 1e-9;
+    const n = { y: vz / len, z: -vy / len };
+    const dd = (p.noseDorsum - MU.noseDorsum) * faceH;
+    DORS0.forEach(o => {
+      const d = o.d * k + dd * Math.sin(Math.PI * Math.max(0, Math.min(1, o.t)));
+      P[o.i].y = A0.y + o.t * vy + d * n.y;
+      P[o.i].z = A0.z + o.t * vz + d * n.z;
+    });
+  }
+  shift([168, 6, 197, 195, 5].concat(TIP), p.asym, 0);
 
-  // ── 십이궁·오관 축 (v786 분류기가 실제로 사용) ──
-  set(188, -p.sanGeunW / 2 * faceW, yBridge);
-  set(412, p.sanGeunW / 2 * faceW, yBridge);
-  const mg = p.myungGungW * faceW;                       // 명궁(미간폭)
-  const yBrowIn = yEye - p.browEyeGap * faceH;
-  set(55, -mg / 2, yBrowIn);
-  set(285, mg / 2, yBrowIn);
-  const bl = p.browLenR * faceW, bt = p.browThickR * faceH, btl = p.browTiltR * faceH;
-  // ★v789 꼬리 끝은 LM46/276 (구: 53/283 을 꼬리로 잘못 둠). 53/283 은 canonical 비율 위치(수평 0.835 · 머리보다 0.009 faceH 위).
-  set(46, -(mg / 2 + bl), yBrowIn - btl);                // 좌 눈썹 끝(꼬리)
-  set(276, (mg / 2 + bl), yBrowIn - btl);
-  set(53, -(mg / 2 + bl * 0.835), yBrowIn - 0.009 * faceH);
-  set(283, (mg / 2 + bl * 0.835), yBrowIn - 0.009 * faceH);
-  set(63, -(mg / 2 + bl * 0.5), yBrowIn - bt / 2);       // 좌 눈썹 상단
-  set(66, -(mg / 2 + bl * 0.5), yBrowIn + bt / 2);       // 좌 눈썹 하단
-  set(293, (mg / 2 + bl * 0.5), yBrowIn - bt / 2);
-  set(296, (mg / 2 + bl * 0.5), yBrowIn + bt / 2);
-  // 전택궁: 눈썹 하단(66) ↔ 상안검(159) 거리 = browEyeGap 이 지배
-  set(117, -ip / 2, yEye + eh / 2 + p.underEyeR * faceH);  // 자녀궁(와잠)
-  set(346, ip / 2, yEye + eh / 2 + p.underEyeR * faceH);
-  // 천이궁: 좌우 관자 비대칭 (21/251 을 비대칭으로 이동)
-  set(21, -fhW / 2 - p.templeAsym * faceW, yTop + 0.22 * faceH);
-  set(251, fhW / 2, yTop + 0.22 * faceH);
-  return L;
+  // 6) 눈썹 — 미간폭(명궁) · 눈썹-눈 거리(전택궁) · 두께 · 길이·기울기(꼬리 46/276)
+  [[BROW_L, 55, 52, 105, 46, 159, -1], [BROW_R, 285, 282, 334, 276, 386, 1]].forEach(([G, h, lo, up, t, lid, s]) => {
+    shift(G, s * p.myungGungW / 2 - P[h].x, (P[lid].y - p.browEyeGap * faceH) - P[lo].y);
+    P[up].y = P[lo].y - p.browThickR * faceH;
+    const dyT = -p.browTiltR * faceH;
+    const dxT = Math.sqrt(Math.max(1e-12, p.browLenR * p.browLenR - dyT * dyT));
+    P[t].x = P[h].x + s * dxT; P[t].y = P[h].y + dyT;
+  });
+  // 7) 자녀궁(와잠)
+  [[117, 145], [346, 374]].forEach(([u, d]) => { P[u].y = P[d].y + p.underEyeR * faceH; });
+
+  // 8) 입 — 폭·입술 두께(안쪽 13/14 고정, 바깥 0/17 을 비례 이동)
+  const mw = p.mouthOverIP * p.interPupil;
+  setX([61, 291], i => sgn(CAN[i].x) * mw / 2);
+  const s0 = p.lipThick / MU.lipThick;
+  P[0].y = P[13].y - (CAN[13].y - CAN[0].y) * k * s0;
+  P[17].y = P[14].y + (CAN[17].y - CAN[14].y) * k * s0;
+
+  return P.map(q => ({ x: 0.5 + q.x, y: 0.5 + q.y / A, z: q.z }));
 }
 
-module.exports = { MU, REL, sampleParams, makeLandmarks, mulberry32 };
+module.exports = { MU, REL, sampleParams, makeLandmarks, mulberry32, CANON_OBJ };

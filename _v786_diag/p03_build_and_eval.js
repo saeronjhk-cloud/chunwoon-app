@@ -41,7 +41,8 @@ for (let i = 0; i < CAL; i++) {
   const cv = CVS[i % CVS.length], A = RATIOS[(i / CVS.length | 0) % RATIOS.length];
   rows.push(tmp._cwFaceMeasure(makeLandmarks(sampleParams(rndC, cv), A), A));
 }
-const REF = { version: 'REF-SYNTH-v786-20260904', tier: 'C-SYNTHETIC', n: CAL, q: {} };
+// ★v792 — 생성기를 표준 얼굴 앵커로 재작성(synth_face.js). 등급은 여전히 C(합성).
+const REF = { version: 'REF-SYNTH-v792-CANON-20260929', tier: 'C-SYNTHETIC', n: CAL, q: {} };
 for (const k of tmp.CW_FACE_AXES) REF.q[k] = quant(rows.map(r => r[k]), 20).map(v => +v.toFixed(6));
 const built = SRC.replace('__REF__', JSON.stringify(REF));
 fs.writeFileSync(path.join(__dirname, 'face_core_v786.built.js'), built);
