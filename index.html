@@ -586,7 +586,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-face">
     <div class="card">
       <div class="card-title">👤 관상 풀이</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">정면을 바라본 얼굴 사진을 촬영하거나 업로드하세요. 얼굴 전체가 프레임 안에 잘 보이도록 해주세요.</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">정면을 바라본 얼굴 사진을 촬영하거나 업로드하세요. 얼굴 전체가 프레임 안에 잘 보이도록 해주세요. <b>안경은 벗고</b>, 앞머리가 이마를 가리지 않게 해주시면 눈 크기와 이마(상정)까지 정확히 잽니다.</p>
       <div class="photo-stage" id="faceStage">
         <div class="photo-placeholder" id="facePlaceholder">
           <div style="font-size:52px;margin-bottom:8px">👤</div>
@@ -602,7 +602,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <path class="corner" d="M 20,90 L 10,90 L 10,80"/>
             <path class="corner" d="M 80,90 L 90,90 L 90,80"/>
           </svg>
-          <div class="guide-status" id="faceGuideStatus">얼굴을 원형 가이드에 맞춰주세요</div>
+          <div class="guide-status" id="faceGuideStatus">안경을 벗고 얼굴을 원형 가이드에 맞춰주세요</div>
           <div class="face-countdown" id="faceCountdown"></div>
         </div>
         <canvas id="faceOverlay" class="photo-overlay"></canvas>
@@ -4305,7 +4305,7 @@ async function openCamera(kind){
       const guide=document.getElementById('faceGuide');
       if(guide)guide.classList.remove('aligned');
       const status=document.getElementById('faceGuideStatus');
-      if(status){status.classList.remove('ok');status.textContent='얼굴을 원형 가이드에 맞춰주세요'}
+      if(status){status.classList.remove('ok');status.textContent='안경을 벗고 얼굴을 원형 가이드에 맞춰주세요'}
       startFaceAlignLoop();
     }else{
       v.style.transform='';

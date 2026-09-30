@@ -1772,12 +1772,12 @@ export default async function handler(req, res) {
     //   (_v786_diag/p03_build_and_eval.js 실측)
     const CW_FACE_AXIS_KO = {
       whRatio: '얼굴 가로세로비', jawRatio: '하악각 폭', foreheadRatio: '이마 폭',
-      eyeAspect: '눈 가로/세로', eyeSize: '눈 크기', eyeTilt: '눈꼬리 경사',
+      eyeAspect: '눈 가로/세로', eyeSize: '눈 크기', eyeTilt: '눈꼬리 처짐(높을수록 처지고 낮을수록 올라감)',
       noseWRatio: '콧방울 폭', noseHRatio: '코 길이', noseDorsum: '콧대 볼록도',
       mouthRatio: '입 너비', lipThickness: '입술 두께', symmetry: '좌우 대칭',
       thirds: '삼정 균형', myungGung: '명궁(미간)', cheonI: '천이궁(관자 균형)',
       jaNyeo: '자녀궁(와잠)', jilAek: '질액궁(산근)', jeonTaek: '전택궁(눈썹-눈)',
-      browLength: '보수관 길이', browAngle: '보수관 기울기', browThick: '보수관 두께',
+      browLength: '보수관 길이', browAngle: '보수관 기울기(높을수록 꼬리가 위)', browThick: '보수관 두께',
       gwanGol: '관골 돌출', inJung: '인중 길이', chin: '지각(턱)'
     };
     // ★v786-b — 축을 두 종류로 나눠 싣는다.
@@ -1805,7 +1805,11 @@ export default async function handler(req, res) {
         if (typeof r !== 'number' || !isFinite(r)) continue;
         const p = Math.round(r * 100);
         const band = p >= 90 ? '매우 큼/높음' : p >= 70 ? '큼/높음' : p >= 30 ? '보통' : p >= 10 ? '작음/낮음' : '매우 작음/낮음';
-        rel.push(`${CW_FACE_AXIS_KO[k]} 상위 ${100 - p}%(${band})`);
+        // ★v795 P-790-G/F — 50% 이상은 「상위 n%」, 미만은 「하위 n%」로 방향을 맞춘다(종전: 하위 9% 를 「상위 91%」로 적어 크다고 오해).
+        //   참조표 범위 밖(랭크 0·1)은 「상위/하위 1% 미만(참조 범위 밖)」 — 종전 「상위 0%」. 평가: _v792_work/p18
+        const pos = r >= 0.995 ? '상위 1% 미만(참조 범위 밖)' : r <= 0.005 ? '하위 1% 미만(참조 범위 밖)'
+          : p >= 50 ? `상위 ${Math.max(1, 100 - p)}%` : `하위 ${Math.max(1, p)}%`;
+        rel.push(`${CW_FACE_AXIS_KO[k]} ${pos}(${band})`);
       }
       let out = '';
       if (abs.length) out += '\n[균형 계측 — 절대 기준] ' + abs.join(' · ');
@@ -1817,7 +1821,7 @@ export default async function handler(req, res) {
       ' 아래 계측 블록은 이 사람만의 수치입니다. 두 블록의 성질이 다르니 섞지 마세요.'
       + ' [균형 계측 — 절대 기준]은 순위가 아니라 상태입니다. 「고르다/치우쳤다」로만 서술하고'
       + ' 절대로 "상위 몇 %"처럼 남과 비교하지 마세요. 대부분의 사람이 비슷하게 고른 것이 정상입니다.'
-      + ' [개인 계측 백분위 — 상대 기준]은 또래 분포 대비 위치입니다. 여기서만 "상위 몇 %"를 쓰세요.'
+      + ' [개인 계측 백분위 — 상대 기준]은 또래 분포 대비 위치입니다. 여기서만 "상위/하위 몇 %"를 쓰되, 적힌 방향(상위·하위)과 괄호 속 크기 표현을 그대로 따르세요.'
       + ' 해석의 모든 문장은 두 블록에서 최소 6개 축을 근거로 삼고, 상대 기준 축은 상위 10% 또는 하위 10%인 것을 우선하세요.'
       + ' 누구에게나 해당되는 일반론(예: "노력하면 좋아집니다")은 쓰지 마세요.'
       // ★v786-b — 원문이 우리 구현을 반증한 항목. 太淸神鑑 六極 「眼雖小秀且長…反爲富貴」:
