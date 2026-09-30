@@ -44,26 +44,30 @@ const f = (x, d) => (typeof x === 'number' ? x.toFixed(d == null ? 3 : d) : Stri
 const ANG = new Set(['eyeTilt', 'browAngle']), PCT = new Set(['upperThirdPct', 'middleThirdPct', 'lowerThirdPct']);
 
 const can = C._cwFaceMeasure(toImage(V, 1.25), 1.25);
+// ★v794 P-793-C — 참조표 중심은 ★실사진 평균 얼굴(fixture)이다. 3D 표준 얼굴(can)은 실사진 검출 배치와 달라 중심 기준에서 뺐다.
+//   (can 은 B 계측 정의 검사와 E 방향 검사에만 쓴다)
+const RA = JSON.parse(fs.readFileSync(path.join(ROOT, '_v792_work', 'fixtures', 'real_anchor_v1.json'), 'utf8'));
+const mf = C._cwFaceMeasure(RA.meanFace.map(([x, y, z]) => ({ x: 0.5 + x, y: 0.5 + y / 1.25, z: z })), 1.25);
 
 // ── A. 참조표 앵커 ──
-console.log('[A] 참조표 앵커 — 표준 얼굴이 합성 모집단의 중심에 놓이는가');
+console.log('[A] 참조표 앵커 — 실사진 평균 얼굴이 합성 모집단의 중심에 놓이는가 (v794)');
 const zr = (() => { let k = 0; return () => (k++ % 2 === 0 ? 0.5 : 0.25); })();   // Box-Muller 가 정확히 0 을 내는 입력
 const pz = SY.sampleParams(zr, 0.08);
 const sz = C._cwFaceMeasure(SY.makeLandmarks(pz, 1.25), 1.25);
 const offA = C.CW_FACE_AXES.filter(k => {
-  const a = sz[k], b = can[k];
+  const a = sz[k], b = mf[k];
   if (a == null && b == null) return false;          // ★v792 머리선 없는 입력 — 上停 계열 축은 둘 다 null(계측 불가)이 정상
   if (a == null || b == null) return true;
   if (ANG.has(k) || PCT.has(k)) return Math.abs(a - b) > 0.5;
   if (k === 'noseDorsum') return Math.abs(a - b) > 0.003;
   return Math.abs(a / (b || 1e-9) - 1) > 0.03;
 });
-check('A1', '합성 생성기 무잡음(중심값) 계측 == 표준 얼굴 계측 (전 축 · 비 3% / 각·% 0.5 · 上停 계열은 둘 다 null)', offA.length === 0,
+check('A1', '합성 생성기 무잡음(중심값) 계측 == 실사진 평균 얼굴 계측 (전 축 · 비 3% / 각·% 0.5 · 上停 계열은 둘 다 null)', offA.length === 0,
   offA.length ? `어긋난 ${offA.length}축: ` + offA.map(k => `${k} ${f(sz[k], 4)}≠${f(can[k], 4)}`).join(' · ') : '30축 일치');
 const REL = C.CW_FACE_AXES.filter(k => C.CW_FACE_AXIS_KIND[k] === 'REL');
-const offR = REL.filter(k => { if (can[k] == null) return false; const r = C._cwRank(can[k], C.CW_FACE_REF.q[k]); return r < 0.2 || r > 0.8; });   // ★v792 null(上停 계측 불가) 제외
-check('A2', `index.html 참조표에서 표준 얼굴 랭크 ∈ [0.2,0.8] (REL ${REL.length}축)`, offR.length === 0,
-  offR.length ? `${offR.length}축 이탈: ` + offR.map(k => `${k} ${f(C._cwRank(can[k], C.CW_FACE_REF.q[k]), 2)}`).join(' · ') : '전 축 중앙권');
+const offR = REL.filter(k => { if (mf[k] == null) return false; const r = C._cwRank(mf[k], C.CW_FACE_REF.q[k]); return r < 0.2 || r > 0.8; });   // ★v792 null(上停 계측 불가) 제외
+check('A2', `index.html 참조표에서 실사진 평균 얼굴 랭크 ∈ [0.2,0.8] (REL ${REL.length}축)`, offR.length === 0,
+  offR.length ? `${offR.length}축 이탈: ` + offR.map(k => `${k} ${f(C._cwRank(mf[k], C.CW_FACE_REF.q[k]), 2)}`).join(' · ') : '전 축 중앙권');
 check('A3', 'index.html 내장 참조표 == face_core built', built.indexOf(JSON.stringify(C.CW_FACE_REF)) >= 0, C.CW_FACE_REF.version);
 
 // ── B. 계측 정의 ──

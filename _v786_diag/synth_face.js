@@ -56,7 +56,15 @@ const CV0 = fs.readFileSync(CANON_OBJ, 'utf8').split('\n').filter(l => l.startsW
 if (CV0.length !== 468) throw new Error('canonical 468 정점 아님');
 // 물리 좌표: 광대폭(234↔454)=1 · 원점 = 얼굴 중심 · +Y 아래 · Z 는 MediaPipe 부호(카메라 쪽 −)
 const W0 = Math.abs(CV0[454][0] - CV0[234][0]), CY0 = (CV0[10][1] + CV0[152][1]) / 2;
-const CAN = CV0.map(([x, y, z]) => ({ x: x / W0, y: -(y - CY0) / W0, z: -z / W0 }));
+const CAN_3D = CV0.map(([x, y, z]) => ({ x: x / W0, y: -(y - CY0) / W0, z: -z / W0 }));
+// ★v794 P-793-C — 중심 얼굴을 ★실사진 평균 얼굴로 바꾼다(근거·평가 _v792_work/p17).
+//   3D 표준 얼굴은 실사진 검출 좌표와 배치가 달라(광대 끝 234/454 가 더 바깥) 실사진이 참조표 양 끝에 몰렸다.
+//   평균 얼굴 = 평가셋 실사진 23장의 랜드마크를 (234↔454 폭=1 · 152→10 세로축 정렬 · 좌우 대칭화) 평균한 것.
+//   산포(REL·ABS)도 같은 23장의 실측 표준편차에 맞춰 보정했다(_v792_work/calib_real_anchor.js).
+//   ★여전히 TIER-C — 표본 23장(대부분 스튜디오·보도 사진). 셀카·실사용자 표본(B-5)으로 갱신할 것.
+const CALIB_PATH = path.join(__dirname, '..', '_v792_work', 'fixtures', 'real_anchor_v1.json');
+const CALIB = fs.existsSync(CALIB_PATH) ? JSON.parse(fs.readFileSync(CALIB_PATH, 'utf8')) : null;
+const CAN = CALIB && CALIB.meanFace ? CALIB.meanFace.map(([x, y, z]) => ({ x: x, y: y, z: z })) : CAN_3D;
 const cdx = (a, b) => Math.abs(CAN[a].x - CAN[b].x), cdy = (a, b) => Math.abs(CAN[a].y - CAN[b].y);
 const H0 = cdy(10, 152);
 const eyeC = (o, i) => (CAN[o].x + CAN[i].x) / 2;
@@ -72,7 +80,10 @@ const DORS0 = dorsumOffsets(CAN);
 const CONV0 = Math.max(0, ...DORS0.map(o => o.d)) / H0;
 const BROW_L = [46, 53, 52, 65, 55, 70, 63, 105, 66, 107], BROW_R = [276, 283, 282, 295, 285, 300, 293, 334, 296, 336];
 const TIP = [1, 2, 4, 94, 129, 358];
-const HAIR_UP_MU = 0.1486, HAIR_UP_REL = 2.44;
+const HAIR_UP_MU = CALIB && CALIB.hairUp ? CALIB.hairUp.mu : 0.1486;
+// 절대 산포(얼굴높이·폭 대비, cv 8% 기준) — ★v794 실사진 보정값이 있으면 그것을 쓴다
+const ABS = Object.assign({ canthalTilt: 0.014, asym: 0.010, noseDorsum: 0.012, noseDorsumTail: 0.010, templeAsym: 0.012, mouthY: 0.0, browY: 0.0, hairUp: 0.1486 * 2.44 * 0.08 },
+  CALIB && CALIB.abs ? CALIB.abs : {});
 
 // 중심값 — ★전부 표준 얼굴에서 계산 (얼굴 물리 단위 faceW=1)
 const MU = {
@@ -106,6 +117,7 @@ const REL = {
   eyeW: 1.0, eyeAspect: 1.2, canthalTilt: 0, noseWRatio: 1.0,
   noseHRatio: 1.0, noseDorsum: 0, myungGungW: 1.3, sanGeunW: 1.3, browLenR: 1.1, browThickR: 1.5, browTiltR: 11.9, browEyeGap: 1.4, underEyeR: 1.3, mouthOverIP: 0.9, lipThick: 1.3, asym: 0
 };
+if (CALIB && CALIB.rel) Object.assign(REL, CALIB.rel);   // ★v794 실사진 산포 보정
 
 // ★v789 browTiltR 의 REL 11.9 — 평균이 0 에 가까워 비례 CV 로는 부호가 바뀌지 않는다. canthalTilt 와 같은
 //   절대 산포(cv 8% 에서 sd ≈ 0.014 faceH)가 되도록 잡았다.
@@ -116,16 +128,20 @@ function sampleParams(rnd, cv) {
     p[k] = MU[k] + gauss(rnd) * sd;
   }
   // 절대 스케일 축 (faceH 대비)
-  p.canthalTilt = MU.canthalTilt + gauss(rnd) * (0.014 * (cv / 0.08));
-  p.asym = gauss(rnd) * (0.010 * (cv / 0.08));
+  p.canthalTilt = MU.canthalTilt + gauss(rnd) * (ABS.canthalTilt * (cv / 0.08));
+  p.asym = gauss(rnd) * (ABS.asym * (cv / 0.08));
   // 콧대 볼록도: 표준 얼굴 값 중심 · 우측 꼬리(매부리)를 가진 비대칭 분포
-  p.noseDorsum = MU.noseDorsum + gauss(rnd) * (0.012 * (cv / 0.08)) + Math.max(0, gauss(rnd)) * (0.010 * (cv / 0.08));
+  p.noseDorsum = MU.noseDorsum + gauss(rnd) * (ABS.noseDorsum * (cv / 0.08)) + Math.max(0, gauss(rnd)) * (ABS.noseDorsumTail * (cv / 0.08));
   // 천이궁(관자놀이 좌우 비대칭) — 절대 스케일
-  p.templeAsym = gauss(rnd) * (0.012 * (cv / 0.08));
+  p.templeAsym = gauss(rnd) * (ABS.templeAsym * (cv / 0.08));
   // ★v792 P-792-A 머리선 높이 = (LM10 → 머리선)/(LM152→LM10) — 표준 얼굴 모델엔 머리카락이 없어
   //   중심·산포를 ★실사진 13장(p16 평가셋 M 군, _cwHairline 검출값) 에서 잡았다: 평균 0.1486 · sd 0.0290 (cv 8% 기준 REL 2.44).
   //   ★TIER-C — 실사진 모집단(B-5) 확보 시 교체.
-  p.hairUp = HAIR_UP_MU + gauss(rnd) * HAIR_UP_MU * cv * HAIR_UP_REL;
+  p.hairUp = HAIR_UP_MU + gauss(rnd) * (ABS.hairUp * (cv / 0.08));
+  // ★v794 입 블록 세로 위치(얼굴높이 대비) — 인중·턱 길이의 개인차. 중심 0(평균 얼굴 그대로)
+  p.mouthY = gauss(rnd) * (ABS.mouthY * (cv / 0.08));
+  // ★v794 눈·눈썹 블록 세로 위치(얼굴높이 대비) — 中停/下停 비의 개인차. 중심 0
+  p.browY = gauss(rnd) * (ABS.browY * (cv / 0.08));
   return p;
 }
 
@@ -196,6 +212,10 @@ function makeLandmarks(p, A) {
   // 7) 자녀궁(와잠)
   [[117, 145], [346, 374]].forEach(([u, d]) => { P[u].y = P[d].y + p.underEyeR * faceH; });
 
+  // 7a) ★v794 눈·눈썹 블록 세로 위치(中停 길이 개인차) — 눈·눈썹·와잠 점을 함께 옮겨 다른 축은 불변
+  if (p.browY) shift([33, 133, 159, 145, 362, 263, 386, 374, 117, 346].concat(BROW_L, BROW_R), 0, p.browY * faceH);
+  // 7b) ★v794 입 블록 세로 위치(인중·턱 개인차)
+  if (p.mouthY) shift([0, 13, 14, 17, 61, 291], 0, p.mouthY * faceH);
   // 8) 입 — 폭·입술 두께(안쪽 13/14 고정, 바깥 0/17 을 비례 이동)
   const mw = p.mouthOverIP * p.interPupil;
   setX([61, 291], i => sgn(CAN[i].x) * mw / 2);
@@ -213,4 +233,4 @@ function makeLandmarks(p, A) {
   return L;
 }
 
-module.exports = { MU, REL, sampleParams, makeLandmarks, mulberry32, CANON_OBJ };
+module.exports = { MU, REL, ABS, sampleParams, makeLandmarks, mulberry32, CANON_OBJ, CALIB_PATH };

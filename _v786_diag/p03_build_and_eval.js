@@ -42,8 +42,9 @@ for (let i = 0; i < CAL; i++) {
   { const L0 = makeLandmarks(sampleParams(rndC, cv), A); rows.push(tmp._cwFaceMeasure(L0, A, L0.__hair)); }   // ★v792 머리선 포함
 }
 // ★v792 — 생성기를 표준 얼굴 앵커로 재작성(synth_face.js). 등급은 여전히 C(합성).
-const REF = { version: 'REF-SYNTH-v792-CANON-20260929', tier: 'C-SYNTHETIC', n: CAL, q: {} };
-for (const k of tmp.CW_FACE_AXES) REF.q[k] = quant(rows.map(r => r[k]), 20).map(v => +v.toFixed(6));
+const REF = { version: 'REF-SYNTH-v794-REALANCHOR-20260930', tier: 'C-SYNTHETIC', n: CAL, q: {} };
+// ★v794 null(계측 불가 — 극단 합성 표본에서 머리선이 눈썹선 아래로 오는 경우 등)은 분위수에서 뺀다
+for (const k of tmp.CW_FACE_AXES) REF.q[k] = quant(rows.map(r => r[k]).filter(v => v != null && isFinite(v)), 20).map(v => +v.toFixed(6));
 const built = SRC.replace('__REF__', JSON.stringify(REF));
 fs.writeFileSync(path.join(__dirname, 'face_core_v786.built.js'), built);
 console.log(`[1] 캘리브레이션 ${CAL}건 · ${tmp.CW_FACE_AXES.length}축 → face_core_v786.built.js (${(built.length / 1024).toFixed(1)}KB)`);
