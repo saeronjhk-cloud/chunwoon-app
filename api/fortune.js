@@ -1842,6 +1842,28 @@ export default async function handler(req, res) {
       if (f.signature) out += `\n[계측 시그니처] ${f.signature}`;
       return out;
     }
+    // ★v796 P-796-A — 실측 문자열을 한글 라벨로 싣는다(평가: _v792_work/p20).
+    //   종전 영문 약어 키(whR·noseW·mouth…)가 AI 본문에 「noseW 34.0%」처럼 그대로 새어 나왔다. null 축은 생략(「?%」 금지).
+    const CW_FACE_MEASURE_KO = {
+      whRatio: ['얼굴 가로세로비', 'r3'], jawRatio: ['하악각 폭/얼굴 폭', 'r3'], eyeAspect: ['눈 가로세로비', 'r2'],
+      noseWRatio: ['콧방울 폭/얼굴 폭', 'pct'], noseHRatio: ['코 길이/얼굴 길이', 'pct'], mouthRatio: ['입 너비/얼굴 폭', 'r3'],
+      symmetry: ['좌우 대칭', 'pct'], thirds: ['삼정 균등', 'pct'],
+      upperThirdPct: ['상정', 'raw%'], middleThirdPct: ['중정', 'raw%'], lowerThirdPct: ['하정', 'raw%']
+    };
+    function cwFaceMeasureStr(m, keys) {
+      if (!m) return '';
+      const out = [];
+      for (const k of keys) {
+        let v = m[k];
+        if (k === 'eyeAspect' && (v == null)) v = m.eyeRatio;
+        if (k === 'thirds' && (v == null)) v = m.thirdsScore;
+        const d = CW_FACE_MEASURE_KO[k];
+        if (!d || typeof v !== 'number' || !isFinite(v)) continue;
+        const t = d[1] === 'pct' ? (v * 100).toFixed(1) + '%' : d[1] === 'raw%' ? v.toFixed(1) + '%' : v.toFixed(d[1] === 'r2' ? 2 : 3);
+        out.push(d[0] + ' ' + t);
+      }
+      return out.join(', ');
+    }
     const CW_FACE_AXIS_RULE =
       ' 아래 계측 블록은 이 사람만의 수치입니다. 두 블록의 성질이 다르니 섞지 마세요.'
       + ' [균형 계측 — 절대 기준]은 순위가 아니라 상태입니다. 「고르다/치우쳤다」로만 서술하고'
@@ -1849,6 +1871,7 @@ export default async function handler(req, res) {
       + ' [개인 계측 백분위 — 상대 기준]은 또래 분포 대비 위치입니다. 여기서만 "상위/하위 몇 %"를 쓰되, 적힌 방향(상위·하위)과 괄호 속 크기 표현을 그대로 따르세요.'
       + ' 축 이름 괄호의 「높을수록 …」 설명이 그 축의 방향입니다. 상위는 그 설명 쪽, 하위는 반대쪽으로만 쓰고 비율의 뜻을 추측하지 마세요.'
       + ' 해석의 모든 문장은 두 블록에서 최소 6개 축을 근거로 삼고, 상대 기준 축은 상위 10% 또는 하위 10%인 것을 우선하세요.'
+      + ' 실측값을 인용할 때는 한글 이름 그대로 쓰고, 영문 약어나 변수명(예: noseW, mouth)은 본문에 절대 쓰지 마세요.'
       + ' 누구에게나 해당되는 일반론(예: "노력하면 좋아집니다")은 쓰지 마세요.'
       // ★v786-b — 원문이 우리 구현을 반증한 항목. 太淸神鑑 六極 「眼雖小秀且長…反爲富貴」:
       //   크기 하나로 길흉을 가르는 것을 원문이 명시적으로 부정한다.
@@ -1874,7 +1897,7 @@ export default async function handler(req, res) {
 - JSON 형식으로만 응답: {"shape":"얼굴형","eyes":"눈","nose":"코","mouth":"입","summary":"종합 200자+","advice":"조언"}` + CW_FACE_AXIS_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mb = m ? `실측: whR:${m.whRatio?.toFixed(3)||'?'}, jawR:${m.jawRatio?.toFixed(3)||'?'}, eyeR:${m.eyeAspect?.toFixed(2)||'?'}, noseW:${((m.noseWRatio||0)*100).toFixed(1)}%, mouth:${m.mouthRatio?.toFixed(3)||'?'}, sym:${((m.symmetry||0)*100).toFixed(1)}%, thirds:${((m.thirds||0)*100).toFixed(1)}%` : '';
+      const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'])}` : '';
 
       userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
@@ -1885,7 +1908,7 @@ export default async function handler(req, res) {
 features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? `whR:${m.whRatio?.toFixed(3)||'?'},jawR:${m.jawRatio?.toFixed(3)||'?'},eyeR:${m.eyeRatio?.toFixed(2)||'?'},noseW:${((m.noseWRatio||0)*100).toFixed(1)}%,noseH:${((m.noseHRatio||0)*100).toFixed(1)}%,sym:${((m.symmetry||0)*100).toFixed(1)}%,thirds:${((m.thirdsScore||0)*100).toFixed(1)}%,upper:${m.upperThirdPct?.toFixed(1)||'?'}%,mid:${m.middleThirdPct?.toFixed(1)||'?'}%,lower:${m.lowerThirdPct?.toFixed(1)||'?'}%` : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds','upperThirdPct','middleThirdPct','lowerThirdPct']) || 'N/A') : 'N/A';
 
       userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
@@ -1896,7 +1919,7 @@ features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20
 weaknesses 2개, enemies 2개, allies 2개.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? `whR:${m.whRatio?.toFixed(3)||'?'},jawR:${m.jawRatio?.toFixed(3)||'?'},noseW:${((m.noseWRatio||0)*100).toFixed(1)}%,sym:${((m.symmetry||0)*100).toFixed(1)}%,thirds:${((m.thirdsScore||0)*100).toFixed(1)}%` : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds']) || 'N/A') : 'N/A';
 
       userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 

@@ -1,0 +1,7 @@
+  FAIL K1 관상 프롬프트 실측 문자열에 영문 약어 키 없음 — 3건
+  FAIL K2 cwFaceMeasureStr 존재 — 없음
+  FAIL K3 한글 라벨로 나온다(가로세로비·콧방울 폭·입 너비) — 
+  ok   K4 영문 약어·물음표 없음 · null 축 생략 — 
+  FAIL K5 상정 계측 시 상·중·하정 % · eyeAspect 없으면 eyeRatio 별칭 — 
+  FAIL K6 규칙: 영문 변수명을 본문에 쓰지 말 것 — 
+[p20_face_measure_label] total=6 pass=1 fail=5 · FAIL K1,K2,K3,K5,K6
