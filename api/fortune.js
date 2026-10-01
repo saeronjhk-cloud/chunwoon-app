@@ -1770,15 +1770,36 @@ export default async function handler(req, res) {
     // ★v786 — 관상 결정변수 블록. 24축 분위수 랭크를 프롬프트에 직접 싣는다.
     //   진단 근거: 종전에는 4축 라벨만 전달돼 두 사용자가 4축 전부 같을 확률이 26%였다.
     //   (_v786_diag/p03_build_and_eval.js 실측)
+    // ★v796 P-795-B — 모든 상대축 라벨에 「높을수록 무엇」을 밝힌다(평가: _v792_work/p19).
+    //   종전엔 비율의 방향이 라벨에 없어 AI 가 추측했다 — 예) eyeAspect(가로/세로)는 높을수록 ★가늘고 긴 눈인데 「큼」으로 오독 가능.
+    //   upperOverRest·midOverLow(v792 삼정 재정의 REL 축)는 표에 없어 AI 에 전달되지 않았다 → 추가(상정 null 이면 자동 생략).
     const CW_FACE_AXIS_KO = {
-      whRatio: '얼굴 가로세로비', jawRatio: '하악각 폭', foreheadRatio: '이마 폭',
-      eyeAspect: '눈 가로/세로', eyeSize: '눈 크기', eyeTilt: '눈꼬리 처짐(높을수록 처지고 낮을수록 올라감)',
-      noseWRatio: '콧방울 폭', noseHRatio: '코 길이', noseDorsum: '콧대 볼록도',
-      mouthRatio: '입 너비', lipThickness: '입술 두께', symmetry: '좌우 대칭',
-      thirds: '삼정 균형', myungGung: '명궁(미간)', cheonI: '천이궁(관자 균형)',
-      jaNyeo: '자녀궁(와잠)', jilAek: '질액궁(산근)', jeonTaek: '전택궁(눈썹-눈)',
-      browLength: '보수관 길이', browAngle: '보수관 기울기(높을수록 꼬리가 위)', browThick: '보수관 두께',
-      gwanGol: '관골 돌출', inJung: '인중 길이', chin: '지각(턱)'
+      whRatio: '얼굴 가로세로비(높을수록 가로로 넓은 얼굴, 낮을수록 세로로 긴 얼굴)',
+      jawRatio: '하악각 폭(얼굴 폭 대비 · 높을수록 턱뼈가 넓음)',
+      foreheadRatio: '이마 폭(얼굴 폭 대비 · 높을수록 넓음)',
+      eyeAspect: '눈 가로세로 비(크기 아님 · 높을수록 가늘고 긴 눈, 낮을수록 둥근 눈)',
+      eyeSize: '눈 크기(얼굴 폭 대비 눈 폭 · 높을수록 큼)',
+      eyeTilt: '눈꼬리 처짐(높을수록 처지고 낮을수록 올라감)',
+      noseWRatio: '콧방울 폭(얼굴 폭 대비 · 높을수록 넓음)',
+      noseHRatio: '코 길이(얼굴 길이 대비 · 높을수록 김)',
+      noseDorsum: '콧대 볼록도(높을수록 콧대 가운데가 솟음)',
+      mouthRatio: '입 너비(얼굴 폭 대비 · 높을수록 넓음)',
+      lipThickness: '입술 두께(높을수록 두꺼움)',
+      symmetry: '좌우 대칭',
+      thirds: '삼정 균형',
+      myungGung: '명궁(미간 · 높을수록 넓음)',
+      cheonI: '천이궁(관자 균형)',
+      jaNyeo: '자녀궁(눈 밑 와잠 높이 · 높을수록 넉넉함)',
+      jilAek: '질액궁(산근 폭 · 높을수록 넓음)',
+      jeonTaek: '전택궁(눈썹-눈 사이 · 높을수록 넓음)',
+      browLength: '보수관 길이(높을수록 김)',
+      browAngle: '보수관 기울기(높을수록 꼬리가 위)',
+      browThick: '보수관 두께(높을수록 두꺼움)',
+      gwanGol: '관골 돌출(관자 대비 광대 폭 · 높을수록 광대가 도드라짐)',
+      inJung: '인중 길이(높을수록 김)',
+      chin: '지각(아랫입술~턱끝 길이 · 높을수록 김)',
+      upperOverRest: '상정 길이(이마 · 중정+하정 대비 · 높을수록 이마가 김)',
+      midOverLow: '중정/하정 비(높을수록 중정이 하정보다 김)'
     };
     // ★v786-b — 축을 두 종류로 나눠 싣는다.
     //   ABS(자기참조 절대축): 「三停均等」·「左右均衡」·「五官相稱」은 원문이 기준을 스스로 준다.
@@ -1803,6 +1824,10 @@ export default async function handler(req, res) {
         if (CW_FACE_ABS_AXES[k]) continue;
         const r = R[k];
         if (typeof r !== 'number' || !isFinite(r)) continue;
+        // ★v796 — 계측 불가(null) 축은 코어 _cwRank 가 0.5(중립)를 주므로 랭크만 보면 「보통」으로 둔갑한다.
+        //   실측값이 null 이면 싣지 않는다. 상정(머리선 가림 시 null)은 실측 숫자가 있을 때만 싣는다.
+        if (M && Object.prototype.hasOwnProperty.call(M, k) && M[k] == null) continue;
+        if (k === 'upperOverRest' && !(M && typeof M[k] === 'number' && isFinite(M[k]))) continue;
         const p = Math.round(r * 100);
         const band = p >= 90 ? '매우 큼/높음' : p >= 70 ? '큼/높음' : p >= 30 ? '보통' : p >= 10 ? '작음/낮음' : '매우 작음/낮음';
         // ★v795 P-790-G/F — 50% 이상은 「상위 n%」, 미만은 「하위 n%」로 방향을 맞춘다(종전: 하위 9% 를 「상위 91%」로 적어 크다고 오해).
@@ -1822,6 +1847,7 @@ export default async function handler(req, res) {
       + ' [균형 계측 — 절대 기준]은 순위가 아니라 상태입니다. 「고르다/치우쳤다」로만 서술하고'
       + ' 절대로 "상위 몇 %"처럼 남과 비교하지 마세요. 대부분의 사람이 비슷하게 고른 것이 정상입니다.'
       + ' [개인 계측 백분위 — 상대 기준]은 또래 분포 대비 위치입니다. 여기서만 "상위/하위 몇 %"를 쓰되, 적힌 방향(상위·하위)과 괄호 속 크기 표현을 그대로 따르세요.'
+      + ' 축 이름 괄호의 「높을수록 …」 설명이 그 축의 방향입니다. 상위는 그 설명 쪽, 하위는 반대쪽으로만 쓰고 비율의 뜻을 추측하지 마세요.'
       + ' 해석의 모든 문장은 두 블록에서 최소 6개 축을 근거로 삼고, 상대 기준 축은 상위 10% 또는 하위 10%인 것을 우선하세요.'
       + ' 누구에게나 해당되는 일반론(예: "노력하면 좋아집니다")은 쓰지 마세요.'
       // ★v786-b — 원문이 우리 구현을 반증한 항목. 太淸神鑑 六極 「眼雖小秀且長…反爲富貴」:
