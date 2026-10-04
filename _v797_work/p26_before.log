@@ -1,0 +1,11 @@
+  FAIL X0 함수·임계 존재 — null
+  FAIL X1 EXIF 35mm 환산 초점거리 판독 = PIL 판독(40장 · 없는 사진은 null) — 40/40
+  FAIL X2 근접 셀카(전면 · 15장) 전부 live · 거리 ≤60cm — 
+  FAIL X3 원거리(후면 3배 줌 · 10장) 전부 file · 거리 >100cm — 
+  FAIL X4 f35 없는 사진(옛 폰·DSLR 14장)은 판정 안 함(file · 거리 null) — 0장
+  FAIL X5 EXIF 없음/깨진 입력 → file(예외 없음) — 
+[W] 앱 배선
+  FAIL W1 사진 선택 시 EXIF 판독 → window._cwFaceExif — 
+  FAIL W2 분석 단계(사진 경로) 검출 직후 _cwFileSrcFromExif 로 live/file 결정 — 
+  FAIL W3 초기화(_cwResetAIFrame)에서 EXIF·거리 지움 · 결과 화면에 근접 셀카 보정 안내 — 
+[p26_file_selfie] total=9 pass=0 fail=9 · FAIL X0,X1,X2,X3,X4,X5,W1,W2,W3

@@ -4164,6 +4164,7 @@ function _cwResetAIFrame(){
   window._cwFaceSrc=null; // ★v797 촬영 경로(live/file)도 지운다
   window._cwFaceNFrames=null; // ★v797 P-797-A 합성 프레임 수
   window._cwGlasses=null; // ★v797 P-797-B 안경 감지
+  window._cwFaceExif=null;window._cwFaceDistCm=null; // ★v797 P-797-D 사진 EXIF·추정 촬영거리
 }
 // srcCanvas: FaceMesh 에 넣은 그 캔버스(또는 같은 종횡비의 원본) · lm: 그 캔버스에서 검출한 랜드마크
 function _cwStoreAIFrame(srcCanvas,lm,detectAspect){
@@ -4592,7 +4593,10 @@ function onPhotoPicked(ev,kind){
   // Reset cached bounds for fresh analysis
   // ★v787 — faceBounds 만 지우고 aiLandmarks 를 남기던 결함 수리.
   //   종전: 카메라 촬영 뒤 파일을 고르면 analyzeFace 가 캐시된 **이전 사진의 랜드마크**로 새 사진을 판정했다.
-  if(kind==='face'){_cwResetAIFrame();window._cwFaceSrc='file'} // ★v797 사진 선택 — 촬영 조건 모름 → 원근 보정 안 함
+  if(kind==='face'){_cwResetAIFrame();window._cwFaceSrc='file'} // ★v797 사진 선택 — 기본은 원근 보정 안 함
+  // ★v797 P-797-D — JPEG EXIF(35mm 환산 초점거리) 판독 → 분석 단계에서 근접 셀카면 'live' 로 승격. 앞 256KB 만 읽는다.
+  if(kind==='face'){const tok=window._cwFaceExifTok=(window._cwFaceExifTok||0)+1;
+    window._cwFaceExifP=f.slice(0,262144).arrayBuffer().then(buf=>{if(tok===window._cwFaceExifTok)window._cwFaceExif=_cwJpegExif(new Uint8Array(buf))}).catch(()=>{});}
   const r=new FileReader();
   r.onload=e=>{
     const img=new Image();
@@ -5051,6 +5055,65 @@ function _cwGlassesScore(gray, w, h, ai) {
    1.26 = 인터넷 인물 23장 분포 상위 15%(P85 1.262) — ★외부 자문 2건(2026-10-04) 결정 B: 임시 hotfix.
    같은 23장으로 성능을 판정하지 않는다. 사람 단위 블라인드 라벨셋으로 재보정할 것(P-792-B2). 평가 _v797_work/p25. */
 var CW_FACE_INV_T = 1.26;   // ★임시값(hotfix) — 라벨셋 재보정 전까지
+
+/* ★v797 P-797-D — 사진 선택 경로의 근접 셀카 판별(EXIF)
+   원근 보정(P-795-A)은 실시간 촬영에만 적용됐다. 갤러리에서 고른 근접 셀카도 같은 원근 왜곡이 있다.
+   JPEG EXIF 35mm 환산 초점거리(0xA405)와 얼굴 폭(LM234↔454, 정규화)으로 촬영 거리를 추정한다:
+     d ≈ f35 / (가로변 환산 mm: 세로 24 · 가로 36) × 14.5cm / 얼굴폭비
+   d ≤ CW_SELFIE_NEAR_CM 이면 근접 셀카 → 'live' 와 같은 보정. f35 가 없으면 판정하지 않는다(종전대로 무보정).
+   14.5cm 는 LM234↔454 실제 폭의 대략값 — 판정 경계용이지 거리 계측값이 아니다. 평가 _v797_work/p26.
+   한계: 인쇄 사진을 폰으로 다시 찍은 사진은 근접으로 판정된다(구분 불가). */
+var CW_SELFIE_NEAR_CM = 60;
+var CW_SELFIE_FACE_CM = 14.5;
+function _cwJpegExif(u8) {
+  try {
+    if (!u8 || u8.length < 4 || u8[0] !== 0xFF || u8[1] !== 0xD8) return null;
+    var p = 2, n = u8.length;
+    while (p + 4 <= n) {
+      if (u8[p] !== 0xFF) return null;
+      var mk = u8[p + 1];
+      if (mk === 0xD9 || mk === 0xDA) return null;
+      if (mk === 0xFF) { p++; continue; }
+      if (mk >= 0xD0 && mk <= 0xD7) { p += 2; continue; }
+      var len = (u8[p + 2] << 8) | u8[p + 3];
+      if (len < 2) return null;
+      if (mk === 0xE1 && p + 10 <= n && u8[p + 4] === 0x45 && u8[p + 5] === 0x78 && u8[p + 6] === 0x69 && u8[p + 7] === 0x66) {
+        var t = p + 10, end = Math.min(n, p + 2 + len);
+        if (t + 8 > end) return null;
+        var le = u8[t] === 0x49 && u8[t + 1] === 0x49;
+        if (!le && !(u8[t] === 0x4D && u8[t + 1] === 0x4D)) return null;
+        var r16 = function (o) { if (t + o + 2 > end) throw 0; return le ? (u8[t + o] | (u8[t + o + 1] << 8)) : ((u8[t + o] << 8) | u8[t + o + 1]); };
+        var r32 = function (o) { if (t + o + 4 > end) throw 0; return le ? ((u8[t + o] | (u8[t + o + 1] << 8) | (u8[t + o + 2] << 16)) + u8[t + o + 3] * 16777216) : (u8[t + o] * 16777216 + ((u8[t + o + 1] << 16) | (u8[t + o + 2] << 8) | u8[t + o + 3])); };
+        var out = { f35: null, focal: null, orientation: null, model: null };
+        var readIfd = function (off, cb) { var cnt = r16(off); if (cnt > 512) return; for (var i = 0; i < cnt; i++) { var e = off + 2 + i * 12; cb(r16(e), r16(e + 2), r32(e + 4), e + 8); } };
+        var exifPtr = null;
+        readIfd(r32(4), function (tag, typ, cnt, vo) {
+          if (tag === 0x8769) exifPtr = r32(vo);
+          else if (tag === 0x0112) out.orientation = r16(vo);
+          else if (tag === 0x0110 && typ === 2) { var so = cnt > 4 ? r32(vo) : vo, s = ''; for (var k = 0; k < cnt && k < 64; k++) { var ch = u8[t + so + k]; if (!ch) break; s += String.fromCharCode(ch); } out.model = s || null; }
+        });
+        if (exifPtr) readIfd(exifPtr, function (tag, typ, cnt, vo) {
+          if (tag === 0xA405) { var v = typ === 3 ? r16(vo) : r32(vo); out.f35 = v > 0 ? v : null; }
+          else if (tag === 0x920A && typ === 5) { var o = r32(vo), d = r32(o + 4); out.focal = d ? r32(o) / d : null; }
+        });
+        return (out.f35 || out.focal || out.orientation || out.model) ? out : null;
+      }
+      p += 2 + len;
+    }
+    return null;
+  } catch (e) { return null; }
+}
+function _cwSelfieDistanceCm(f35, ai, w, h) {
+  if (!(f35 > 0) || !ai || !ai[234] || !ai[454] || !(w > 0) || !(h > 0)) return null;
+  var fw = Math.abs(ai[454].x - ai[234].x);
+  if (!(fw > 0.02)) return null;
+  return f35 / (w < h ? 24 : 36) * CW_SELFIE_FACE_CM / fw;
+}
+function _cwFileSrcFromExif(exif, ai, w, h) {
+  var d = exif && exif.f35 ? _cwSelfieDistanceCm(exif.f35, ai, w, h) : null;
+  if (d == null || !isFinite(d)) return { src: 'file', distCm: null };
+  return { src: d <= CW_SELFIE_NEAR_CM ? 'live' : 'file', distCm: d };
+}
 
 /* 분류축 24개 — 시그니처·프롬프트 결정변수 */
 var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
@@ -5630,6 +5693,12 @@ async function analyzeFace(){
         sensCv.width=Math.max(1,Math.round(img.naturalWidth*ss));sensCv.height=Math.max(1,Math.round(img.naturalHeight*ss));
         sensCv.getContext('2d').drawImage(img,0,0,sensCv.width,sensCv.height);
         _cwStoreAIFrame(sensCv,aiLm,tmpCv.height/(tmpCv.width||1));
+        // ★v797 P-797-D — 사진 선택 경로: EXIF 초점거리 + 얼굴 폭으로 촬영거리 추정 → ≤60cm 면 근접 셀카 보정('live')
+        if(window._cwFaceSrc==='file'){
+          try{if(window._cwFaceExifP)await window._cwFaceExifP}catch(_){}
+          const dec=_cwFileSrcFromExif(window._cwFaceExif,aiLm,img.naturalWidth,img.naturalHeight);
+          window._cwFaceDistCm=dec.distCm;window._cwFaceSrc=dec.src;
+        }
       }
     }catch(e){console.warn('FaceMesh detection failed, using fallback:',e)}
   }
@@ -5769,7 +5838,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
     <div style="font-size:11px;line-height:1.7;color:var(--text2)">${METHOD_FACE}</div>
     ${aiScores?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,165,78,.12);font-size:10px;color:var(--text2);line-height:1.8">
       <span style="color:var(--gold)">📐 AI 실측 데이터:</span>
-      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 삼정균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}% · 황금비 근접도 ${(aiScores.ratios.goldenProximity*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}${window._cwGlasses?`<br><span style="color:#e8a33d">👓 안경 착용이 감지됐어요 — 안경 렌즈·테 때문에 눈 크기·명궁·콧방울 수치가 실제보다 크게 나올 수 있어요. 벗고 다시 촬영하시면 더 정확합니다.</span>`:''}
+      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 삼정균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}% · 황금비 근접도 ${(aiScores.ratios.goldenProximity*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}${window._cwFaceDistCm&&window._cwFaceSrc==='live'?` · 근접 셀카(약 ${Math.round(window._cwFaceDistCm)}cm 추정) 원근 보정`:''}${window._cwGlasses?`<br><span style="color:#e8a33d">👓 안경 착용이 감지됐어요 — 안경 렌즈·테 때문에 눈 크기·명궁·콧방울 수치가 실제보다 크게 나올 수 있어요. 벗고 다시 촬영하시면 더 정확합니다.</span>`:''}
     </div>`:''}
   </div>
   <div id="faceTraits"></div>

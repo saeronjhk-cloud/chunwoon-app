@@ -355,6 +355,65 @@ function _cwGlassesScore(gray, w, h, ai) {
    같은 23장으로 성능을 판정하지 않는다. 사람 단위 블라인드 라벨셋으로 재보정할 것(P-792-B2). 평가 _v797_work/p25. */
 var CW_FACE_INV_T = 1.26;   // ★임시값(hotfix) — 라벨셋 재보정 전까지
 
+/* ★v797 P-797-D — 사진 선택 경로의 근접 셀카 판별(EXIF)
+   원근 보정(P-795-A)은 실시간 촬영에만 적용됐다. 갤러리에서 고른 근접 셀카도 같은 원근 왜곡이 있다.
+   JPEG EXIF 35mm 환산 초점거리(0xA405)와 얼굴 폭(LM234↔454, 정규화)으로 촬영 거리를 추정한다:
+     d ≈ f35 / (가로변 환산 mm: 세로 24 · 가로 36) × 14.5cm / 얼굴폭비
+   d ≤ CW_SELFIE_NEAR_CM 이면 근접 셀카 → 'live' 와 같은 보정. f35 가 없으면 판정하지 않는다(종전대로 무보정).
+   14.5cm 는 LM234↔454 실제 폭의 대략값 — 판정 경계용이지 거리 계측값이 아니다. 평가 _v797_work/p26.
+   한계: 인쇄 사진을 폰으로 다시 찍은 사진은 근접으로 판정된다(구분 불가). */
+var CW_SELFIE_NEAR_CM = 60;
+var CW_SELFIE_FACE_CM = 14.5;
+function _cwJpegExif(u8) {
+  try {
+    if (!u8 || u8.length < 4 || u8[0] !== 0xFF || u8[1] !== 0xD8) return null;
+    var p = 2, n = u8.length;
+    while (p + 4 <= n) {
+      if (u8[p] !== 0xFF) return null;
+      var mk = u8[p + 1];
+      if (mk === 0xD9 || mk === 0xDA) return null;
+      if (mk === 0xFF) { p++; continue; }
+      if (mk >= 0xD0 && mk <= 0xD7) { p += 2; continue; }
+      var len = (u8[p + 2] << 8) | u8[p + 3];
+      if (len < 2) return null;
+      if (mk === 0xE1 && p + 10 <= n && u8[p + 4] === 0x45 && u8[p + 5] === 0x78 && u8[p + 6] === 0x69 && u8[p + 7] === 0x66) {
+        var t = p + 10, end = Math.min(n, p + 2 + len);
+        if (t + 8 > end) return null;
+        var le = u8[t] === 0x49 && u8[t + 1] === 0x49;
+        if (!le && !(u8[t] === 0x4D && u8[t + 1] === 0x4D)) return null;
+        var r16 = function (o) { if (t + o + 2 > end) throw 0; return le ? (u8[t + o] | (u8[t + o + 1] << 8)) : ((u8[t + o] << 8) | u8[t + o + 1]); };
+        var r32 = function (o) { if (t + o + 4 > end) throw 0; return le ? ((u8[t + o] | (u8[t + o + 1] << 8) | (u8[t + o + 2] << 16)) + u8[t + o + 3] * 16777216) : (u8[t + o] * 16777216 + ((u8[t + o + 1] << 16) | (u8[t + o + 2] << 8) | u8[t + o + 3])); };
+        var out = { f35: null, focal: null, orientation: null, model: null };
+        var readIfd = function (off, cb) { var cnt = r16(off); if (cnt > 512) return; for (var i = 0; i < cnt; i++) { var e = off + 2 + i * 12; cb(r16(e), r16(e + 2), r32(e + 4), e + 8); } };
+        var exifPtr = null;
+        readIfd(r32(4), function (tag, typ, cnt, vo) {
+          if (tag === 0x8769) exifPtr = r32(vo);
+          else if (tag === 0x0112) out.orientation = r16(vo);
+          else if (tag === 0x0110 && typ === 2) { var so = cnt > 4 ? r32(vo) : vo, s = ''; for (var k = 0; k < cnt && k < 64; k++) { var ch = u8[t + so + k]; if (!ch) break; s += String.fromCharCode(ch); } out.model = s || null; }
+        });
+        if (exifPtr) readIfd(exifPtr, function (tag, typ, cnt, vo) {
+          if (tag === 0xA405) { var v = typ === 3 ? r16(vo) : r32(vo); out.f35 = v > 0 ? v : null; }
+          else if (tag === 0x920A && typ === 5) { var o = r32(vo), d = r32(o + 4); out.focal = d ? r32(o) / d : null; }
+        });
+        return (out.f35 || out.focal || out.orientation || out.model) ? out : null;
+      }
+      p += 2 + len;
+    }
+    return null;
+  } catch (e) { return null; }
+}
+function _cwSelfieDistanceCm(f35, ai, w, h) {
+  if (!(f35 > 0) || !ai || !ai[234] || !ai[454] || !(w > 0) || !(h > 0)) return null;
+  var fw = Math.abs(ai[454].x - ai[234].x);
+  if (!(fw > 0.02)) return null;
+  return f35 / (w < h ? 24 : 36) * CW_SELFIE_FACE_CM / fw;
+}
+function _cwFileSrcFromExif(exif, ai, w, h) {
+  var d = exif && exif.f35 ? _cwSelfieDistanceCm(exif.f35, ai, w, h) : null;
+  if (d == null || !isFinite(d)) return { src: 'file', distCm: null };
+  return { src: d <= CW_SELFIE_NEAR_CM ? 'live' : 'file', distCm: d };
+}
+
 /* 분류축 24개 — 시그니처·프롬프트 결정변수 */
 var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
   'noseWRatio', 'noseHRatio', 'noseDorsum', 'mouthRatio', 'lipThickness', 'symmetry',
