@@ -65,5 +65,9 @@ console.log('[W] 앱 배선');
  check('W2','추가 프레임 사이 대기 ≥100ms(새 비디오 프레임 · 독립 표본)',i>0&&+gap>=100&&/setTimeout\([^)]*CW_FACE_FRAME_GAP_MS/.test(body),`gap=${gap}`);}
 {const set=/window\._cwFaceNFrames\s*=\s*1\s*\+\s*extra\.length/.test(idx),rst=/function _cwResetAIFrame\(\)\{[\s\S]{0,600}window\._cwFaceNFrames\s*=\s*null/.test(idx),show=/AI 실측 데이터:[\s\S]{0,900}_cwFaceNFrames[\s\S]{0,80}프레임 평균/.test(idx);
  check('W3','사용 프레임 수 기록·초기화·결과 화면 표시(「n프레임 평균」)',set&&rst&&show,`set ${set} · reset ${rst} · show ${show}`);}
+// ★P-797-A2 — 수동 「촬영하기」 버튼(snapPhoto) 경로도 같은 다중 프레임 계측
+{const i=idx.indexOf('async function snapPhoto'),body=i>0?idx.slice(i,idx.indexOf('\nfunction pickPhoto',i)):'';
+ const iDet=body.indexOf('detectFaceAI('),iCol=body.indexOf('_cwCollectFaceFrames('),iAgg=body.indexOf('_cwFaceLmAggregate('),iN=body.indexOf('_cwFaceNFrames='),iStop=body.indexOf('stopCamera()'),iSet=body.indexOf('setPhoto('),iStore=body.indexOf('_cwStoreAIFrame(');
+ check('W4','수동 촬영: 검출 → 추가 프레임 → 합성 → 카메라 끄기 → setPhoto → 저장 · 프레임 수 기록',i>0&&iDet>0&&iCol>iDet&&iAgg>iCol&&iN>iAgg&&iStop>iN&&iSet>iStop&&iStore>iSet,`async ${i>0} det ${iDet} col ${iCol} agg ${iAgg} n ${iN} stop ${iStop} set ${iSet} store ${iStore}`);}
 console.log(`[p22_multiframe] total=${total} pass=${pass} fail=${total-pass}${fails.length?' · FAIL '+fails.join(','):''}`);
 process.exitCode=fails.length?1:0;

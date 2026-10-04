@@ -4529,7 +4529,7 @@ function _computeFaceBoundsFromCanvas(srcCv){
   if(found<300)return null;
   return{x:minX/N,y:minY/N,w:(maxX-minX)/N,h:(maxY-minY)/N};
 }
-function snapPhoto(kind){
+async function snapPhoto(kind){
   try{
     const v=document.getElementById(kind+'Video');
     if(!v){alert('비디오 엘리먼트를 찾을 수 없습니다.');return}
@@ -4540,6 +4540,19 @@ function snapPhoto(kind){
     if(kind==='face'){ctx.translate(cv.width,0);ctx.scale(-1,1)}
     ctx.drawImage(v,0,0,cv.width,cv.height);
     const dataUrl=cv.toDataURL('image/jpeg',0.85);
+    // ★v797 P-797-A2 — 수동 촬영도 자동 촬영과 같이 저장 프레임 검출 + 추가 프레임 합성(카메라를 끄기 전에)
+    let aiLm=null;
+    if(kind==='face'&&_faceMeshModel){
+      try{
+        const lm=await detectFaceAI(cv);
+        if(lm&&lm.length>=468){
+          aiLm=lm.map(p=>({x:p.x,y:p.y,z:p.z}));
+          const extra=await _cwCollectFaceFrames(v,CW_FACE_MULTI_FRAMES);
+          if(extra.length)aiLm=_cwFaceLmAggregate([aiLm].concat(extra),cv.height/(cv.width||1))||aiLm;
+          window._cwFaceNFrames=1+extra.length;
+        }
+      }catch(e){aiLm=null}
+    }
     if(kind==='face'){
       const fb=_computeFaceBoundsFromCanvas(cv);
       if(fb)photoState.face.faceBounds=fb;
@@ -4547,6 +4560,7 @@ function snapPhoto(kind){
     stopCamera();
     if(kind==='face')window._cwFaceSrc='live'; // ★v797 P-795-A
     setPhoto(kind,dataUrl,cv);
+    if(kind==='face'&&aiLm)_cwStoreAIFrame(cv,aiLm); // 랜드마크가 없으면 종전대로 분석 단계에서 한 장 검출
   }catch(err){
     alert('촬영 중 오류가 발생했습니다: '+(err&&err.message||err));
   }

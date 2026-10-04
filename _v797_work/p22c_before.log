@@ -1,0 +1,2 @@
+  FAIL W4 수동 촬영: 검출 → 추가 프레임 → 합성 → 카메라 끄기 → setPhoto → 저장 · 프레임 수 기록 — async false det -1 col -1 agg -1 n -1 stop -1 set -1 store -1
+[p22_multiframe] total=9 pass=8 fail=1 · FAIL W4

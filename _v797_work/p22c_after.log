@@ -1,0 +1,2 @@
+  ok   W4 수동 촬영: 검출 → 추가 프레임 → 합성 → 카메라 끄기 → setPhoto → 저장 · 프레임 수 기록 — async true det 687 col 814 agg 891 n 980 stop 1179 set 1261 store 1315
+[p22_multiframe] total=9 pass=9 fail=0
