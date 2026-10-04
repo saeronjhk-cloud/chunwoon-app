@@ -1,0 +1,37 @@
+
+[인터넷23] n=23 현 규칙 분포 {"long":6,"square":7,"inv":10}  五形 top {"火":8,"木":6,"水":8,"金":1}
+  cheonJiWidth(이마폭/하악각폭) 최소 1.112 · 10% 1.154 · 중앙 1.199 · 90% 1.262 · 최대 1.324 · >1.06 23/23
+
+[셀카셋] n=40 현 규칙 분포 {"inv":12,"square":28}  五形 top {"火":34,"水":4,"木":2}
+  cheonJiWidth(이마폭/하악각폭) 최소 1.081 · 10% 1.117 · 중앙 1.166 · 90% 1.234 · 최대 1.296 · >1.06 40/40
+  대안C(이마/하악 원시값 임계=인터넷23 상위15% 1.262) [인터넷23] {"long":6,"square":7,"inv":3,"round":7}
+  대안C(이마/하악 원시값 임계=인터넷23 상위15% 1.262) [셀카셋] {"round":8,"square":28,"inv":4}
+
+[제이 · 같은 사람 조건별]
+   jay_2026_g_far_1         square  cjw 1.143 五形 火
+   jay_2026_g_far_2         square  cjw 1.117 五形 火
+   jay_2026_g_far_3         square  cjw 1.081 五形 火
+   jay_2026_g_guide_1       square  cjw 1.191 五形 火
+   jay_2026_g_guide_2       square  cjw 1.154 五形 火
+   jay_2026_g_guide_3       square  cjw 1.166 五形 火
+   jay_2026_g_guide_4       inv     cjw 1.265 五形 水
+   jay_2026_g_guide_5       square  cjw 1.103 五形 火
+   jay_2026_nog_far_1       square  cjw 1.161 五形 火
+   jay_2026_nog_far_2       square  cjw 1.101 五形 火
+   jay_2026_nog_guide_1     square  cjw 1.166 五形 火
+   jay_2026_nog_guide_2     square  cjw 1.160 五形 火
+   jay_2026_nog_guide_3     inv     cjw 1.225 五形 火
+   jay_2026_nog_guide_4     square  cjw 1.122 五形 火
+   jay_2026_nog_guide_5     square  cjw 1.133 五形 火
+   p2_2026_nog_far_1        square  cjw 1.161 五形 火
+   p2_2026_nog_far_2        square  cjw 1.157 五形 火
+   p2_2026_nog_far_3        square  cjw 1.159 五形 火
+   p2_2026_nog_far_4        square  cjw 1.161 五形 火
+   p2_2026_nog_far_5        square  cjw 1.148 五形 火
+   p2_2026_nog_near_1       square  cjw 1.181 五形 火
+   p2_2026_nog_near_2       square  cjw 1.181 五形 火
+   p2_2026_nog_near_3       inv     cjw 1.202 五形 火
+   p2_2026_nog_near_4       square  cjw 1.177 五形 火
+   p2_2026_nog_near_5       inv     cjw 1.196 五形 水
+
+JSON {"P85":1.2619479967546268}
