@@ -103,7 +103,7 @@ function _cwHairline(mask, mw, mh, ai, opt) {
 
 /* 순수 계측 26축 — 분류·점수 이전 단계
    ★v792 — 세 번째 인자 hair = _cwHairline 결과(선택). 없거나 OK 가 아니면 上停은 계측 불가(null). */
-function _cwFaceMeasure(aiRaw, A, hair) {
+function _cwFaceMeasureRaw(aiRaw, A, hair) {
   var p = _cwFaceIso(aiRaw, A);
   var dx = function (a, b) { return Math.abs(p[a].x - p[b].x); };
   var dy = function (a, b) { return Math.abs(p[a].y - p[b].y); };
@@ -247,6 +247,28 @@ function _cwFaceMeasure(aiRaw, A, hair) {
   };
 }
 
+/* ★v797 P-795-A — 근접 셀카 원근 보정 (실시간 전면 카메라 촬영 src='live' 일 때만)
+   진단: 근접 셀카는 얼굴 중앙(코·입·명궁·산근·눈)이 커지고 얼굴이 세로로 길게 잡힌다. 같은 사람 원거리(후면 3배 줌)
+   대비 콧방울 폭 +6.5/+9.3% · 명궁 +9.5/+5.7% · 가로세로비 −7.6/−5.1%(두 사람) → 백분위 30~60%p 이동.
+   참조표 앵커(인터넷 인물 사진)는 원거리 조건 쪽이므로 근접 축값을 원거리로 환산한 뒤 랭크한다.
+   보정표: canonical_face_model 핀홀 투영 · 유효거리 48cm(두 사람 독립 적합 48·50cm) / 원거리 120cm 의 축 원시값 비.
+   생성 _v797_work/d04_gen_persp_table.js · 평가 _v797_work/p21 · jawRatio 는 모형과 실측 방향이 반대라 제외.
+   사진 선택(src='file')·미지정은 보정하지 않는다(촬영 조건을 모른다). */
+var CW_FACE_PERSP = {"version": "PERSP-v1-20261004", "dEff": 48, "dFar": 120, "f": {"whRatio": 0.9315, "foreheadRatio": 1.0253, "eyeSize": 1.0543, "noseWRatio": 1.0795, "mouthRatio": 1.0725, "myungGung": 1.0827, "jilAek": 1.0839, "browLength": 1.057, "chin": 0.9787, "midOverLow": 1.0205}};
+var CW_FACE_PERSP_ALIAS = { foreheadWidthRatio: 'foreheadRatio', myungGungRatio: 'myungGung', browGapRatio: 'myungGung', sanGeunRatio: 'jilAek', browLengthRatio: 'browLength', chinRatio: 'chin' };
+function _cwFaceMeasure(aiRaw, A, hair, src) {
+  var m = _cwFaceMeasureRaw(aiRaw, A, hair);
+  if (src !== 'live') return m;
+  var f = CW_FACE_PERSP.f, k, ax;
+  for (k in CW_FACE_PERSP_ALIAS) {   // 구 명칭 별칭은 같은 값일 때만 함께 환산(식이 다르면 건드리지 않음)
+    ax = CW_FACE_PERSP_ALIAS[k];
+    if (f[ax] && m[k] != null && m[ax] != null && Math.abs(m[k] - m[ax]) < 1e-12) m[k] = m[ax] / f[ax];
+  }
+  for (k in f) if (m[k] != null && isFinite(m[k])) m[k] = m[k] / f[k];
+  m.perspCorrected = true;
+  return m;
+}
+
 /* 분류축 24개 — 시그니처·프롬프트 결정변수 */
 var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
   'noseWRatio', 'noseHRatio', 'noseDorsum', 'mouthRatio', 'lipThickness', 'symmetry',
@@ -316,11 +338,12 @@ var CW_WUXING = {
 };
 
 /* 메인 — 반환 형상은 종전 코드와 호환 유지 (shapeOpt/eyeOpt/noseOpt/mouthOpt/…/ratios) */
-function classifyFaceFromLandmarks(ai, aspect, hair) {
+function classifyFaceFromLandmarks(ai, aspect, hair, src) {
   var A = aspect;
   if (!(A > 0)) A = (typeof window !== 'undefined' && window._cwFaceAspect) || 1;
   if (hair === undefined) hair = (typeof window !== 'undefined' && window._cwHair) || null;   // ★v792 머리선(선택)
-  var m = _cwFaceMeasure(ai, A, hair);
+  if (src === undefined) src = (typeof window !== 'undefined' && window && window._cwFaceSrc) || null;   // ★v797 촬영 경로
+  var m = _cwFaceMeasure(ai, A, hair, src);
   var R = {}, i;
   for (i = 0; i < CW_FACE_AXES.length; i++) {
     var k = CW_FACE_AXES[i];

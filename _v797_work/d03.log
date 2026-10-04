@@ -1,0 +1,59 @@
+민감 축(모형 d30 에서 >2%): whRatio,jawRatio,foreheadRatio,eyeAspect,eyeSize,noseWRatio,noseHRatio,mouthRatio,myungGung,jilAek,jeonTaek,browLength,inJung,chin,midOverLow
+유효 거리 적합: J 48 cm · P 50 cm · 둘 합 48 cm (원거리 기준 120cm)
+
+[J→P] 학습 사람으로 맞추고 다른 사람에서 평가 — |Δrank| 축별 중앙
+axis             none  geo1  emp
+whRatio          0.44  0.03  0.03
+jawRatio         0.12  0.43  0.03
+foreheadRatio    0.15  0.04  0.03
+eyeAspect        0.03  0.03  0.02
+eyeSize          0.56  0.06  0.03
+noseWRatio       0.35  0.13  0.18
+noseHRatio       0.19  0.12  0.12
+mouthRatio       0.28  0.21  0.20
+myungGung        0.33  0.15  0.21
+jilAek           0.42  0.16  0.08
+jeonTaek         0.06  0.08  0.28
+browLength       0.45  0.06  0.03
+inJung           0.07  0.04  0.02
+chin             0.33  0.26  0.17
+midOverLow       0.21  0.15  0.11
+전체 중앙         0.278 0.124 0.083
+
+[P→J] 학습 사람으로 맞추고 다른 사람에서 평가 — |Δrank| 축별 중앙
+axis             none  geo1  emp
+whRatio          0.75  0.09  0.23
+jawRatio         0.02  0.14  0.01
+foreheadRatio    0.26  0.04  0.04
+eyeAspect        0.04  0.06  0.05
+eyeSize          0.40  0.03  0.01
+noseWRatio       0.35  0.13  0.15
+noseHRatio       0.09  0.08  0.09
+mouthRatio       0.16  0.01  0.07
+myungGung        0.54  0.08  0.20
+jilAek           0.63  0.12  0.15
+jeonTaek         0.19  0.17  0.23
+browLength       0.61  0.08  0.08
+inJung           0.07  0.05  0.02
+chin             0.03  0.01  0.01
+midOverLow       0.08  0.07  0.07
+전체 중앙         0.191 0.077 0.075
+
+관측 근/원 비 vs 모형(d=48)
+whRatio         0.924 0.949 0.931
+jawRatio        0.994 0.992 1.018
+foreheadRatio   1.019 1.013 1.025
+eyeAspect       0.996 0.971 0.984
+eyeSize         1.042 1.046 1.054
+noseWRatio      1.065 1.093 1.080
+noseHRatio      1.018 1.029 1.017
+mouthRatio      1.064 1.100 1.073
+myungGung       1.095 1.057 1.083
+jilAek          1.071 1.069 1.084
+jeonTaek        1.131 0.946 1.017
+browLength      1.041 1.035 1.057
+inJung          1.052 1.050 1.017
+chin            0.956 0.917 0.979
+midOverLow      1.038 1.062 1.021
+
+JSON {"dJ":48,"dQ":50,"dAll":48,"rows":[{"name":"J→P","none":0.27844343360472834,"geo":0.1235169658774985,"emp":0.08260878877516908},{"name":"P→J","none":0.19142462831031215,"geo":0.07683685124985028,"emp":0.074607460084441}]}

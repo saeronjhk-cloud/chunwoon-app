@@ -1,0 +1,15 @@
+[T] 보정표·함수
+  ok   T1 CW_FACE_PERSP 존재 · 생성기 산출과 일치 — PERSP-v1-20261004 · 10축
+  ok   T2 보정 축은 REL 만 · jawRatio·eyeTilt·browAngle 제외 — whRatio,foreheadRatio,eyeSize,noseWRatio,mouthRatio,myungGung,jilAek,browLength,chin,midOverLow
+  ok   T3 _cwFaceMeasure(…,'live') 만 보정 · 미지정=파일 — live 보정 true · 미지정 무보정 true · flag true
+  ok   T4 classifyFaceFromLandmarks 가 window._cwFaceSrc 를 따른다 — live≠file
+[E] 두 사람 근접(보정) vs 원거리 랭크
+  ok   E1J J |Δrank| 중앙 ≤0.15 · 무보정의 50% 이하 — 무보정 0.375 → 보정 0.062
+  ok   E2J J 축별 악화 ≤0.10 — whRatio:0.75→0.08 foreheadRatio:0.26→0.04 eyeSize:0.40→0.04 noseWRatio:0.35→0.12 mouthRatio:0.16→0.02 myungGung:0.54→0.05 jilAek:0.63→0.10 browLength:0.61→0.10 chin:0.03→0.01 midOverLow:0.08→0.07
+  ok   E1Q Q |Δrank| 중앙 ≤0.15 · 무보정의 50% 이하 — 무보정 0.340 → 보정 0.137
+  ok   E2Q Q 축별 악화 ≤0.10 — whRatio:0.44→0.03 foreheadRatio:0.15→0.04 eyeSize:0.56→0.06 noseWRatio:0.35→0.13 mouthRatio:0.28→0.21 myungGung:0.33→0.15 jilAek:0.42→0.16 browLength:0.45→0.06 chin:0.33→0.26 midOverLow:0.21→0.15
+  ok   XJQ 교차검증 J로 적합(d=50) → Q ≤0.15 — 0.114
+  ok   XQJ 교차검증 Q로 적합(d=50) → J ≤0.15 — 0.078
+[W] 앱 배선
+  ok   W1 실시간 촬영 2경로 'live' · 사진 선택 'file' · 초기화 null — live 2 · file true · reset true
+[p21_selfie_perspective] total=11 pass=11 fail=0

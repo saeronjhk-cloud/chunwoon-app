@@ -1,0 +1,17 @@
+{
+ "version": "PERSP-v1-20261004",
+ "dEff": 48,
+ "dFar": 120,
+ "f": {
+  "whRatio": 0.9315,
+  "foreheadRatio": 1.0253,
+  "eyeSize": 1.0543,
+  "noseWRatio": 1.0795,
+  "mouthRatio": 1.0725,
+  "myungGung": 1.0827,
+  "jilAek": 1.0839,
+  "browLength": 1.057,
+  "chin": 0.9787,
+  "midOverLow": 1.0205
+ }
+}

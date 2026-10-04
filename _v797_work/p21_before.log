@@ -1,0 +1,15 @@
+[T] 보정표·함수
+  FAIL T1 CW_FACE_PERSP 존재 · 생성기 산출과 일치 — 없음
+  FAIL T2 보정 축은 REL 만 · jawRatio·eyeTilt·browAngle 제외 — -
+  FAIL T3 _cwFaceMeasure(…,'live') 만 보정 · 미지정=파일 — live 보정 null · 미지정 무보정 true · flag undefined
+  FAIL T4 classifyFaceFromLandmarks 가 window._cwFaceSrc 를 따른다 — live≠file
+[E] 두 사람 근접(보정) vs 원거리 랭크
+  FAIL E1J J |Δrank| 중앙 ≤0.15 · 무보정의 50% 이하 — 무보정 - → 보정 -
+  FAIL E2J J 축별 악화 ≤0.10 — 
+  FAIL E1Q Q |Δrank| 중앙 ≤0.15 · 무보정의 50% 이하 — 무보정 - → 보정 -
+  FAIL E2Q Q 축별 악화 ≤0.10 — 
+  FAIL XJQ 교차검증 J로 적합(d=null) → Q ≤0.15 — -
+  FAIL XQJ 교차검증 Q로 적합(d=null) → J ≤0.15 — -
+[W] 앱 배선
+  FAIL W1 실시간 촬영 2경로 'live' · 사진 선택 'file' · 초기화 null — live 0 · file false · reset false
+[p21_selfie_perspective] total=11 pass=0 fail=11 · FAIL T1,T2,T3,T4,E1J,E2J,E1Q,E2Q,XJQ,XQJ,W1
