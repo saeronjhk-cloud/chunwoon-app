@@ -1,0 +1,14 @@
+[A] 합성 함수
+  FAIL A1 1장=그대로 · 0장=null — 함수 없음
+  FAIL A2 닮음변환된 같은 얼굴 → 기준 프레임 복원 — 최대오차 NaN
+  FAIL A3 잡음 7장 합성 랭크 오차 ≤ 단일의 60% — -
+  FAIL A4 깜빡임 1/5장 → 눈 가로세로비 오차 ≤2% — -
+[R] 실사진 같은 조건 5장 묶음 — 겹치지 않는 부분집합끼리 랭크 차이
+   jay_2026_nog_guide 단일 0.173
+   jay_2026_g_guide 단일 0.223
+   p2_2026_nog_near 단일 0.139
+   p2_2026_nog_far 단일 0.133
+  FAIL R1 2장 합성끼리 차이 ≤ 단일끼리의 85% — 비 -
+[W] 앱 배선
+  FAIL W1 자동 촬영: 카메라 끄기 전 추가 프레임 수집 → 합성 → 저장 · 추가 프레임 ≥4 — collect -1 agg -1 stop 743 store 999 · N=undefined
+[p22_multiframe] total=6 pass=0 fail=6 · FAIL A1,A2,A3,A4,R1,W1

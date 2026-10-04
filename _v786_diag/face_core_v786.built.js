@@ -269,6 +269,47 @@ function _cwFaceMeasure(aiRaw, A, hair, src) {
   return m;
 }
 
+/* ★v797 P-797-A — 다중 프레임 랜드마크 합성
+   진단: 같은 조건 4초 안 셀카 5장에서 눈 크기 랭크 0.23~0.77 · 명궁 0.65~0.88 — 한 프레임 계측이 크게 흔들린다.
+   frames[0] = 저장되는 사진 프레임(머리선·화면 표시 기준). 나머지 프레임을 frames[0] 에 닮음변환(이동·회전·배율,
+   최소제곱 · 등방 좌표 y×A)으로 맞춘 뒤 점·좌표별 중앙값. 중앙값이라 깜빡임 등 소수 이상 프레임에 강하다.
+   평가 _v797_work/p22. 비율 축은 닮음변환에 불변이므로 맞춤은 값이 아니라 정합(같은 사진 위 좌표)을 위한 것이다. */
+function _cwFaceLmAggregate(frames, A) {
+  var F = [], i, j, k;
+  for (i = 0; i < (frames || []).length; i++) if (frames[i] && frames[i].length >= 468) F.push(frames[i]);
+  if (!F.length) return null;
+  if (F.length === 1) return F[0];
+  if (!(A > 0)) A = 1;
+  var R = F[0], N = R.length;
+  var rx = 0, ry = 0;
+  for (k = 0; k < N; k++) { rx += R[k].x; ry += R[k].y * A; }
+  rx /= N; ry /= N;
+  var X = [], Y = [], Z = [];
+  for (k = 0; k < N; k++) { X.push([]); Y.push([]); Z.push([]); }
+  for (i = 0; i < F.length; i++) {
+    var P = F[i], px = 0, py = 0;
+    for (k = 0; k < N; k++) { px += P[k].x; py += P[k].y * A; }
+    px /= N; py /= N;
+    var a = 0, b = 0, d = 0;   // 복소 최소제곱: q ≈ (a+bi)·p
+    for (k = 0; k < N; k++) {
+      var ux = P[k].x - px, uy = P[k].y * A - py, vx = R[k].x - rx, vy = R[k].y * A - ry;
+      a += ux * vx + uy * vy; b += ux * vy - uy * vx; d += ux * ux + uy * uy;
+    }
+    a /= (d || 1e-12); b /= (d || 1e-12);
+    var sc = Math.sqrt(a * a + b * b);
+    for (k = 0; k < N; k++) {
+      var wx = P[k].x - px, wy = P[k].y * A - py;
+      X[k].push(a * wx - b * wy + rx);
+      Y[k].push((b * wx + a * wy + ry) / A);
+      Z[k].push((P[k].z || 0) * sc);
+    }
+  }
+  var med = function (v) { v.sort(function (p, q) { return p - q; }); var n = v.length; return n % 2 ? v[(n - 1) >> 1] : (v[n / 2 - 1] + v[n / 2]) / 2; };
+  var out = [];
+  for (k = 0; k < N; k++) out.push({ x: med(X[k]), y: med(Y[k]), z: med(Z[k]) });
+  return out;
+}
+
 /* 분류축 24개 — 시그니처·프롬프트 결정변수 */
 var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
   'noseWRatio', 'noseHRatio', 'noseDorsum', 'mouthRatio', 'lipThickness', 'symmetry',
