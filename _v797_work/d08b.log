@@ -1,0 +1,33 @@
+
+[J] (a) 사진별 yaw(코끝 좌우 치우침) · cheonI · symmetry
+  N jay_2026_nog_guide_1     yaw  -0.072  cheonI 0.889  sym 0.849  jawRaw 0.8157
+  N jay_2026_nog_guide_2     yaw   0.167  cheonI 0.915  sym 0.583  jawRaw 0.8211
+  N jay_2026_nog_guide_3     yaw  -0.164  cheonI 0.878  sym 0.716  jawRaw 0.7966
+  N jay_2026_nog_guide_4     yaw  -0.252  cheonI 0.694  sym 0.527  jawRaw 0.8365
+  N jay_2026_nog_guide_5     yaw   0.537  cheonI 0.740  sym 0.000  jawRaw 0.8367
+  F jay_2026_nog_far_1       yaw  -0.154  cheonI 0.753  sym 0.762  jawRaw 0.8107
+  F jay_2026_nog_far_2       yaw   0.110  cheonI 0.777  sym 0.804  jawRaw 0.8408
+[J] (b) 라벨 일치율  근×근 · 원×원 · 근×원
+  shapeOpt  0.60   1.00   0.80
+  eyeOpt    0.60   1.00   0.80
+  noseOpt   0.40   0.00   0.50
+  mouthOpt  0.60   0.00   0.50
+[J] (c) jawRatio 원시 중앙 근 0.8211 원 0.8258 비 0.9944 · 랭크 0.93→0.95 · 정사각 임계(랭크 0.62) 원시값 ≈ 0.7967
+
+[P] (a) 사진별 yaw(코끝 좌우 치우침) · cheonI · symmetry
+  N p2_2026_nog_near_1       yaw  -0.064  cheonI 0.971  sym 0.805  jawRaw 0.8022
+  N p2_2026_nog_near_2       yaw  -0.035  cheonI 0.900  sym 0.830  jawRaw 0.7993
+  N p2_2026_nog_near_3       yaw  -0.029  cheonI 0.869  sym 0.830  jawRaw 0.7913
+  N p2_2026_nog_near_4       yaw  -0.056  cheonI 0.855  sym 0.754  jawRaw 0.8034
+  N p2_2026_nog_near_5       yaw  -0.023  cheonI 0.865  sym 0.849  jawRaw 0.7903
+  F p2_2026_nog_far_1        yaw   0.019  cheonI 0.757  sym 0.800  jawRaw 0.8061
+  F p2_2026_nog_far_2        yaw   0.017  cheonI 0.752  sym 0.797  jawRaw 0.8088
+  F p2_2026_nog_far_3        yaw  -0.008  cheonI 0.735  sym 0.845  jawRaw 0.8042
+  F p2_2026_nog_far_4        yaw   0.016  cheonI 0.774  sym 0.806  jawRaw 0.8039
+  F p2_2026_nog_far_5        yaw  -0.017  cheonI 0.797  sym 0.916  jawRaw 0.8083
+[P] (b) 라벨 일치율  근×근 · 원×원 · 근×원
+  shapeOpt  0.40   1.00   0.60
+  eyeOpt    0.30   0.40   0.36
+  noseOpt   0.40   0.20   0.40
+  mouthOpt  0.30   0.20   0.36
+[P] (c) jawRatio 원시 중앙 근 0.7993 원 0.8061 비 0.9915 · 랭크 0.67→0.79 · 정사각 임계(랭크 0.62) 원시값 ≈ 0.7967

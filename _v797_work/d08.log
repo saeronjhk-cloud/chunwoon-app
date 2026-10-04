@@ -1,0 +1,52 @@
+
+[J] 근접 5 · 원거리 2
+ABS축              근접중앙  원거리중앙  관측비   모형비(48/120)
+symmetry            0.5828      0.7834    0.744     1.000
+thirds              0.9219      0.9299    0.991     1.022
+cheonI              0.8778      0.7650    1.148     1.000
+lowerUpperWidth     0.8618      0.8848    0.974     0.993
+cheonJiWidth        1.1603      1.1310    1.026     1.007
+cheonJiHeight       0.6067        -     -     -
+-- 판정 입력(각 사진) --
+R.whRatio N     0.78 0.82 0.70 0.95 0.86
+R.whRatio F     0.66 0.95
+R.jawRatio N    0.89 0.93 0.62 0.96 0.96
+R.jawRatio F    0.85 0.96
+cheonJiW N      1.166 1.160 1.225 1.122 1.133
+cheonJiW F      1.161 1.101
+shapeOpt N      square square round square square
+shapeOpt F      square square
+eyeOpt N        droopy droopy narrow droopy droopy
+eyeOpt F        droopy droopy
+noseOpt N       high small high small small
+noseOpt F       high small
+mouthOpt N      thick thick small thick thick
+mouthOpt F      small thick
+harmony N       88 80 81 63 57
+harmony F       83 82
+
+[P] 근접 5 · 원거리 5
+ABS축              근접중앙  원거리중앙  관측비   모형비(48/120)
+symmetry            0.8300      0.8058    1.030     1.000
+thirds              0.8149      0.8265    0.986     1.022
+cheonI              0.8688      0.7573    1.147     1.000
+lowerUpperWidth     0.8467      0.8631    0.981     0.993
+cheonJiWidth        1.1810      1.1586    1.019     1.007
+cheonJiHeight       0.8586      0.8193    1.048     -
+-- 판정 입력(각 사진) --
+R.whRatio N     0.95 0.95 0.91 0.96 0.90
+R.whRatio F     0.92 0.93 0.67 0.88 0.95
+R.jawRatio N    0.73 0.67 0.50 0.75 0.48
+R.jawRatio F    0.79 0.83 0.76 0.76 0.82
+cheonJiW N      1.181 1.181 1.202 1.177 1.196
+cheonJiW F      1.161 1.157 1.159 1.161 1.148
+shapeOpt N      square square round square round
+shapeOpt F      square square square square square
+eyeOpt N        narrow narrow round narrow droopy
+eyeOpt F        narrow droopy droopy droopy narrow
+noseOpt N       high wide high wide high
+noseOpt F       high wide small high wide
+mouthOpt N      thick thick small big thick
+mouthOpt F      small small thick thick big
+harmony N       83 83 83 80 82
+harmony F       82 78 85 78 84
