@@ -4162,6 +4162,7 @@ function _cwResetAIFrame(){
   photoState.face.hair=null;window._cwHair=null; // ★v792 머리선 결과도 함께 지운다
   window._cwFaceAspect=null;
   window._cwFaceSrc=null; // ★v797 촬영 경로(live/file)도 지운다
+  window._cwFaceNFrames=null; // ★v797 P-797-A 합성 프레임 수
 }
 // srcCanvas: FaceMesh 에 넣은 그 캔버스(또는 같은 종횡비의 원본) · lm: 그 캔버스에서 검출한 랜드마크
 function _cwStoreAIFrame(srcCanvas,lm,detectAspect){
@@ -4451,6 +4452,7 @@ function stopFaceAlignLoop(){
 
 // ★v797 P-797-A — 다중 프레임 계측: 저장 프레임 + 추가 프레임 N 장(미러 캔버스 · 같은 크기) → _cwFaceLmAggregate
 const CW_FACE_MULTI_FRAMES=6;
+const CW_FACE_FRAME_GAP_MS=150; // ★실기 10-04 — 프레임 사이 대기: 같은 비디오 프레임 반복(독립 표본 아님) 방지 · 문구가 보일 시간 확보
 async function _cwCollectFaceFrames(v,n){
   const out=[];
   if(!_faceMeshModel||!v||!v.videoWidth)return out;
@@ -4459,9 +4461,11 @@ async function _cwCollectFaceFrames(v,n){
   const x=c.getContext('2d');
   for(let i=0;i<n;i++){
     if(st)st.textContent=`정밀 계측 중... (${i+1}/${n}) 잠시 그대로 계세요`;
+    await new Promise(r=>setTimeout(r,CW_FACE_FRAME_GAP_MS)); // 새 비디오 프레임을 기다린다(30fps 기준 4프레임 이상)
     x.setTransform(-1,0,0,1,c.width,0);x.drawImage(v,0,0,c.width,c.height);
     try{const lm=await detectFaceAI(c);if(lm&&lm.length>=468)out.push(lm.map(p=>({x:p.x,y:p.y,z:p.z})));}catch(e){}
   }
+  if(st&&out.length)st.textContent=`✓ 정밀 계측 완료 (${out.length+1}프레임)`;
   return out;
 }
 async function autoSnapFace(){
@@ -4487,6 +4491,7 @@ async function autoSnapFace(){
     try{
       const extra=await _cwCollectFaceFrames(v,CW_FACE_MULTI_FRAMES);
       if(extra.length)aiLandmarks=_cwFaceLmAggregate([aiLandmarks].concat(extra),cv.height/(cv.width||1))||aiLandmarks;
+      window._cwFaceNFrames=1+extra.length;
     }catch(e){}
   }
   const faceBounds=aiLandmarks?_boundsFromAILandmarks(aiLandmarks):_computeFaceBoundsFromCanvas(cv);
@@ -5684,7 +5689,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
     <div style="font-size:11px;line-height:1.7;color:var(--text2)">${METHOD_FACE}</div>
     ${aiScores?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,165,78,.12);font-size:10px;color:var(--text2);line-height:1.8">
       <span style="color:var(--gold)">📐 AI 실측 데이터:</span>
-      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 삼정균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}% · 황금비 근접도 ${(aiScores.ratios.goldenProximity*100).toFixed(0)}%
+      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 삼정균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}% · 황금비 근접도 ${(aiScores.ratios.goldenProximity*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}
     </div>`:''}
   </div>
   <div id="faceTraits"></div>

@@ -60,5 +60,10 @@ console.log('[W] 앱 배선');
  const iCol=body.indexOf('_cwCollectFaceFrames('),iAgg=body.indexOf('_cwFaceLmAggregate('),iStop=body.indexOf('stopCamera()'),iStore=body.indexOf('_cwStoreAIFrame(');
  const nm=(idx.match(/const CW_FACE_MULTI_FRAMES\s*=\s*(\d+)/)||[])[1];
  check('W1','자동 촬영: 카메라 끄기 전 추가 프레임 수집 → 합성 → 저장 · 추가 프레임 ≥4',i>0&&iCol>0&&iAgg>iCol&&iStop>iAgg&&iStore>iAgg&&+nm>=4,`collect ${iCol} agg ${iAgg} stop ${iStop} store ${iStore} · N=${nm}`);}
+// ★실기 10-04: 제이 화면에 「정밀 계측 중」이 보이지 않음 → 같은 비디오 프레임을 연달아 재거나(독립 표본 아님) 너무 빨라 확인 불가.
+{const i=idx.indexOf('async function _cwCollectFaceFrames'),body=idx.slice(i,idx.indexOf('\n}\n',i));const gap=(idx.match(/const CW_FACE_FRAME_GAP_MS\s*=\s*(\d+)/)||[])[1];
+ check('W2','추가 프레임 사이 대기 ≥100ms(새 비디오 프레임 · 독립 표본)',i>0&&+gap>=100&&/setTimeout\([^)]*CW_FACE_FRAME_GAP_MS/.test(body),`gap=${gap}`);}
+{const set=/window\._cwFaceNFrames\s*=\s*1\s*\+\s*extra\.length/.test(idx),rst=/function _cwResetAIFrame\(\)\{[\s\S]{0,600}window\._cwFaceNFrames\s*=\s*null/.test(idx),show=/AI 실측 데이터:[\s\S]{0,900}_cwFaceNFrames[\s\S]{0,80}프레임 평균/.test(idx);
+ check('W3','사용 프레임 수 기록·초기화·결과 화면 표시(「n프레임 평균」)',set&&rst&&show,`set ${set} · reset ${rst} · show ${show}`);}
 console.log(`[p22_multiframe] total=${total} pass=${pass} fail=${total-pass}${fails.length?' · FAIL '+fails.join(','):''}`);
 process.exitCode=fails.length?1:0;
