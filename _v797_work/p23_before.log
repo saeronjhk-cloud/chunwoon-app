@@ -1,0 +1,9 @@
+  FAIL G1 _cwGlassesScore · CW_GLASSES_T 존재 — 없음
+  FAIL G2 셀카셋 오탐 0 · 재현율 ≥75% — n 0 · 오탐 0 · 재현 0/0 · 놓침 
+  FAIL G3 앱 조건 제이 2026 가이드 안경 5/5 — 
+  FAIL G4 인터넷 23장 오탐 0 · 재현율 ≥60% — 오탐 0 · 재현 0/0 · 놓침 
+[W] 앱 배선
+  FAIL W1 정렬 루프: 프레임마다 _cwGlassesScore → 감지 시 안내·카운트다운 대기(상한 있음) — 
+  FAIL W2 촬영(자동·수동) 시 판정 저장 · 초기화 — save false reset false
+  FAIL W3 결과 화면 안내(안경 감지 시 눈 주변 수치 참고) — 
+[p23_glasses] total=7 pass=0 fail=7 · FAIL G1,G2,G3,G4,W1,W2,W3

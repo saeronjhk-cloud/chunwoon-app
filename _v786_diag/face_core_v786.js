@@ -310,6 +310,43 @@ function _cwFaceLmAggregate(frames, A) {
   return out;
 }
 
+/* ★v797 P-797-B — 안경 감지(콧등 브리지 가로선)
+   진단: 같은 날 안경 유/무에서 눈 크기 랭크 0.86↔0.49 · 명궁 0.95↔0.78 · 콧방울 0.94↔0.76(안경이 눈 주변 계측을 부풀림).
+   방법: 두 눈 안쪽(133·362) 중점 ±0.15ex, 168 위 0.3ex ~ 6 아래 0.2ex 띠를 ex/64 간격 격자로 재표본(해상도 정규화) →
+   행마다 세로 밝기 차 평균 → 프로파일. 안경 브리지는 띠를 가로지르는 날카로운 선이라 최댓값(max)과 최댓값/중앙값(peak)이 함께 크다.
+   정밀도 우선(오탐 = 안경 없는 사람에게 경고). 임계 산출: _v797_work/d05 · 평가 _v797_work/p23.
+   gray: 밝기 Uint8 배열(w×h) · ai: 정규화 랜드마크. 반환 null = 계측 불가. */
+var CW_GLASSES_T = { peak: 1.85, max: 10 };   // peak=셀카셋 음성 최대 1.22·양성 최소 2.81 의 기하평균 · max=10(JPEG 블록 경계·저해상도 오탐 여유, 인터넷 셋 h04·h13 6.8~6.9 참고)
+function _cwGlassesScore(gray, w, h, ai) {
+  if (!gray || !ai || ai.length < 468 || !(w > 0) || !(h > 0)) return null;
+  var X = function (i) { return ai[i].x * w; }, Y = function (i) { return ai[i].y * h; };
+  var ex = Math.abs(X(362) - X(133));
+  if (!(ex >= 8)) return null;
+  var s = ex / 64, cx = (X(133) + X(362)) / 2, y0 = Y(168) - 0.3 * ex, y1 = Y(6) + 0.2 * ex;
+  var smp = function (x, y) {   // 이중선형 + s/2 상자(4점 평균)
+    var t = 0, d = s / 2, k, xs = [x - d, x + d, x - d, x + d], ys = [y - d, y - d, y + d, y + d];
+    for (k = 0; k < 4; k++) {
+      var xx = Math.max(0, Math.min(w - 1.001, xs[k])), yy = Math.max(0, Math.min(h - 1.001, ys[k]));
+      var x0 = Math.floor(xx), y0b = Math.floor(yy), fx = xx - x0, fy = yy - y0b, i = y0b * w + x0;
+      t += (gray[i] * (1 - fx) + gray[i + 1] * fx) * (1 - fy) + (gray[i + w] * (1 - fx) + gray[i + w + 1] * fx) * fy;
+    }
+    return t / 4;
+  };
+  var cols = [], c, prev = null, prof = [], y;
+  for (c = cx - 0.15 * ex; c <= cx + 0.15 * ex + 1e-9; c += s) cols.push(c);
+  for (y = y0; y <= y1 + 1e-9; y += s) {
+    var row = [];
+    for (c = 0; c < cols.length; c++) row.push(smp(cols[c], y));
+    if (prev) { var a = 0; for (c = 0; c < row.length; c++) a += Math.abs(row[c] - prev[c]); prof.push(a / row.length); }
+    prev = row;
+  }
+  if (prof.length < 5) return null;
+  var srt = prof.slice().sort(function (p, q) { return p - q; }), n = srt.length;
+  var med = n % 2 ? srt[(n - 1) >> 1] : (srt[n / 2 - 1] + srt[n / 2]) / 2, mx = srt[n - 1];
+  var peak = mx / (med + 1);
+  return { peak: peak, max: mx, glasses: peak >= CW_GLASSES_T.peak && mx >= CW_GLASSES_T.max };
+}
+
 /* 분류축 24개 — 시그니처·프롬프트 결정변수 */
 var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
   'noseWRatio', 'noseHRatio', 'noseDorsum', 'mouthRatio', 'lipThickness', 'symmetry',

@@ -1,0 +1,9 @@
+  ok   G1 _cwGlassesScore · CW_GLASSES_T 존재 — {"peak":1.85,"max":10}
+  ok   G2 셀카셋 오탐 0 · 재현율 ≥75% — n 40 · 오탐 0 · 재현 19/21 · 놓침 jay_2011_g_selfie_b,jay_2011_g_selfie_c
+  ok   G3 앱 조건 제이 2026 가이드 안경 5/5 — 1:1 2:1 3:1 4:1 5:1
+  ok   G4 인터넷 23장 오탐 0 · 재현율 ≥60% — 오탐 0 · 재현 5/5 · 놓침 
+[W] 앱 배선
+  ok   W1 정렬 루프: 프레임마다 _cwGlassesScore → 감지 시 안내·카운트다운 대기(상한 있음) — 
+  ok   W2 촬영(자동·수동) 시 판정 저장 · 초기화 — save true reset true
+  ok   W3 결과 화면 안내(안경 감지 시 눈 주변 수치 참고) — 
+[p23_glasses] total=7 pass=7 fail=0
