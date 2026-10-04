@@ -1,0 +1,7 @@
+  FAIL K1 역삼각형 임계가 이름 있는 설정 상수(CW_FACE_INV_T=1.26, 임시값 표기) — null
+  FAIL K2 둥근형(水) 도달 가능 — 실사진 63장 중 ≥1 — {"long":6,"square":35,"inv":22}
+  FAIL K3 역삼각형이 「긴·각진 아니면 전부」가 아니다(비긴·비각진 중 일부만) — 인터넷23 {"long":6,"square":7,"inv":10} · 셀카셋 {"inv":12,"square":28}
+  ok   K4 판정 우선순위 불변(긴→각진→역삼각→둥근) — 
+  FAIL R1a AI 프롬프트에 「수치로 오행 매기기」 예시 없음 — 
+  FAIL R1b 규칙: 얼굴형·오행은 주어진 판정 그대로 · 바꾸거나 섞지 말 것 · 미배당이면 오행 이름 금지 — 
+[p25_face_shape_rule] total=6 pass=1 fail=5 · FAIL K1,K2,K3,R1a,R1b

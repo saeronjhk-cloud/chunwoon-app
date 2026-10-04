@@ -347,6 +347,14 @@ function _cwGlassesScore(gray, w, h, ai) {
   return { peak: peak, max: mx, glasses: peak >= CW_GLASSES_T.peak && mx >= CW_GLASSES_T.max };
 }
 
+/* ★v797 P-792-B — 역삼각형 임계(★임시값 · 설정 상수로 분리)
+   종전 1.06 은 실사진 63/63 에서 참이었다(진단 _v797_work/d07): LM21/251·LM172/397 은 MediaPipe FACE_OVAL 윤곽점일 뿐
+   이마 경계·해부학적 하악각(gonion)이 아니다 → 「상부 윤곽폭 / 하부 윤곽폭」 proxy 이고, 구조상 늘 1 보다 크다(1.08~1.32).
+   그래서 긴·각진이 아니면 무조건 역삼각형, 둥근형(水) 0/63 이었다.
+   1.26 = 인터넷 인물 23장 분포 상위 15%(P85 1.262) — ★외부 자문 2건(2026-10-04) 결정 B: 임시 hotfix.
+   같은 23장으로 정확도를 주장하지 않는다. 사람 단위 블라인드 라벨셋으로 재보정할 것(P-792-B2). 평가 _v797_work/p25. */
+var CW_FACE_INV_T = 1.26;   // ★임시값(hotfix) — 라벨셋 재보정 전까지
+
 /* 분류축 24개 — 시그니처·프롬프트 결정변수 */
 var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSize', 'eyeTilt',
   'noseWRatio', 'noseHRatio', 'noseDorsum', 'mouthRatio', 'lipThickness', 'symmetry',
@@ -436,7 +444,7 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
   var shapeV;
   if (R.whRatio < 0.25) shapeV = 'long';
   else if (R.jawRatio > 0.62) shapeV = 'square';
-  else if (m.cheonJiWidth > 1.06) shapeV = 'inv';   // 이마폭이 하악각폭보다 6% 이상 넓다
+  else if (m.cheonJiWidth > CW_FACE_INV_T) shapeV = 'inv';   // ★v797 P-792-B — 상부/하부 윤곽폭 비(아래 상수 설명)
   else shapeV = 'round';
 
   /* ── 눈 ── */
