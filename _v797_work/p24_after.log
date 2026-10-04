@@ -1,0 +1,9 @@
+  ok   G1 안경 영향 축 목록 = 진단 d06 규칙 결과(6축) — eyeSize,noseWRatio,mouthRatio,myungGung,jilAek,jeonTaek
+  ok   G2 안경: 영향 축 백분위 미전달 · 나머지 축은 그대로 — 
+  ok   G3 안경: [촬영 조건] 줄로 이유 명시 — [촬영 조건] 안경을 쓰고 촬영함 — 안경 렌즈·테 영향으로 눈 크기·명궁(미간)·산근·전택궁·콧방울 폭·입 너비 수치를 믿기 어려워 백분위를 싣지 않음
+  ok   G4 안경 아님/미전송 → 종전과 동일 · 영향 축 포함 — 
+  ok   G5 안경: 실측 문자열에서 콧방울·입 비율 제외 · 아니면 종전 — 얼굴 가로세로비 0.800, 하악각 폭/얼굴 폭 0.800, 눈 가로세로비 3.10, 좌우 대칭 90.0%, 삼정 균등 85.0%
+  ok   G6 규칙: 안경 착용 시 해당 부위는 수치·순위 없이 — 
+  ok   W1 서버: 실측 문자열 호출 3곳 모두 features.glasses 전달 — cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'], features.glasses) | cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds','upperThirdPct','middleThirdPct','lowerThirdPct'], features.glasses) | cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds'], features.glasses)
+  ok   W2 앱: 관상 요청 3곳(무료·프리미엄·부분 리포트)에 glasses 전송 — 3곳
+[p24_glasses_prompt] total=8 pass=8 fail=0

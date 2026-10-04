@@ -5831,6 +5831,7 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
         mouth:{label:mR.t,score:mouthScore},
         overallScore:ov,
         measurements:aiScores?aiScores.ratios:null,
+        glasses:window._cwGlasses===true, // ★v797 P-797-B2
         // ★v786 — 분위수 랭크·24축 시그니처를 프롬프트 결정변수로 전달
         ranks:aiScores?aiScores.ranks:null,
         signature:aiScores?aiScores.signature:null,
@@ -5969,6 +5970,7 @@ async function handlePremiumPurchase(type){
       mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
       overallScore:cls?.overallScore||80,
       measurements:ra,
+      glasses:window._cwGlasses===true, // ★v797 P-797-B2
       ranks:cls?.ranks||null,
       signature:cls?.signature||null,
       refVersion:cls?.refVersion||null,
@@ -6074,6 +6076,7 @@ async function retryPremiumAPI(){
       mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
       overallScore:cls?.overallScore||80,
       measurements:ra,
+      glasses:window._cwGlasses===true, // ★v797 P-797-B2
       ranks:cls?.ranks||null,
       signature:cls?.signature||null,
       refVersion:cls?.refVersion||null,

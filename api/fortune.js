@@ -1807,6 +1807,9 @@ export default async function handler(req, res) {
     //   REL(상대축): 「準頭豐隆」처럼 원문이 정량 기준을 주지 않는 것.
     //     ⟹ 비교 모집단이 있어야 판정되므로 백분위로 싣고, 그 모집단의 TIER 를 함께 밝힌다.
     const CW_FACE_ABS_AXES = { symmetry: '좌우 균형(左右均衡)', thirds: '삼정 균등(三停均等)', cheonI: '천이궁 좌우 균형' };
+    // ★v797 P-797-B2 — 안경 착용 촬영 시 신뢰도가 낮은 축(진단 _v797_work/d06: 제이 안경 유/무 근접 t≥1.5 · 원거리 차 ≥0.12).
+    //   모두 얼굴 폭 분모 축 — 안경다리가 얼굴 가장자리 점을 안쪽으로 당겨 비율이 커지는 것으로 추정. 평가 _v797_work/p24.
+    const CW_FACE_GLASSES_AXES = ['eyeSize', 'noseWRatio', 'mouthRatio', 'myungGung', 'jilAek', 'jeonTaek'];
     function cwFaceAxisBlock(f) {
       const R = f && f.ranks, M = f && f.measurements;
       if (!R) return '';
@@ -1828,6 +1831,7 @@ export default async function handler(req, res) {
         //   실측값이 null 이면 싣지 않는다. 상정(머리선 가림 시 null)은 실측 숫자가 있을 때만 싣는다.
         if (M && Object.prototype.hasOwnProperty.call(M, k) && M[k] == null) continue;
         if (k === 'upperOverRest' && !(M && typeof M[k] === 'number' && isFinite(M[k]))) continue;
+        if (f.glasses === true && CW_FACE_GLASSES_AXES.indexOf(k) >= 0) continue;   // ★v797 P-797-B2
         const p = Math.round(r * 100);
         const band = p >= 90 ? '매우 큼/높음' : p >= 70 ? '큼/높음' : p >= 30 ? '보통' : p >= 10 ? '작음/낮음' : '매우 작음/낮음';
         // ★v795 P-790-G/F — 50% 이상은 「상위 n%」, 미만은 「하위 n%」로 방향을 맞춘다(종전: 하위 9% 를 「상위 91%」로 적어 크다고 오해).
@@ -1839,6 +1843,7 @@ export default async function handler(req, res) {
       let out = '';
       if (abs.length) out += '\n[균형 계측 — 절대 기준] ' + abs.join(' · ');
       if (rel.length) out += '\n[개인 계측 백분위 — 상대 기준] ' + rel.join(' · ');
+      if (f.glasses === true) out += '\n[촬영 조건] 안경을 쓰고 촬영함 — 안경 렌즈·테 영향으로 눈 크기·명궁(미간)·산근·전택궁·콧방울 폭·입 너비 수치를 믿기 어려워 백분위를 싣지 않음';
       if (f.signature) out += `\n[계측 시그니처] ${f.signature}`;
       return out;
     }
@@ -1850,10 +1855,11 @@ export default async function handler(req, res) {
       symmetry: ['좌우 대칭', 'pct'], thirds: ['삼정 균등', 'pct'],
       upperThirdPct: ['상정', 'raw%'], middleThirdPct: ['중정', 'raw%'], lowerThirdPct: ['하정', 'raw%']
     };
-    function cwFaceMeasureStr(m, keys) {
+    function cwFaceMeasureStr(m, keys, glasses) {
       if (!m) return '';
       const out = [];
       for (const k of keys) {
+        if (glasses === true && CW_FACE_GLASSES_AXES.indexOf(k) >= 0) continue;   // ★v797 P-797-B2
         let v = m[k];
         if (k === 'eyeAspect' && (v == null)) v = m.eyeRatio;
         if (k === 'thirds' && (v == null)) v = m.thirdsScore;
@@ -1887,7 +1893,8 @@ export default async function handler(req, res) {
       + ' 아래에 【관상 엔진 판정】 블록이 있으면 그 항목은 이미 확정된 값입니다.'
       + ' 그대로 인용하고 다시 판단하거나 뒤집지 마세요.'
       + ' 【참고】 블록은 판정이 아니라 계측값과 전통 관점입니다. "~라고 봅니다" 처럼 관점으로만 쓰고 단정하지 마세요.'
-      + ' 두 블록에 없는 항목은 이 앱이 판정할 수 없는 것이니 만들어 쓰지 마세요.';
+      + ' 두 블록에 없는 항목은 이 앱이 판정할 수 없는 것이니 만들어 쓰지 마세요.'
+      + ' [촬영 조건] 줄이 안경 착용을 알리면, 거기 적힌 부위(눈 크기·명궁·산근·전택궁·콧방울·입 너비)는 수치·순위·「크다/작다」 단정 없이 일반적인 관상 관점으로만 쓰고, 안경을 벗고 다시 촬영하면 더 정확하다고 한 문장 덧붙이세요.';
 
     if (type === 'face') {
       systemPrompt = `당신은 전통 관상학(觀相學) 해석을 돕는 AI 어시스턴트입니다. 전통 관상학의 일반적 관점을 참고합니다.
@@ -1897,7 +1904,7 @@ export default async function handler(req, res) {
 - JSON 형식으로만 응답: {"shape":"얼굴형","eyes":"눈","nose":"코","mouth":"입","summary":"종합 200자+","advice":"조언"}` + CW_FACE_AXIS_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'])}` : '';
+      const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'], features.glasses)}` : '';
 
       userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
@@ -1908,7 +1915,7 @@ export default async function handler(req, res) {
 features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds','upperThirdPct','middleThirdPct','lowerThirdPct']) || 'N/A') : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds','upperThirdPct','middleThirdPct','lowerThirdPct'], features.glasses) || 'N/A') : 'N/A';
 
       userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
@@ -1919,7 +1926,7 @@ features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20
 weaknesses 2개, enemies 2개, allies 2개.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds']) || 'N/A') : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds'], features.glasses) || 'N/A') : 'N/A';
 
       userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
