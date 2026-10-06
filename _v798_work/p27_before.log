@@ -1,0 +1,9 @@
+  FAIL E1 _cwGlassesPatch · _cwGlassesLogit · CW_GLASSES_T.logit — {"peak":1.85,"max":10}
+  FAIL E2 앱 패치 추출 = 평가 패치(40장) — n 0 · 최대차 Infinity
+  FAIL E3 시험(원본) 재현 ≥95% · 오탐 ≤0.6% · 머리 위 0 — 재현 0/0 · 오탐 0/0 · 머리위 0/0 (v797: 364/385 · 163/5000 · 2/35)
+  FAIL E4 시험(열화) 재현 ≥94% · 오탐 ≤0.6% — 재현 0/0 · 오탐 0/0 · 머리위 0/0
+  FAIL E5 셀카셋 재현 21/21 · 오탐 0 — n 40 · 재현 19/21 · 오탐 0 · 놓침 jay_2011_g_selfie_b,jay_2011_g_selfie_c
+  FAIL E6 인터넷 23장 오탐 0 · 재현 ≥60% — 재현 5/5 · 오탐 0
+  FAIL E7 앱 조건 제이 2026 가이드 안경 5/5 — 1:1 2:1 3:1 4:1 5:1
+  FAIL E8 1회 판정 평균 <20ms(node) — 0.26ms
+[p27_glasses_v2] total=8 pass=0 fail=8 · FAIL E1,E2,E3,E4,E5,E6,E7,E8

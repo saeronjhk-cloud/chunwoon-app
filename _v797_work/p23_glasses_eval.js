@@ -23,7 +23,8 @@ new Function('module','exports','window',STUB+idx.slice(i0,idx.lastIndexOf('// =
   "\nmodule.exports={gs:(typeof _cwGlassesScore!=='undefined'?_cwGlassesScore:null),T:(typeof CW_GLASSES_T!=='undefined'?CW_GLASSES_T:null)};")(M,M.exports,{});
 const C=M.exports;let total=0,pass=0;const fails=[];
 function check(id,name,ok,detail){total++;if(ok)pass++;else fails.push(id);console.log(`  ${ok?'ok  ':'FAIL'} ${id} ${name} — ${detail}`);}
-check('G1','_cwGlassesScore · CW_GLASSES_T 존재',!!C.gs&&!!C.T&&C.T.peak>0&&C.T.max>0,C.T?JSON.stringify(C.T):'없음');
+// ★v798 표기 정정: 안경 감지 v2(P-798-A)에서 임계 구조가 {peak,max} → {logit} 로 바뀜 — 둘 중 하나면 인정(성능 기준 G2~G4 는 그대로)
+check('G1','_cwGlassesScore · CW_GLASSES_T 존재',!!C.gs&&!!C.T&&((C.T.peak>0&&C.T.max>0)||typeof C.T.logit==='number'),C.T?JSON.stringify(C.T):'없음');
 const GT=JSON.parse(fs.readFileSync(path.join(EV,'gray','glasses_gt.json'),'utf8')).gt;
 const LS=JSON.parse(fs.readFileSync(path.join(EV,'cache','landmarks.json'),'utf8')),LH=JSON.parse(fs.readFileSync(path.join(EV,'gray','hl_landmarks.json'),'utf8'));
 const R={};
