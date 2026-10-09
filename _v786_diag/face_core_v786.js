@@ -536,6 +536,33 @@ var CW_WUXING = {
 };
 
 /* 메인 — 반환 형상은 종전 코드와 호환 유지 (shapeOpt/eyeOpt/noseOpt/mouthOpt/…/ratios) */
+
+/* ★v799 P-799-B — 얼굴형 표시: 단정 대신 「~형 계열」 + 측정 근거(외부 자문 R1 · Gemini/ChatGPT B안 · 제이 승인 2026-10-09)
+   배경: 사람 평가자 3명 일치도 Fleiss κ=−0.02(우연 수준) → 엔진은 자기가 잰 것만 말한다. 판정 규칙·임계는 ★동결(자문 Q5).
+   경계 구간(★사전 고정 · 결과 보고 조정 금지): 랭크 변수 ±0.05 · cheonJiWidth ±0.02. 판정 경로에 실제로 쓰인 결정만,
+   임계 양쪽 대칭으로 「○○형에 가까운 △△형 계열」. 근거 문구는 좋고 나쁨이 들리지 않는 말로 고정. 평가 _v799_work/p29. */
+var CW_FACE_SHAPE_BAND = { rank: 0.05, cjw: 0.02 };
+function _cwFaceShapeRule(wr, jr, cjw) {
+  if (wr < 0.25) return 'long';
+  if (jr > 0.62) return 'square';
+  if (cjw > CW_FACE_INV_T) return 'inv';   // ★v797 P-792-B — 상부/하부 윤곽폭 비(CW_FACE_INV_T 설명)
+  return 'round';
+}
+var CW_FACE_SHAPE_BASIS = { long: '세로 길이가 긴 편', square: '턱선이 또렷한 편', inv: '이마 쪽이 턱보다 넓은 편', round: '가로·세로 균형이 비슷하고 턱선이 부드러운 편' };
+function _cwFaceShapeDesc(wr, jr, cjw) {
+  var B = CW_FACE_SHAPE_BAND, T = CW_FACE_INV_T, p = _cwFaceShapeRule(wr, jr, cjw), near = null, alt;
+  var lab = function (v) { for (var i = 0; i < FACE_S.length; i++) if (FACE_S[i].v === v) return FACE_S[i].l; return v; };
+  if (isFinite(wr) && Math.abs(wr - 0.25) < B.rank) { alt = _cwFaceShapeRule(wr < 0.25 ? 1 : 0, jr, cjw); if (alt !== p) near = alt; }
+  if (!near && p !== 'long' && isFinite(jr) && Math.abs(jr - 0.62) < B.rank) { alt = _cwFaceShapeRule(wr, jr > 0.62 ? 0 : 1, cjw); if (alt !== p) near = alt; }
+  if (!near && (p === 'inv' || p === 'round') && isFinite(cjw) && Math.abs(cjw - T) < B.cjw) { alt = _cwFaceShapeRule(wr, jr, cjw > T ? 0 : 99); if (alt !== p) near = alt; }
+  var pc = function (r) { return isFinite(r) ? Math.round(r * 100) + '백분위' : '계측 불가'; };
+  return {
+    primary: p, near: near,
+    title: (near ? lab(near) + '에 가까운 ' : '') + lab(p) + ' 계열',
+    basis: CW_FACE_SHAPE_BASIS[p],
+    detail: '가로세로비 ' + pc(wr) + ' · 턱 폭 ' + pc(jr) + ' · 이마/턱 폭 비 ' + (isFinite(cjw) ? cjw.toFixed(2) : '계측 불가') + '(기준 ' + T + ') — 참조 사진 분포 기준 · 판정 기준: 가로세로비 25백분위 미만=긴 형 · 턱 폭 62백분위 초과=각진형 · 이마/턱 폭 비 ' + T + ' 초과=역삼각형'
+  };
+}
 function classifyFaceFromLandmarks(ai, aspect, hair, src) {
   var A = aspect;
   if (!(A > 0)) A = (typeof window !== 'undefined' && window._cwFaceAspect) || 1;
@@ -553,11 +580,8 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
        foreheadRatio 와 jawRatio 는 분모가 둘 다 faceW 라 ★원시값 비교가 성립하고,
        그러면 이 판정은 TEXT 등급(모집단 불필요)을 유지한다.
        종전처럼 랭크를 빼면 TIER-C 합성 모집단에 의존하게 되어 POPULATION 으로 격하됐다. */
-  var shapeV;
-  if (R.whRatio < 0.25) shapeV = 'long';
-  else if (R.jawRatio > 0.62) shapeV = 'square';
-  else if (m.cheonJiWidth > CW_FACE_INV_T) shapeV = 'inv';   // ★v797 P-792-B — 상부/하부 윤곽폭 비(아래 상수 설명)
-  else shapeV = 'round';
+  var shapeV = _cwFaceShapeRule(R.whRatio, R.jawRatio, m.cheonJiWidth);   // ★v799 P-799-B — 규칙은 _cwFaceShapeRule 한 곳(판정·임계 동결)
+  var shapeDesc = _cwFaceShapeDesc(R.whRatio, R.jawRatio, m.cheonJiWidth);
 
   /* ── 눈 ── */
   var eyeV;
@@ -633,7 +657,7 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
   }
 
   return {
-    shapeOpt: pick(FACE_S, shapeV), eyeOpt: pick(FACE_E, eyeV),
+    shapeOpt: pick(FACE_S, shapeV), shapeDesc: shapeDesc, eyeOpt: pick(FACE_E, eyeV),
     noseOpt: pick(FACE_N, noseV), mouthOpt: pick(FACE_M, mouthV),
     overallScore: overall,
     /* ★v786-b — 성질이 다른 두 값을 분리해 내보낸다. 화면·프롬프트가 섞어 쓰면 안 된다. */

@@ -1,0 +1,8 @@
+  FAIL S1 _cwFaceShapeDesc · CW_FACE_SHAPE_BAND {rank:0.05, cjw:0.02} — 없음
+  FAIL S2 평가 사진 전부 desc.primary = shapeOpt.v — n 127 · 불일치 127 lbl_01_far_1,lbl_01_far_2,lbl_01_near_1 · 인접형 표기 0장
+  FAIL S3 경계 대칭(3변수×양쪽: band/2 → 인접형 · band×2 → 없음) — 
+  FAIL S4 근거 문구 4형 · 「계열」 · 평가성 금지어 없음 — 
+  FAIL S5 앱 표시(미배당 제거·4형 문구·title/basis·측정 세부 접기·안내·단정 제거) — {"noMibae":false,"invNew":false,"common":false,"title":false,"details":false,"notice":false,"noDanjeong":false}
+  FAIL S6 AI 요청 3곳 shape.type·basis — 0곳
+  FAIL S7 서버 프롬프트(규칙 교체 · 「계열」·평가 금지 · userPrompt 3곳 윤곽 줄) — {"noMibae":false,"rule":false,"lines":false}
+[p29_face_shape_display] total=7 pass=0 fail=7 · FAIL S1,S2,S3,S4,S5,S6,S7

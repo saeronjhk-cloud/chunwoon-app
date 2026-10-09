@@ -26,6 +26,7 @@ check('K4','판정 우선순위 불변(긴→각진→역삼각→둥근)',all.e
 const src=fs.readFileSync(path.join(ROOT,'api','fortune.js'),'utf8');
 check('R1a','AI 프롬프트에 「수치로 오행 매기기」 예시 없음',!/가로세로비 0\.82로 金形/.test(src)&&!/\d로 (金|木|水|火|土)形/.test(src),'');
 const a=src.indexOf('const CW_FACE_AXIS_KO'),c=src.indexOf(';\n',src.indexOf('const CW_FACE_AXIS_RULE'));const RULE=new Function(src.slice(a,c+1)+'\nreturn CW_FACE_AXIS_RULE;')();
-check('R1b','규칙: 얼굴형·오행은 주어진 판정 그대로 · 바꾸거나 섞지 말 것 · 미배당이면 오행 이름 금지',/얼굴형[^.]*오행[^.]*그대로/.test(RULE)&&/섞/.test(RULE)&&/미배당/.test(RULE),'');
+// ★v799 표기 정정(P-799-B): 역삼각형 오행 표기가 「(오행 미배당)」 → 「원전 오형 대응 없음」으로 바뀜 — 둘 중 하나면 인정(규칙 취지 동일)
+check('R1b','규칙: 얼굴형·오행은 주어진 판정 그대로 · 바꾸거나 섞지 말 것 · 미배당(대응 없음)이면 오행 이름 금지',/얼굴형[^.]*오행[^.]*그대로/.test(RULE)&&/섞/.test(RULE)&&/미배당|대응 없음/.test(RULE),'');
 console.log(`[p25_face_shape_rule] total=${total} pass=${pass} fail=${total-pass}${fails.length?' · FAIL '+fails.join(','):''}`);
 process.exitCode=fails.length?1:0;

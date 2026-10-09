@@ -1896,7 +1896,10 @@ export default async function handler(req, res) {
       + ' 두 블록에 없는 항목은 이 앱이 판정할 수 없는 것이니 만들어 쓰지 마세요.'
       + ' [촬영 조건] 줄이 안경 착용을 알리면, 거기 적힌 부위(눈 크기·명궁·산근·전택궁·콧방울·입 너비)는 수치·순위·「크다/작다」 단정 없이 일반적인 관상 관점으로만 쓰고, 안경을 벗고 다시 촬영하면 더 정확하다고 한 문장 덧붙이세요.'
       // ★v797 P-792-B R1 — 오행 결정권은 엔진(앱 카드)에만 둔다. 종전엔 AI 가 수치를 보고 오행을 스스로 매겨 카드와 어긋났다.
-      + ' 얼굴형과 그 오행은 입력의 「얼굴형:라벨(오행)」에 주어진 판정 그대로 쓰세요. 수치를 근거로 다른 오행으로 바꾸거나 여러 오행을 섞지 마세요. 「오행 미배당」이면 오행 이름을 붙이지 말고 얼굴 윤곽의 특징만 설명하세요.';
+      + ' 얼굴형과 그 오행은 입력의 「얼굴형:라벨(오행)」에 주어진 판정 그대로 쓰세요. 수치를 근거로 다른 오행으로 바꾸거나 여러 오행을 섞지 마세요. 오행 자리가 「원전 오형 대응 없음」이면 오행 이름을 붙이지 말고 얼굴 윤곽의 특징만 설명하세요.'
+      // ★v799 P-799-B — 얼굴형은 단정하지 않고 엔진이 준 「윤곽」 그대로(「~형 계열」 + 근거) · 좋고 나쁨 평가 금지(외부 자문 R1)
+      + ' 「윤곽:」 줄이 있으면 얼굴형은 그 표기 그대로 「○○형 계열」로 부르고 괄호 안 근거와 함께 말하세요. 「○○형이다」처럼 단정하지 말고, 「○○형에 가까운」이 있으면 두 형을 함께 언급하세요.'
+      + ' 얼굴형·윤곽은 좋고 나쁨의 평가가 아닙니다. 외모를 품평하거나 결점처럼 들리는 말을 쓰지 마세요.';
 
     if (type === 'face') {
       systemPrompt = `당신은 전통 관상학(觀相學) 해석을 돕는 AI 어시스턴트입니다. 전통 관상학의 일반적 관점을 참고합니다.
@@ -1908,7 +1911,7 @@ export default async function handler(req, res) {
       const m = features.measurements;
       const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'], features.glasses)}` : '';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
+      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'face_premium_1') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기. 수치 인용.
@@ -1919,7 +1922,7 @@ features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20
       const m = features.measurements;
       const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds','upperThirdPct','middleThirdPct','lowerThirdPct'], features.glasses) || 'N/A') : 'N/A';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
+      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'face_premium_2') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기.
@@ -1930,7 +1933,7 @@ weaknesses 2개, enemies 2개, allies 2개.` + CW_FACE_AXIS_RULE + CITATION_RULE
       const m = features.measurements;
       const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds'], features.glasses) || 'N/A') : 'N/A';
 
-      userPrompt = `얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
+      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'naming_company') {
       // 회사명·브랜드명 무료 — 추천 5개 + 등록 가능성 평가

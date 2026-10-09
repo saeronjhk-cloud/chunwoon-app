@@ -4033,7 +4033,7 @@ const FACE_SOURCES={
     round:{el:'水形 (수형)',meaning:'원문은 水의 형태를 「圓(둥긂)」, 오상은 「水為智」로 봅니다'},
     square:{el:'金形 (금형)',meaning:'원문은 金의 형태를 「方(모남)」, 오상은 「金為義」로 봅니다'},
     long:{el:'木形 (목형)',meaning:'원문은 木의 형태를 「瘦(마름)·長」, 오상은 「木為仁」으로 봅니다'},
-    inv:{el:'(오행 미배당)',meaning:'원문의 火形은 「上尖下豐」 — 위가 뾰족하고 아래가 풍만한 형입니다. 역삼각형은 그 반대라 오행을 배당하지 않습니다'}
+    inv:{el:'원전 오형 대응 없음',meaning:'원전 오형에 직접 대응하지 않는 윤곽입니다 — 원문의 火形은 「上尖下豐」(위가 뾰족하고 아래가 풍만한 형)이라 이 윤곽과 다릅니다'}
   },
   eyes:'전통 관상학의 일반적 관점 — 눈은 감찰관(監察官)으로, 지혜·수명·애정운을 드러낸다.',
   nose:'전통 관상학의 일반적 관점 — 코는 12궁 중 재백궁(財帛宮)이자 질액궁(疾厄宮). 중년 운세(40~50대)와 재물·건강을 주관한다.',
@@ -4041,7 +4041,7 @@ const FACE_SOURCES={
   // ★v786-b — 종전 문구는 「다섯 가지로 분류」라 했으나 코드는 4형뿐이다(土形 없음).
   //   또 火形을 역삼각형에 배당한 근거를 원문에서 확인하지 못했다(相理衡眞 卷六 五行形相論 미확보).
   //   ⟹ 고전 문헌과 대조를 마치기 전까지 오형 배당을 단정하지 않는다. (★「원문+대조」 결합 표현은 claim_whitelist BAN_B04 가 근거 주장으로 잡는다 — 쓰지 말 것)
-  shapeCommon:'오행(五行) 관점 — 얼굴 윤곽을 오행의 형태에 견주어 보는 방식입니다. <span style="opacity:.7">현재 木·火·金·水 4형만 판별하며 土形은 아직 판별하지 않습니다. 배당 기준은 고전 문헌과의 대조를 마치기 전입니다.</span>'
+  shapeCommon:'오행(五行) 관점 — 얼굴 윤곽을 오행의 형태에 견주어 보는 방식입니다. <span style="opacity:.7">현재 木·金·水 3형에 견주며, 역삼각형 윤곽은 원전 오형에 직접 대응하지 않습니다. 土形은 아직 판별하지 않습니다. 배당 기준은 고전 문헌과의 대조를 마치기 전입니다.</span>'
 };
 // ★v786-b 정정 — 종전 문구는 「십이궁을 살펴」라고 했으나 실제 계측은 8궁뿐이었고,
 //   오행도 4형만 있었다(土形 없음). 재지 않는 것을 잰다고 말하지 않는다.
@@ -5237,6 +5237,33 @@ var CW_WUXING = {
 };
 
 /* 메인 — 반환 형상은 종전 코드와 호환 유지 (shapeOpt/eyeOpt/noseOpt/mouthOpt/…/ratios) */
+
+/* ★v799 P-799-B — 얼굴형 표시: 단정 대신 「~형 계열」 + 측정 근거(외부 자문 R1 · Gemini/ChatGPT B안 · 제이 승인 2026-10-09)
+   배경: 사람 평가자 3명 일치도 Fleiss κ=−0.02(우연 수준) → 엔진은 자기가 잰 것만 말한다. 판정 규칙·임계는 ★동결(자문 Q5).
+   경계 구간(★사전 고정 · 결과 보고 조정 금지): 랭크 변수 ±0.05 · cheonJiWidth ±0.02. 판정 경로에 실제로 쓰인 결정만,
+   임계 양쪽 대칭으로 「○○형에 가까운 △△형 계열」. 근거 문구는 좋고 나쁨이 들리지 않는 말로 고정. 평가 _v799_work/p29. */
+var CW_FACE_SHAPE_BAND = { rank: 0.05, cjw: 0.02 };
+function _cwFaceShapeRule(wr, jr, cjw) {
+  if (wr < 0.25) return 'long';
+  if (jr > 0.62) return 'square';
+  if (cjw > CW_FACE_INV_T) return 'inv';   // ★v797 P-792-B — 상부/하부 윤곽폭 비(CW_FACE_INV_T 설명)
+  return 'round';
+}
+var CW_FACE_SHAPE_BASIS = { long: '세로 길이가 긴 편', square: '턱선이 또렷한 편', inv: '이마 쪽이 턱보다 넓은 편', round: '가로·세로 균형이 비슷하고 턱선이 부드러운 편' };
+function _cwFaceShapeDesc(wr, jr, cjw) {
+  var B = CW_FACE_SHAPE_BAND, T = CW_FACE_INV_T, p = _cwFaceShapeRule(wr, jr, cjw), near = null, alt;
+  var lab = function (v) { for (var i = 0; i < FACE_S.length; i++) if (FACE_S[i].v === v) return FACE_S[i].l; return v; };
+  if (isFinite(wr) && Math.abs(wr - 0.25) < B.rank) { alt = _cwFaceShapeRule(wr < 0.25 ? 1 : 0, jr, cjw); if (alt !== p) near = alt; }
+  if (!near && p !== 'long' && isFinite(jr) && Math.abs(jr - 0.62) < B.rank) { alt = _cwFaceShapeRule(wr, jr > 0.62 ? 0 : 1, cjw); if (alt !== p) near = alt; }
+  if (!near && (p === 'inv' || p === 'round') && isFinite(cjw) && Math.abs(cjw - T) < B.cjw) { alt = _cwFaceShapeRule(wr, jr, cjw > T ? 0 : 99); if (alt !== p) near = alt; }
+  var pc = function (r) { return isFinite(r) ? Math.round(r * 100) + '백분위' : '계측 불가'; };
+  return {
+    primary: p, near: near,
+    title: (near ? lab(near) + '에 가까운 ' : '') + lab(p) + ' 계열',
+    basis: CW_FACE_SHAPE_BASIS[p],
+    detail: '가로세로비 ' + pc(wr) + ' · 턱 폭 ' + pc(jr) + ' · 이마/턱 폭 비 ' + (isFinite(cjw) ? cjw.toFixed(2) : '계측 불가') + '(기준 ' + T + ') — 참조 사진 분포 기준 · 판정 기준: 가로세로비 25백분위 미만=긴 형 · 턱 폭 62백분위 초과=각진형 · 이마/턱 폭 비 ' + T + ' 초과=역삼각형'
+  };
+}
 function classifyFaceFromLandmarks(ai, aspect, hair, src) {
   var A = aspect;
   if (!(A > 0)) A = (typeof window !== 'undefined' && window._cwFaceAspect) || 1;
@@ -5254,11 +5281,8 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
        foreheadRatio 와 jawRatio 는 분모가 둘 다 faceW 라 ★원시값 비교가 성립하고,
        그러면 이 판정은 TEXT 등급(모집단 불필요)을 유지한다.
        종전처럼 랭크를 빼면 TIER-C 합성 모집단에 의존하게 되어 POPULATION 으로 격하됐다. */
-  var shapeV;
-  if (R.whRatio < 0.25) shapeV = 'long';
-  else if (R.jawRatio > 0.62) shapeV = 'square';
-  else if (m.cheonJiWidth > CW_FACE_INV_T) shapeV = 'inv';   // ★v797 P-792-B — 상부/하부 윤곽폭 비(아래 상수 설명)
-  else shapeV = 'round';
+  var shapeV = _cwFaceShapeRule(R.whRatio, R.jawRatio, m.cheonJiWidth);   // ★v799 P-799-B — 규칙은 _cwFaceShapeRule 한 곳(판정·임계 동결)
+  var shapeDesc = _cwFaceShapeDesc(R.whRatio, R.jawRatio, m.cheonJiWidth);
 
   /* ── 눈 ── */
   var eyeV;
@@ -5334,7 +5358,7 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
   }
 
   return {
-    shapeOpt: pick(FACE_S, shapeV), eyeOpt: pick(FACE_E, eyeV),
+    shapeOpt: pick(FACE_S, shapeV), shapeDesc: shapeDesc, eyeOpt: pick(FACE_E, eyeV),
     noseOpt: pick(FACE_N, noseV), mouthOpt: pick(FACE_M, mouthV),
     overallScore: overall,
     /* ★v786-b — 성질이 다른 두 값을 분리해 내보낸다. 화면·프롬프트가 섞어 쓰면 안 된다. */
@@ -5883,6 +5907,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   const noseScore=aiScores?aiScores.noseScore:(70+((h.hash>>>8)%22));
   const mouthScore=aiScores?aiScores.mouthScore:(68+((h.hash>>>12)%24));
   const fiveElement=FACE_SOURCES.shape[shapeOpt.v];
+  const sd=aiScores&&aiScores.shapeDesc;   // ★v799 P-799-B
   const r=document.getElementById('faceResult');
   r.innerHTML=`<div class="card pulse-card"><div class="card-title">👤 관상 종합 분석</div>
   <div style="text-align:center;margin-bottom:18px"><div style="font-size:52px;color:var(--gold);font-family:'Noto Serif KR',serif">${ov}<span style="font-size:18px">점</span></div><div style="font-size:11px;color:var(--text2);margin-top:4px">사진 기반 AI 관상 판독</div></div>
@@ -5895,7 +5920,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
     </div>`:''}
   </div>
   <div id="faceTraits"></div>
-  <div id="faceSummarySection" class="reading" style="margin-top:14px;opacity:0;transform:translateY(10px);transition:all .8s ease">종합적으로 <strong style="color:var(--gold)">${fiveElement.el}</strong>의 기반 위에 <strong style="color:var(--gold)">${sR.t}</strong>과 <strong style="color:var(--gold)">${eR.t}</strong>이 더해진 상입니다. 좋은 마음이 좋은 상을 만듭니다.</div>
+  <div id="faceSummarySection" class="reading" style="margin-top:14px;opacity:0;transform:translateY(10px);transition:all .8s ease">종합적으로 <strong style="color:var(--gold)">${sd?sd.title:fiveElement.el}</strong> 윤곽 위에 <strong style="color:var(--gold)">${sR.t}</strong>과 <strong style="color:var(--gold)">${eR.t}</strong>이 더해진 상입니다. 좋은 마음이 좋은 상을 만듭니다.</div>
   <div style="font-size:10px;color:var(--text2);opacity:.6;margin-top:12px;text-align:left;line-height:1.6">※ 본 결과는 전통 관상학의 일반적 관점을 참고한 오락 콘텐츠로, 과학적 근거가 있는 판독은 아닙니다.</div>
   <div id="faceBasicButtons" style="display:flex;gap:10px;justify-content:center;margin-top:14px">
     <button class="share-btn" onclick="saveResult('face')" style="flex:1;max-width:180px;display:flex;align-items:center;justify-content:center;gap:6px">💾 결과 저장하기</button>
@@ -5907,8 +5932,10 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   const ra=aiScores?aiScores.ratios:null;
   const traits=[
     {icon:'🔸',color:'#c9a54e',name:'얼굴형',label:sR.t,desc:sR.d,score:sR.s,source:'오행(五行) 관점',
-      basis:`판독상 <strong>${fiveElement.el}</strong>으로 분류. ${fiveElement.meaning}. ${FACE_SOURCES.shapeCommon}`
-        +(ra?` <span style="opacity:.7">[가로세로비 ${ra.whRatio.toFixed(2)}, 턱비율 ${ra.jawRatio.toFixed(2)}]</span>`:'')},
+      // ★v799 P-799-B — 단정 표기(「판독상 ○○」) 대신 엔진 shapeDesc: 「~형 계열」 + 측정 근거 · 수치는 접힌 측정 세부 · 평가 아님 안내
+      basis:(sd?`얼굴 윤곽: <strong>${sd.title}</strong> — ${sd.basis}. `:'')+`오행 관점: ${fiveElement.el}. ${fiveElement.meaning}. ${FACE_SOURCES.shapeCommon}`
+        +(sd?`<details style="margin-top:4px"><summary style="cursor:pointer;opacity:.75">측정 세부</summary><span style="opacity:.7">${sd.detail}${ra?` · 가로세로비 ${ra.whRatio.toFixed(2)} · 턱비율 ${ra.jawRatio.toFixed(2)}`:''}</span></details>`:'')
+        +`<div style="opacity:.7;margin-top:4px">※ 얼굴형은 좋고 나쁨의 평가가 아니며, 촬영 각도·표정에 따라 달라질 수 있습니다.</div>`},
     {icon:'👁️',color:'#4fc3e8',name:'눈',label:eR.t,desc:eR.d,score:eyeScore,source:'전통 관상학 · 눈',
       basis:FACE_SOURCES.eyes+(ra?` <span style="opacity:.7">[눈 가로세로비 ${ra.eyeRatio.toFixed(1)}, 크기비 ${(ra.eyeSizeRatio*100).toFixed(1)}%]</span>`:'')},
     {icon:'👃',color:'#e8a04f',name:'코',label:nR.t,desc:nR.d,score:noseScore,source:'전통 관상학 · 십이궁·재백궁',
@@ -5955,7 +5982,7 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
   (async()=>{
     try{
       const llmFeatures={
-        shape:{label:sR.t,fiveElement:fiveElement?.el||'',score:sR.s},
+        shape:{label:sR.t,fiveElement:fiveElement?.el||'',score:sR.s,type:aiScores?.shapeDesc?.title||'',basis:aiScores?.shapeDesc?.basis||''},
         eyes:{label:eR.t,score:eyeScore,aiDetected:!!photoState.face.aiLandmarks},
         nose:{label:nR.t,score:noseScore},
         mouth:{label:mR.t,score:mouthScore},
@@ -6094,7 +6121,7 @@ async function handlePremiumPurchase(type){
     const fiveEl=cls?FACE_SOURCES.shape[cls.shapeOpt.v]:null;
     const ra=cls?.ratios||null;
     const premFeatures={
-      shape:{label:FACE_R.shape[cls?.shapeOpt?.v||'round']?.t||'',fiveElement:fiveEl?.el||'',score:FACE_R.shape[cls?.shapeOpt?.v||'round']?.s||80},
+      shape:{label:FACE_R.shape[cls?.shapeOpt?.v||'round']?.t||'',fiveElement:fiveEl?.el||'',score:FACE_R.shape[cls?.shapeOpt?.v||'round']?.s||80,type:cls?.shapeDesc?.title||'',basis:cls?.shapeDesc?.basis||''},
       eyes:{label:FACE_R.eyes[cls?.eyeOpt?.v||'big']?.t||'',score:cls?.eyeScore||80},
       nose:{label:FACE_R.nose[cls?.noseOpt?.v||'high']?.t||'',score:cls?.noseScore||80},
       mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
@@ -6200,7 +6227,7 @@ async function retryPremiumAPI(){
     const fiveEl=cls?FACE_SOURCES.shape[cls.shapeOpt.v]:null;
     const ra=cls?.ratios||null;
     const premFeatures={
-      shape:{label:FACE_R.shape[cls?.shapeOpt?.v||'round']?.t||'',fiveElement:fiveEl?.el||'',score:FACE_R.shape[cls?.shapeOpt?.v||'round']?.s||80},
+      shape:{label:FACE_R.shape[cls?.shapeOpt?.v||'round']?.t||'',fiveElement:fiveEl?.el||'',score:FACE_R.shape[cls?.shapeOpt?.v||'round']?.s||80,type:cls?.shapeDesc?.title||'',basis:cls?.shapeDesc?.basis||''},
       eyes:{label:FACE_R.eyes[cls?.eyeOpt?.v||'big']?.t||'',score:cls?.eyeScore||80},
       nose:{label:FACE_R.nose[cls?.noseOpt?.v||'high']?.t||'',score:cls?.noseScore||80},
       mouth:{label:FACE_R.mouth[cls?.mouthOpt?.v||'big']?.t||'',score:cls?.mouthScore||80},
