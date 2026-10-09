@@ -103,6 +103,33 @@ function _cwHairline(mask, mw, mh, ai, opt) {
 
 /* 순수 계측 26축 — 분류·점수 이전 단계
    ★v792 — 세 번째 인자 hair = _cwHairline 결과(선택). 없거나 OK 가 아니면 上停은 계측 불가(null). */
+
+/* ★v799 P-799-C — 정면화 좌표(고개 돌림 제거). 진단 d16: 2D 화면 좌표로 잰 좌우대칭·천이가 얼굴의 비대칭이 아니라
+   고개 돌림을 재고 있었다(대칭↔|고개 좌우| 상관 −0.89 · 같은 사람 종합 점수 범위 최대 31점).
+   3D 랜드마크로 얼굴 좌표계를 세운다: 좌우축 = 234→454 · 위아래축 = 152→10 을 좌우축에 직교화 · 앞뒤축 = 외적.
+   각 점을 이 축에 투영하면 고개 좌우·상하·기울기 회전이 빠진다. z 가 없으면(모두 0) null → 호출부가 2D 로 후퇴.
+   평가 _v799_work/p30. 좌우대칭·천이(ABS) · 삼정(中·下停 + 머리선 있으면 上停, p31)만 사용 — REL 축·참조표는 무변경. */
+function _cwFaceFrame(p) {
+  var hasZ = false, i;
+  for (i = 0; i < p.length; i++) if (p[i] && p[i].z) { hasZ = true; break; }
+  if (!hasZ || !p[234] || !p[454] || !p[10] || !p[152]) return null;
+  var sub = function (a, b) { return [a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0)]; };
+  var dot = function (a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; };
+  var nrm = function (a) { var l = Math.sqrt(dot(a, a)) || 1e-9; return [a[0] / l, a[1] / l, a[2] / l]; };
+  var ex = nrm(sub(p[454], p[234]));
+  var u = sub(p[10], p[152]), k = dot(u, ex);
+  var ey = nrm([u[0] - k * ex[0], u[1] - k * ex[1], u[2] - k * ex[2]]);
+  var ez = [ex[1] * ey[2] - ex[2] * ey[1], ex[2] * ey[0] - ex[0] * ey[2], ex[0] * ey[1] - ex[1] * ey[0]];
+  var c = { x: (p[234].x + p[454].x) / 2, y: (p[234].y + p[454].y) / 2, z: ((p[234].z || 0) + (p[454].z || 0)) / 2 };
+  return { to: function (a) { var v = sub(a, c); return { x: dot(v, ex), y: -dot(v, ey), z: dot(v, ez) }; } };
+}
+function _cwFaceFrontal(p) {
+  var F = _cwFaceFrame(p);
+  if (!F) return null;
+  var out = new Array(p.length);
+  for (var i = 0; i < p.length; i++) out[i] = F.to(p[i]);
+  return out;
+}
 function _cwFaceMeasureRaw(aiRaw, A, hair) {
   var p = _cwFaceIso(aiRaw, A);
   var dx = function (a, b) { return Math.abs(p[a].x - p[b].x); };
@@ -135,7 +162,12 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
 
   var lc = (p[33].x + p[133].x) / 2, rc = (p[362].x + p[263].x) / 2;
   var noseCx = p[1].x, faceCx = (p[234].x + p[454].x) / 2;
-  var symmetry = 1 - Math.min(1, Math.abs(Math.abs(noseCx - lc) - Math.abs(rc - noseCx)) / faceW * 5);
+  // ★v799 P-799-C — 좌우대칭·천이는 정면화 좌표(q)에서 잰다(고개 돌림 제거) · z 없으면 종전 2D(p)
+  var q = _cwFaceFrontal(p) || p;
+  var qdx = function (a, b) { return Math.abs(q[a].x - q[b].x); };
+  var qW = qdx(234, 454) || 1e-6;
+  var qlc = (q[33].x + q[133].x) / 2, qrc = (q[362].x + q[263].x) / 2;
+  var symmetry = 1 - Math.min(1, Math.abs(Math.abs(q[1].x - qlc) - Math.abs(qrc - q[1].x)) / qW * 5);
   /* ★v792 P-792-A — 삼정(三停) 재정의 (근거·평가: _v792_work/p16 · 실사진 23장)
      구 대용 10(메시 꼭대기·髮際 아님)→168(콧부리)→1(코끝)→152 는 표준 얼굴에서 28/25/47% · thirds 0.46 이라
      거의 전원이 「삼정 편차」를 받았다. 원문 「髮際~眉 · 眉~鼻 · 鼻~頦」에 맞춰
@@ -148,16 +180,35 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
   var browLv = (sAx(p[55]) + sAx(p[285]) + sAx(p[107]) + sAx(p[336])) / 4;
   var tMid = browLv - sAx(p[2]), tLow = sAx(p[2]), tUp = null;
   if (hair && hair.status === 'OK' && hair.hairline) {
-    var hu = sAx({ x: hair.hairline.x, y: hair.hairline.y * (A && A > 0 ? A : 1) }) - browLv;
+    var hl = { x: hair.hairline.x, y: hair.hairline.y * (A && A > 0 ? A : 1) };
+    var hu = sAx(hl) - browLv;
     if (hu > 0) tUp = hu;
   }
-  var thirdsParts = tUp != null ? 3 : 2, thirds, tTot;
-  if (tUp != null) {
-    tTot = tUp + tMid + tLow;
-    var tId = tTot / 3;
-    thirds = 1 - Math.min(1, (Math.abs(tUp - tId) + Math.abs(tMid - tId) + Math.abs(tLow - tId)) / tTot * 2);
+  /* ★v799 P-799-C — 삼정 「점수」는 정면화 좌표(q)의 세로축에서 잰다(진단 d17·d18: 2D 中/下停 비는 상하 고개에 끌려
+     사람 안 상관 0.79 → 정면화 0.47 · 사람별 표준편차 중앙 0.054 → 0.038 · 평가 p31). 머리선은 2D 점뿐이라 이마의 3D 방향
+     (LM9→LM10)을 머리선 높이까지 연장한 점을 상정 끝으로 본다. 범위: 조화도의 thirds 점수만 — REL 축(midOverLow·upperOverRest·
+     cheonJiHeight 등)과 참조표는 종전 2D 값 그대로(원근 보정 계수가 2D 값으로 학습됨). z 없거나 정면화 실패면 2D 값. */
+  var sUp = tUp, sMid = tMid, sLow = tLow;
+  if (q !== p) {
+    var qBrow = (q[55].y + q[285].y + q[107].y + q[336].y) / 4;
+    var fMid = q[2].y - qBrow, fLow = q[152].y - q[2].y, fUp = null, fOk = fMid > 0 && fLow > 0;
+    if (fOk && tUp != null) {
+      var d3x = p[10].x - p[9].x, d3y = p[10].y - p[9].y, d3s = d3x * aux + d3y * auy;
+      if (Math.abs(d3s) > 1e-9) {
+        var tt = (sAx(hl) - sAx(p[10])) / d3s;
+        var H = { x: p[10].x + d3x * tt, y: p[10].y + d3y * tt, z: (p[10].z || 0) + ((p[10].z || 0) - (p[9].z || 0)) * tt };
+        fUp = qBrow - _cwFaceFrame(p).to(H).y;
+      }
+      if (!(fUp > 0)) fOk = false;
+    }
+    if (fOk) { sMid = fMid; sLow = fLow; sUp = tUp != null ? fUp : null; }
+  }
+  var thirdsParts = tUp != null ? 3 : 2, thirds, tTot = tUp != null ? tUp + tMid + tLow : null;
+  if (sUp != null) {
+    var sTot = sUp + sMid + sLow, tId = sTot / 3;
+    thirds = 1 - Math.min(1, (Math.abs(sUp - tId) + Math.abs(sMid - tId) + Math.abs(sLow - tId)) / sTot * 2);
   } else {
-    thirds = 1 - Math.min(1, Math.abs(tMid - tLow) / ((tMid + tLow) || 1e-6) * 2);
+    thirds = 1 - Math.min(1, Math.abs(sMid - sLow) / ((sMid + sLow) || 1e-6) * 2);
   }
   /* ★v789 P-789-A/B — 눈썹 축 정정 (근거: _v789_work/p13_brow_axis_eval.js · canonical_face_model 실측)
      A. 꼬리 끝은 LM46/276 이다(하단 윤곽 46→53→52→65→55). 구 식은 LM53 까지만 재서 길이의 83% 만 잡았다
@@ -190,13 +241,14 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
     symmetry: symmetry,
     thirds: thirds,
     thirdsParts: thirdsParts,                         // ★v792 3 = 上停 포함 · 2 = 上停 계측 불가
+    thirdsMidLow: sMid / (sLow || 1e-6),               // ★v799 P-799-C 삼정 점수에 쓴 中/下停 비(정면화) — 진단·평가(p31)용
     upperThirdPct: tUp != null ? tUp / tTot * 100 : null,
     middleThirdPct: tUp != null ? tMid / tTot * 100 : null,
     lowerThirdPct: tUp != null ? tLow / tTot * 100 : null,
     upperOverRest: tUp != null ? tUp / ((tMid + tLow) || 1e-6) : null,   // ★v792 上停 / (中+下) — REL
     midOverLow: tMid / (tLow || 1e-6),                                   // ★v792 中停 / 下停 — REL · 항상 계측
     myungGung: dx(55, 285) / faceW,
-    cheonI: 1 - Math.min(1, Math.abs(dx(21, 234) - dx(454, 251)) / faceW * 5),
+    cheonI: 1 - Math.min(1, Math.abs(qdx(21, 234) - qdx(454, 251)) / qW * 5),   // ★v799 P-799-C 정면화 좌표
     jaNyeo: (dy(117, 145) + dy(346, 374)) / 2 / faceH,
     jilAek: dx(188, 412) / faceW,
     /* ★v792 P-790-H — 눈썹 윤곽 정정(근거: canonical_face_model · _v790_work/p15 B1·B2)

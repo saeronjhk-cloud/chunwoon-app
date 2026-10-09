@@ -1,0 +1,105 @@
+== 01
+  lbl_01_far_1           OK      parts3 thi 0.763 pitch 0.374 | 中/下 2D 0.974 3D 0.997 | 上/(中+下) 2D 0.377 3D 0.384
+  lbl_01_far_2           BANGS   parts2 thi 0.965 pitch 0.373 | 中/下 2D 0.965 3D 0.990 | 上/(中+下) 2D   -   3D   -  
+  lbl_01_near_1          OK      parts3 thi 0.827 pitch 0.413 | 中/下 2D 1.092 3D 1.033 | 上/(中+下) 2D 0.409 3D 0.394
+  lbl_01_near_2          BANGS   parts2 thi 0.938 pitch 0.408 | 中/下 2D 1.064 3D 1.011 | 上/(中+下) 2D   -   3D   -  
+  lbl_01_near_3          OK      parts3 thi 0.849 pitch 0.419 | 中/下 2D 1.109 3D 1.025 | 上/(中+下) 2D 0.419 3D 0.400
+  lbl_01_rear1x_1        BANGS   parts2 thi 0.959 pitch 0.369 | 中/下 2D 0.960 3D 0.980 | 上/(中+下) 2D   -   3D   -  
+  lbl_01_rear1x_2        BANGS   parts2 thi 0.994 pitch 0.393 | 中/下 2D 1.006 3D 0.966 | 上/(中+下) 2D   -   3D   -  
+  lbl_01_rear1x_3        BANGS   parts2 thi 0.940 pitch 0.365 | 中/下 2D 0.942 3D 0.958 | 上/(中+下) 2D   -   3D   -  
+== 02
+  lbl_02_far_1           BANGS   parts2 thi 0.945 pitch 0.383 | 中/下 2D 0.946 3D 0.872 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_far_2           BANGS   parts2 thi 0.926 pitch 0.379 | 中/下 2D 0.928 3D 0.871 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_near_1          BANGS   parts2 thi 0.935 pitch 0.365 | 中/下 2D 0.937 3D 0.903 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_near_2          BANGS   parts2 thi 0.973 pitch 0.381 | 中/下 2D 0.974 3D 0.917 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_near_3          BANGS   parts2 thi 0.923 pitch 0.401 | 中/下 2D 1.080 3D 1.039 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_rear1x_1        BANGS   parts2 thi 0.941 pitch 0.405 | 中/下 2D 1.061 3D 0.987 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_rear1x_2        BANGS   parts2 thi 0.999 pitch 0.399 | 中/下 2D 0.999 3D 0.922 | 上/(中+下) 2D   -   3D   -  
+  lbl_02_rear1x_3        BANGS   parts2 thi 0.931 pitch 0.402 | 中/下 2D 0.933 3D 0.874 | 上/(中+下) 2D   -   3D   -  
+== 03
+  lbl_03_far_1           BANGS   parts2 thi 0.853 pitch 0.339 | 中/下 2D 0.863 3D 0.899 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_far_2           BANGS   parts2 thi 0.838 pitch 0.333 | 中/下 2D 0.850 3D 0.900 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_near_1          BANGS   parts2 thi 0.979 pitch 0.372 | 中/下 2D 0.979 3D 0.967 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_near_2          BANGS   parts2 thi 0.950 pitch 0.367 | 中/下 2D 0.952 3D 0.938 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_near_3          BANGS   parts2 thi 0.995 pitch 0.378 | 中/下 2D 1.005 3D 0.989 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_rear1x_1        BANGS   parts2 thi 0.943 pitch 0.356 | 中/下 2D 0.945 3D 0.983 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_rear1x_2        BANGS   parts2 thi 0.967 pitch 0.362 | 中/下 2D 0.968 3D 0.991 | 上/(中+下) 2D   -   3D   -  
+  lbl_03_rear1x_3        BANGS   parts2 thi 0.978 pitch 0.370 | 中/下 2D 0.978 3D 0.983 | 上/(中+下) 2D   -   3D   -  
+== 04
+  lbl_04_far_1           OK      parts3 thi 0.896 pitch 0.396 | 中/下 2D 1.031 3D 0.977 | 上/(中+下) 2D 0.561 3D 0.540
+  lbl_04_far_2           OK      parts3 thi 0.903 pitch 0.387 | 中/下 2D 1.011 3D 0.962 | 上/(中+下) 2D 0.557 3D 0.537
+  lbl_04_near_1          OK      parts3 thi 0.814 pitch 0.425 | 中/下 2D 1.168 3D 1.084 | 上/(中+下) 2D 0.609 3D 0.582
+  lbl_04_near_2          OK      parts3 thi 0.912 pitch 0.400 | 中/下 2D 1.080 3D 1.042 | 上/(中+下) 2D 0.544 3D 0.531
+  lbl_04_near_3          OK      parts3 thi 0.958 pitch 0.391 | 中/下 2D 1.041 3D 0.998 | 上/(中+下) 2D 0.518 3D 0.503
+  lbl_04_rear1x_1        OK      parts3 thi 0.857 pitch 0.411 | 中/下 2D 1.102 3D 1.023 | 上/(中+下) 2D 0.585 3D 0.557
+  lbl_04_rear1x_2        OK      parts3 thi 0.849 pitch 0.417 | 中/下 2D 1.122 3D 1.038 | 上/(中+下) 2D 0.590 3D 0.562
+  lbl_04_rear1x_3        OK      parts3 thi 0.855 pitch 0.413 | 中/下 2D 1.117 3D 1.037 | 上/(中+下) 2D 0.586 3D 0.559
+== 05
+  lbl_05_far_1           BANGS   parts2 thi 0.889 pitch 0.404 | 中/下 2D 1.117 3D 1.113 | 上/(中+下) 2D   -   3D   -  
+  lbl_05_far_2           BANGS   parts2 thi 0.913 pitch 0.398 | 中/下 2D 1.090 3D 1.091 | 上/(中+下) 2D   -   3D   -  
+  lbl_05_near_1          BANGS   parts2 thi 0.850 pitch 0.419 | 中/下 2D 1.163 3D 1.130 | 上/(中+下) 2D   -   3D   -  
+  lbl_05_near_2          BANGS   parts2 thi 0.808 pitch 0.428 | 中/下 2D 1.212 3D 1.162 | 上/(中+下) 2D   -   3D   -  
+  lbl_05_near_3          OK      parts3 thi 0.693 pitch 0.430 | 中/下 2D 1.224 3D 1.185 | 上/(中+下) 2D 0.345 3D 0.338
+  lbl_05_rear1x_1        BANGS   parts2 thi 0.816 pitch 0.428 | 中/下 2D 1.202 3D 1.162 | 上/(中+下) 2D   -   3D   -  
+  lbl_05_rear1x_2        BANGS   parts2 thi 0.859 pitch 0.413 | 中/下 2D 1.152 3D 1.136 | 上/(中+下) 2D   -   3D   -  
+  lbl_05_rear1x_3        BANGS   parts2 thi 0.820 pitch 0.424 | 中/下 2D 1.197 3D 1.165 | 上/(中+下) 2D   -   3D   -  
+== 06
+  lbl_06_far_1           OK      parts3 thi 0.885 pitch 0.407 | 中/下 2D 1.098 3D 1.068 | 上/(中+下) 2D 0.446 3D 0.438
+  lbl_06_far_2           OK      parts3 thi 0.888 pitch 0.410 | 中/下 2D 1.102 3D 1.076 | 上/(中+下) 2D 0.451 3D 0.444
+  lbl_06_near_1          OK      parts3 thi 0.826 pitch 0.425 | 中/下 2D 1.177 3D 1.124 | 上/(中+下) 2D 0.435 3D 0.424
+  lbl_06_near_2          OK      parts3 thi 0.794 pitch 0.384 | 中/下 2D 1.056 3D 1.066 | 上/(中+下) 2D 0.393 3D 0.395
+  lbl_06_near_3          OK      parts3 thi 0.867 pitch 0.412 | 中/下 2D 1.133 3D 1.092 | 上/(中+下) 2D 0.449 3D 0.439
+  lbl_06_rear1x_1        OK      parts3 thi 0.887 pitch 0.429 | 中/下 2D 1.175 3D 1.099 | 上/(中+下) 2D 0.494 3D 0.476
+  lbl_06_rear1x_2        OK      parts3 thi 0.882 pitch 0.430 | 中/下 2D 1.193 3D 1.101 | 上/(中+下) 2D 0.499 3D 0.478
+  lbl_06_rear1x_3        OK      parts3 thi 0.875 pitch 0.425 | 中/下 2D 1.159 3D 1.099 | 上/(中+下) 2D 0.473 3D 0.459
+== 07
+  lbl_07_far_1           OK      parts3 thi 0.847 pitch 0.424 | 中/下 2D 1.137 3D 1.130 | 上/(中+下) 2D 0.432 3D 0.431
+  lbl_07_far_2           OK      parts3 thi 0.847 pitch 0.423 | 中/下 2D 1.131 3D 1.118 | 上/(中+下) 2D 0.429 3D 0.425
+  lbl_07_far_3           OK      parts3 thi 0.843 pitch 0.425 | 中/下 2D 1.138 3D 1.125 | 上/(中+下) 2D 0.428 3D 0.425
+  lbl_07_near_1          OK      parts3 thi 0.808 pitch 0.445 | 中/下 2D 1.270 3D 1.213 | 上/(中+下) 2D 0.468 3D 0.456
+  lbl_07_near_2          OK      parts3 thi 0.771 pitch 0.482 | 中/下 2D 1.410 3D 1.289 | 上/(中+下) 2D 0.503 3D 0.483
+  lbl_07_near_3          OK      parts3 thi 0.782 pitch 0.475 | 中/下 2D 1.381 3D 1.265 | 上/(中+下) 2D 0.506 3D 0.485
+  lbl_07_rear1x_1        OK      parts3 thi 0.837 pitch 0.440 | 中/下 2D 1.211 3D 1.176 | 上/(中+下) 2D 0.464 3D 0.456
+  lbl_07_rear1x_2        OK      parts3 thi 0.830 pitch 0.440 | 中/下 2D 1.214 3D 1.188 | 上/(中+下) 2D 0.459 3D 0.453
+== 08
+  lbl_08_far_1           OK      parts3 thi 0.962 pitch 0.410 | 中/下 2D 1.059 3D 1.006 | 上/(中+下) 2D 0.500 3D 0.483
+  lbl_08_far_2           OK      parts3 thi 0.950 pitch 0.415 | 中/下 2D 1.067 3D 1.006 | 上/(中+下) 2D 0.508 3D 0.489
+  lbl_08_far_3           OK      parts3 thi 0.953 pitch 0.411 | 中/下 2D 1.066 3D 1.016 | 上/(中+下) 2D 0.495 3D 0.479
+  lbl_08_near_1          OK      parts3 thi 0.757 pitch 0.476 | 中/下 2D 1.291 3D 1.085 | 上/(中+下) 2D 0.601 3D 0.543
+  lbl_08_near_2          OK      parts3 thi 0.839 pitch 0.444 | 中/下 2D 1.194 3D 1.076 | 上/(中+下) 2D 0.556 3D 0.522
+  lbl_08_near_3          OK      parts3 thi 0.760 pitch 0.468 | 中/下 2D 1.280 3D 1.092 | 上/(中+下) 2D 0.604 3D 0.551
+  lbl_08_rear1x_1        OK      parts3 thi 0.966 pitch 0.402 | 中/下 2D 1.042 3D 0.994 | 上/(中+下) 2D 0.508 3D 0.492
+  lbl_08_rear1x_2        OK      parts3 thi 0.943 pitch 0.414 | 中/下 2D 1.077 3D 1.012 | 上/(中+下) 2D 0.509 3D 0.488
+== P2
+  p2_2026_nog_far_1      BANGS   parts2 thi 0.890 pitch 0.405 | 中/下 2D 1.116 3D 1.133 | 上/(中+下) 2D   -   3D   -  
+  p2_2026_nog_far_2      OK      parts3 thi 0.785 pitch 0.406 | 中/下 2D 1.111 3D 1.129 | 上/(中+下) 2D 0.388 3D 0.392
+  p2_2026_nog_far_3      BANGS   parts2 thi 0.975 pitch 0.370 | 中/下 2D 0.976 3D 0.993 | 上/(中+下) 2D   -   3D   -  
+  p2_2026_nog_far_4      OK      parts3 thi 0.772 pitch 0.397 | 中/下 2D 1.066 3D 1.046 | 上/(中+下) 2D 0.382 3D 0.377
+  p2_2026_nog_far_5      OK      parts3 thi 0.826 pitch 0.410 | 中/下 2D 1.075 3D 1.033 | 上/(中+下) 2D 0.408 3D 0.398
+  p2_2026_nog_near_1     OK      parts3 thi 0.814 pitch 0.419 | 中/下 2D 1.142 3D 1.093 | 上/(中+下) 2D 0.404 3D 0.393
+  p2_2026_nog_near_2     OK      parts3 thi 0.815 pitch 0.417 | 中/下 2D 1.116 3D 1.044 | 上/(中+下) 2D 0.403 3D 0.388
+  p2_2026_nog_near_3     BANGS   parts2 thi 0.843 pitch 0.424 | 中/下 2D 1.171 3D 1.126 | 上/(中+下) 2D   -   3D   -  
+  p2_2026_nog_near_4     OK      parts3 thi 0.821 pitch 0.424 | 中/下 2D 1.150 3D 1.089 | 上/(中+下) 2D 0.415 3D 0.402
+  p2_2026_nog_near_5     OK      parts3 thi 0.787 pitch 0.400 | 中/下 2D 1.066 3D 1.040 | 上/(中+下) 2D 0.389 3D 0.383
+== J0
+  jay_2026_nog_guide_1   BANGS   parts2 thi 0.987 pitch 0.378 | 中/下 2D 0.987 3D 0.987 | 上/(中+下) 2D   -   3D   -  
+  jay_2026_nog_guide_2   BANGS   parts2 thi 0.969 pitch 0.366 | 中/下 2D 0.969 3D 0.988 | 上/(中+下) 2D   -   3D   -  
+  jay_2026_nog_guide_3   BANGS   parts2 thi 0.896 pitch 0.418 | 中/下 2D 1.110 3D 1.060 | 上/(中+下) 2D   -   3D   -  
+  jay_2026_nog_guide_4   OK      parts3 thi 0.644 pitch 0.337 | 中/下 2D 0.876 3D 0.935 | 上/(中+下) 2D 0.323 3D 0.347
+  jay_2026_nog_guide_5   BANGS   parts2 thi 0.922 pitch 0.347 | 中/下 2D 0.925 3D 0.970 | 上/(中+下) 2D   -   3D   -  
+  jay_2026_nog_far_1     BANGS   parts2 thi 0.981 pitch 0.384 | 中/下 2D 0.981 3D 0.981 | 上/(中+下) 2D   -   3D   -  
+  jay_2026_nog_far_2     BANGS   parts2 thi 0.879 pitch 0.343 | 中/下 2D 0.886 3D 0.937 | 上/(中+下) 2D   -   3D   -  
+
+사람별 sd: 中/下 2D vs 3D · 上 비율 2D vs 3D · 상태 전환
+  01  0.061 0.025 0.018 0.006 · 상태 OK/BANGS (3/8 3분)
+  02  0.056 0.057   -     -   · 상태 BANGS (0/8 3분)
+  03  0.053 0.037   -     -   · 상태 BANGS (0/8 3분)
+  04  0.050 0.037 0.027 0.022 · 상태 OK (8/8 3분)
+  05  0.045 0.029   -     -   · 상태 BANGS/OK (1/8 3분)
+  06  0.045 0.018 0.032 0.026 · 상태 OK (8/8 3분)
+  07  0.103 0.060 0.029 0.022 · 상태 OK (8/8 3분)
+  08  0.097 0.038 0.043 0.027 · 상태 OK (8/8 3분)
+  P2  0.053 0.046 0.011 0.008 · 상태 BANGS/OK (7/10 3분)
+  J0  0.073 0.039   -     -   · 상태 BANGS/OK (1/7 3분)
+  중앙 0.054 0.038 0.028 0.022
+사람 안 pitch 상관: 中/下 2D 0.95 3D 0.77 · 上 2D 0.92 3D 0.87
