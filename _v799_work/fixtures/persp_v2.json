@@ -1,0 +1,34 @@
+{
+ "version": "PERSP-v2-20261009",
+ "basis": "empirical-near-front(34~54cm)/far-rear3x(101~114cm) · 9명 · 축별 LOPO 선택(v1 기하 모형 vs 경험)",
+ "dEff": null,
+ "dFar": null,
+ "f": {
+  "whRatio": 0.9315,
+  "foreheadRatio": 1.0253,
+  "eyeSize": 1.0543,
+  "noseWRatio": 1.0795,
+  "mouthRatio": 1.0725,
+  "myungGung": 1.0827,
+  "jilAek": 1.0839,
+  "browLength": 1.057,
+  "chin": 0.8954,
+  "midOverLow": 1.0205,
+  "jawRatio": 0.9822,
+  "cheonJiWidth": 1.0333
+ },
+ "choice": {
+  "whRatio": "v1",
+  "foreheadRatio": "v1",
+  "eyeSize": "v1",
+  "noseWRatio": "v1",
+  "mouthRatio": "v1",
+  "myungGung": "v1",
+  "jilAek": "v1",
+  "browLength": "v1",
+  "chin": "emp",
+  "midOverLow": "v1",
+  "jawRatio": "emp",
+  "cheonJiWidth": "emp"
+ }
+}

@@ -1,0 +1,13 @@
+whRatio        선택 v1    v1/무 0.9315 경험 0.9597 LOPO랭크오차 0.169 → 0.070 개선비율 0.60
+foreheadRatio  선택 v1    v1/무 1.0253 경험 1.0187 LOPO랭크오차 0.085 → 0.079 개선비율 0.60
+eyeSize        선택 v1    v1/무 1.0543 경험 1.0436 LOPO랭크오차 0.101 → 0.138 개선비율 0.70
+noseWRatio     선택 v1    v1/무 1.0795 경험 1.0518 LOPO랭크오차 0.147 → 0.309 개선비율 0.70
+mouthRatio     선택 v1    v1/무 1.0725 경험 1.0280 LOPO랭크오차 0.167 → 0.161 개선비율 0.50
+myungGung      선택 v1    v1/무 1.0827 경험 1.0793 LOPO랭크오차 0.175 → 0.185 개선비율 0.50
+jilAek         선택 v1    v1/무 1.0839 경험 1.0599 LOPO랭크오차 0.221 → 0.354 개선비율 0.50
+browLength     선택 v1    v1/무 1.0570 경험 1.0310 LOPO랭크오차 0.155 → 0.184 개선비율 0.60
+chin           선택 emp   v1/무 0.9787 경험 0.8954 LOPO랭크오차 0.261 → 0.114 개선비율 0.80
+midOverLow     선택 v1    v1/무 1.0205 경험 1.0802 LOPO랭크오차 0.148 → 0.132 개선비율 0.60
+jawRatio       선택 emp   v1/무 1.0000 경험 0.9822 LOPO랭크오차 0.229 → 0.081 개선비율 0.90
+cheonJiWidth   선택 emp   v1/무 1.0000 경험 1.0333 LOPO랭크오차 0.291 → 0.074 개선비율 1.00
+{"whRatio":0.9315,"foreheadRatio":1.0253,"eyeSize":1.0543,"noseWRatio":1.0795,"mouthRatio":1.0725,"myungGung":1.0827,"jilAek":1.0839,"browLength":1.057,"chin":0.8954,"midOverLow":1.0205,"jawRatio":0.9822,"cheonJiWidth":1.0333}

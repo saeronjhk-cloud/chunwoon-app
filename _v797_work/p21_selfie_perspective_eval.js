@@ -23,11 +23,14 @@ new Function('module','exports','window',STUB+idx.slice(i0,idx.lastIndexOf('// =
 const C=M.exports;
 let total=0,pass=0;const fails=[];
 function check(id,name,ok,detail){total++;if(ok)pass++;else fails.push(id);console.log(`  ${ok?'ok  ':'FAIL'} ${id} ${name} — ${detail}`);}
-const FIX=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures','persp_v1.json'),'utf8'));
+// ★v799 표기 정정: 보정표가 PERSP-v2(_v799_work/fixtures/persp_v2.json · 평가 p28)로 바뀌면 그 생성기 산출과 비교한다(E·X 성능 기준은 그대로)
+const FIX=(()=>{const v2=path.join(__dirname,'..','_v799_work','fixtures','persp_v2.json');const f2=fs.existsSync(v2)?JSON.parse(fs.readFileSync(v2,'utf8')):null;
+  const live=(idx.match(/var CW_FACE_PERSP = \{"version": "([^"]+)"/)||[])[1];return f2&&live===f2.version?f2:JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures','persp_v1.json'),'utf8'));})();
 const P=C.CW_FACE_PERSP, REL=C.CW_FACE_AXES.filter(k=>C.CW_FACE_AXIS_KIND[k]==='REL');
 console.log('[T] 보정표·함수');
 check('T1','CW_FACE_PERSP 존재 · 생성기 산출과 일치',!!P&&P.version===FIX.version&&Object.keys(FIX.f).every(a=>P.f&&Math.abs(P.f[a]-FIX.f[a])<1e-9)&&Object.keys(P.f||{}).length===Object.keys(FIX.f).length,P?P.version+' · '+Object.keys(P.f||{}).length+'축':'없음');
-check('T2','보정 축은 REL 만 · jawRatio·eyeTilt·browAngle 제외',!!P&&Object.keys(P.f).every(a=>REL.includes(a))&&!('jawRatio' in P.f)&&!('eyeTilt' in P.f)&&!('browAngle' in P.f),P?Object.keys(P.f).join(','):'-');
+// ★v799 표기 정정: v2 는 9명 실측 근거로 jawRatio(REL)·cheonJiWidth(ABS) 를 추가 — 그 둘만 예외로 허용 · 각도 축은 계속 제외
+check('T2','보정 축은 REL 만(v2 예외: jawRatio·cheonJiWidth) · eyeTilt·browAngle 제외',!!P&&Object.keys(P.f).every(a=>REL.includes(a)||(/PERSP-v2/.test(P.version)&&a==='cheonJiWidth'))&&(/PERSP-v2/.test(P.version)||!('jawRatio' in P.f))&&!('eyeTilt' in P.f)&&!('browAngle' in P.f),P?Object.keys(P.f).join(','):'-');
 const L=JSON.parse(fs.readFileSync(path.join(EV,'cache','landmarks.json'),'utf8'));
 const inp=k=>{const d=L[k],ai=d.lm.map(a=>({x:a[0],y:a[1],z:a[2]}));return {ai,A:d.h/d.w,hr:C._cwHairline(zlib.gunzipSync(fs.readFileSync(path.join(EV,'cache',k+'.mask.gz'))),d.w,d.h,ai)};};
 {const x=inp('jay_2026_nog_guide_1');const mf=C._cwFaceMeasure(x.ai,x.A,x.hr,'file'),mu=C._cwFaceMeasure(x.ai,x.A,x.hr),ml=C._cwFaceMeasure(x.ai,x.A,x.hr,'live');

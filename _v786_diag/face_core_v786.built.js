@@ -254,7 +254,10 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
    보정표: canonical_face_model 핀홀 투영 · 유효거리 48cm(두 사람 독립 적합 48·50cm) / 원거리 120cm 의 축 원시값 비.
    생성 _v797_work/d04_gen_persp_table.js · 평가 _v797_work/p21 · jawRatio 는 모형과 실측 방향이 반대라 제외.
    사진 선택(src='file')·미지정은 보정하지 않는다(촬영 조건을 모른다). */
-var CW_FACE_PERSP = {"version": "PERSP-v1-20261004", "dEff": 48, "dFar": 120, "f": {"whRatio": 0.9315, "foreheadRatio": 1.0253, "eyeSize": 1.0543, "noseWRatio": 1.0795, "mouthRatio": 1.0725, "myungGung": 1.0827, "jilAek": 1.0839, "browLength": 1.057, "chin": 0.9787, "midOverLow": 1.0205}};
+/* ★v799 P-799-A — 원근 보정 v2: 라벨셋 9명(근접 전면 34~54cm / 원거리 후면 3배 101~114cm) 실측으로 축별 선택.
+   chin·jawRatio·cheonJiWidth = 경험 계수(사람 70% 이상 개선 · LOPO) · 나머지 = v1 기하 모형 계수 유지. 생성기 _v799_work/d15 → fixtures/persp_v2.json · 평가 p28.
+   (v798 원칙 4·5 「jawRatio·ABS 축 무보정」은 2명 근거였고 9명 자료로 대체) */
+var CW_FACE_PERSP = {"version": "PERSP-v2-20261009", "dEff": null, "dFar": null, "f": {"whRatio": 0.9315, "foreheadRatio": 1.0253, "eyeSize": 1.0543, "noseWRatio": 1.0795, "mouthRatio": 1.0725, "myungGung": 1.0827, "jilAek": 1.0839, "browLength": 1.057, "chin": 0.8954, "midOverLow": 1.0205, "jawRatio": 0.9822, "cheonJiWidth": 1.0333}};
 var CW_FACE_PERSP_ALIAS = { foreheadWidthRatio: 'foreheadRatio', myungGungRatio: 'myungGung', browGapRatio: 'myungGung', sanGeunRatio: 'jilAek', browLengthRatio: 'browLength', chinRatio: 'chin' };
 function _cwFaceMeasure(aiRaw, A, hair, src) {
   var m = _cwFaceMeasureRaw(aiRaw, A, hair);
