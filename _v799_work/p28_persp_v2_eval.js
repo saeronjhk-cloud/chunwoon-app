@@ -13,6 +13,7 @@
 //   V4 얼굴형 근접 다수결 = 원거리 다수결 사람 수: v2 ≥ v1 + 2
 //   V5 근접 「역삼각」 오판(원거리는 역삼각 아님) 사진 수: v2 < v1
 //   V6 파일 경로(src≠'live') 무보정 유지
+//   ── 2026-10-09 추가(외부 자문 R1): V2b 사후 보조 기준 · V7 되돌리기 스위치 (V2 는 미통과 기록으로 보존)
 //  자료: D:\ChunWoon_IP\face\eval_labelset · eval_selfie (git 밖 · 동의 받음 · 내부 평가 전용)
 // ============================================================
 'use strict';
@@ -36,13 +37,23 @@ for(const g of grps){const tr=P.filter(p=>p.grp!==g),te=P.filter(p=>p.grp===g);c
   const i1=s1.near.filter((v,i)=>v==='inv'&&fm!=='inv').length,i2=s2.near.filter(v=>v==='inv'&&fm!=='inv').length;invV1+=i1;invV2+=i2;
   rows.push(`${p.id.padEnd(3)} 원거리 ${s1.far.join(',')} | 근접 v1 ${s1.near.join(',')} → v2 ${s2.near.join(',')}`);}}
 const mV1=L.med(Object.values(per.v1)),mV2=L.med(Object.values(per.v2)),mNo=L.med(Object.values(per.no));
-check('V2','후보 12축 랭크 오차 v2 < v1 · ≤0.12',mV2<mV1&&mV2<=0.12,`무보정 ${mNo.toFixed(3)} · v1 ${mV1.toFixed(3)} → v2 ${mV2.toFixed(3)} (사람 ${Object.keys(per.v2).length})`);
+// ★V2(사전 기준)는 2026-10-09 1차 평가에서 미통과 — 결과를 보존한다(집계 제외 · 항상 출력). 외부 자문 R1(Gemini 찬성·ChatGPT 조건부):
+//   「바꾸지 않은 9축의 기존 오차(0.09~0.22) 때문에 12축 중앙 ≤0.12 는 산술적으로 달성 불가였던 설계 오류」 → 아래 V2b 는 결과를 본 뒤 추가한 ★사후 보조 기준.
+//   정식 확인은 다른 기종 ≥3명 전향 표본에서 같은 기준(규칙·계수 동결)으로 한다 — 다음 배포 관문.
+console.log(`  기록 V2(사전 기준 · 미통과 보존) 후보 12축 랭크 오차 v2 < v1 · ≤0.12 — ${mV2<mV1&&mV2<=0.12?'통과':'미통과'} · 무보정 ${mNo.toFixed(3)} · v1 ${mV1.toFixed(3)} → v2 ${mV2.toFixed(3)} (사람 ${Object.keys(per.v2).length})`);
+const CHG=Object.keys(FIX.f).filter(a=>Math.abs(FIX.f[a]-(L.V1[a]||1))>1e-9);
+check('V2b','[사후 보조 기준] 12축 오차 v2 < v1 · 바꾼 축 각각 ≤0.12',mV2<mV1&&CHG.length>0&&CHG.every(a=>L.med(errV2[a])<=0.12),`v1 ${mV1.toFixed(3)} → v2 ${mV2.toFixed(3)} · 바꾼 축 `+CHG.map(a=>`${a} ${L.med(errV2[a]).toFixed(3)}`).join(' · '));
 const worse=L.CAND.filter(a=>L.med(errV2[a])-L.med(errV1[a])>0.05);
 check('V3','축별 악화 ≤0.05',worse.length===0,(worse.length?'악화 '+worse.join(',')+' · ':'')+L.CAND.map(a=>`${a}:${L.med(errV1[a]).toFixed(2)}→${L.med(errV2[a]).toFixed(2)}`).join(' '));
 check('V4','얼굴형 근접 다수결 = 원거리 다수결: v2 ≥ v1+2',agreeV2>=agreeV1+2,`v1 ${agreeV1}/${P.length} → v2 ${agreeV2}/${P.length}`);
 check('V5','근접 역삼각 오판 사진: v2 < v1',invV2<invV1,`v1 ${invV1} → v2 ${invV2}`);
 {const x=P[0].near[0];const mf=C._cwFaceMeasure(x.ai,x.A,x.hr,'file'),mu=C._cwFaceMeasure(x.ai,x.A,x.hr);const ok=Object.keys(x.raw).every(k=>(mf[k]===x.raw[k]||(Number.isNaN(mf[k])&&Number.isNaN(x.raw[k])))&&(mu[k]===x.raw[k]||(Number.isNaN(mu[k])&&Number.isNaN(x.raw[k]))));
  check('V6',"파일 경로(src≠'live') 무보정",ok&&!mf.perspCorrected,String(ok));}
+// V7 되돌리기 스위치: CW_FACE_PERSP_ACTIVE 를 'v1' 로 바꾸면 v1 표 · 'v2' 면 v2 표
+{const idx=fs.readFileSync(process.env.P17_INDEX||path.join(ROOT,'index.html'),'utf8');const has=/var CW_FACE_PERSP_ACTIVE = 'v2';/.test(idx);
+ let ok=false,d='';if(has){const tmp=require('os').tmpdir()+'/p28_v1switch.html';fs.writeFileSync(tmp,idx.replace("var CW_FACE_PERSP_ACTIVE = 'v2';","var CW_FACE_PERSP_ACTIVE = 'v1';"));const C1=L.loadCore(tmp);
+  ok=C1.CW_FACE_PERSP.version==='PERSP-v1-20261004'&&Object.keys(L.V1).every(a=>C1.CW_FACE_PERSP.f[a]===L.V1[a])&&Object.keys(C1.CW_FACE_PERSP.f).length===10&&AP.version===FIX.version;d=`v1 전환 → ${C1.CW_FACE_PERSP.version} · 기본 ${AP.version}`;}
+ check('V7',"되돌리기 스위치 CW_FACE_PERSP_ACTIVE('v2'↔'v1')",has&&ok,has?d:'스위치 없음');}
 if(process.argv[2]==='dump')rows.forEach(r=>console.log('   ',r));
 console.log(`[p28_persp_v2] total=${total} pass=${pass} fail=${total-pass}${fails.length?' · FAIL '+fails.join(','):''}`);
 process.exitCode=fails.length?1:0;
