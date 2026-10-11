@@ -4951,6 +4951,21 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
   var bAng = function (t, h) { return Math.atan2(p[h].y - p[t].y, Math.abs(p[t].x - p[h].x) || 1e-6) * 180 / Math.PI; };
   var browLen = (bLen(46, 55) + bLen(276, 285)) / 2;
   var browAng = (bAng(46, 55) + bAng(276, 285)) / 2;
+  /* ★v800 P-800-A — 모서리 꺾임 집중도 K(jawCorner) · 「金方」의 方 = 충분한 턱 폭 + 하악각 모서리 꺾임(외부 자문 R1 · 진단 d23)
+     정면화 좌표(q)에서 귀밑(234/454)→턱끝(152) 윤곽 10구간의 회전각 합 중 하악각 창(132·58·172·136 / 361·288·397·365) 몫, 좌우 평균.
+     클수록 꺾임이 모서리에 몰림(모남) · 작을수록 고르게 휨(둥긂). 같은 사람 ICC 0.81 · 턱 폭과 상관 −0.38 · 모집단 치우침 없음.
+     기준 구현 _v799_work/jaw_corner_lib.js 와 같아야 한다(p34 S1). */
+  var jcSide = function (S) {
+    var tot = 0, win = 0, W = [132, 58, 172, 136, 361, 288, 397, 365];
+    for (var j = 1; j < S.length - 1; j++) {
+      var a0 = q[S[j - 1]], a1 = q[S[j]], a2 = q[S[j + 1]];
+      var v1x = a1.x - a0.x, v1y = a1.y - a0.y, v2x = a2.x - a1.x, v2y = a2.y - a1.y;
+      var t = Math.abs(Math.atan2(v1x * v2y - v1y * v2x, v1x * v2x + v1y * v2y));
+      tot += t; if (W.indexOf(S[j]) >= 0) win += t;
+    }
+    return win / (tot || 1e-9);
+  };
+  var jawCorner = (jcSide([234, 93, 132, 58, 172, 136, 150, 149, 176, 148, 152]) + jcSide([454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152])) / 2;
 
   return {
     whRatio: faceW / faceH,
@@ -4974,6 +4989,7 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
     thirdsParts: thirdsParts,                         // ★v792 3 = 上停 포함 · 2 = 上停 계측 불가
     thirdsMidLow: sMid / (sLow || 1e-6),               // ★v799 P-799-C 삼정 점수에 쓴 中/下停 비(정면화) — 진단·평가(p31)용
     upperVsMidLow: upperVsMidLow,                      // ★v799 P-799-C 2단계 上停/(中·下 평균) — 내부 진단용(화면·AI 비노출)
+    jawCorner: jawCorner,                              // ★v800 P-800-A 모서리 꺾임 집중도 K(정면화) — 각진형 판정
     upperLevel: upperLevel,                            // ★v799 P-799-C 2단계 'short'|'even'|'long'|null(머리선 가림) — 점수 미반영
     upperThirdPct: tUp != null ? tUp / tTot * 100 : null,
     middleThirdPct: tUp != null ? tMid / tTot * 100 : null,
@@ -5043,7 +5059,7 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
    chin·jawRatio·cheonJiWidth = 경험 계수(사람 70% 이상 개선 · LOPO) · 나머지 = v1 기하 모형 계수 유지. 생성기 _v799_work/d15 → fixtures/persp_v2.json · 평가 p28.
    (v798 원칙 4·5 「jawRatio·ABS 축 무보정」은 2명 근거였고 9명 자료로 대체) */
 var CW_FACE_PERSP_V1 = {"version": "PERSP-v1-20261004", "dEff": 48, "dFar": 120, "f": {"whRatio": 0.9315, "foreheadRatio": 1.0253, "eyeSize": 1.0543, "noseWRatio": 1.0795, "mouthRatio": 1.0725, "myungGung": 1.0827, "jilAek": 1.0839, "browLength": 1.057, "chin": 0.9787, "midOverLow": 1.0205}};
-var CW_FACE_PERSP_V2 = {"version": "PERSP-v2-20261009", "dEff": null, "dFar": null, "f": {"whRatio": 0.9315, "foreheadRatio": 1.0253, "eyeSize": 1.0543, "noseWRatio": 1.0795, "mouthRatio": 1.0725, "myungGung": 1.0827, "jilAek": 1.0839, "browLength": 1.057, "chin": 0.8954, "midOverLow": 1.0205, "jawRatio": 0.9822, "cheonJiWidth": 1.0333}};
+var CW_FACE_PERSP_V2 = {"version": "PERSP-v2-20261009", "dEff": null, "dFar": null, "f": {"whRatio": 0.9315, "foreheadRatio": 1.0253, "eyeSize": 1.0543, "noseWRatio": 1.0795, "mouthRatio": 1.0725, "myungGung": 1.0827, "jilAek": 1.0839, "browLength": 1.057, "chin": 0.8954, "midOverLow": 1.0205, "jawRatio": 0.9822, "cheonJiWidth": 1.0333}, "choice": {"whRatio": "v1", "foreheadRatio": "v1", "eyeSize": "v1", "noseWRatio": "v1", "mouthRatio": "v1", "myungGung": "v1", "jilAek": "v1", "browLength": "v1", "chin": "emp", "midOverLow": "v1", "jawRatio": "emp", "cheonJiWidth": "emp", "jawCorner": "none"}};   // ★v800 choice = 생성기(d15) 축별 선택 기록(jawCorner 후보 none = 미채택)
 // ★되돌리기 스위치(외부 자문 R1 · 2026-10-09): 'v2' → 'v1' 한 줄로 이전 보정표 복귀(코어 재빌드 → index 치환 → p21·p28)
 var CW_FACE_PERSP_ACTIVE = 'v2';
 var CW_FACE_PERSP = CW_FACE_PERSP_ACTIVE === 'v1' ? CW_FACE_PERSP_V1 : CW_FACE_PERSP_V2;
@@ -5327,25 +5343,36 @@ var CW_WUXING = {
    경계 구간(★사전 고정 · 결과 보고 조정 금지): 랭크 변수 ±0.05 · cheonJiWidth ±0.02. 판정 경로에 실제로 쓰인 결정만,
    임계 양쪽 대칭으로 「○○형에 가까운 △△형 계열」. 근거 문구는 좋고 나쁨이 들리지 않는 말로 고정. 평가 _v799_work/p29. */
 var CW_FACE_SHAPE_BAND = { rank: 0.05, cjw: 0.02 };
-function _cwFaceShapeRule(wr, jr, cjw) {
+/* ★v800 P-800-A — 「金方」 = 충분한 턱 폭 + 모서리 꺾임(외부 자문 R1 C안 · 진단 d23·d24 · 평가 _v799_work/p34).
+   종전 「턱 폭 백분위 > 0.62」만으로는 한국인 라벨셋 72%가 각진형(인터넷 30%) — 폭은 方이 아니라 넓음이다.
+   K(jawCorner) ≥ k0 일 때만 각진. 넓지만 모서리가 둥글면 둥근형 「턱이 넓은 편 · 모서리는 둥근 편」.
+   k0 = 실사진 사람당 1표 중앙 · eps = 같은 사람 안 K 표준편차 중앙(1σ) — |K−k0|<eps 면 두 형 병기.
+   생성기 _v799_work/d25_gen_jawcorner_ref.js 만 쓴다(손수정 금지). ★잠정: 원근 보정 미채택(d15 개선 사람 50%) · 다른 기종·층화 표본 검증 전. */
+var CW_FACE_JAWCORNER = {"version": "JAWCORNER-REF-v1-20261011", "tier": "D-REAL(사람당 1표 · 라벨셋 9명 원거리 + 인터넷 23명)", "n": 32, "q": [0.48011, 0.499596, 0.500233, 0.503221, 0.503343, 0.504092, 0.511782, 0.525501, 0.533423, 0.538077, 0.543241, 0.544789, 0.545943, 0.546738, 0.550544, 0.551975, 0.557939, 0.57163, 0.575614, 0.575774, 0.579479], "k0": 0.543241, "eps": 0.0125};
+function _cwFaceShapeRule(wr, jr, cjw, jc) {
   if (wr < 0.25) return 'long';
-  if (jr > 0.62) return 'square';
+  // jc 를 넘기지 않은 호출(구 평가·합성 시험)은 종전 폭 기준 — 앱은 항상 jc 를 넘긴다
+  if (jr > 0.62 && (jc === undefined || jc >= CW_FACE_JAWCORNER.k0)) return 'square';
   if (cjw > CW_FACE_INV_T) return 'inv';   // ★v797 P-792-B — 상부/하부 윤곽폭 비(CW_FACE_INV_T 설명)
   return 'round';
 }
-var CW_FACE_SHAPE_BASIS = { long: '세로 길이가 긴 편', square: '턱선이 또렷한 편', inv: '이마 쪽이 턱보다 넓은 편', round: '가로·세로 균형이 비슷하고 턱선이 부드러운 편' };
-function _cwFaceShapeDesc(wr, jr, cjw) {
-  var B = CW_FACE_SHAPE_BAND, T = CW_FACE_INV_T, p = _cwFaceShapeRule(wr, jr, cjw), near = null, alt;
+var CW_FACE_SHAPE_BASIS = { long: '세로 길이가 긴 편', square: '턱선이 또렷한 편', inv: '이마 쪽이 턱보다 넓은 편', round: '가로·세로 균형이 비슷하고 턱선이 부드러운 편' , roundWide: '턱이 넓은 편 · 모서리는 둥근 편' };
+function _cwFaceShapeDesc(wr, jr, cjw, jc) {
+  var B = CW_FACE_SHAPE_BAND, T = CW_FACE_INV_T, JC = CW_FACE_JAWCORNER, p = _cwFaceShapeRule(wr, jr, cjw, jc), near = null, alt;
   var lab = function (v) { for (var i = 0; i < FACE_S.length; i++) if (FACE_S[i].v === v) return FACE_S[i].l; return v; };
-  if (isFinite(wr) && Math.abs(wr - 0.25) < B.rank) { alt = _cwFaceShapeRule(wr < 0.25 ? 1 : 0, jr, cjw); if (alt !== p) near = alt; }
-  if (!near && p !== 'long' && isFinite(jr) && Math.abs(jr - 0.62) < B.rank) { alt = _cwFaceShapeRule(wr, jr > 0.62 ? 0 : 1, cjw); if (alt !== p) near = alt; }
-  if (!near && (p === 'inv' || p === 'round') && isFinite(cjw) && Math.abs(cjw - T) < B.cjw) { alt = _cwFaceShapeRule(wr, jr, cjw > T ? 0 : 99); if (alt !== p) near = alt; }
+  if (isFinite(wr) && Math.abs(wr - 0.25) < B.rank) { alt = _cwFaceShapeRule(wr < 0.25 ? 1 : 0, jr, cjw, jc); if (alt !== p) near = alt; }
+  if (!near && p !== 'long' && isFinite(jr) && Math.abs(jr - 0.62) < B.rank) { alt = _cwFaceShapeRule(wr, jr > 0.62 ? 0 : 1, cjw, jc); if (alt !== p) near = alt; }
+  if (!near && (p === 'inv' || p === 'round') && isFinite(cjw) && Math.abs(cjw - T) < B.cjw) { alt = _cwFaceShapeRule(wr, jr, cjw > T ? 0 : 99, jc); if (alt !== p) near = alt; }
+  // ★v800 P-800-A — 모서리 꺾임 경계(|K−k0|<eps) 병기 · 턱 폭이 넓을 때만 의미가 있다
+  var hasJc = jc !== undefined && isFinite(jc);
+  if (!near && hasJc && p !== 'long' && jr > 0.62 && Math.abs(jc - JC.k0) < JC.eps) { alt = _cwFaceShapeRule(wr, jr, cjw, jc >= JC.k0 ? -1 : 9); if (alt !== p) near = alt; }
   var pc = function (r) { return isFinite(r) ? Math.round(r * 100) + '백분위' : '계측 불가'; };
+  var wideRound = hasJc && p === 'round' && jr > 0.62 && jc < JC.k0;
   return {
     primary: p, near: near,
     title: (near ? lab(near) + '에 가까운 ' : '') + lab(p) + ' 계열',
-    basis: CW_FACE_SHAPE_BASIS[p],
-    detail: '가로세로비 ' + pc(wr) + ' · 턱 폭 ' + pc(jr) + ' · 이마/턱 폭 비 ' + (isFinite(cjw) ? cjw.toFixed(2) : '계측 불가') + '(기준 ' + T + ') — 참조 사진 분포 기준 · 판정 기준: 가로세로비 25백분위 미만=긴 형 · 턱 폭 62백분위 초과=각진형 · 이마/턱 폭 비 ' + T + ' 초과=역삼각형'
+    basis: wideRound ? CW_FACE_SHAPE_BASIS.roundWide : CW_FACE_SHAPE_BASIS[p],
+    detail: '가로세로비 ' + pc(wr) + ' · 턱 폭 ' + pc(jr) + ' · 이마/턱 폭 비 ' + (isFinite(cjw) ? cjw.toFixed(2) : '계측 불가') + '(기준 ' + T + ') — 참조 사진 분포 기준 · 판정 기준: 가로세로비 25백분위 미만=긴 형 · 턱 폭 62백분위 초과=각진형 · 이마/턱 폭 비 ' + T + ' 초과=역삼각형' + (hasJc ? ' · 모서리 꺾임 ' + pc(_cwRank(jc, JC.q)) + '(실사진 기준 · 각진형은 턱 폭 62백분위 초과 ∧ 모서리 꺾임 중앙 이상 — 잠정 기준)' : '')
   };
 }
 function classifyFaceFromLandmarks(ai, aspect, hair, src) {
@@ -5365,8 +5392,8 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
        foreheadRatio 와 jawRatio 는 분모가 둘 다 faceW 라 ★원시값 비교가 성립하고,
        그러면 이 판정은 TEXT 등급(모집단 불필요)을 유지한다.
        종전처럼 랭크를 빼면 TIER-C 합성 모집단에 의존하게 되어 POPULATION 으로 격하됐다. */
-  var shapeV = _cwFaceShapeRule(R.whRatio, R.jawRatio, m.cheonJiWidth);   // ★v799 P-799-B — 규칙은 _cwFaceShapeRule 한 곳(판정·임계 동결)
-  var shapeDesc = _cwFaceShapeDesc(R.whRatio, R.jawRatio, m.cheonJiWidth);
+  var shapeV = _cwFaceShapeRule(R.whRatio, R.jawRatio, m.cheonJiWidth, m.jawCorner);   // ★v799 P-799-B — 규칙은 _cwFaceShapeRule 한 곳(판정·임계 동결)
+  var shapeDesc = _cwFaceShapeDesc(R.whRatio, R.jawRatio, m.cheonJiWidth, m.jawCorner);
 
   /* ── 눈 ── */
   var eyeV;

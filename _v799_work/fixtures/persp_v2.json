@@ -1,6 +1,6 @@
 {
  "version": "PERSP-v2-20261009",
- "basis": "empirical-near-front(34~54cm)/far-rear3x(101~114cm) · 9명 · 축별 LOPO 선택(v1 기하 모형 vs 경험)",
+ "basis": "empirical-near-front(34~54cm)/far-rear3x(101~114cm) · 9명 · 축별 LOPO 선택(v1 기하 모형 vs 경험) · ★v800 jawCorner 후보 검토 = 미채택(개선 사람 50% < 70%) → 계수·판 무변경",
  "dEff": null,
  "dFar": null,
  "f": {
@@ -29,6 +29,7 @@
   "chin": "emp",
   "midOverLow": "v1",
   "jawRatio": "emp",
-  "cheonJiWidth": "emp"
+  "cheonJiWidth": "emp",
+  "jawCorner": "none"
  }
 }

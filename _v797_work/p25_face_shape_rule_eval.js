@@ -14,15 +14,16 @@ const fs=require('fs'),path=require('path'),zlib=require('zlib');
 const ROOT=path.join(__dirname,'..'),IP=path.join(ROOT,'..','ChunWoon_IP','face');
 const STUB="const FACE_S=[{l:'둥근형',v:'round'},{l:'각진형',v:'square'},{l:'긴 형',v:'long'},{l:'역삼각형',v:'inv'}];const FACE_E=[{l:'a',v:'big'},{l:'b',v:'narrow'},{l:'c',v:'round'},{l:'d',v:'droopy'}];const FACE_N=[{l:'a',v:'high'},{l:'b',v:'wide'},{l:'c',v:'small'},{l:'d',v:'hooked'}];const FACE_M=[{l:'a',v:'big'},{l:'b',v:'small'},{l:'c',v:'thick'},{l:'d',v:'thin'}];";
 const idx=fs.readFileSync(process.env.P17_INDEX||path.join(ROOT,'index.html'),'utf8');const i0=idx.indexOf('var CW_FACE_REF'),i1=idx.indexOf('//  5b. PAL',i0);
-const M={exports:{}};new Function('module','exports','window',STUB+idx.slice(i0,idx.lastIndexOf('// ====',i1))+"\nmodule.exports={classifyFaceFromLandmarks,_cwHairline,T:(typeof CW_FACE_INV_T!=='undefined'?CW_FACE_INV_T:null)};")(M,M.exports,{});const C=M.exports;
+const M={exports:{}};new Function('module','exports','window',STUB+idx.slice(i0,idx.lastIndexOf('// ====',i1))+"\nmodule.exports={classifyFaceFromLandmarks,_cwHairline,T:(typeof CW_FACE_INV_T!=='undefined'?CW_FACE_INV_T:null),JC:(typeof CW_FACE_JAWCORNER!=='undefined'?CW_FACE_JAWCORNER:null)};")(M,M.exports,{});const C=M.exports;
 let total=0,pass=0;const fails=[];function check(id,name,ok,detail){total++;if(ok)pass++;else fails.push(id);console.log(`  ${ok?'ok  ':'FAIL'} ${id} ${name} — ${detail}`);}
 check('K1','역삼각형 임계가 이름 있는 설정 상수(CW_FACE_INV_T=1.26, 임시값 표기)',C.T===1.26&&/CW_FACE_INV_T[\s\S]{0,400}임시/.test(idx),String(C.T));
-const run=(dir,srcOf)=>{const L=JSON.parse(fs.readFileSync(path.join(dir,'landmarks.json'),'utf8'));const out=[];for(const k of Object.keys(L).sort()){const d=L[k];if(!d)continue;const ai=d.lm.map(a=>({x:a[0],y:a[1],z:a[2]}));const hr=C._cwHairline(zlib.gunzipSync(fs.readFileSync(path.join(dir,k+'.mask.gz'))),d.w,d.h,ai);const c=C.classifyFaceFromLandmarks(ai,d.h/d.w,hr,srcOf(k));out.push({k,v:c.shapeOpt.v,cjw:c.ratios.cheonJiWidth,R:c.ranks});}return out;};
+const run=(dir,srcOf)=>{const L=JSON.parse(fs.readFileSync(path.join(dir,'landmarks.json'),'utf8'));const out=[];for(const k of Object.keys(L).sort()){const d=L[k];if(!d)continue;const ai=d.lm.map(a=>({x:a[0],y:a[1],z:a[2]}));const hr=C._cwHairline(zlib.gunzipSync(fs.readFileSync(path.join(dir,k+'.mask.gz'))),d.w,d.h,ai);const c=C.classifyFaceFromLandmarks(ai,d.h/d.w,hr,srcOf(k));out.push({k,jc:c.ratios.jawCorner,v:c.shapeOpt.v,cjw:c.ratios.cheonJiWidth,R:c.ranks});}return out;};
 const A=run(path.join(IP,'eval_hairline','cache'),()=> 'file'),S=run(path.join(IP,'eval_selfie','cache'),k=>/_near_|_guide_|_selfie_/.test(k)?'live':'file');
 const all=A.concat(S),cnt=a=>a.reduce((o,r)=>(o[r.v]=(o[r.v]||0)+1,o),{});
 check('K2','둥근형(水) 도달 가능 — 실사진 63장 중 ≥1',all.some(r=>r.v==='round'),JSON.stringify(cnt(all)));
 check('K3','역삼각형이 「긴·각진 아니면 전부」가 아니다(비긴·비각진 중 일부만)',(()=>{const rest=all.filter(r=>r.v==='inv'||r.v==='round');return rest.length>0&&rest.some(r=>r.v==='round')&&rest.some(r=>r.v==='inv'||true);})(),`인터넷23 ${JSON.stringify(cnt(A))} · 셀카셋 ${JSON.stringify(cnt(S))}`);
-check('K4','판정 우선순위 불변(긴→각진→역삼각→둥근)',all.every(r=>r.R.whRatio<0.25?r.v==='long':r.R.jawRatio>0.62?r.v==='square':r.cjw>C.T?r.v==='inv':r.v==='round'),'');
+// ★v800 P-800-A(자문 R1 C안 · p34) — 각진 = 턱 폭 > 0.62 ∧ 모서리 꺾임 K ≥ k0 로 명세 변경. 우선순위(긴→각진→역삼각→둥근)는 그대로.
+check('K4','판정 우선순위 불변(긴→각진(폭∧모서리)→역삼각→둥근)',!!C.JC&&all.every(r=>r.R.whRatio<0.25?r.v==='long':(r.R.jawRatio>0.62&&r.jc>=C.JC.k0)?r.v==='square':r.cjw>C.T?r.v==='inv':r.v==='round'),'');
 const src=fs.readFileSync(path.join(ROOT,'api','fortune.js'),'utf8');
 check('R1a','AI 프롬프트에 「수치로 오행 매기기」 예시 없음',!/가로세로비 0\.82로 金形/.test(src)&&!/\d로 (金|木|水|火|土)形/.test(src),'');
 const a=src.indexOf('const CW_FACE_AXIS_KO'),c=src.indexOf(';\n',src.indexOf('const CW_FACE_AXIS_RULE'));const RULE=new Function(src.slice(a,c+1)+'\nreturn CW_FACE_AXIS_RULE;')();

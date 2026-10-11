@@ -10,7 +10,9 @@ function loadCore(indexPath){const idx=fs.readFileSync(indexPath,'utf8');const i
  new Function('module','exports','window',STUB+idx.slice(i0,idx.lastIndexOf('// ====',i1))+'\nmodule.exports={_cwFaceMeasure,_cwFaceMeasureRaw,_cwHairline,_cwRank,classifyFaceFromLandmarks,CW_FACE_REF,CW_FACE_PERSP};')(M,M.exports,{});return M.exports;}
 const med=a=>{a=a.filter(x=>x!=null&&isFinite(x));if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s.length%2?s[(s.length-1)>>1]:(s[s.length/2-1]+s[s.length/2])/2;};
 const V1={"whRatio":0.9315,"foreheadRatio":1.0253,"eyeSize":1.0543,"noseWRatio":1.0795,"mouthRatio":1.0725,"myungGung":1.0827,"jilAek":1.0839,"browLength":1.057,"chin":0.9787,"midOverLow":1.0205};
-const CAND=[...Object.keys(V1),'jawRatio','cheonJiWidth'];
+// ★v800 P-800-A — jawCorner(모서리 꺾임 K) 후보 추가. 합성 참조표(REF)에 없는 축이라 랭크는 실사진 기준표(d25 → fixtures/jawcorner_ref.json)로 낸다.
+const CAND=[...Object.keys(V1),'jawRatio','cheonJiWidth','jawCorner'];
+const REFX=(()=>{try{return {jawCorner:JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures','jawcorner_ref.json'),'utf8')).q};}catch(e){return {};}})();
 function loadPeople(C,IP){
  const src=dir=>{const L=JSON.parse(fs.readFileSync(path.join(IP,dir,'cache','landmarks.json'),'utf8'));return [L,k=>{const d=L[k],ai=d.lm.map(a=>({x:a[0],y:a[1],z:a[2]}));const hr=C._cwHairline(zlib.gunzipSync(fs.readFileSync(path.join(IP,dir,'cache',k+'.mask.gz'))),d.w,d.h,ai);return {k,ai,A:d.h/d.w,hr,raw:C._cwFaceMeasureRaw(ai,d.h/d.w,hr)};}];};
  const [LB,fL]=src('eval_labelset'),[SB,fS]=src('eval_selfie');const P=[];
@@ -20,7 +22,7 @@ function loadPeople(C,IP){
  return P;}
 const ratio=(p,a)=>{const n=med(p.near.map(x=>x.raw[a])),f=med(p.far.map(x=>x.raw[a]));return n&&f?n/f:null;};
 // 사람 한 명·축 하나의 랭크 오차: 근접 사진마다 |rank(보정값) − rank(원거리 중앙)| 의 중앙
-function rankErr(C,p,a,c){const q=C.CW_FACE_REF.q[a];const rf=C._cwRank(med(p.far.map(x=>x.raw[a])),q);return med(p.near.map(x=>x.raw[a]==null?null:Math.abs(C._cwRank(x.raw[a]/c,q)-rf)));}
+function rankErr(C,p,a,c){const q=C.CW_FACE_REF.q[a]||REFX[a];const rf=C._cwRank(med(p.far.map(x=>x.raw[a])),q);return med(p.near.map(x=>x.raw[a]==null?null:Math.abs(C._cwRank(x.raw[a]/c,q)-rf)));}
 function select(C,persons){const f={},choice={},detail={};
  for(const a of CAND){const base=V1[a]||1;const grps=[...new Set(persons.map(p=>p.grp))];const e0=[],e1=[];
   for(const g of grps){const tr=persons.filter(p=>p.grp!==g),te=persons.filter(p=>p.grp===g);const c=med(tr.map(p=>ratio(p,a)));for(const p of te){e0.push(rankErr(C,p,a,base));e1.push(rankErr(C,p,a,c));}}
@@ -32,4 +34,4 @@ function select(C,persons){const f={},choice={},detail={};
 // 얼굴형: 근접은 live(보정표 f) · 원거리는 보정 없음
 function shapes(C,p,f){const P=C.CW_FACE_PERSP,save=P.f;P.f=f;try{return {near:p.near.map(x=>C.classifyFaceFromLandmarks(x.ai,x.A,x.hr,'live').shapeOpt.v),far:p.far.map(x=>C.classifyFaceFromLandmarks(x.ai,x.A,x.hr,null).shapeOpt.v)};}finally{P.f=save;}}
 const mode=a=>{const m={};a.forEach(x=>m[x]=(m[x]||0)+1);const s=Object.entries(m).sort((x,y)=>y[1]-x[1]);return s.length>1&&s[0][1]===s[1][1]?'tie':s[0][0];};
-module.exports={loadCore,loadPeople,select,rankErr,shapes,ratio,med,mode,V1,CAND};
+module.exports={loadCore,loadPeople,select,rankErr,shapes,ratio,med,mode,V1,CAND,REFX};

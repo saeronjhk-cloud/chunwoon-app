@@ -4,7 +4,8 @@
 const path=require('path'),fs=require('fs');const L=require('./persp_v2_lib.js');
 const ROOT=path.join(__dirname,'..'),IP=path.join(ROOT,'..','ChunWoon_IP','face');
 const C=L.loadCore(path.join(ROOT,'index.html'));const P=L.loadPeople(C,IP);const s=L.select(C,P);
-const out={version:'PERSP-v2-20261009',basis:'empirical-near-front(34~54cm)/far-rear3x(101~114cm) · 9명 · 축별 LOPO 선택(v1 기하 모형 vs 경험)',dEff:null,dFar:null,f:s.f,choice:s.choice};
+// ★v800 P-800-A — jawCorner 후보 추가(규칙 무변경 · 기존 12축 계수 불변이어야 함 · p34 S3) → 미채택이면 판 그대로
+const out={version:'PERSP-v2-20261009',basis:'empirical-near-front(34~54cm)/far-rear3x(101~114cm) · 9명 · 축별 LOPO 선택(v1 기하 모형 vs 경험) · ★v800 jawCorner 후보 검토 = 미채택(개선 사람 50% < 70%) → 계수·판 무변경',dEff:null,dFar:null,f:s.f,choice:s.choice};
 fs.writeFileSync(path.join(__dirname,'fixtures','persp_v2.json'),JSON.stringify(out,null,1));
 for(const [a,d] of Object.entries(s.detail))console.log(a.padEnd(14),'선택',s.choice[a].padEnd(5),'v1/무',d.base.toFixed(4),'경험',d.emp.toFixed(4),'LOPO랭크오차',(d.errBase).toFixed(3),'→',d.errEmp.toFixed(3),'개선비율',d.win.toFixed(2));
 console.log(JSON.stringify(out.f));
