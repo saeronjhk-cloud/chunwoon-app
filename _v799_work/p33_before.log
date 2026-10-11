@@ -1,0 +1,9 @@
+  FAIL Y1 _cwFacePose · classify.pose · held ⇔ |yaw|≥0.45 · 상수 — 함수 false · 상수 null · 불일치 127/127
+  ok   Y2 보류율 ≤ 5% — 0/127 (0.0%) · 
+  FAIL Y3 보류 뒤 같은 사람 범위 최대 ≤ 8 · 중앙 ≤ 5.1 — 최대 12 · 중앙 4 · 01:2 02:12 03:4 04:5 05:3 06:3 07:4 08:5 P2:4 J0:6
+  FAIL Y4 보류 뒤 |상관(종합, |yaw|)| ≤ 0.3 — -0.38 (보류 없이 −0.38 · n 81)
+  FAIL Y5 합성 10° 통과 · 20° 보류 · 15° 라이브 안내 — 함수 없음
+  FAIL Y6 analyzeFace 분류 전 보류 · 안내 · 점수 카드 미호출 · 버튼 복구 — 보류 위치 -1 · 분류 2779 · 카드 3588
+  FAIL Y7 라이브 정렬: live 임계 · 「정면」 안내 · alignedFrames=0 — 위치 -1
+  FAIL Y8 좌우 반전 불변 — 불일치 0/0
+[p33_pose_hold] total=8 pass=1 fail=7 · FAIL Y1,Y3,Y4,Y5,Y6,Y7,Y8
