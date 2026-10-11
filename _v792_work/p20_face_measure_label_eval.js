@@ -24,7 +24,8 @@ const s = fn ? fn(m, ['whRatio', 'jawRatio', 'eyeAspect', 'noseWRatio', 'noseHRa
 check('K3', '한글 라벨로 나온다(가로세로비·콧방울 폭·입 너비)', /가로세로비 0\.774/.test(s) && /콧방울 폭\/얼굴 폭 34\.0%/.test(s) && /입 너비\/얼굴 폭 0\.416/.test(s), s);
 check('K4', '영문 약어·물음표 없음 · null 축 생략', !/[A-Za-z]{3,}/.test(s) && !/\?/.test(s) && !/상정/.test(s), s);
 const s2 = fn ? fn({ upperThirdPct: 31.2, middleThirdPct: 35.1, lowerThirdPct: 33.7, eyeRatio: 3.1 }, ['upperThirdPct', 'middleThirdPct', 'lowerThirdPct', 'eyeAspect']) : '';
-check('K5', '상정 계측 시 상·중·하정 % · eyeAspect 없으면 eyeRatio 별칭', /상정 31\.2%/.test(s2) && /하정 33\.7%/.test(s2) && /눈 가로세로비 3\.10/.test(s2), s2);
+// ★v799 P-799-C 2단계(자문 R1 Q3) — 상·중·하정 % 는 AI 에 싣지 않는다(종전 K5 「상정 계측 시 % 실림」을 바꿈).
+check('K5', '상·중·하정 % 미전달 · eyeAspect 없으면 eyeRatio 별칭', !/(상정|중정|하정) \d/.test(s2) && /눈 가로세로비 3\.10/.test(s2), s2);
 check('K6', '규칙: 영문 변수명을 본문에 쓰지 말 것', /영문 (약어|변수명)/.test(src.slice(src.indexOf('const CW_FACE_AXIS_RULE'), src.indexOf("if (type === 'face')"))), '');
 console.log(`[p20_face_measure_label] total=${total} pass=${pass} fail=${total - pass}${fails.length ? ' · FAIL ' + fails.join(',') : ''}`);
 process.exitCode = fails.length ? 1 : 0;

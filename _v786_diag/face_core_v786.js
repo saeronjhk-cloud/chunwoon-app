@@ -104,6 +104,10 @@ function _cwHairline(mask, mw, mh, ai, opt) {
 /* 순수 계측 26축 — 분류·점수 이전 단계
    ★v792 — 세 번째 인자 hair = _cwHairline 결과(선택). 없거나 OK 가 아니면 上停은 계측 불가(null). */
 
+/* ★v799 P-799-C 2단계 — 上停 3단계 말의 「비슷한 편」 구간(±). 근거: 같은 사람 안 上停/(中·下 평균) 표준편차 중앙 0.061
+   (라벨셋 7명 · 2D) × 1.96 ≈ 0.12 — 측정 잡음으로 결과를 보기 전에 정함(자문 결과 파일 §결정 3). ★평가 없이 바꾸지 말 것. */
+var CW_FACE_UPPER_BAND = 0.12;
+
 /* ★v799 P-799-C — 정면화 좌표(고개 돌림 제거). 진단 d16: 2D 화면 좌표로 잰 좌우대칭·천이가 얼굴의 비대칭이 아니라
    고개 돌림을 재고 있었다(대칭↔|고개 좌우| 상관 −0.89 · 같은 사람 종합 점수 범위 최대 31점).
    3D 랜드마크로 얼굴 좌표계를 세운다: 좌우축 = 234→454 · 위아래축 = 152→10 을 좌우축에 직교화 · 앞뒤축 = 외적.
@@ -191,7 +195,7 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
   var sUp = tUp, sMid = tMid, sLow = tLow;
   if (q !== p) {
     var qBrow = (q[55].y + q[285].y + q[107].y + q[336].y) / 4;
-    var fMid = q[2].y - qBrow, fLow = q[152].y - q[2].y, fUp = null, fOk = fMid > 0 && fLow > 0;
+    var fMid = q[2].y - qBrow, fLow = q[152].y - q[2].y, fUp = null, fOk = fMid > 0 && fLow > 0, fUpOk = false;
     if (fOk && tUp != null) {
       var d3x = p[10].x - p[9].x, d3y = p[10].y - p[9].y, d3s = d3x * aux + d3y * auy;
       if (Math.abs(d3s) > 1e-9) {
@@ -199,17 +203,22 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
         var H = { x: p[10].x + d3x * tt, y: p[10].y + d3y * tt, z: (p[10].z || 0) + ((p[10].z || 0) - (p[9].z || 0)) * tt };
         fUp = qBrow - _cwFaceFrame(p).to(H).y;
       }
-      if (!(fUp > 0)) fOk = false;
+      fUpOk = fUp > 0;
     }
-    if (fOk) { sMid = fMid; sLow = fLow; sUp = tUp != null ? fUp : null; }
+    /* ★v799 P-799-C 2단계 — 中·下停은 上停 계측 성패와 무관하게 정면화 값을 쓴다(G1: 머리선 유무로 점수가 바뀌지 않게). */
+    if (fOk) { sMid = fMid; sLow = fLow; sUp = tUp != null ? (fUpOk ? fUp : null) : null; }
   }
+  /* ★v799 P-799-C 2단계 (B안 · 외부 자문 R1 만장일치 · 평가 _v799_work/p32)
+     조화도의 삼정 항(thirds)은 항상 中·下停 2분이다. 머리선이 보이느냐(앞머리·모자 = 촬영 조건)에 따라 공식이 바뀌어
+     같은 얼굴이 −4.5~−11.3점 흔들리던 것을 막는다(d20). 화면 명칭은 「중·하정 균형」.
+     上停은 점수에 넣지 않고, 머리선이 보일 때만 3단계 말(upperLevel)로 낸다 — 숫자는 화면·AI 에 내보내지 않는다.
+       upperVsMidLow = 上停 / (中·下停 평균) · 기준 1.0(三停均等) · 「비슷한 편」 = 1 ± CW_FACE_UPPER_BAND
+     정면화 上停이 실패하면(fUpOk=false) 2D 세 값으로 비를 낸다(같은 좌표계끼리). */
   var thirdsParts = tUp != null ? 3 : 2, thirds, tTot = tUp != null ? tUp + tMid + tLow : null;
-  if (sUp != null) {
-    var sTot = sUp + sMid + sLow, tId = sTot / 3;
-    thirds = 1 - Math.min(1, (Math.abs(sUp - tId) + Math.abs(sMid - tId) + Math.abs(sLow - tId)) / sTot * 2);
-  } else {
-    thirds = 1 - Math.min(1, Math.abs(sMid - sLow) / ((sMid + sLow) || 1e-6) * 2);
-  }
+  thirds = 1 - Math.min(1, Math.abs(sMid - sLow) / ((sMid + sLow) || 1e-6) * 2);
+  var upperVsMidLow = sUp != null ? sUp / ((sMid + sLow) / 2 || 1e-6) : (tUp != null ? tUp / ((tMid + tLow) / 2 || 1e-6) : null);
+  var upperLevel = upperVsMidLow == null ? null
+    : upperVsMidLow < 1 - CW_FACE_UPPER_BAND ? 'short' : upperVsMidLow > 1 + CW_FACE_UPPER_BAND ? 'long' : 'even';
   /* ★v789 P-789-A/B — 눈썹 축 정정 (근거: _v789_work/p13_brow_axis_eval.js · canonical_face_model 실측)
      A. 꼬리 끝은 LM46/276 이다(하단 윤곽 46→53→52→65→55). 구 식은 LM53 까지만 재서 길이의 83% 만 잡았다
         (표준 얼굴 눈썹/눈 폭 1.30 → 정정 1.56). 眉過眼(OGWAN R020/R021) 판정이 乏財 쪽으로 기울었다.
@@ -242,6 +251,8 @@ function _cwFaceMeasureRaw(aiRaw, A, hair) {
     thirds: thirds,
     thirdsParts: thirdsParts,                         // ★v792 3 = 上停 포함 · 2 = 上停 계측 불가
     thirdsMidLow: sMid / (sLow || 1e-6),               // ★v799 P-799-C 삼정 점수에 쓴 中/下停 비(정면화) — 진단·평가(p31)용
+    upperVsMidLow: upperVsMidLow,                      // ★v799 P-799-C 2단계 上停/(中·下 평균) — 내부 진단용(화면·AI 비노출)
+    upperLevel: upperLevel,                            // ★v799 P-799-C 2단계 'short'|'even'|'long'|null(머리선 가림) — 점수 미반영
     upperThirdPct: tUp != null ? tUp / tTot * 100 : null,
     middleThirdPct: tUp != null ? tMid / tTot * 100 : null,
     lowerThirdPct: tUp != null ? tLow / tTot * 100 : null,
@@ -550,7 +561,7 @@ var CW_FACE_AXES = ['whRatio', 'jawRatio', 'foreheadRatio', 'eyeAspect', 'eyeSiz
    ════════════════════════════════════════════════════════════════════ */
 var CW_FACE_AXIS_KIND = {
   symmetry: 'ABS',   // 左右均衡 — 코 중심 대비 좌우 눈 거리의 상칭
-  thirds: 'ABS',     // 三停均等 — 상·중·하정이 고른가
+  thirds: 'ABS',     // 三停均等 — ★v799 B안: 中·下停이 고른가(上停은 점수 제외 · upperLevel 로 따로)
   cheonI: 'ABS',     // 遷移宮 좌우 균형
   whRatio: 'REL', jawRatio: 'REL', foreheadRatio: 'REL', eyeAspect: 'REL', eyeSize: 'REL',
   eyeTilt: 'REL', noseWRatio: 'REL', noseHRatio: 'REL', noseDorsum: 'REL', mouthRatio: 'REL',

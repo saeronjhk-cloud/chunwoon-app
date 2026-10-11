@@ -35,8 +35,9 @@ check('D5', 'myungGung·jilAek·jeonTaek: 높을수록 넓음', ['myungGung', 'j
 check('D6', 'noseDorsum: 높을수록 콧대가 솟음', /높을수록[^)]*(솟|볼록)/.test(L('noseDorsum')), L('noseDorsum'));
 check('D7', 'chin: 턱 길이(아랫입술~턱끝)', /길/.test(L('chin')) && /높을수록/.test(L('chin')), L('chin'));
 check('D8', 'v795 라벨 유지(눈꼬리 처짐 · 보수관 꼬리)', /처/.test(L('eyeTilt')) && /꼬리가 위/.test(L('browAngle')), '');
-const t1 = M.cwFaceAxisBlock({ ranks: { upperOverRest: 0.8, midOverLow: 0.2 }, measurements: { upperOverRest: 0.52, midOverLow: 1.0 } });
-check('T1', '삼정 길이 축이 프롬프트에 실린다(상정·중정/하정)', /상정/.test(t1) && /중정/.test(t1), t1.replace(/\n/g, ' '));
+// ★v799 P-799-C 2단계(자문 R1 Q3 · p32 G7) — 상정은 백분위로 싣지 않고 엔진의 3단계 말(upperLevel)로만 싣는다. 종전 T1(상정 백분위)을 이 명세로 바꿈.
+const t1 = M.cwFaceAxisBlock({ ranks: { upperOverRest: 0.8, midOverLow: 0.2 }, measurements: { upperOverRest: 0.52, midOverLow: 1.0, upperLevel: 'short' } });
+check('T1', '삼정 길이: 중정/하정 백분위 + 상정은 [상정 — 참고] 3단계 말(백분위 없음)', /\[상정 — 참고[^\]]*\][^\n]*짧은 편/.test(t1) && /중정/.test(t1) && !/상정 길이[^\n]*(상위|하위)/.test(t1), t1.replace(/\n/g, ' '));
 // 실제 운영: 머리선이 가려지면 measurements.upperOverRest=null 인데 코어 _cwRank(null)=0.5 라 ranks 엔 0.5 가 온다.
 const t2 = M.cwFaceAxisBlock({ ranks: { upperOverRest: 0.5, midOverLow: 0.5 }, measurements: { upperOverRest: null, midOverLow: 1.0 } });
 check('T2', '머리선 가림(실측 null · 랭크 0.5) → 상정 축 생략(「보통」 둔갑 금지)', !/상정 길이/.test(t2) && /중정/.test(t2), t2.replace(/\n/g, ' '));

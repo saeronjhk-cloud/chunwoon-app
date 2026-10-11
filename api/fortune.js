@@ -1786,7 +1786,7 @@ export default async function handler(req, res) {
       mouthRatio: '입 너비(얼굴 폭 대비 · 높을수록 넓음)',
       lipThickness: '입술 두께(높을수록 두꺼움)',
       symmetry: '좌우 대칭',
-      thirds: '삼정 균형',
+      thirds: '중·하정 균형',   // ★v799 P-799-C 2단계 B안 — 점수는 中·下停 2분
       myungGung: '명궁(미간 · 높을수록 넓음)',
       cheonI: '천이궁(관자 균형)',
       jaNyeo: '자녀궁(눈 밑 와잠 높이 · 높을수록 넉넉함)',
@@ -1806,7 +1806,7 @@ export default async function handler(req, res) {
     //     ⟹ 백분위로 말하면 절대 기준이 상대 순위로 바뀌어 교리가 사라진다. **절대값으로 싣는다.**
     //   REL(상대축): 「準頭豐隆」처럼 원문이 정량 기준을 주지 않는 것.
     //     ⟹ 비교 모집단이 있어야 판정되므로 백분위로 싣고, 그 모집단의 TIER 를 함께 밝힌다.
-    const CW_FACE_ABS_AXES = { symmetry: '좌우 균형(左右均衡)', thirds: '삼정 균등(三停均等)', cheonI: '천이궁 좌우 균형' };
+    const CW_FACE_ABS_AXES = { symmetry: '좌우 균형(左右均衡)', thirds: '중·하정 균형(中·下停)', cheonI: '천이궁 좌우 균형' };
     // ★v797 P-797-B2 — 안경 착용 촬영 시 신뢰도가 낮은 축(진단 _v797_work/d06: 제이 안경 유/무 근접 t≥1.5 · 원거리 차 ≥0.12).
     //   모두 얼굴 폭 분모 축 — 안경다리가 얼굴 가장자리 점을 안쪽으로 당겨 비율이 커지는 것으로 추정. 평가 _v797_work/p24.
     const CW_FACE_GLASSES_AXES = ['eyeSize', 'noseWRatio', 'mouthRatio', 'myungGung', 'jilAek', 'jeonTaek'];
@@ -1830,7 +1830,8 @@ export default async function handler(req, res) {
         // ★v796 — 계측 불가(null) 축은 코어 _cwRank 가 0.5(중립)를 주므로 랭크만 보면 「보통」으로 둔갑한다.
         //   실측값이 null 이면 싣지 않는다. 상정(머리선 가림 시 null)은 실측 숫자가 있을 때만 싣는다.
         if (M && Object.prototype.hasOwnProperty.call(M, k) && M[k] == null) continue;
-        if (k === 'upperOverRest' && !(M && typeof M[k] === 'number' && isFinite(M[k]))) continue;
+        // ★v799 P-799-C 2단계 — 상정은 백분위·수치로 싣지 않는다(머리선 오차 · 자문 Q3). 아래 [상정 — 참고]의 3단계 말로만.
+        if (k === 'upperOverRest') continue;
         if (f.glasses === true && CW_FACE_GLASSES_AXES.indexOf(k) >= 0) continue;   // ★v797 P-797-B2
         const p = Math.round(r * 100);
         const band = p >= 90 ? '매우 큼/높음' : p >= 70 ? '큼/높음' : p >= 30 ? '보통' : p >= 10 ? '작음/낮음' : '매우 작음/낮음';
@@ -1843,6 +1844,8 @@ export default async function handler(req, res) {
       let out = '';
       if (abs.length) out += '\n[균형 계측 — 절대 기준] ' + abs.join(' · ');
       if (rel.length) out += '\n[개인 계측 백분위 — 상대 기준] ' + rel.join(' · ');
+      if (M && (M.upperLevel === 'short' || M.upperLevel === 'even' || M.upperLevel === 'long'))
+        out += '\n[상정 — 참고 · 점수 미반영] 이마(머리선~눈썹)가 중정·하정 평균보다 ' + (M.upperLevel === 'short' ? '짧은 편' : M.upperLevel === 'long' ? '긴 편' : '비슷한 편') + '(머리선 기준)';
       if (f.glasses === true) out += '\n[촬영 조건] 안경을 쓰고 촬영함 — 안경 렌즈·테 영향으로 눈 크기·명궁(미간)·산근·전택궁·콧방울 폭·입 너비 수치를 믿기 어려워 백분위를 싣지 않음';
       if (f.signature) out += `\n[계측 시그니처] ${f.signature}`;
       return out;
@@ -1852,8 +1855,7 @@ export default async function handler(req, res) {
     const CW_FACE_MEASURE_KO = {
       whRatio: ['얼굴 가로세로비', 'r3'], jawRatio: ['하악각 폭/얼굴 폭', 'r3'], eyeAspect: ['눈 가로세로비', 'r2'],
       noseWRatio: ['콧방울 폭/얼굴 폭', 'pct'], noseHRatio: ['코 길이/얼굴 길이', 'pct'], mouthRatio: ['입 너비/얼굴 폭', 'r3'],
-      symmetry: ['좌우 대칭', 'pct'], thirds: ['삼정 균등', 'pct'],
-      upperThirdPct: ['상정', 'raw%'], middleThirdPct: ['중정', 'raw%'], lowerThirdPct: ['하정', 'raw%']
+      symmetry: ['좌우 대칭', 'pct'], thirds: ['중·하정 균형', 'pct']   // ★v799 P-799-C 2단계 — 상·중·하정 % 는 싣지 않음
     };
     function cwFaceMeasureStr(m, keys, glasses) {
       if (!m) return '';
@@ -1879,6 +1881,10 @@ export default async function handler(req, res) {
       + ' 해석의 모든 문장은 두 블록에서 최소 6개 축을 근거로 삼고, 상대 기준 축은 상위 10% 또는 하위 10%인 것을 우선하세요.'
       + ' 실측값을 인용할 때는 한글 이름 그대로 쓰고, 영문 약어나 변수명(예: noseW, mouth)은 본문에 절대 쓰지 마세요.'
       + ' 누구에게나 해당되는 일반론(예: "노력하면 좋아집니다")은 쓰지 마세요.'
+      // ★v799 P-799-C 2단계(B안 · 외부 자문 R1 · 평가 _v799_work/p32)
+      + ' 균형 점수의 삼정 항은 중정·하정 두 구간의 균형(「중·하정 균형」)입니다. 상·중·하정 셋의 균형 점수라고 쓰지 마세요.'
+      + ' 상정은 점수에 넣지 않은 참고 정보입니다. [상정 — 참고]가 있을 때만 「짧은 편/비슷한 편/긴 편」 그대로 쓰고 수치로 바꾸지 마세요. 없으면 상정을 언급하지 마세요.'
+      + ' 이마 길이로 길흉을 단정하지 마세요.'
       // ★v786-b — 원문이 우리 구현을 반증한 항목. 太淸神鑑 六極 「眼雖小秀且長…反爲富貴」:
       //   크기 하나로 길흉을 가르는 것을 원문이 명시적으로 부정한다.
       //   근거: _v786_diag/IP_face/rules/face/ogwan.json  R032(八小) → R028·R030·R031 overridden_by
@@ -1920,7 +1926,7 @@ export default async function handler(req, res) {
 features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds','upperThirdPct','middleThirdPct','lowerThirdPct'], features.glasses) || 'N/A') : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds'], features.glasses) || 'N/A') : 'N/A';
 
       userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 

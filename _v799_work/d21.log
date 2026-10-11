@@ -1,0 +1,18 @@
+① B안 − (수리 전 코어·머리선 제거) 평균 |차|: 0.00 최대 0
+② 01 보임 3 · 가림 5 · 종합 차 0.33 = symmetry 0.30 · thirds 0.11 · cheonI 0.07 · organProp -0.13 · |yaw| 보임 0.03 가림 0.06
+    보임: lbl_01_far_1 94, lbl_01_near_1 92, lbl_01_near_3 94  | 가림: lbl_01_far_2 94, lbl_01_near_2 93, lbl_01_rear1x_1 93, lbl_01_rear1x_2 93, lbl_01_rear1x_3 92
+② 05 보임 1 · 가림 7 · 종합 차 -2.00 = symmetry 0.22 · thirds -1.32 · cheonI -0.43 · organProp 0.02 · |yaw| 보임 0.02 가림 0.03
+    보임: lbl_05_near_3 89  | 가림: lbl_05_far_1 92, lbl_05_far_2 91, lbl_05_near_1 92, lbl_05_near_2 90, lbl_05_rear1x_1 90, lbl_05_rear1x_2 91, lbl_05_rear1x_3 91
+② P2 보임 7 · 가림 3 · 종합 차 0.48 = symmetry -0.43 · thirds 0.60 · cheonI -0.00 · organProp 0.10 · |yaw| 보임 0.03 가림 0.02
+    보임: p2_2026_nog_far_2 91, p2_2026_nog_far_4 94, p2_2026_nog_far_5 94, p2_2026_nog_near_1 91, p2_2026_nog_near_2 92, p2_2026_nog_near_4 91, p2_2026_nog_near_5 92  | 가림: p2_2026_nog_far_1 91, p2_2026_nog_far_3 94, p2_2026_nog_near_3 90
+② J0 보임 1 · 가림 6 · 종합 차 -3.33 = symmetry -0.59 · thirds -1.09 · cheonI -1.50 · organProp -0.27 · |yaw| 보임 0.25 가림 0.20
+    보임: jay_2026_nog_guide_4 89  | 가림: jay_2026_nog_guide_1 91, jay_2026_nog_guide_2 94, jay_2026_nog_guide_3 89, jay_2026_nog_guide_5 92, jay_2026_nog_far_1 95, jay_2026_nog_far_2 93
+② 셀카 보임 16 가림 24 · 차 -2.00 = symmetry -0.54 · thirds -1.38 · cheonI -0.01 · organProp -0.04
+    셀카 묶음별 보임/가림 장수: jay_2011_g_selfie_a 0/1 · jay_2011_g_selfie_b 0/1 · jay_2011_g_selfie_c 0/1 · jay_2011_g_selfie_close_a 0/1 · jay_2011_g_selfie_close_b 0/1 · jay_2013_g_selfie_a 0/1 · jay_2013_g_selfie_b 1/0 · jay_2013_g_selfie_c 0/1 · jay_2013_g_selfie_d 0/1 · jay_2018_g_selfie_a 1/0 · jay_2018_g_selfie_b 1/0 · jay_2018_g_selfie_c 1/0 · jay_2018_g_selfie_smile 0/1 · jay_2021_nog_studio 0/1 · jay_2023_nog_idphoto 0/1 · jay_2026_g 4/4 · jay_2026_nog 1/6 · p2_2026_nog 7/3
+③ ρ(수리 전, B) 전체 n 144: 0.70 · 평균 이동 1.28
+③ ρ(수리 전, B) 가림만 n 70: 1.00 · 평균 이동 0.00
+③ ρ(수리 전, B) 보임만 n 74: 0.56 · 평균 이동 2.50
+③ 수리 전 점수 분산 원천: 전체 ρ(수리 전 점수, 보임 여부) -0.46 · B안 -0.07
+④ 라벨셋+P2+J0 n 81 · 종합~|yaw| 기울기 수리 전 -6.03 → B -8.78 (점/단위) · 종합 표준편차 2.81 → 2.12
+④ 전체 n 81 · 상관(종합,|yaw|) 수리 전 -0.19 → B -0.38 · 상관(보임,|yaw|) -0.25
+④ |yaw|<0.45 n 79 · 상관(종합,|yaw|) 수리 전 -0.08 → B -0.22 · 상관(보임,|yaw|) -0.19

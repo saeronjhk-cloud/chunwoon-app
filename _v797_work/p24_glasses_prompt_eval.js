@@ -16,12 +16,13 @@ const a=src.indexOf('const CW_FACE_AXIS_KO'),c=src.indexOf(';\n',src.indexOf('co
 const M=new Function(src.slice(a,c+1)+"\nreturn { cwFaceAxisBlock, cwFaceMeasureStr, CW_FACE_AXIS_RULE, CW_FACE_AXIS_KO, G: (typeof CW_FACE_GLASSES_AXES!=='undefined'?CW_FACE_GLASSES_AXES:null) };")();
 let total=0,pass=0;const fails=[];
 function check(id,name,ok,detail){total++;if(ok)pass++;else fails.push(id);console.log(`  ${ok?'ok  ':'FAIL'} ${id} ${name} — ${detail}`);}
+// ★v799 P-799-C 2단계 — upperOverRest 는 백분위로 싣지 않음(자문 R1 Q3) → G2 「나머지 축」에서 제외.
 const WANT=['eyeSize','noseWRatio','mouthRatio','myungGung','jilAek','jeonTaek'];
 check('G1','안경 영향 축 목록 = 진단 d06 규칙 결과(6축)',!!M.G&&M.G.length===WANT.length&&WANT.every(k=>M.G.includes(k)),M.G?M.G.join(','):'없음');
 const ranks={},meas={};for(const k of Object.keys(M.CW_FACE_AXIS_KO)){ranks[k]=0.8;meas[k]=0.3;}meas.symmetry=0.9;meas.thirds=0.85;
 const base=M.cwFaceAxisBlock({ranks,measurements:meas}),off=M.cwFaceAxisBlock({ranks,measurements:meas,glasses:false}),on=M.cwFaceAxisBlock({ranks,measurements:meas,glasses:true});
 const lab=k=>M.CW_FACE_AXIS_KO[k];
-check('G2','안경: 영향 축 백분위 미전달 · 나머지 축은 그대로',WANT.every(k=>!on.includes(lab(k)))&&Object.keys(M.CW_FACE_AXIS_KO).filter(k=>!WANT.includes(k)&&!['symmetry','thirds','cheonI'].includes(k)).every(k=>on.includes(lab(k))),'');
+check('G2','안경: 영향 축 백분위 미전달 · 나머지 축은 그대로',WANT.every(k=>!on.includes(lab(k)))&&Object.keys(M.CW_FACE_AXIS_KO).filter(k=>!WANT.includes(k)&&!['symmetry','thirds','cheonI','upperOverRest'].includes(k)).every(k=>on.includes(lab(k))),'');
 check('G3','안경: [촬영 조건] 줄로 이유 명시',/\[촬영 조건\][^\n]*안경/.test(on),(on.match(/\[촬영 조건\][^\n]*/)||[''])[0]);
 check('G4','안경 아님/미전송 → 종전과 동일 · 영향 축 포함',off===base&&WANT.every(k=>base.includes(lab(k)))&&!/촬영 조건/.test(base),'');
 const m={whRatio:0.8,jawRatio:0.8,eyeAspect:3.1,noseWRatio:0.31,noseHRatio:0.3,mouthRatio:0.37,symmetry:0.9,thirds:0.85};
