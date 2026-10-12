@@ -586,7 +586,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="section" id="sec-face">
     <div class="card">
       <div class="card-title">👤 관상 풀이</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">정면을 바라본 얼굴 사진을 촬영하거나 업로드하세요. 얼굴 전체가 프레임 안에 잘 보이도록 해주세요. <b>안경은 벗고</b>, 앞머리가 이마를 가리지 않게 해주시면 눈 크기와 이마(상정)까지 정확히 잽니다.</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">정면을 바라본 얼굴 사진을 촬영하거나 업로드하세요. 얼굴 전체가 프레임 안에 잘 보이도록 해주세요. <b>안경은 벗고</b>, <b>입을 다물고 무표정으로</b>, 앞머리가 이마를 가리지 않게 해주시면 눈 크기와 이마(상정)까지 정확히 잽니다.</p>
       <div class="photo-stage" id="faceStage">
         <div class="photo-placeholder" id="facePlaceholder">
           <div style="font-size:52px;margin-bottom:8px">👤</div>
@@ -4449,7 +4449,7 @@ function startFaceAlignLoop(){
       if(_faceCountdownState.alignedFrames>=needed){
         // Start 3-2-1 countdown
         _faceCountdownState.countingDown=true;
-        status.textContent='✓ 정렬 완료 — 촬영합니다';
+        status.textContent='✓ 정렬 완료 — 입을 다물고 무표정으로';
         let n=3;
         const doCount=()=>{
           cd.textContent=n;cd.classList.remove('show');
@@ -4465,7 +4465,7 @@ function startFaceAlignLoop(){
         };
         doCount();
       }else{
-        status.textContent=`✓ 정렬 중... (${_faceCountdownState.alignedFrames}/${needed})`;
+        status.textContent=`✓ 정렬 중... (${_faceCountdownState.alignedFrames}/${needed}) · 입을 다물고 무표정으로`;
       }
     }
   },300);
@@ -5917,10 +5917,15 @@ async function analyzeFace(){
     aiScores=cls;
     console.log('[관상] AI landmark classification:',cls.ratios);
   } else {
-    shapeOpt=pickFromHash(FACE_S,h.hash);
-    eyeOpt=pickFromHash(FACE_E,(h.hash>>>3)+((h.variance|0)));
-    noseOpt=pickFromHash(FACE_N,(h.hash>>>6)+((h.avg|0)));
-    mouthOpt=pickFromHash(FACE_M,(h.hash>>>9)+((h.bright|0)));
+    // ★v801 P-801-B — 랜드마크를 못 잡으면 점수·판정·AI 풀이를 내지 않는다(평가 _v799_work/p36).
+    //   종전에는 사진 해시로 얼굴형·눈·코·입과 점수를 만들어 보였다 — 계측 없는 숫자(원칙 22 위반).
+    hideDetectLabel('face');
+    stage.classList.remove('scanning');
+    document.getElementById('faceAnalyzeBtn').disabled=false;
+    const fr=document.getElementById('faceResult');
+    fr.innerHTML='<div class="card"><div class="card-title">📷 얼굴을 찾지 못했어요</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">사진에서 얼굴 윤곽을 잡지 못해 점수를 내지 않았습니다.<br>얼굴 전체가 밝게, 정면으로 보이는 사진으로 다시 찍거나 골라 주세요.</div></div>';
+    fr.classList.add('show');
+    return;
   }
   const sR=FACE_R.shape[shapeOpt.v],eR=FACE_R.eyes[eyeOpt.v],nR=FACE_R.nose[noseOpt.v],mR=FACE_R.mouth[mouthOpt.v];
 
