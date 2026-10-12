@@ -6021,6 +6021,11 @@ function drawStaticMouth(ctx,W,H,mouth,color){
   ctx.beginPath();ctx.ellipse(mouth.x*W,mouth.y*H,mouth.w*W,mouth.hh*H*2,0,0,Math.PI*2);ctx.stroke();ctx.restore();
 }
 
+// ★v801 P-801-A Q1(외부 자문 R1 일치 · 진단 _v799_work/d26 · 평가 _v799_work/p35)
+//   종합 점수 = 조화도(ABS). 실사진 123장 전부 88~95점 → 순위가 아니라 균형 상태임을 점수 바로 아래에 함께 적는다.
+//   범위는 api/fortune.js 의 같은 상수와 일치해야 한다(p35 H3). 평가 없이 바꾸지 않는다.
+const CW_FACE_HARMONY_RANGE = { lo: 88, hi: 95 };
+const CW_FACE_HARMONY_NOTE = '<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">조화도는 순위가 아니라 얼굴 균형 상태입니다<br>대부분의 얼굴이 '+CW_FACE_HARMONY_RANGE.lo+'~'+CW_FACE_HARMONY_RANGE.hi+'점에 들고, 같은 얼굴도 사진마다 몇 점씩 달라질 수 있습니다</div>';
 // Creates face result container with hidden traits — revealed one-by-one during animation
 function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,landmarks,aiScores){
   // Use AI-computed scores if available, otherwise hash-based fallback
@@ -6032,7 +6037,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
   const sd=aiScores&&aiScores.shapeDesc;   // ★v799 P-799-B
   const r=document.getElementById('faceResult');
   r.innerHTML=`<div class="card pulse-card"><div class="card-title">👤 관상 종합 분석</div>
-  <div style="text-align:center;margin-bottom:18px"><div style="font-size:52px;color:var(--gold);font-family:'Noto Serif KR',serif">${ov}<span style="font-size:18px">점</span></div><div style="font-size:11px;color:var(--text2);margin-top:4px">사진 기반 AI 관상 판독</div></div>
+  <div style="text-align:center;margin-bottom:18px"><div style="font-size:52px;color:var(--gold);font-family:'Noto Serif KR',serif">${ov}<span style="font-size:18px">점</span></div><div style="font-size:11px;color:var(--text2);margin-top:4px">사진 기반 AI 관상 판독</div>${aiScores?CW_FACE_HARMONY_NOTE:''}</div>
   <div style="background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.15);border-radius:10px;padding:11px 14px;margin-bottom:14px">
     <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:4px;font-family:'Noto Serif KR',serif">📜 판독 근거</div>
     <div style="font-size:11px;line-height:1.7;color:var(--text2)">${METHOD_FACE}</div>
