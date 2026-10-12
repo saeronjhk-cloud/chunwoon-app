@@ -6048,7 +6048,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
     <div style="font-size:11px;line-height:1.7;color:var(--text2)">${METHOD_FACE}</div>
     ${aiScores?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,165,78,.12);font-size:10px;color:var(--text2);line-height:1.8">
       <span style="color:var(--gold)">📐 AI 실측 데이터:</span>
-      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 중·하정 균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}% · 황금비 근접도 ${(aiScores.ratios.goldenProximity*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}${window._cwFaceDistCm&&window._cwFaceSrc==='live'?` · 근접 셀카(약 ${Math.round(window._cwFaceDistCm)}cm 추정) 원근 보정`:''}${window._cwGlasses?`<br><span style="color:#e8a33d">👓 안경 착용이 감지됐어요 — 안경 렌즈·테 때문에 눈 크기·명궁·콧방울 수치가 실제보다 크게 나올 수 있어요. 벗고 다시 촬영하시면 더 정확합니다.</span>`:''}
+      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 중·하정 균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}${window._cwFaceDistCm&&window._cwFaceSrc==='live'?` · 근접 셀카(약 ${Math.round(window._cwFaceDistCm)}cm 추정) 원근 보정`:''}${window._cwGlasses?`<br><span style="color:#e8a33d">👓 안경 착용이 감지됐어요 — 안경 렌즈·테 때문에 눈 크기·명궁·콧방울 수치가 실제보다 크게 나올 수 있어요. 벗고 다시 촬영하시면 더 정확합니다.</span>`:''}
     </div>`:''}
   </div>
   <div id="faceTraits"></div>
