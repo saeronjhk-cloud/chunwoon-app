@@ -8,7 +8,7 @@ const page=`<!doctype html><meta charset="utf-8"><script src="https://cdn.jsdeli
 let _faceMeshModel;
 ${blk}
 async function init(){_faceMeshModel=new FaceMesh({locateFile:f=>'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/'+f});
- _faceMeshModel.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+ _faceMeshModel.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
  const w=document.createElement('canvas');w.width=64;w.height=64;const c=w.getContext('2d');c.fillStyle='#c0a080';c.fillRect(10,10,44,44);
  await new Promise(r=>{_faceMeshModel.onResults(()=>r());_faceMeshModel.send({image:w});});}
 async function load(src){const img=new Image();await new Promise((a,b)=>{img.onload=a;img.onerror=b;img.src=src});const s=Math.min(1,640/img.naturalWidth,640/img.naturalHeight);const cv=document.createElement('canvas');cv.width=img.naturalWidth*s;cv.height=img.naturalHeight*s;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);return cv;}

@@ -4105,7 +4105,9 @@ async function initFaceMesh(){
     _faceMeshModel=new FaceMesh({
       locateFile:(file)=>'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/'+file
     });
-    _faceMeshModel.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+    // ★v803 P-803-C — refine(홍채·윤곽 재계산) 끔. REF 기준표·안경 CNN·미소 판정기·원근 보정이 모두 refine 끔 랜드마크로 만들어졌다.
+    //   refine 켬은 눈·입술 윤곽점을 다시 계산해 눈 판정 일치 74/127 · 입 71/127(편향 eyeTilt −24 · browThick −22 백분위점)이었다(d31 · 평가 p40). 홍채 점은 앱이 쓰지 않는다.
+    _faceMeshModel.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
     updateAILoading('WASM 런타임 초기화 중...',30);
     // Warm up — first send triggers full init. Add timeout so UI doesn't hang forever.
     const warmCv=document.createElement('canvas');warmCv.width=64;warmCv.height=64;
