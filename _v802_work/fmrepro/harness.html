@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>fm repro</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+<script>
+// 앱(index.html initFaceMesh·detectFaceAI·analyzeFace)과 같은 판·옵션·640px 축소·워밍업
+let fm;
+async function init(){
+  fm=new FaceMesh({locateFile:f=>'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/'+f});
+  fm.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+  const w=document.createElement('canvas');w.width=64;w.height=64;const c=w.getContext('2d');c.fillStyle='#c0a080';c.fillRect(10,10,44,44);
+  await new Promise(r=>{fm.onResults(()=>r());fm.send({image:w});});
+}
+function det(cv){return new Promise(res=>{fm.onResults(r=>res(r.multiFaceLandmarks&&r.multiFaceLandmarks[0]||null));fm.send({image:cv});});}
+async function load(src){const img=new Image();await new Promise((a,b)=>{img.onload=a;img.onerror=b;img.src=src});
+  const s=Math.min(1,640/img.naturalWidth,640/img.naturalHeight);const cv=document.createElement('canvas');cv.width=img.naturalWidth*s;cv.height=img.naturalHeight*s;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);return cv;}
+window.run=async function(seq,reset){const out=[];const cache={};
+  for(const n of seq){cache[n]=cache[n]||await load(n+'.jpg');if(reset&&fm.reset)fm.reset();const lm=await det(cache[n]);out.push({n,w:cache[n].width,h:cache[n].height,lm:lm?lm.map(p=>[p.x,p.y,p.z]):null});}
+  return out;};
+window.ready=init();
+</script>

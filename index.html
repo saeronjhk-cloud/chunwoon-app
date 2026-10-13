@@ -4127,20 +4127,42 @@ async function initFaceMesh(){
 }
 
 
-// Promise-based wrappers for single-image detection
-function detectFaceAI(imageElement){
+// ★P-803-B 시작 — 정지 이미지 검출의 추적 상태 오염 제거(실기 10-13 「같은 사람 점수가 매번 달라」 · 평가 _v802_work/p39·p39b)
+//   구형 @mediapipe/face_mesh JS 솔루션은 정지 이미지 모드가 없고, 직전 프레임의 얼굴 위치로 다음 이미지를 추적한다.
+//   → 같은 사진을 다시 넣어도 랜드마크가 최대 4px(다른 사진 뒤에는 10px) 달라져 점수·입 판정이 바뀌고, 직전 얼굴 때문에 얼굴을 못 찾기도 했다.
+//   측정용 검출(opt.still)은 빈 프레임을 먼저 보내 추적을 끊는다 — reset() 과 결과가 같고(0.00px) 훨씬 빠르다(2.2초 → 0.37초, 헤드리스 실측).
+//   onResults 가 전역 하나라 동시에 부르면 결과가 뒤섞일 수 있다 → 검출을 한 줄로 세운다(직렬화). 무응답 10초면 null 로 풀어 줄이 막히지 않게 한다.
+let _cwFaceMeshQ=Promise.resolve();
+let _cwFaceBlankCv=null;
+function _cwFaceMeshSend(imageElement){
   return new Promise((resolve)=>{
+    let done=false;const fin=v=>{if(!done){done=true;clearTimeout(to);resolve(v)}};
+    const to=setTimeout(()=>fin(null),10000);
     _faceMeshModel.onResults((results)=>{
       const lm=results.multiFaceLandmarks&&results.multiFaceLandmarks[0];
-      resolve(lm||null); // array of 468 {x,y,z} normalized
+      fin(lm||null); // array of 468 {x,y,z} normalized
     });
     // 에러 발생 시 무한 대기를 막고 null을 반환하여 Fallback이 작동하게 함
     Promise.resolve(_faceMeshModel.send({image:imageElement})).catch(err=>{
       console.error('Face AI Error:',err);
-      resolve(null);
+      fin(null);
     });
   });
 }
+function detectFaceAI(imageElement,opt){
+  const job=async()=>{
+    if(opt&&opt.still){
+      if(!_cwFaceBlankCv){_cwFaceBlankCv=document.createElement('canvas');_cwFaceBlankCv.width=64;_cwFaceBlankCv.height=64;const b=_cwFaceBlankCv.getContext('2d');b.fillStyle='#000';b.fillRect(0,0,64,64);}
+      await _cwFaceMeshSend(_cwFaceBlankCv); // 얼굴 없는 프레임 → 다음 검출은 추적이 아니라 새 검출
+    }
+    const lm=await _cwFaceMeshSend(imageElement);
+    return lm?lm.map(p=>({x:p.x,y:p.y,z:p.z})):null; // 복사 — 뒤이은 검출이 결과 버퍼를 덮어써도 안전
+  };
+  const p=_cwFaceMeshQ.then(job,job);
+  _cwFaceMeshQ=p.catch(()=>null);
+  return p;
+}
+// ★P-803-B 끝
 
 // ============================================================
 //  ★v787 (P-786-I) — AI 프레임 보관·초기화 + 색·텍스처 센서 결속
@@ -4499,7 +4521,7 @@ async function _cwCollectFaceFrames(v,n){
     if(st)st.textContent=`정밀 계측 중... (${i+1}/${n}) 잠시 그대로 계세요`;
     await new Promise(r=>setTimeout(r,CW_FACE_FRAME_GAP_MS)); // 새 비디오 프레임을 기다린다(30fps 기준 4프레임 이상)
     x.setTransform(-1,0,0,1,c.width,0);x.drawImage(v,0,0,c.width,c.height);
-    try{const lm=await detectFaceAI(c);if(lm&&lm.length>=468)out.push(lm.map(p=>({x:p.x,y:p.y,z:p.z})));}catch(e){}
+    try{const lm=await detectFaceAI(c,{still:true});if(lm&&lm.length>=468)out.push(lm.map(p=>({x:p.x,y:p.y,z:p.z})));}catch(e){}
   }
   if(st&&out.length)st.textContent=`✓ 정밀 계측 완료 (${out.length+1}프레임)`;
   return out;
@@ -4518,7 +4540,7 @@ async function autoSnapFace(){
   if(_faceMeshModel){
     try{
       // Re-detect on the final captured (mirrored) frame
-      const lm=await detectFaceAI(cv);
+      const lm=await detectFaceAI(cv,{still:true});
       if(lm)aiLandmarks=lm.map(p=>({x:p.x,y:p.y,z:p.z})); // ★v797 복사 — 뒤이은 검출이 결과 버퍼를 덮어써도 안전
     }catch(e){}
   }
@@ -4581,7 +4603,7 @@ async function snapPhoto(kind){
     let aiLm=null;
     if(kind==='face'&&_faceMeshModel){
       try{
-        const lm=await detectFaceAI(cv);
+        const lm=await detectFaceAI(cv,{still:true});
         if(lm&&lm.length>=468){
           aiLm=lm.map(p=>({x:p.x,y:p.y,z:p.z}));
           const extra=await _cwCollectFaceFrames(v,CW_FACE_MULTI_FRAMES);
@@ -5909,7 +5931,7 @@ async function analyzeFace(){
       tmpCv.width=img.naturalWidth*scale;
       tmpCv.height=img.naturalHeight*scale;
       tmpCv.getContext('2d').drawImage(img,0,0,tmpCv.width,tmpCv.height);
-      const aiLm=await detectFaceAI(tmpCv);
+      const aiLm=await detectFaceAI(tmpCv,{still:true});
       if(aiLm){
         // ★v786 — MediaPipe 는 x 를 사진 폭, y 를 사진 높이로 각각 정규화한다.
         //   x/y 를 섞는 비율이 사진 비율에 끌려가지 않도록 종횡비를 함께 보관한다.

@@ -1,0 +1,12 @@
+const {chromium}=require('/opt/npm-tools/node_modules/playwright');
+const http=require('http'),fs=require('fs'),path=require('path');
+const srv=http.createServer((q,r)=>{const f=path.join(__dirname,decodeURIComponent(q.url.split('?')[0])==='/'?'index.html':decodeURIComponent(q.url.split('?')[0]));fs.readFile(f,(e,d)=>{if(e){r.writeHead(404);r.end();return;}r.writeHead(200,{'Content-Type':f.endsWith('.html')?'text/html':'image/jpeg'});r.end(d);});}).listen(8765);
+(async()=>{const b=await chromium.launch({args:['--use-gl=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});const p=await b.newPage();
+ p.on('console',m=>{if(m.type()==='error')console.log('[page]',m.text().slice(0,200));});
+ await p.goto('http://localhost:8765/');await p.evaluate(()=>window.ready);
+ const seq=['lbl_01_near_1','lbl_01_near_1','lbl_03_far_1','lbl_01_near_1','h03','lbl_05_rear1x_1','lbl_01_near_1'];
+ const A=await p.evaluate(s=>window.run(s,false),seq);
+ const hasReset=await p.evaluate(()=>typeof fm.reset);
+ const B=await p.evaluate(s=>window.run(s,true),seq);
+ fs.writeFileSync('out.json',JSON.stringify({seq,A,B,hasReset}));console.log('reset:',hasReset);
+ await b.close();srv.close();})().catch(e=>{console.error(e);process.exit(1);});
