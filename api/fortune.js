@@ -1810,6 +1810,8 @@ export default async function handler(req, res) {
     // ★v797 P-797-B2 — 안경 착용 촬영 시 신뢰도가 낮은 축(진단 _v797_work/d06: 제이 안경 유/무 근접 t≥1.5 · 원거리 차 ≥0.12).
     //   모두 얼굴 폭 분모 축 — 안경다리가 얼굴 가장자리 점을 안쪽으로 당겨 비율이 커지는 것으로 추정. 평가 _v797_work/p24.
     const CW_FACE_GLASSES_AXES = ['eyeSize', 'noseWRatio', 'mouthRatio', 'myungGung', 'jilAek', 'jeonTaek'];
+    // ★v803 P-803-A — 웃는 표정으로 찍은 사진에서 크게 흔들리는 축(진단 _v802_work/d30: 같은 사람 무표정 평균 대비 백분위점 입 크기 24 · 입술 두께 22 · 코 폭 22 · 인중 13). 평가 p38.
+    const CW_FACE_SMILE_AXES = ['mouthRatio', 'lipThickness', 'inJung', 'noseWRatio'];
     function cwFaceAxisBlock(f) {
       const R = f && f.ranks, M = f && f.measurements;
       if (!R) return '';
@@ -1833,6 +1835,7 @@ export default async function handler(req, res) {
         // ★v799 P-799-C 2단계 — 상정은 백분위·수치로 싣지 않는다(머리선 오차 · 자문 Q3). 아래 [상정 — 참고]의 3단계 말로만.
         if (k === 'upperOverRest') continue;
         if (f.glasses === true && CW_FACE_GLASSES_AXES.indexOf(k) >= 0) continue;   // ★v797 P-797-B2
+        if (f.smile === true && CW_FACE_SMILE_AXES.indexOf(k) >= 0) continue;   // ★v803 P-803-A
         const p = Math.round(r * 100);
         const band = p >= 90 ? '매우 큼/높음' : p >= 70 ? '큼/높음' : p >= 30 ? '보통' : p >= 10 ? '작음/낮음' : '매우 작음/낮음';
         // ★v795 P-790-G/F — 50% 이상은 「상위 n%」, 미만은 「하위 n%」로 방향을 맞춘다(종전: 하위 9% 를 「상위 91%」로 적어 크다고 오해).
@@ -1847,6 +1850,7 @@ export default async function handler(req, res) {
       if (M && (M.upperLevel === 'short' || M.upperLevel === 'even' || M.upperLevel === 'long'))
         out += '\n[상정 — 참고 · 점수 미반영] 이마(머리선~눈썹)가 중정·하정 평균보다 ' + (M.upperLevel === 'short' ? '짧은 편' : M.upperLevel === 'long' ? '긴 편' : '비슷한 편') + '(머리선 기준)';
       if (f.glasses === true) out += '\n[촬영 조건] 안경을 쓰고 촬영함 — 안경 렌즈·테 영향으로 눈 크기·명궁(미간)·산근·전택궁·콧방울 폭·입 너비 수치를 믿기 어려워 백분위를 싣지 않음';
+      if (f.smile === true) out += '\n[촬영 조건] 웃는 표정으로 촬영함 — 입 크기·입술 두께·인중·콧방울 폭이 평소와 달라 백분위를 싣지 않음. 이 항목들로 입·코의 길흉을 단정하지 말 것';
       if (f.signature) out += `\n[계측 시그니처] ${f.signature}`;
       return out;
     }
@@ -1857,11 +1861,12 @@ export default async function handler(req, res) {
       noseWRatio: ['콧방울 폭/얼굴 폭', 'pct'], noseHRatio: ['코 길이/얼굴 길이', 'pct'], mouthRatio: ['입 너비/얼굴 폭', 'r3'],
       symmetry: ['좌우 대칭', 'pct'], thirds: ['중·하정 균형', 'pct']   // ★v799 P-799-C 2단계 — 상·중·하정 % 는 싣지 않음
     };
-    function cwFaceMeasureStr(m, keys, glasses) {
+    function cwFaceMeasureStr(m, keys, glasses, smile) {
       if (!m) return '';
       const out = [];
       for (const k of keys) {
         if (glasses === true && CW_FACE_GLASSES_AXES.indexOf(k) >= 0) continue;   // ★v797 P-797-B2
+        if (smile === true && CW_FACE_SMILE_AXES.indexOf(k) >= 0) continue;   // ★v803 P-803-A
         let v = m[k];
         if (k === 'eyeAspect' && (v == null)) v = m.eyeRatio;
         if (k === 'thirds' && (v == null)) v = m.thirdsScore;
@@ -1920,7 +1925,7 @@ export default async function handler(req, res) {
 - JSON 형식으로만 응답: {"shape":"얼굴형","eyes":"눈","nose":"코","mouth":"입","summary":"종합 200자+","advice":"조언"}` + CW_FACE_AXIS_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'], features.glasses)}` : '';
+      const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'], features.glasses, features.smile)}` : '';
 
       userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
@@ -1931,7 +1936,7 @@ export default async function handler(req, res) {
 features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds'], features.glasses) || 'N/A') : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds'], features.glasses, features.smile) || 'N/A') : 'N/A';
 
       userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
@@ -1942,7 +1947,7 @@ features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20
 weaknesses 2개, enemies 2개, allies 2개.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
-      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds'], features.glasses) || 'N/A') : 'N/A';
+      const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','noseWRatio','symmetry','thirds'], features.glasses, features.smile) || 'N/A') : 'N/A';
 
       userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},점수:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 

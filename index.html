@@ -4164,6 +4164,7 @@ function _cwResetAIFrame(){
   window._cwFaceSrc=null; // ★v797 촬영 경로(live/file)도 지운다
   window._cwFaceNFrames=null; // ★v797 P-797-A 합성 프레임 수
   window._cwGlasses=null; // ★v797 P-797-B 안경 감지
+  window._cwSmileWarn=null; // ★v803 P-803-A 미소 경고
   window._cwFaceExif=null;window._cwFaceDistCm=null; // ★v797 P-797-D 사진 EXIF·추정 촬영거리
 }
 // srcCanvas: FaceMesh 에 넣은 그 캔버스(또는 같은 종횡비의 원본) · lm: 그 캔버스에서 검출한 랜드마크
@@ -4360,7 +4361,8 @@ async function detectFaceInFrame(video){
       for(const p of lm){if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y}
       const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
       const glasses=_cwGlassesOnCanvas(safeCv,lm); // ★v797 P-797-B
-      return{cx:1-cx,cy:cy,w:maxX-minX,h:maxY-minY,count:468,ratio:0.5,aiLandmarks:lm,glasses:glasses};
+      const smile=_cwFaceSmile(lm,safeCv.height/(safeCv.width||1)); // ★v803 P-803-A
+      return{cx:1-cx,cy:cy,w:maxX-minX,h:maxY-minY,count:468,ratio:0.5,aiLandmarks:lm,glasses:glasses,smile:smile};
     }catch(e){_faceMeshBusy=false}
   }
   // Fallback: skin-tone heuristic
@@ -4384,7 +4386,7 @@ async function detectFaceInFrame(video){
 
 function startFaceAlignLoop(){
   stopFaceAlignLoop();
-  _faceCountdownState={alignedFrames:0,countingDown:false,countdownValue:0,glassesWait:0};
+  _faceCountdownState={alignedFrames:0,countingDown:false,countdownValue:0,glassesWait:0,smileWait:0};
   const status=document.getElementById('faceGuideStatus');
   const guide=document.getElementById('faceGuide');
   const cd=document.getElementById('faceCountdown');
@@ -4434,6 +4436,13 @@ function startFaceAlignLoop(){
       status.classList.remove('ok');
       status.textContent='얼굴을 정면으로 돌려 화면을 바라봐 주세요';
       _faceCountdownState.alignedFrames=0;
+    }else if(det.smile&&det.smile.warn&&_faceCountdownState.smileWait<CW_SMILE_WAIT_TICKS){
+      // ★v803 P-803-A — 웃고 있으면 카운트다운을 멈추고 무표정을 권한다(상한 뒤에는 그대로 촬영 — 판정은 analyzeFace 가 다시 한다)
+      _faceCountdownState.smileWait++;
+      _faceCountdownState.alignedFrames=0;
+      guide.classList.remove('aligned');
+      status.classList.remove('ok');
+      status.textContent='🙂 웃는 표정이에요 — 입을 다물고 무표정으로 바라봐 주세요';
     }else if(det.glasses&&_faceCountdownState.glassesWait<CW_GLASSES_WAIT_TICKS){
       // ★v797 P-797-B — 안경이 보이면 카운트다운을 잠시 멈추고 벗기를 권한다(상한 후에는 그대로 촬영)
       _faceCountdownState.glassesWait++;
@@ -4477,6 +4486,7 @@ function stopFaceAlignLoop(){
 
 // ★v797 P-797-A — 다중 프레임 계측: 저장 프레임 + 추가 프레임 N 장(미러 캔버스 · 같은 크기) → _cwFaceLmAggregate
 const CW_FACE_MULTI_FRAMES=6;
+const CW_SMILE_WAIT_TICKS=10; // ★v803 P-803-A 미소 감지 시 정렬 대기 상한(300ms×10 ≈ 3초) — 계속 웃으면 그대로 촬영(보류 판정은 analyzeFace)
 const CW_GLASSES_WAIT_TICKS=10; // ★v797 P-797-B 안경 감지 시 정렬 대기 상한(300ms×10 ≈ 3초) — 벗지 않으면 그대로 촬영
 const CW_FACE_FRAME_GAP_MS=150; // ★실기 10-04 — 프레임 사이 대기: 같은 비디오 프레임 반복(독립 표본 아님) 방지 · 문구가 보일 시간 확보
 async function _cwCollectFaceFrames(v,n){
@@ -4824,6 +4834,32 @@ function _cwFacePose(ai) {
   var dl = ai[1].x - ai[234].x, dr = ai[454].x - ai[1].x, t = dl + dr;
   var yaw = Math.abs(t) > 1e-9 ? (dl - dr) / t : 0;
   return { yaw: yaw, held: Math.abs(yaw) >= CW_FACE_POSE_MAX.yaw };
+}
+
+/* ★v803 P-803-A — 미소(표정) 판정. 근거 d30: 미소 사진은 같은 사람 무표정 평균 대비 입 크기 24 · 입술 두께 22 · 코 폭 22 · 인중 13
+   백분위점 벗어남(무표정 사진 7.5 · 7.6 · 12 · 4). 판정기 = 랜드마크 5특징 로지스틱(CelebA img_align · 학습 4987 · 검증 2986 임계 · 시험 2995 1회 AUC 0.963).
+   ★계수·임계는 생성기 _v802_work/smile/x02_fit.py → smile_model.json 으로만 바꾼다(손수정 금지 · 원칙 14). 기준 구현 smile/smile_lib.js · smile_feat.py(p38 S2 일치).
+   특징(두 눈 바깥꼬리 수평 회전 · 내안각 간격/입 폭 정규화): lift 입꼬리 상승 · wide 입폭/내안각 · gap 입술 벌어짐 · lowcurve 아랫입술 U자 · cornerDrop 코밑→입꼬리.
+   warnT = 검증 무표정 오판 5%(경고: 결과는 내되 입·입술·인중·코 폭 축을 AI에서 뺌) · holdT = 2%(보류: 점수 없이 재촬영 안내). */
+var CW_FACE_SMILE = { version: 'SMILE-CELEBA-v1-20261013', feats: ["lift", "wide", "gap", "lowcurve", "cornerDrop"],
+  mu: [0.057823821378540204, 1.562643580358176, 0.10014882718637823, 0.2927904006127593, 0.5357532699566971],
+  sd: [0.0628409560452501, 0.2216121750302758, 0.09202071667769147, 0.07808350220965535, 0.1871556936813362],
+  w: [0.30173626876007076, 1.9928724841773582, 0.6643737833244707, -0.24282813473057385, -1.2417002272368802],
+  b: -0.2364651490448199, warnT: 0.3006508194003394, holdT: 1.1387207517843208 };
+function _cwFaceSmile(ai, A) {
+  var S = CW_FACE_SMILE;
+  if (!ai || ai.length < 468) return { logit: -99, warn: false, hold: false };
+  var a = (A && isFinite(A) && A > 0) ? A : 1;
+  var X = function (i) { return ai[i].x; }, Y = function (i) { return ai[i].y * a; };
+  var t = -Math.atan2(Y(263) - Y(33), X(263) - X(33)), c = Math.cos(t), s = Math.sin(t);
+  var cx = (X(33) + X(263)) / 2, cy = (Y(33) + Y(263)) / 2;
+  var qx = function (i) { return (X(i) - cx) * c - (Y(i) - cy) * s; }, qy = function (i) { return (X(i) - cx) * s + (Y(i) - cy) * c; };
+  var en = Math.abs(qx(362) - qx(133)) || 1e-6, mw = Math.abs(qx(291) - qx(61)) || 1e-6;
+  var cornerY = (qy(61) + qy(291)) / 2, midY = (qy(13) + qy(14)) / 2;
+  var f = { lift: (midY - cornerY) / mw, wide: mw / en, gap: Math.abs(qy(14) - qy(13)) / mw, lowcurve: (qy(17) - cornerY) / mw, cornerDrop: (cornerY - qy(2)) / en };
+  var z = S.b;
+  for (var i = 0; i < S.feats.length; i++) z += S.w[i] * (f[S.feats[i]] - S.mu[i]) / S.sd[i];
+  return { logit: z, warn: z > S.warnT, hold: z > S.holdT };
 }
 
 /* ★v799 P-799-C 2단계 — 上停 3단계 말의 「비슷한 편」 구간(±). 근거: 같은 사람 안 上停/(中·下 평균) 표준편차 중앙 0.061
@@ -5470,6 +5506,7 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
 
   return {
     pose: _cwFacePose(ai),          // ★v799 P-33 {yaw, held} — held 면 화면은 점수를 내지 않는다
+    smile: _cwFaceSmile(ai, A),     // ★v803 P-803-A {logit, warn, hold} — hold 면 재촬영 · warn 이면 입·입술·인중·코 폭 축을 AI에서 뺌
     shapeOpt: pick(FACE_S, shapeV), shapeDesc: shapeDesc, eyeOpt: pick(FACE_E, eyeV),
     noseOpt: pick(FACE_N, noseV), mouthOpt: pick(FACE_M, mouthV),
     overallScore: overall,
@@ -5909,6 +5946,21 @@ async function analyzeFace(){
     fr.classList.add('show');
     return;
   }
+  // ★v803 P-803-A — 뚜렷이 웃은 사진(보류선)은 점수 없이 다시 찍기를 안내하고, 경고 구간은 결과를 내되 입·입술·인중·콧방울 축을 AI에서 뺀다(평가 _v802_work/p38).
+  window._cwSmileWarn=null;
+  if(ai&&ai.length>=468){
+    const sm=_cwFaceSmile(ai,window._cwFaceAspect||1);
+    if(sm.hold){
+      hideDetectLabel('face');
+      stage.classList.remove('scanning');
+      document.getElementById('faceAnalyzeBtn').disabled=false;
+      const fr=document.getElementById('faceResult');
+      fr.innerHTML='<div class="card"><div class="card-title">📷 무표정 사진이 필요해요</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">웃는 표정이 감지돼 점수를 내지 않았습니다. 웃으면 입·입술·인중·콧방울 모양이 달라져 관상 판정이 실제 얼굴과 달라집니다.<br><b>입을 다물고 무표정으로</b> 다시 찍어 주세요.</div></div>';
+      fr.classList.add('show');
+      return;
+    }
+    window._cwSmileWarn=sm.warn;
+  }
   if(ai&&ai.length>=468){
     showDetectLabel('face','이마(머리선)를 살펴보고 있습니다...');
     await _cwEnsureHair(); // ★v792 上停 — 머리선을 잰 뒤 분류(실패해도 上停만 계측 불가)
@@ -6048,7 +6100,7 @@ function setupFaceResultContainer(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR
     <div style="font-size:11px;line-height:1.7;color:var(--text2)">${METHOD_FACE}</div>
     ${aiScores?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,165,78,.12);font-size:10px;color:var(--text2);line-height:1.8">
       <span style="color:var(--gold)">📐 AI 실측 데이터:</span>
-      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 중·하정 균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}${window._cwFaceDistCm&&window._cwFaceSrc==='live'?` · 근접 셀카(약 ${Math.round(window._cwFaceDistCm)}cm 추정) 원근 보정`:''}${window._cwGlasses?`<br><span style="color:#e8a33d">👓 안경 착용이 감지됐어요 — 안경 렌즈·테 때문에 눈 크기·명궁·콧방울 수치가 실제보다 크게 나올 수 있어요. 벗고 다시 촬영하시면 더 정확합니다.</span>`:''}
+      얼굴 가로세로비 ${(aiScores.ratios.whRatio).toFixed(2)} · 좌우대칭 ${(aiScores.ratios.symmetry*100).toFixed(0)}% · 중·하정 균형 ${(aiScores.ratios.thirdsScore*100).toFixed(0)}%${window._cwFaceNFrames>1?` · ${window._cwFaceNFrames}프레임 평균`:''}${window._cwFaceDistCm&&window._cwFaceSrc==='live'?` · 근접 셀카(약 ${Math.round(window._cwFaceDistCm)}cm 추정) 원근 보정`:''}${window._cwGlasses?`<br><span style="color:#e8a33d">👓 안경 착용이 감지됐어요 — 안경 렌즈·테 때문에 눈 크기·명궁·콧방울 수치가 실제보다 크게 나올 수 있어요. 벗고 다시 촬영하시면 더 정확합니다.</span>`:''}${window._cwSmileWarn?`<br><span style="color:#e8a33d">🙂 웃는 표정이 감지됐어요 — 입 크기·입술 두께·인중·콧방울 폭이 평소와 다를 수 있어 AI 풀이에서는 이 항목을 빼고 봅니다. 입을 다물고 무표정으로 다시 찍으시면 더 정확합니다.</span>`:''}
     </div>`:''}
   </div>
   <div id="faceTraits"></div>
@@ -6121,6 +6173,7 @@ function triggerFaceLLM(h,shapeOpt,eyeOpt,noseOpt,mouthOpt,sR,eR,nR,mR,aiScores)
         overallScore:ov,
         measurements:aiScores?aiScores.ratios:null,
         glasses:window._cwGlasses===true, // ★v797 P-797-B2
+        smile:window._cwSmileWarn===true, // ★v803 P-803-A
         // ★v786 — 분위수 랭크·24축 시그니처를 프롬프트 결정변수로 전달
         ranks:aiScores?aiScores.ranks:null,
         signature:aiScores?aiScores.signature:null,
@@ -6260,6 +6313,7 @@ async function handlePremiumPurchase(type){
       overallScore:cls?.overallScore||80,
       measurements:ra,
       glasses:window._cwGlasses===true, // ★v797 P-797-B2
+      smile:window._cwSmileWarn===true, // ★v803 P-803-A
       ranks:cls?.ranks||null,
       signature:cls?.signature||null,
       refVersion:cls?.refVersion||null,
@@ -6366,6 +6420,7 @@ async function retryPremiumAPI(){
       overallScore:cls?.overallScore||80,
       measurements:ra,
       glasses:window._cwGlasses===true, // ★v797 P-797-B2
+      smile:window._cwSmileWarn===true, // ★v803 P-803-A
       ranks:cls?.ranks||null,
       signature:cls?.signature||null,
       refVersion:cls?.refVersion||null,

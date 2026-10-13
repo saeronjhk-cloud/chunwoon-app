@@ -1,0 +1,19 @@
+JS·파이썬 판정 여유(logit−warnT) 최대 차 5.00e-3 (이식 일치 기준 < 1e-6)
+전체             사진 79 · 10명 · 사람 안 SD 1.64 · ICC 0.22 · 사람별 범위 01:2.1 02:6.1 03:4.4 04:5.0 05:2.4 06:3.0 07:4.3 08:4.6 P2:3.8 J0:5.8
+보류선 제외(hold)   사진 77 · 10명 · 사람 안 SD 1.63 · ICC 0.21 · 사람별 범위 01:2.1 02:5.5 03:4.4 04:5.0 05:2.4 06:3.0 07:4.3 08:4.6 P2:3.8 J0:5.8
+경고선 제외(warn)   사진 71 · 10명 · 사람 안 SD 1.68 · ICC 0.22 · 사람별 범위 01:2.1 02:5.5 03:4.4 04:5.0 05:2.4 06:2.4 07:4.3 08:4.6 P2:3.8 J0:5.8
+제외된 사진: hold lbl_02_far_2, lbl_02_rear1x_2 | warn만 lbl_06_far_1, lbl_06_rear1x_1, lbl_06_rear1x_2, lbl_06_rear1x_3, p2_2026_nog_far_5, p2_2026_nog_near_2
+제외된 사진: hold lbl_02_far_2, lbl_02_rear1x_2 | warn만 lbl_06_far_1, lbl_06_rear1x_1, lbl_06_rear1x_2, lbl_06_rear1x_3, p2_2026_nog_far_5, p2_2026_nog_near_2
+
+② classify 반환 키: pose,shapeOpt,shapeDesc,eyeOpt,noseOpt,mouthOpt,overallScore,harmonyScore,harmonyParts,distinctAxes,axisKind,wuxing,wuxingTop,wuxingTable,wuxingCoverage,eyeScore,noseScore,mouthScore,refVersion,refTier,aspect,ranks,signature,ratios
+   축별 |같은 사람 무표정 평균 대비 백분위 차| 평균 — 미소(warn) 사진 vs 무표정 사진
+   mouthRatio   미소 24.4점 (n 8) · 무표정 7.5점 (n 65)
+   lipThickness 미소 21.7점 (n 8) · 무표정 7.6점 (n 65)
+   chin         미소 5.4점 (n 8) · 무표정 11.1점 (n 65)
+   inJung       미소 13.4점 (n 8) · 무표정 3.9점 (n 65)
+   noseWRatio   미소 22.3점 (n 8) · 무표정 11.7점 (n 65)
+   eyeSize      미소 11.9점 (n 8) · 무표정 8.0점 (n 65)
+   jawRatio     미소 4.3점 (n 8) · 무표정 8.1점 (n 65)
+   whRatio      미소 11.6점 (n 8) · 무표정 8.5점 (n 65)
+   gwanGol      미소 11.4점 (n 8) · 무표정 14.8점 (n 65)
+   browAngle    미소 14.2점 (n 8) · 무표정 12.3점 (n 65)

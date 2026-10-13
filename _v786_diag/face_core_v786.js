@@ -119,6 +119,32 @@ function _cwFacePose(ai) {
   return { yaw: yaw, held: Math.abs(yaw) >= CW_FACE_POSE_MAX.yaw };
 }
 
+/* ★v803 P-803-A — 미소(표정) 판정. 근거 d30: 미소 사진은 같은 사람 무표정 평균 대비 입 크기 24 · 입술 두께 22 · 코 폭 22 · 인중 13
+   백분위점 벗어남(무표정 사진 7.5 · 7.6 · 12 · 4). 판정기 = 랜드마크 5특징 로지스틱(CelebA img_align · 학습 4987 · 검증 2986 임계 · 시험 2995 1회 AUC 0.963).
+   ★계수·임계는 생성기 _v802_work/smile/x02_fit.py → smile_model.json 으로만 바꾼다(손수정 금지 · 원칙 14). 기준 구현 smile/smile_lib.js · smile_feat.py(p38 S2 일치).
+   특징(두 눈 바깥꼬리 수평 회전 · 내안각 간격/입 폭 정규화): lift 입꼬리 상승 · wide 입폭/내안각 · gap 입술 벌어짐 · lowcurve 아랫입술 U자 · cornerDrop 코밑→입꼬리.
+   warnT = 검증 무표정 오판 5%(경고: 결과는 내되 입·입술·인중·코 폭 축을 AI에서 뺌) · holdT = 2%(보류: 점수 없이 재촬영 안내). */
+var CW_FACE_SMILE = { version: 'SMILE-CELEBA-v1-20261013', feats: ["lift", "wide", "gap", "lowcurve", "cornerDrop"],
+  mu: [0.057823821378540204, 1.562643580358176, 0.10014882718637823, 0.2927904006127593, 0.5357532699566971],
+  sd: [0.0628409560452501, 0.2216121750302758, 0.09202071667769147, 0.07808350220965535, 0.1871556936813362],
+  w: [0.30173626876007076, 1.9928724841773582, 0.6643737833244707, -0.24282813473057385, -1.2417002272368802],
+  b: -0.2364651490448199, warnT: 0.3006508194003394, holdT: 1.1387207517843208 };
+function _cwFaceSmile(ai, A) {
+  var S = CW_FACE_SMILE;
+  if (!ai || ai.length < 468) return { logit: -99, warn: false, hold: false };
+  var a = (A && isFinite(A) && A > 0) ? A : 1;
+  var X = function (i) { return ai[i].x; }, Y = function (i) { return ai[i].y * a; };
+  var t = -Math.atan2(Y(263) - Y(33), X(263) - X(33)), c = Math.cos(t), s = Math.sin(t);
+  var cx = (X(33) + X(263)) / 2, cy = (Y(33) + Y(263)) / 2;
+  var qx = function (i) { return (X(i) - cx) * c - (Y(i) - cy) * s; }, qy = function (i) { return (X(i) - cx) * s + (Y(i) - cy) * c; };
+  var en = Math.abs(qx(362) - qx(133)) || 1e-6, mw = Math.abs(qx(291) - qx(61)) || 1e-6;
+  var cornerY = (qy(61) + qy(291)) / 2, midY = (qy(13) + qy(14)) / 2;
+  var f = { lift: (midY - cornerY) / mw, wide: mw / en, gap: Math.abs(qy(14) - qy(13)) / mw, lowcurve: (qy(17) - cornerY) / mw, cornerDrop: (cornerY - qy(2)) / en };
+  var z = S.b;
+  for (var i = 0; i < S.feats.length; i++) z += S.w[i] * (f[S.feats[i]] - S.mu[i]) / S.sd[i];
+  return { logit: z, warn: z > S.warnT, hold: z > S.holdT };
+}
+
 /* ★v799 P-799-C 2단계 — 上停 3단계 말의 「비슷한 편」 구간(±). 근거: 같은 사람 안 上停/(中·下 평균) 표준편차 중앙 0.061
    (라벨셋 7명 · 2D) × 1.96 ≈ 0.12 — 측정 잡음으로 결과를 보기 전에 정함(자문 결과 파일 §결정 3). ★평가 없이 바꾸지 말 것. */
 var CW_FACE_UPPER_BAND = 0.12;
@@ -763,6 +789,7 @@ function classifyFaceFromLandmarks(ai, aspect, hair, src) {
 
   return {
     pose: _cwFacePose(ai),          // ★v799 P-33 {yaw, held} — held 면 화면은 점수를 내지 않는다
+    smile: _cwFaceSmile(ai, A),     // ★v803 P-803-A {logit, warn, hold} — hold 면 재촬영 · warn 이면 입·입술·인중·코 폭 축을 AI에서 뺌
     shapeOpt: pick(FACE_S, shapeV), shapeDesc: shapeDesc, eyeOpt: pick(FACE_E, eyeV),
     noseOpt: pick(FACE_N, noseV), mouthOpt: pick(FACE_M, mouthV),
     overallScore: overall,
