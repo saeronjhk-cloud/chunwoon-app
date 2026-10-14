@@ -2740,9 +2740,10 @@ ${cardsDesc}
     if (type === 'daily_message') {
       // ★v804 P-805-B — 엔진 사실(cwDailyFacts)을 동봉한다. 화면 근거 카드(js/chat.js _cwIljinFactsCard)가 그린다.
       //   엔진 리터럴이지만 다른 출구와 같이 scrubDeep 을 통과시킨다.
-      const dr = { text: scrubText(text.trim()) };
-      if (cwDailyFacts) { try { dr.facts = scrubDeep(JSON.parse(JSON.stringify(cwDailyFacts))); } catch (e) { /* 사실 동봉 실패 시 본문만 */ } }
-      return res.status(200).json({ success: true, result: dr });
+      //   ★출구 행은 게이트 M8(B출구 1행 · text: scrubText) 형태를 유지한다. 사실은 LLM 응답에서 오지 않은 엔진 값이다(M14 오염원 아님).
+      let cwDailyFactsOut = {};
+      if (cwDailyFacts) { try { cwDailyFactsOut = { facts: scrubDeep(JSON.parse(JSON.stringify(cwDailyFacts))) }; } catch (e) { cwDailyFactsOut = {}; } }
+      return res.status(200).json({ success: true, result: { text: scrubText(text.trim()), ...cwDailyFactsOut } });
     }
     const parsed = extractJSON(text);
     if (parsed) {
