@@ -1,0 +1,235 @@
+diff --git a/api/_engine/authority.js b/api/_engine/authority.js
+index 9a58aa5..11a3a05 100644
+--- a/api/_engine/authority.js
++++ b/api/_engine/authority.js
+@@ -69,7 +69,11 @@ const OUTPUT = {
+   branch_relation: { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+   // ★v7.70 — 승격하지 않았다. 편집된 표라 원문 대조 없이 독립 검증기를 만들 수 없다.
+   //   대운·십성·지지관계와 달리 「정답이 산술로 닫혀 있지 않다」. 원문 직독 후 재검토.
+-  sinsal:       { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.COMPILED_UNVERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
++  // ★v804 P-805-C 승격 (제이 결정 2026-10-14 원칙 41 단계 승격) — COMPILED_UNVERIFIED → VERIFIED.
++  //   【근거】 원문 직독: 『評註淵海子平』 卷一 論起玉堂天乙貴人·論驛馬·論華蓋·論羊刃 (D:\ChunWoon_IP\saju\원문직독_신살_연해자평_2026-10-14.md)
++  //     _v804_work/p43_sinsal_yhzp_eval.js — 직독 표 독립 기술 · 10×12/12×12 전수 + 4기둥 표본 전수.
++  //   ★범위는 bind.js SINSAL_RULES 4종뿐(천을귀인·양인·역마·화개). 도화·공망 등은 원전 미검증이라 코드가 내지 않는다.
++  sinsal:       { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+   daewoon_start_age: { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.DENY },
+   yongsin:      { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },
+   gisin:        { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },
+diff --git a/api/_engine/bind.js b/api/_engine/bind.js
+index 833dfe1..e2ee4c5 100644
+--- a/api/_engine/bind.js
++++ b/api/_engine/bind.js
+@@ -395,6 +395,60 @@ function iljinFactsBlock(f) {
+   return L.join('\n');
+ }
+ 
++// ════════════════════════════════════════════════════════════════════════
++// ★v804 P-805-C — 신살(神煞) 4종 (트랙 C · 원칙 41 단계 승격 ②)
++//   【원전】 『評註淵海子平』 卷一 — 論起玉堂天乙貴人(22면) · 論驛馬·論華蓋(26면) · 論羊刃(32면).
++//     원문 직독 기록(배포 금지 · git 밖): D:\ChunWoon_IP\saju\원문직독_신살_연해자평_2026-10-14.md
++//     ★여기 표는 원문 문장이 아니라 원문이 정한 **규칙(간지 대응)** 이다.
++//   【검증】 _v804_work/p43_sinsal_yhzp_eval.js — 직독 표를 엔진과 독립 기술해 10×12·12×12 전수 대조 + 4기둥 표본 전수.
++//   【범위】 卷一 신살 장에 있는 4종만. 도화(咸池)·공망 등은 이 원전으로 검증 불가 ⟹ 내지 않는다.
++//   【기준 지지】 원문은 기준 기둥을 명시하지 않는다 → 앱이 정한다(화면·프롬프트에 표기):
++//     천을귀인·양인 = 일간 기준(4지지 모두 대조) · 역마·화개 = 연지 기준(연지 자신은 제외하고 월·일·시지 대조).
++//   ★POC(gate_pkg engine/sinsal_engine.js) 의 양인 음간 표는 己→未 가 빠져 있었다 — 원문(己生人 羊刃在未)대로 넣었다.
++// ════════════════════════════════════════════════════════════════════════
++const SINSAL_RULES = Object.freeze({
++  gwiin: Object.freeze({ 甲: '丑未', 戊: '丑未', 庚: '丑未', 乙: '子申', 己: '子申', 丙: '亥酉', 丁: '亥酉', 壬: '卯巳', 癸: '卯巳', 辛: '午寅' }),
++  yangin: Object.freeze({ 甲: '卯', 乙: '辰', 丙: '午', 丁: '未', 戊: '午', 己: '未', 庚: '酉', 辛: '戌', 壬: '子', 癸: '丑' }),
++  yeokma: Object.freeze({ 申子辰: '寅', 寅午戌: '申', 巳酉丑: '亥', 亥卯未: '巳' }),
++  hwagae: Object.freeze({ 寅午戌: '戌', 巳酉丑: '丑', 申子辰: '辰', 亥卯未: '未' })
++});
++const SINSAL_SOURCE = Object.freeze({
++  천을귀인: '淵海子平 卷一 論起玉堂天乙貴人', 양인: '淵海子平 卷一 論羊刃', 역마: '淵海子平 卷一 論驛馬', 화개: '淵海子平 卷一 論華蓋'
++});
++// 짧은 정의(전통 해석 경향 · 길흉 단정 없음) — 화면·프롬프트 공통
++const SINSAL_DESC = Object.freeze({
++  천을귀인: '귀인(貴人)이 임하는 자리로 보는 신살 — 전통적으로 도움·존귀의 상징으로 풀이합니다.',
++  양인: '녹(祿) 다음 자리의 강한 기운(刃)으로 보는 신살 — 전통적으로 굳셈·과단, 지나치면 날카로움으로 풀이합니다.',
++  역마: '삼합의 시작과 마주하는 자리로 보는 신살 — 전통적으로 이동·변화·분주함으로 풀이합니다.',
++  화개: '삼합의 끝(고庫) 자리로 보는 신살 — 전통적으로 예술·학문·종교적 성향과 고독으로 풀이합니다.'
++});
++const SINSAL_GROUP_OF = (b) => ['申子辰', '寅午戌', '巳酉丑', '亥卯未'].find((g) => g.indexOf(b) !== -1) || null;
++const SINSAL_POS = ['연지', '월지', '일지', '시지'];
++function sinsalFacts(ctx) {
++  if (!authority.userSurfaceable('sinsal')) return null;
++  const pillars = toPillars(ctx);
++  if (!pillars) return null;
++  const ds = pillars[2].s, yb = pillars[0].b, grp = SINSAL_GROUP_OF(yb);
++  const list = [];
++  const add = (name, i, basis) => list.push({ name, position: SINSAL_POS[i], branch: pillars[i].b, basis, source: SINSAL_SOURCE[name], effect: SINSAL_DESC[name] });
++  pillars.forEach((p, i) => { if ((SINSAL_RULES.gwiin[ds] || '').indexOf(p.b) !== -1) add('천을귀인', i, '일간 ' + ds + ' 기준'); });
++  pillars.forEach((p, i) => { if (SINSAL_RULES.yangin[ds] === p.b) add('양인', i, '일간 ' + ds + ' 기준'); });
++  if (grp) {
++    pillars.forEach((p, i) => { if (i !== 0 && SINSAL_RULES.yeokma[grp] === p.b) add('역마', i, '연지 ' + yb + ' 기준'); });
++    pillars.forEach((p, i) => { if (i !== 0 && SINSAL_RULES.hwagae[grp] === p.b) add('화개', i, '연지 ' + yb + ' 기준'); });
++  }
++  return { engine_version: 'sinsal-yhzp/1.0.0', mode: pillars.length === 4 ? '4기둥' : '3기둥(시주 미상)', list };
++}
++/** 신살 사실 → 프롬프트 블록. LLM 은 이 목록 밖 신살을 만들지 못한다(응답은 호출부가 엔진 값으로 덮는다). */
++function sinsalBlock(f) {
++  if (!f) return '';
++  const L = ['[신살(神煞) — 서버 엔진 확정값 · 淵海子平 卷一 대조 · 바꾸지 말 것]'];
++  if (!f.list.length) L.push('· 검증된 4종(천을귀인·양인·역마·화개) 중 해당 없음');
++  for (const x of f.list) L.push('· ' + x.name + ' — ' + x.position + ' ' + x.branch + ' (' + x.basis + ')');
++  L.push('· 이 목록 밖의 신살(도화·공망 등)은 언급하지 말 것 — 검증되지 않았다.');
++  return L.join('\n');
++}
++
+ const ctxguard = require('./ctxguard');
+ 
+ module.exports = {
+@@ -418,6 +472,10 @@ module.exports = {
+   daewoonList: daewoonList,
+   computeFacts: computeFacts,
+   factsBlock: factsBlock,
++  // ★v804 P-805-C — 신살 4종(淵海子平 卷一)
++  sinsalFacts: sinsalFacts,
++  sinsalBlock: sinsalBlock,
++  SINSAL_RULES: SINSAL_RULES,
+   // ★v804 P-805-B — 오늘 일진 사실(데일리)
+   todayIljinFacts: todayIljinFacts,
+   iljinFactsBlock: iljinFactsBlock,
+diff --git a/api/fortune.js b/api/fortune.js
+index f039405..4174119 100644
+--- a/api/fortune.js
++++ b/api/fortune.js
+@@ -1698,6 +1698,11 @@ export default async function handler(req, res) {
+     }
+     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
+     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
++    // ★v804 P-805-C — 신살 4종(淵海子平 卷一 검증 · bind.sinsalFacts). 사주 3종에만. 블록은 아래 단일 지점에서 붙고,
++    //   응답 sinsal 은 applyEngineFacts 뒤에 엔진 값으로 덮는다(LLM 신살 무효화).
++    let cwSinsal = null;
++    if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.sinsalFacts === 'function') { try { cwSinsal = cwEng.sinsalFacts(context); } catch (e) { cwSinsal = null; } }
++    const cwSinsalBlock = cwSinsal ? cwEng.sinsalBlock(cwSinsal) : '';
+     let cwDailyFacts = null, cwDailyFactsBlock = '';   // ★v804 P-805-B — daily_message 전용(아래 분기에서 채움)
+ 
+     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
+@@ -2433,12 +2438,12 @@ sipsungDetail 배열에 4기둥 각 천간의 십성 4개 포함.` + CITATION_RU
+ 한국어 해요체. 1단계 해석과 일관성 유지. 간결하게 핵심만.
+ - 대운(大運): 10년 단위 8단계(1운~8운 — 대운 시작 나이는 산출하지 않으므로 특정 나이·연령대를 쓰지 말 것)로 인생 흐름 (월주 천간지지 기준 순/역행, 양남음녀 순행·음남양녀 역행)
+ - 합·충·형·해: 4기둥 지지 간 관계 (寅卯辰 회국, 子午沖, 寅巳申 三刑 등)
+-- 신살(神煞): 천을귀인·도화살·역마살·공망 등 핵심 4~6개
++- 신살(神煞): 서버 엔진이 확정한다(아래 「신살 — 서버 엔진 확정값」 블록). sinsal 필드를 만들지 말고, 해설에서 신살을 언급할 때는 그 블록에 있는 것만 쓸 것
+ - 12개월 세운: 올해 매달 운세 흐름
+ 
+ 반드시 아래 정확한 JSON 구조로만 응답:
+-{"daewoon":[{"age":"1운","ganji":"천간지지","fortune":"50자 내외"},{"age":"2운","ganji":"","fortune":""},{"age":"3운","ganji":"","fortune":""},{"age":"4운","ganji":"","fortune":""},{"age":"5운","ganji":"","fortune":""},{"age":"6운","ganji":"","fortune":""},{"age":"7운","ganji":"","fortune":""},{"age":"8운","ganji":"","fortune":""}],"habChung":[{"type":"합/충/형/해","between":"위치-위치 예: 일지-월지","effect":"영향 한 줄"}],"sinsal":[{"name":"신살명","position":"위치","effect":"의미 한 줄"}],"monthlyFortune":[{"month":1,"fortune":"한 줄","wealth":"한 줄","health":"한 줄","love":"한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":""},{"month":3,"fortune":"","wealth":"","health":"","love":""},{"month":4,"fortune":"","wealth":"","health":"","love":""},{"month":5,"fortune":"","wealth":"","health":"","love":""},{"month":6,"fortune":"","wealth":"","health":"","love":""},{"month":7,"fortune":"","wealth":"","health":"","love":""},{"month":8,"fortune":"","wealth":"","health":"","love":""},{"month":9,"fortune":"","wealth":"","health":"","love":""},{"month":10,"fortune":"","wealth":"","health":"","love":""},{"month":11,"fortune":"","wealth":"","health":"","love":""},{"month":12,"fortune":"","wealth":"","health":"","love":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
+-daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, sinsal 4~6개, remedies 2~3개.` + JSON_FORCE;
++{"daewoon":[{"age":"1운","ganji":"천간지지","fortune":"50자 내외"},{"age":"2운","ganji":"","fortune":""},{"age":"3운","ganji":"","fortune":""},{"age":"4운","ganji":"","fortune":""},{"age":"5운","ganji":"","fortune":""},{"age":"6운","ganji":"","fortune":""},{"age":"7운","ganji":"","fortune":""},{"age":"8운","ganji":"","fortune":""}],"habChung":[{"type":"합/충/형/해","between":"위치-위치 예: 일지-월지","effect":"영향 한 줄"}],"monthlyFortune":[{"month":1,"fortune":"한 줄","wealth":"한 줄","health":"한 줄","love":"한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":""},{"month":3,"fortune":"","wealth":"","health":"","love":""},{"month":4,"fortune":"","wealth":"","health":"","love":""},{"month":5,"fortune":"","wealth":"","health":"","love":""},{"month":6,"fortune":"","wealth":"","health":"","love":""},{"month":7,"fortune":"","wealth":"","health":"","love":""},{"month":8,"fortune":"","wealth":"","health":"","love":""},{"month":9,"fortune":"","wealth":"","health":"","love":""},{"month":10,"fortune":"","wealth":"","health":"","love":""},{"month":11,"fortune":"","wealth":"","health":"","love":""},{"month":12,"fortune":"","wealth":"","health":"","love":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
++daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, remedies 2~3개.` + JSON_FORCE;
+ 
+       const c = context || {};
+       userPrompt = `사주 프리미엄 2단계 (대운·합충·신살·세운·개운법)
+@@ -2448,7 +2453,7 @@ daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, sinsal
+ 연주 천간 음양: ${c.yearStemYinyang||''} (양남음녀 순행, 음남양녀 역행)
+ 월주: ${c.monthPillar||''}
+ 올해: ${c.currentYear||new Date().getFullYear()}년 ${c.currentGanji||''}
+-8단계 대운, 지지 합충형해, 핵심 신살, 12개월 세운, 개운법을 풀이해주세요.`;
++8단계 대운, 지지 합충형해, 12개월 세운, 개운법을 풀이해주세요(신살은 엔진 확정값 블록만 참고).`;
+ 
+     } else if (type === 'tojeong') {
+       systemPrompt = `당신은 토정비결(土亭秘訣) 해석을 돕는 AI 어시스턴트입니다. 토정비결 형식을 참고하여 한 해의 운세를 해석합니다.
+@@ -2681,6 +2686,7 @@ ${cardsDesc}
+     //   붙으므로 type 을 추가해도 누락되지 않는다(단일 지점 원칙).
+     //   ★이것은 「지시」일 뿐이다. LLM 이 어겨도 §응답 덮어쓰기에서 무효화된다 — 이중 방어.
+     if (cwFactsBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwFactsBlock;
++    if (cwSinsalBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwSinsalBlock;   // ★v804 P-805-C
+ 
+     const response = await fetch('https://api.anthropic.com/v1/messages', {
+       method: 'POST',
+@@ -2766,6 +2772,12 @@ ${cardsDesc}
+       if (cwFacts && cwEng) {
+         try { cwEng.applyEngineFacts(type, parsed, cwFacts); } catch (e) { /* 적용 실패 시 LLM 값 유지 */ }
+       }
++      // ★v804 P-805-C — 신살은 엔진 값만(무료 saju·saju_premium_2). LLM 이 신살을 만들어 와도 여기서 버린다.
++      if (cwSinsal && (type === 'saju' || type === 'saju_premium_2')) {
++        parsed.sinsal = cwSinsal.list.map((x) => ({ name: x.name, position: x.position, branch: x.branch, basis: x.basis, source: x.source, effect: x.effect }));
++      } else if (type === 'saju_premium_2' && Object.prototype.hasOwnProperty.call(parsed, 'sinsal')) {
++        delete parsed.sinsal;   // 엔진 미적재 시 LLM 신살을 내보내지 않는다(검증되지 않은 값)
++      }
+       // ★v7.71 — 재계산 메트릭은 **서버 로그로만** 낸다. 응답에 실으면
+       //   ⑴ 클라이언트 값이 그대로 되비쳐 나가 스크럽 대상이 늘고
+       //   ⑵ 프런트 렌더링 계약(M14 출구 화이트리스트)을 건드린다.
+diff --git a/index.html b/index.html
+index 99e50ff..f9979dd 100644
+--- a/index.html
++++ b/index.html
+@@ -2820,6 +2820,26 @@ async function analyzeSaju(){
+   }
+ }
+ 
++// ★v804 P-805-C(트랙 C) — 신살은 서버 엔진(api/_engine/bind.js sinsalFacts · 淵海子平 卷一 대조) 값만 그린다.
++//   검증된 4종(천을귀인·양인·역마·화개)만 오며, 각 항목에 판정 기준(일간/연지)과 출처를 표기한다.
++//   mode: 'card'(화면) | 'pdf'(인쇄). 목록이 비면 「검증된 4종 중 해당 없음」을 정직하게 쓴다.
++function _cwSinsalHTML(list,mode){
++  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
++  const L=Array.isArray(list)?list:[];
++  const note='판정 기준 — 천을귀인·양인: 일간 · 역마·화개: 연지(연지 자신 제외). 원전: 淵海子平 卷一. 그 밖의 신살은 원전 대조 전이라 표시하지 않아요.';
++  if(mode==='pdf'){
++    let b=L.length?'':'<div class="enemy-card">검증된 4종(천을귀인·양인·역마·화개) 중 해당하는 신살이 없어요.</div>';
++    L.forEach(x=>{b+=`<div class="enemy-card"><strong style="color:#8a2218">${esc(x.name)}</strong> <span class="dim">[${esc(x.position)} ${esc(x.branch)} · ${esc(x.basis)}]</span><br>${esc(x.effect)}</div>`;});
++    return b+`<p class="dim" style="font-size:10px">${esc(note)}</p>`;
++  }
++  let h=L.length?'':'<div style="font-size:12px;color:var(--text2);padding:6px 0">검증된 4종(천을귀인·양인·역마·화개) 중 해당하는 신살이 없어요.</div>';
++  L.forEach(x=>{h+=`<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,200,150,.05);border-radius:6px;font-size:12px">
++      <span style="color:var(--gold);font-weight:600">${esc(x.name)}</span> <span style="color:var(--text2);font-size:11px">[${esc(x.position)} ${esc(x.branch)} · ${esc(x.basis)}]</span>
++      <div style="margin-top:2px;color:var(--text1);line-height:1.7">${esc(x.effect)}</div>
++    </div>`;});
++  return h+`<div style="font-size:10px;color:var(--text2);opacity:.75;line-height:1.6">📐 엔진 판정 · ${esc(note)}</div>`;
++}
++
+ function renderSajuResult(result,info){
+   const {name,gender,calType,inputYear,inputMonth,inputDay,hi,lunarInfo,pillars,els,sipsung}=info;
+   const dStem=pillars.day.stem;
+@@ -2856,6 +2876,9 @@ function renderSajuResult(result,info){
+     <!-- 일간 풀이 -->
+     ${result.ilganReading?`<div style="padding:14px;background:rgba(201,165,78,.05);border-radius:8px;border:1px solid rgba(201,165,78,.1);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">🔆 일간 풀이</div><div style="font-size:13px;line-height:1.8">${result.ilganReading}</div></div>`:''}
+ 
++    <!-- ★v804 P-805-C 신살(엔진) -->
++    ${Array.isArray(result.sinsal)?`<div style="padding:14px;background:rgba(255,200,150,.04);border-radius:8px;border:1px solid rgba(255,200,150,.12);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⚡ 신살(神煞)</div>${_cwSinsalHTML(result.sinsal,'card')}</div>`:''}
++
+     <!-- 십성 분석 -->
+     ${result.sipsungAnalysis?`<div style="padding:14px;background:rgba(173,216,230,.05);border-radius:8px;border:1px solid rgba(173,216,230,.1);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⭐ 십성 분포 분석</div><div style="font-size:13px;line-height:1.8">${result.sipsungAnalysis}</div></div>`:''}
+ 
+@@ -2937,7 +2960,7 @@ function _renderSajuPaywall(){
+         <p>✦ 십성 위치별 의미 (조부·부모·배우자·자식)</p>
+         <p>✦ 재물·직업·건강·연애 4영역 심층 풀이</p>
+         <p>✦ 대운(大運) 8단계 — 출생부터 80세까지 10년 흐름</p>
+-        <p>✦ 합·충·형·해 + 핵심 신살(神煞) 4~6개</p>
++        <p>✦ 합·충·형·해 + 원전 검증 신살(천을귀인·양인·역마·화개)</p>
+         <p>✦ 12개월 세운 + 맞춤 개운법 처방</p>
+       </div>
+     </div>
+@@ -3157,13 +3180,8 @@ function renderSajuPremium(prem,info){
+     </div>`;
+   });
+ 
+-  let sinsalHTML='';
+-  (prem.sinsal||[]).forEach(s=>{
+-    sinsalHTML+=`<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,200,150,.05);border-radius:6px;font-size:12px">
+-      <span style="color:var(--gold);font-weight:600">${s.name||''}</span> <span style="color:var(--text2);font-size:11px">[${s.position||''}]</span>
+-      <div style="margin-top:2px;color:var(--text1);line-height:1.7">${s.effect||''}</div>
+-    </div>`;
+-  });
++  // ★v804 P-805-C — 신살은 서버 엔진 값만(LLM 신살 없음)
++  const sinsalHTML=Array.isArray(prem.sinsal)?_cwSinsalHTML(prem.sinsal,'card'):'';
+ 
+   let remediesHTML='';
+   (prem.remedies||[]).forEach(rm=>{
+@@ -9735,11 +9753,8 @@ function savePremiumSajuPDF(){
+         body+=`<div class="ally-card"><strong style="color:#0a5a30">${esc(hc.type||'')}</strong> <span class="dim">[${esc(hc.between||'')}]</span><br>${esc(hc.effect||'')}</div>`;
+       });
+     }
+-    if(prem.sinsal&&prem.sinsal.length){
+-      body+='<h3 class="enemy-h">⚡ 신살(神煞)</h3>';
+-      prem.sinsal.forEach(s=>{
+-        body+=`<div class="enemy-card"><strong style="color:#8a2218">${esc(s.name||'')}</strong> <span class="dim">[${esc(s.position||'')}]</span><br>${esc(s.effect||'')}</div>`;
+-      });
++    if(Array.isArray(prem.sinsal)){
++      body+='<h3 class="enemy-h">⚡ 신살(神煞)</h3>'+_cwSinsalHTML(prem.sinsal,'pdf');   // ★v804 P-805-C 엔진 값
+     }
+     body+='</div>';
+   }

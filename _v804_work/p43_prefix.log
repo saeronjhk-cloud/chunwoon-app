@@ -1,0 +1,11 @@
+  FAIL N1 천을귀인 10×12 = 연해자평 卷一 22면 — bind.sinsalFacts/SINSAL_RULES 없음
+  FAIL N2 양인 10×12 = 연해자평 卷一 32면(己→未 포함) — 없음
+  FAIL N3 역마 12×12 = 연해자평 卷一 26면 — 없음
+  FAIL N4 화개 12×12 = 연해자평 卷一 26면 — 없음
+  FAIL N5 미검증 신살(도화·공망 등) 엔진 출력 없음
+  FAIL N6 authority sinsal VERIFIED·노출 · 원문 직독 기록(IP) 존재 — sinsal false · 기록 false
+  FAIL N7 sinsalFacts 4기둥 표본 전수 = 원문 규칙 합성 · 기준·출처 표기 — 없음
+  FAIL N8 서버: 엔진 신살 블록 주입 · LLM sinsal 요구 제거 · 응답 sinsal = 엔진 — 주입 false · 요구 제거 false · 덮어쓰기 false
+  FAIL N9 화면: 무료·프리미엄·PDF 신살 = 엔진(_cwSinsalHTML) · 기준 표기 — 렌더 false · 기준 true · 미검증 문구 없음 true
+  ok   N10 문법
+[p43_sinsal_yhzp] total=10 pass=1 fail=9 · FAIL N1,N2,N3,N4,N5,N6,N7,N8,N9

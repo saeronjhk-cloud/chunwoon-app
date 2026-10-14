@@ -1,0 +1,11 @@
+  ok   N1 천을귀인 10×12 = 연해자평 卷一 22면
+  ok   N2 양인 10×12 = 연해자평 卷一 32면(己→未 포함)
+  ok   N3 역마 12×12 = 연해자평 卷一 26면
+  ok   N4 화개 12×12 = 연해자평 卷一 26면
+  ok   N5 미검증 신살(도화·공망 등) 엔진 출력 없음 — gwiin,hwagae,yangin,yeokma
+  ok   N6 authority sinsal VERIFIED·노출 · 원문 직독 기록(IP) 존재 — sinsal true · 기록 true
+  ok   N7 sinsalFacts 4기둥 표본 전수 = 원문 규칙 합성 · 기준·출처 표기 — n 8640
+  ok   N8 서버: 엔진 신살 블록 주입 · LLM sinsal 요구 제거 · 응답 sinsal = 엔진 — 주입 true · 요구 제거 true · 덮어쓰기 true
+  ok   N9 화면: 무료·프리미엄·PDF 신살 = 엔진(_cwSinsalHTML) · 기준 표기 — 렌더 true · 기준 true · 미검증 문구 없음 true
+  ok   N10 문법
+[p43_sinsal_yhzp] total=10 pass=10 fail=0

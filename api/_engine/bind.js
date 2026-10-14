@@ -395,6 +395,60 @@ function iljinFactsBlock(f) {
   return L.join('\n');
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// ★v804 P-805-C — 신살(神煞) 4종 (트랙 C · 원칙 41 단계 승격 ②)
+//   【원전】 『評註淵海子平』 卷一 — 論起玉堂天乙貴人(22면) · 論驛馬·論華蓋(26면) · 論羊刃(32면).
+//     원문 직독 기록(배포 금지 · git 밖): D:\ChunWoon_IP\saju\원문직독_신살_연해자평_2026-10-14.md
+//     ★여기 표는 원문 문장이 아니라 원문이 정한 **규칙(간지 대응)** 이다.
+//   【검증】 _v804_work/p43_sinsal_yhzp_eval.js — 직독 표를 엔진과 독립 기술해 10×12·12×12 전수 대조 + 4기둥 표본 전수.
+//   【범위】 卷一 신살 장에 있는 4종만. 도화(咸池)·공망 등은 이 원전으로 검증 불가 ⟹ 내지 않는다.
+//   【기준 지지】 원문은 기준 기둥을 명시하지 않는다 → 앱이 정한다(화면·프롬프트에 표기):
+//     천을귀인·양인 = 일간 기준(4지지 모두 대조) · 역마·화개 = 연지 기준(연지 자신은 제외하고 월·일·시지 대조).
+//   ★POC(gate_pkg engine/sinsal_engine.js) 의 양인 음간 표는 己→未 가 빠져 있었다 — 원문(己生人 羊刃在未)대로 넣었다.
+// ════════════════════════════════════════════════════════════════════════
+const SINSAL_RULES = Object.freeze({
+  gwiin: Object.freeze({ 甲: '丑未', 戊: '丑未', 庚: '丑未', 乙: '子申', 己: '子申', 丙: '亥酉', 丁: '亥酉', 壬: '卯巳', 癸: '卯巳', 辛: '午寅' }),
+  yangin: Object.freeze({ 甲: '卯', 乙: '辰', 丙: '午', 丁: '未', 戊: '午', 己: '未', 庚: '酉', 辛: '戌', 壬: '子', 癸: '丑' }),
+  yeokma: Object.freeze({ 申子辰: '寅', 寅午戌: '申', 巳酉丑: '亥', 亥卯未: '巳' }),
+  hwagae: Object.freeze({ 寅午戌: '戌', 巳酉丑: '丑', 申子辰: '辰', 亥卯未: '未' })
+});
+const SINSAL_SOURCE = Object.freeze({
+  천을귀인: '淵海子平 卷一 論起玉堂天乙貴人', 양인: '淵海子平 卷一 論羊刃', 역마: '淵海子平 卷一 論驛馬', 화개: '淵海子平 卷一 論華蓋'
+});
+// 짧은 정의(전통 해석 경향 · 길흉 단정 없음) — 화면·프롬프트 공통
+const SINSAL_DESC = Object.freeze({
+  천을귀인: '귀인(貴人)이 임하는 자리로 보는 신살 — 전통적으로 도움·존귀의 상징으로 풀이합니다.',
+  양인: '녹(祿) 다음 자리의 강한 기운(刃)으로 보는 신살 — 전통적으로 굳셈·과단, 지나치면 날카로움으로 풀이합니다.',
+  역마: '삼합의 시작과 마주하는 자리로 보는 신살 — 전통적으로 이동·변화·분주함으로 풀이합니다.',
+  화개: '삼합의 끝(고庫) 자리로 보는 신살 — 전통적으로 예술·학문·종교적 성향과 고독으로 풀이합니다.'
+});
+const SINSAL_GROUP_OF = (b) => ['申子辰', '寅午戌', '巳酉丑', '亥卯未'].find((g) => g.indexOf(b) !== -1) || null;
+const SINSAL_POS = ['연지', '월지', '일지', '시지'];
+function sinsalFacts(ctx) {
+  if (!authority.userSurfaceable('sinsal')) return null;
+  const pillars = toPillars(ctx);
+  if (!pillars) return null;
+  const ds = pillars[2].s, yb = pillars[0].b, grp = SINSAL_GROUP_OF(yb);
+  const list = [];
+  const add = (name, i, basis) => list.push({ name, position: SINSAL_POS[i], branch: pillars[i].b, basis, source: SINSAL_SOURCE[name], effect: SINSAL_DESC[name] });
+  pillars.forEach((p, i) => { if ((SINSAL_RULES.gwiin[ds] || '').indexOf(p.b) !== -1) add('천을귀인', i, '일간 ' + ds + ' 기준'); });
+  pillars.forEach((p, i) => { if (SINSAL_RULES.yangin[ds] === p.b) add('양인', i, '일간 ' + ds + ' 기준'); });
+  if (grp) {
+    pillars.forEach((p, i) => { if (i !== 0 && SINSAL_RULES.yeokma[grp] === p.b) add('역마', i, '연지 ' + yb + ' 기준'); });
+    pillars.forEach((p, i) => { if (i !== 0 && SINSAL_RULES.hwagae[grp] === p.b) add('화개', i, '연지 ' + yb + ' 기준'); });
+  }
+  return { engine_version: 'sinsal-yhzp/1.0.0', mode: pillars.length === 4 ? '4기둥' : '3기둥(시주 미상)', list };
+}
+/** 신살 사실 → 프롬프트 블록. LLM 은 이 목록 밖 신살을 만들지 못한다(응답은 호출부가 엔진 값으로 덮는다). */
+function sinsalBlock(f) {
+  if (!f) return '';
+  const L = ['[신살(神煞) — 서버 엔진 확정값 · 淵海子平 卷一 대조 · 바꾸지 말 것]'];
+  if (!f.list.length) L.push('· 검증된 4종(천을귀인·양인·역마·화개) 중 해당 없음');
+  for (const x of f.list) L.push('· ' + x.name + ' — ' + x.position + ' ' + x.branch + ' (' + x.basis + ')');
+  L.push('· 이 목록 밖의 신살(도화·공망 등)은 언급하지 말 것 — 검증되지 않았다.');
+  return L.join('\n');
+}
+
 const ctxguard = require('./ctxguard');
 
 module.exports = {
@@ -418,6 +472,10 @@ module.exports = {
   daewoonList: daewoonList,
   computeFacts: computeFacts,
   factsBlock: factsBlock,
+  // ★v804 P-805-C — 신살 4종(淵海子平 卷一)
+  sinsalFacts: sinsalFacts,
+  sinsalBlock: sinsalBlock,
+  SINSAL_RULES: SINSAL_RULES,
   // ★v804 P-805-B — 오늘 일진 사실(데일리)
   todayIljinFacts: todayIljinFacts,
   iljinFactsBlock: iljinFactsBlock,

@@ -1698,6 +1698,11 @@ export default async function handler(req, res) {
     }
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
+    // ★v804 P-805-C — 신살 4종(淵海子平 卷一 검증 · bind.sinsalFacts). 사주 3종에만. 블록은 아래 단일 지점에서 붙고,
+    //   응답 sinsal 은 applyEngineFacts 뒤에 엔진 값으로 덮는다(LLM 신살 무효화).
+    let cwSinsal = null;
+    if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.sinsalFacts === 'function') { try { cwSinsal = cwEng.sinsalFacts(context); } catch (e) { cwSinsal = null; } }
+    const cwSinsalBlock = cwSinsal ? cwEng.sinsalBlock(cwSinsal) : '';
     let cwDailyFacts = null, cwDailyFactsBlock = '';   // ★v804 P-805-B — daily_message 전용(아래 분기에서 채움)
 
     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
@@ -2433,12 +2438,12 @@ sipsungDetail 배열에 4기둥 각 천간의 십성 4개 포함.` + CITATION_RU
 한국어 해요체. 1단계 해석과 일관성 유지. 간결하게 핵심만.
 - 대운(大運): 10년 단위 8단계(1운~8운 — 대운 시작 나이는 산출하지 않으므로 특정 나이·연령대를 쓰지 말 것)로 인생 흐름 (월주 천간지지 기준 순/역행, 양남음녀 순행·음남양녀 역행)
 - 합·충·형·해: 4기둥 지지 간 관계 (寅卯辰 회국, 子午沖, 寅巳申 三刑 등)
-- 신살(神煞): 천을귀인·도화살·역마살·공망 등 핵심 4~6개
+- 신살(神煞): 서버 엔진이 확정한다(아래 「신살 — 서버 엔진 확정값」 블록). sinsal 필드를 만들지 말고, 해설에서 신살을 언급할 때는 그 블록에 있는 것만 쓸 것
 - 12개월 세운: 올해 매달 운세 흐름
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"daewoon":[{"age":"1운","ganji":"천간지지","fortune":"50자 내외"},{"age":"2운","ganji":"","fortune":""},{"age":"3운","ganji":"","fortune":""},{"age":"4운","ganji":"","fortune":""},{"age":"5운","ganji":"","fortune":""},{"age":"6운","ganji":"","fortune":""},{"age":"7운","ganji":"","fortune":""},{"age":"8운","ganji":"","fortune":""}],"habChung":[{"type":"합/충/형/해","between":"위치-위치 예: 일지-월지","effect":"영향 한 줄"}],"sinsal":[{"name":"신살명","position":"위치","effect":"의미 한 줄"}],"monthlyFortune":[{"month":1,"fortune":"한 줄","wealth":"한 줄","health":"한 줄","love":"한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":""},{"month":3,"fortune":"","wealth":"","health":"","love":""},{"month":4,"fortune":"","wealth":"","health":"","love":""},{"month":5,"fortune":"","wealth":"","health":"","love":""},{"month":6,"fortune":"","wealth":"","health":"","love":""},{"month":7,"fortune":"","wealth":"","health":"","love":""},{"month":8,"fortune":"","wealth":"","health":"","love":""},{"month":9,"fortune":"","wealth":"","health":"","love":""},{"month":10,"fortune":"","wealth":"","health":"","love":""},{"month":11,"fortune":"","wealth":"","health":"","love":""},{"month":12,"fortune":"","wealth":"","health":"","love":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
-daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, sinsal 4~6개, remedies 2~3개.` + JSON_FORCE;
+{"daewoon":[{"age":"1운","ganji":"천간지지","fortune":"50자 내외"},{"age":"2운","ganji":"","fortune":""},{"age":"3운","ganji":"","fortune":""},{"age":"4운","ganji":"","fortune":""},{"age":"5운","ganji":"","fortune":""},{"age":"6운","ganji":"","fortune":""},{"age":"7운","ganji":"","fortune":""},{"age":"8운","ganji":"","fortune":""}],"habChung":[{"type":"합/충/형/해","between":"위치-위치 예: 일지-월지","effect":"영향 한 줄"}],"monthlyFortune":[{"month":1,"fortune":"한 줄","wealth":"한 줄","health":"한 줄","love":"한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":""},{"month":3,"fortune":"","wealth":"","health":"","love":""},{"month":4,"fortune":"","wealth":"","health":"","love":""},{"month":5,"fortune":"","wealth":"","health":"","love":""},{"month":6,"fortune":"","wealth":"","health":"","love":""},{"month":7,"fortune":"","wealth":"","health":"","love":""},{"month":8,"fortune":"","wealth":"","health":"","love":""},{"month":9,"fortune":"","wealth":"","health":"","love":""},{"month":10,"fortune":"","wealth":"","health":"","love":""},{"month":11,"fortune":"","wealth":"","health":"","love":""},{"month":12,"fortune":"","wealth":"","health":"","love":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
+daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, remedies 2~3개.` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `사주 프리미엄 2단계 (대운·합충·신살·세운·개운법)
@@ -2448,7 +2453,7 @@ daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, sinsal 
 연주 천간 음양: ${c.yearStemYinyang||''} (양남음녀 순행, 음남양녀 역행)
 월주: ${c.monthPillar||''}
 올해: ${c.currentYear||new Date().getFullYear()}년 ${c.currentGanji||''}
-8단계 대운, 지지 합충형해, 핵심 신살, 12개월 세운, 개운법을 풀이해주세요.`;
+8단계 대운, 지지 합충형해, 12개월 세운, 개운법을 풀이해주세요(신살은 엔진 확정값 블록만 참고).`;
 
     } else if (type === 'tojeong') {
       systemPrompt = `당신은 토정비결(土亭秘訣) 해석을 돕는 AI 어시스턴트입니다. 토정비결 형식을 참고하여 한 해의 운세를 해석합니다.
@@ -2681,6 +2686,7 @@ ${cardsDesc}
     //   붙으므로 type 을 추가해도 누락되지 않는다(단일 지점 원칙).
     //   ★이것은 「지시」일 뿐이다. LLM 이 어겨도 §응답 덮어쓰기에서 무효화된다 — 이중 방어.
     if (cwFactsBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwFactsBlock;
+    if (cwSinsalBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwSinsalBlock;   // ★v804 P-805-C
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -2765,6 +2771,12 @@ ${cardsDesc}
       }
       if (cwFacts && cwEng) {
         try { cwEng.applyEngineFacts(type, parsed, cwFacts); } catch (e) { /* 적용 실패 시 LLM 값 유지 */ }
+      }
+      // ★v804 P-805-C — 신살은 엔진 값만(무료 saju·saju_premium_2). LLM 이 신살을 만들어 와도 여기서 버린다.
+      if (cwSinsal && (type === 'saju' || type === 'saju_premium_2')) {
+        parsed.sinsal = cwSinsal.list.map((x) => ({ name: x.name, position: x.position, branch: x.branch, basis: x.basis, source: x.source, effect: x.effect }));
+      } else if (type === 'saju_premium_2' && Object.prototype.hasOwnProperty.call(parsed, 'sinsal')) {
+        delete parsed.sinsal;   // 엔진 미적재 시 LLM 신살을 내보내지 않는다(검증되지 않은 값)
       }
       // ★v7.71 — 재계산 메트릭은 **서버 로그로만** 낸다. 응답에 실으면
       //   ⑴ 클라이언트 값이 그대로 되비쳐 나가 스크럽 대상이 늘고

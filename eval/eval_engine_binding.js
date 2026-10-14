@@ -202,12 +202,24 @@ check('A1 ★승격 3축이 노출 가능 (sipsin · daewoon_direction · branch
 });
 check('A2 ★미승격 축은 여전히 봉인 (근거 없는 승격 확산 차단)', () => {
   if (blocked()) return '전제 미성립(SELF-0)';
-  // sinsal: COMPILED_UNVERIFIED — 편집표라 독립 검증기를 만들 수 없다.
+  // ★v804 P-805-C — sinsal 은 원문 직독(淵海子平 卷一) + 독립 검증기(_v804_work/p43)로 승격 → 아래 A3 가 그 근거를 매번 재현한다.
   // daewoon_start_age: APPROX_FIXED_TERM — 절기 근사.
   // yongsin/gyeok/sangsin/johu: GT 전문가 라벨 12/132(9.1%) · 용신 33.7% null · 상신 EXPERT_PENDING.
-  const mustDeny = ['sinsal', 'daewoon_start_age', 'yongsin', 'gisin', 'gyeok', 'sangsin', 'johu'];
+  const mustDeny = ['daewoon_start_age', 'yongsin', 'gisin', 'gyeok', 'sangsin', 'johu'];
   const leaked = mustDeny.filter((k) => AUTH.userSurfaceable(k));
   return leaked.length ? '★근거 없이 승격됨 → ' + leaked.join(',') : true;
+});
+
+check('A3 ★신살(sinsal) 승격 근거 재현 — _v804_work/p43 N1~N7 PASS (淵海子平 卷一 직독 표 독립 대조 · 4기둥 표본 전수)', () => {
+  if (blocked()) return '전제 미성립(SELF-0)';
+  if (!AUTH.userSurfaceable('sinsal')) return true;          // 미승격이면 근거 요구 없음(되돌리면 자동으로 무해)
+  const ev = path.join(FRONT_ROOT, '_v804_work', 'p43_sinsal_yhzp_eval.js');
+  if (!fs.existsSync(ev)) return '★sinsal 이 노출 가능한데 근거 검증기(p43)가 없다 — 근거 없는 승격';
+  let out = '';
+  try { out = require('child_process').execFileSync(process.execPath, [ev], { stdio: 'pipe', env: Object.assign({}, process.env, { P43_SKIP_IP: process.env.P43_SKIP_IP || '' }) }).toString(); }
+  catch (e) { out = String((e && e.stdout) || ''); }
+  const miss = ['N1', 'N2', 'N3', 'N4', 'N5', 'N7'].filter((id) => !new RegExp('\\bok\\s+' + id + '\\b').test(out));
+  return miss.length ? '★신살 승격 근거 실패: ' + miss.join(',') : true;
 });
 
 // ══ V축 — 전수 검증 (승격의 근거를 매번 재현한다) ═════════════════════════════

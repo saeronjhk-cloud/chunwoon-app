@@ -69,7 +69,11 @@ const OUTPUT = {
   branch_relation: { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   // ★v7.70 — 승격하지 않았다. 편집된 표라 원문 대조 없이 독립 검증기를 만들 수 없다.
   //   대운·십성·지지관계와 달리 「정답이 산술로 닫혀 있지 않다」. 원문 직독 후 재검토.
-  sinsal:       { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.COMPILED_UNVERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+  // ★v804 P-805-C 승격 (제이 결정 2026-10-14 원칙 41 단계 승격) — COMPILED_UNVERIFIED → VERIFIED.
+  //   【근거】 원문 직독: 『評註淵海子平』 卷一 論起玉堂天乙貴人·論驛馬·論華蓋·論羊刃 (D:\ChunWoon_IP\saju\원문직독_신살_연해자평_2026-10-14.md)
+  //     _v804_work/p43_sinsal_yhzp_eval.js — 직독 표 독립 기술 · 10×12/12×12 전수 + 4기둥 표본 전수.
+  //   ★범위는 bind.js SINSAL_RULES 4종뿐(천을귀인·양인·역마·화개). 도화·공망 등은 원전 미검증이라 코드가 내지 않는다.
+  sinsal:       { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   daewoon_start_age: { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.DENY },
   yongsin:      { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },
   gisin:        { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },

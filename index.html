@@ -2820,6 +2820,26 @@ async function analyzeSaju(){
   }
 }
 
+// ★v804 P-805-C(트랙 C) — 신살은 서버 엔진(api/_engine/bind.js sinsalFacts · 淵海子平 卷一 대조) 값만 그린다.
+//   검증된 4종(천을귀인·양인·역마·화개)만 오며, 각 항목에 판정 기준(일간/연지)과 출처를 표기한다.
+//   mode: 'card'(화면) | 'pdf'(인쇄). 목록이 비면 「검증된 4종 중 해당 없음」을 정직하게 쓴다.
+function _cwSinsalHTML(list,mode){
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const L=Array.isArray(list)?list:[];
+  const note='판정 기준 — 천을귀인·양인: 일간 · 역마·화개: 연지(연지 자신 제외). 원전: 淵海子平 卷一. 그 밖의 신살은 원전 대조 전이라 표시하지 않아요.';
+  if(mode==='pdf'){
+    let b=L.length?'':'<div class="enemy-card">검증된 4종(천을귀인·양인·역마·화개) 중 해당하는 신살이 없어요.</div>';
+    L.forEach(x=>{b+=`<div class="enemy-card"><strong style="color:#8a2218">${esc(x.name)}</strong> <span class="dim">[${esc(x.position)} ${esc(x.branch)} · ${esc(x.basis)}]</span><br>${esc(x.effect)}</div>`;});
+    return b+`<p class="dim" style="font-size:10px">${esc(note)}</p>`;
+  }
+  let h=L.length?'':'<div style="font-size:12px;color:var(--text2);padding:6px 0">검증된 4종(천을귀인·양인·역마·화개) 중 해당하는 신살이 없어요.</div>';
+  L.forEach(x=>{h+=`<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,200,150,.05);border-radius:6px;font-size:12px">
+      <span style="color:var(--gold);font-weight:600">${esc(x.name)}</span> <span style="color:var(--text2);font-size:11px">[${esc(x.position)} ${esc(x.branch)} · ${esc(x.basis)}]</span>
+      <div style="margin-top:2px;color:var(--text1);line-height:1.7">${esc(x.effect)}</div>
+    </div>`;});
+  return h+`<div style="font-size:10px;color:var(--text2);opacity:.75;line-height:1.6">📐 엔진 판정 · ${esc(note)}</div>`;
+}
+
 function renderSajuResult(result,info){
   const {name,gender,calType,inputYear,inputMonth,inputDay,hi,lunarInfo,pillars,els,sipsung}=info;
   const dStem=pillars.day.stem;
@@ -2855,6 +2875,9 @@ function renderSajuResult(result,info){
 
     <!-- 일간 풀이 -->
     ${result.ilganReading?`<div style="padding:14px;background:rgba(201,165,78,.05);border-radius:8px;border:1px solid rgba(201,165,78,.1);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">🔆 일간 풀이</div><div style="font-size:13px;line-height:1.8">${result.ilganReading}</div></div>`:''}
+
+    <!-- ★v804 P-805-C 신살(엔진) -->
+    ${Array.isArray(result.sinsal)?`<div style="padding:14px;background:rgba(255,200,150,.04);border-radius:8px;border:1px solid rgba(255,200,150,.12);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⚡ 신살(神煞)</div>${_cwSinsalHTML(result.sinsal,'card')}</div>`:''}
 
     <!-- 십성 분석 -->
     ${result.sipsungAnalysis?`<div style="padding:14px;background:rgba(173,216,230,.05);border-radius:8px;border:1px solid rgba(173,216,230,.1);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⭐ 십성 분포 분석</div><div style="font-size:13px;line-height:1.8">${result.sipsungAnalysis}</div></div>`:''}
@@ -2937,7 +2960,7 @@ function _renderSajuPaywall(){
         <p>✦ 십성 위치별 의미 (조부·부모·배우자·자식)</p>
         <p>✦ 재물·직업·건강·연애 4영역 심층 풀이</p>
         <p>✦ 대운(大運) 8단계 — 출생부터 80세까지 10년 흐름</p>
-        <p>✦ 합·충·형·해 + 핵심 신살(神煞) 4~6개</p>
+        <p>✦ 합·충·형·해 + 원전 검증 신살(천을귀인·양인·역마·화개)</p>
         <p>✦ 12개월 세운 + 맞춤 개운법 처방</p>
       </div>
     </div>
@@ -3157,13 +3180,8 @@ function renderSajuPremium(prem,info){
     </div>`;
   });
 
-  let sinsalHTML='';
-  (prem.sinsal||[]).forEach(s=>{
-    sinsalHTML+=`<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,200,150,.05);border-radius:6px;font-size:12px">
-      <span style="color:var(--gold);font-weight:600">${s.name||''}</span> <span style="color:var(--text2);font-size:11px">[${s.position||''}]</span>
-      <div style="margin-top:2px;color:var(--text1);line-height:1.7">${s.effect||''}</div>
-    </div>`;
-  });
+  // ★v804 P-805-C — 신살은 서버 엔진 값만(LLM 신살 없음)
+  const sinsalHTML=Array.isArray(prem.sinsal)?_cwSinsalHTML(prem.sinsal,'card'):'';
 
   let remediesHTML='';
   (prem.remedies||[]).forEach(rm=>{
@@ -9735,11 +9753,8 @@ function savePremiumSajuPDF(){
         body+=`<div class="ally-card"><strong style="color:#0a5a30">${esc(hc.type||'')}</strong> <span class="dim">[${esc(hc.between||'')}]</span><br>${esc(hc.effect||'')}</div>`;
       });
     }
-    if(prem.sinsal&&prem.sinsal.length){
-      body+='<h3 class="enemy-h">⚡ 신살(神煞)</h3>';
-      prem.sinsal.forEach(s=>{
-        body+=`<div class="enemy-card"><strong style="color:#8a2218">${esc(s.name||'')}</strong> <span class="dim">[${esc(s.position||'')}]</span><br>${esc(s.effect||'')}</div>`;
-      });
+    if(Array.isArray(prem.sinsal)){
+      body+='<h3 class="enemy-h">⚡ 신살(神煞)</h3>'+_cwSinsalHTML(prem.sinsal,'pdf');   // ★v804 P-805-C 엔진 값
     }
     body+='</div>';
   }
