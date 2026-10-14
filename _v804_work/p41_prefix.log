@@ -1,0 +1,22 @@
+  FAIL N1a 서버 JSON 스키마에 제거 필드 없음 — 1935:"fortuneGraph": · 2056:"seoScore": · 2056:"trademarkScore": · 2152:"sajuMatchScore": · 2210:"fortuneType": · 2210:"fortuneScore": · 2210:"luckyNumbers": · 2210:"luckyColor": · 2256:"luckyDetail":
+  FAIL N1b 서버 스키마에 LLM 점수(scores·score·confidence·decades) 없음 — 1935:"confidence":number · 1935:"decades": · 2297:"score":number · 2297:"scores":{ · 2400:"scores":{ · 2470:"scores":{
+  FAIL N2 서버 지시문에 행운·점수·길일 요구 없음 — 2049:SEO 점수 · 2052:등록 가능성 점수 · 2056:점수 (1-10) · 2148:sajuMatchScore · 2152:sajuMatchScore · 2153:sajuMatchScore · 2183:sajuMatchScore · 2210:행운의 색 · 2253:행운 정보
+  FAIL N3a 궁합 서버 정의역 = 엔진 40~98 — CW_COMPAT_SCORE_MIN = 55, CW_COMPAT_SCORE_MAX = 99;
+  FAIL N3b 「LLM 보정 score」 지시 없음
+  FAIL N4a 데일리 서버 날짜에 KST 지정(timeZone 없는 ko-KR 날짜 없음) — 2559:toLocaleDateString('ko-KR')
+  FAIL N4b ★LUCK★ 토큰 요구 없음
+  FAIL N5 관상 프롬프트에 자작 부위 점수 없음 — 1930:score||''}점 · 1930:score||''}점 · 1930:score||''}점 · 1930:score||''}점 · 1941:score||''}점 · 1941:score||''}점 · 1941:score||''}점 · 1941:score||''}점
+  FAIL N6 사주 대운 「0~9세」 고정 구간 없음(bind.js) — 253:0~9세
+  FAIL U1 화면·PDF가 제거 필드를 읽지 않음 — 2818:.luckyInfo · 3616:.luckyInfo · 3954:.luckyMonths · 3954:.luckyMonths · 3955:.cautionMonths · 3955:.cautionMonths · 6363:.fortuneGraph · 6383:.fortuneGraph · 6463:.fortuneGraph
+  FAIL U2a 사주·토정·궁합 LLM 점수·기본값 렌더 없음 — 2817:result.scores · 2845:sc.overall · 2845:sc.overall · 2846:sc.wealth · 2846:sc.wealth · 2847:sc.career · 2847:sc.career · 2848:sc.love · 2848:sc.love
+  FAIL U2b 궁합 총점·등급은 엔진만(LLM score/grade 폴백 없음) — 3639:result.score · 3641:result.score · 3642:result.grade
+  FAIL U3a 토정 해시 가짜 결과 없음 — 본문에 난수·해시 사용
+  FAIL U3b 토정 [PARSE_FAILED]·raw 응답을 정상 결과로 그리지 않음
+  FAIL U4 홈 띠별 운세: 난수 별점·행운 없음 — 10:class="stars" · 17:행운의 · 17:COLORS[ · 17:행운의 · 17:행운의 · 17:DIRS[
+  FAIL U5 관상: 자작 부위 점수 막대·해시 폴백·대운 그래프·확신도 없음 — 5858:h.hash>>> · 6113:h.hash>>> · 6114:h.hash>>> · 6115:h.hash>>> · 6116:h.hash>>> · 6171:trait-meter-fill" data-w · 6181:h.hash>>> · 6182:h.hash>>> · 6183:h.hash>>>
+  FAIL U6 꿈: 엔진 행운 숫자 없음 · LLM 길흉 배지 없음 — 4:numbers · 13:numbers · 13:numbers · 13:numbers
+  FAIL U7 타로 프리미엄 재시도가 카드를 다시 뽑지 않음
+  FAIL U8 작명: 81수 획수·등급 수치 숨김 · 매칭·SEO·상표 점수 없음 — 8661:totalLabel · 8661:'총 '+totalEval · 8688:totalLabel · 8690:${gradeLabel} · 10691:사주 매칭 점수 · 10725:nc-score · 10847:nc-score
+  FAIL U9 페이월·로딩·렌더 문구가 제거 항목을 약속·표시하지 않음 — 2864:행운 정보 · 3677:행운 정보 · 3749:결혼 길흉일 · 3784:결혼 길흉일 · 6267:대운 그래프 · 6397:대운 그래프 · 6735:대운 그래프 · 6740:대운 그래프 · 6815:대운 그래프
+  ok   U10 문법(index 인라인 4블록 · tarot · chat · bind · fortune)
+[p41_no_ungrounded_numbers] total=21 pass=1 fail=20 · FAIL N1a,N1b,N2,N3a,N3b,N4a,N4b,N5,N6,U1,U2a,U2b,U3a,U3b,U4,U5,U6,U7,U8,U9
