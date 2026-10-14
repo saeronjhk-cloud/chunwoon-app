@@ -3032,6 +3032,7 @@ async function unlockSajuPremium(){
     // 1단계: 격국·용신·십성·4영역
     try{
       const r1=await doFetch('saju_premium_1');
+      if(r1&&typeof r1==='object')delete r1.sinsal;   // ★v805 P-805-C2 신살은 2단계(엔진) 값만
       Object.assign(merged,r1);
       const m=document.getElementById('sajuPremLoadMsg');
       if(m)m.textContent='대운 + 합충 + 신살 + 12개월 세운 생성 중...';
@@ -3095,7 +3096,7 @@ async function retrySajuPremiumAPI(){
       return d.result;
     };
     let merged={};let apiError=null;
-    try{Object.assign(merged,await doFetch('saju_premium_1'))}catch(e){apiError='1단계: '+e.message;console.error('Saju Retry 1:',e)}
+    try{const r1=await doFetch('saju_premium_1');if(r1&&typeof r1==='object')delete r1.sinsal;Object.assign(merged,r1)}catch(e){apiError='1단계: '+e.message;console.error('Saju Retry 1:',e)}
     try{Object.assign(merged,await doFetch('saju_premium_2'))}catch(e){apiError=(apiError?apiError+' | ':'')+'2단계: '+e.message;console.error('Saju Retry 2:',e)}
     const hasData=!!(merged.gyeokguk||merged.daewoon||merged.monthlyFortune);
     if(!hasData)throw new Error(apiError||'데이터 없음');

@@ -2778,6 +2778,8 @@ ${cardsDesc}
       } else if (type === 'saju_premium_2' && Object.prototype.hasOwnProperty.call(parsed, 'sinsal')) {
         delete parsed.sinsal;   // 엔진 미적재 시 LLM 신살을 내보내지 않는다(검증되지 않은 값)
       }
+      // ★v805 P-805-C2 — 1단계(saju_premium_1)는 신살을 싣지 않는다. 엔진 신살은 2단계 몫이므로 LLM 이 만들어 와도 항상 버린다.
+      if (type === 'saju_premium_1') { delete parsed.sinsal; }
       // ★v7.71 — 재계산 메트릭은 **서버 로그로만** 낸다. 응답에 실으면
       //   ⑴ 클라이언트 값이 그대로 되비쳐 나가 스크럽 대상이 늘고
       //   ⑵ 프런트 렌더링 계약(M14 출구 화이트리스트)을 건드린다.

@@ -20,6 +20,9 @@
 //  N8 서버: saju 계열에 엔진 신살 블록 주입 · LLM 스키마에서 sinsal 요구 제거 · 응답 sinsal = 엔진 값
 //  N9 화면: 무료 사주·프리미엄·PDF 신살이 응답 sinsal(엔진)만 그림 · 기준 표기 · 도화·공망 문구 없음
 //  N10 문법
+//  ★사후(v805 P-805-C2 · 2026-10-15 · 기준 완화 아님 — 누출 경로 추가 봉쇄):
+//  N11 서버: saju_premium_1 응답의 sinsal 키는 항상 삭제(엔진 신살은 premium_2 몫)
+//  N12 화면: 프리미엄 합치기(첫 시도·재시도)에서 1단계 응답 sinsal 을 받지 않음(delete r1.sinsal 후 합침)
 // ============================================================
 'use strict';
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
@@ -73,5 +76,11 @@ const R = has ? BI.SINSAL_RULES : null;
   for (const p of ['api/_engine/bind.js', 'api/_engine/authority.js']) { try { cp.execFileSync(process.execPath, ['--check', path.join(ROOT, p)], { stdio: 'pipe' }); } catch (e) { bad.push(p); } }
   { const f = path.join(tmp, 'f.mjs'); fs.writeFileSync(f, rd('api/fortune.js')); try { cp.execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' }); } catch (e) { bad.push('fortune'); } }
   check('N10', '문법', bad.length === 0, bad.join(' · ')); }
+{ const F = rd('api/fortune.js'); const i = F.indexOf('P-805-C — 신살은 엔진 값만'); const seg = i < 0 ? '' : F.slice(i, i + 1500);
+  const ok = /type === 'saju_premium_1'[^\n]*\)\s*\{?[\s\S]{0,300}?delete parsed\.sinsal/.test(seg) && !/type === 'saju_premium_1'\s*&&\s*Object\.prototype\.hasOwnProperty/.test(seg.replace(/\(type === 'saju_premium_1' \|\| type === 'saju_premium_2'\)/, ''));
+  check('N11', '(사후) 서버: saju_premium_1 응답 sinsal 항상 삭제', ok, i < 0 ? '신살 출구 블록 없음' : ''); }
+{ const H = rd('index.html'); const calls = [...H.matchAll(/doFetch\('saju_premium_1'\)/g)].map(m => H.slice(m.index, m.index + 160));
+  const okEach = calls.length >= 2 && calls.every(c => { const d = c.indexOf('delete r1.sinsal'), a = c.indexOf('Object.assign(merged,r1)'); return d !== -1 && a !== -1 && d < a; });
+  check('N12', '(사후) 화면: 프리미엄 합치기 1단계 sinsal 미수용(첫 시도·재시도)', okEach, `호출 ${calls.length}`); }
 console.log(`[p43_sinsal_yhzp] total=${total} pass=${pass} fail=${total - pass}${fails.length ? ' · FAIL ' + fails.join(',') : ''}`);
 process.exitCode = fails.length ? 1 : 0;

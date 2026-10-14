@@ -8,4 +8,6 @@
   ok   N8 서버: 엔진 신살 블록 주입 · LLM sinsal 요구 제거 · 응답 sinsal = 엔진 — 주입 true · 요구 제거 true · 덮어쓰기 true
   ok   N9 화면: 무료·프리미엄·PDF 신살 = 엔진(_cwSinsalHTML) · 기준 표기 — 렌더 true · 기준 true · 미검증 문구 없음 true
   ok   N10 문법
-[p43_sinsal_yhzp] total=10 pass=10 fail=0
+  ok   N11 (사후) 서버: saju_premium_1 응답 sinsal 항상 삭제
+  ok   N12 (사후) 화면: 프리미엄 합치기 1단계 sinsal 미수용(첫 시도·재시도) — 호출 2
+[p43_sinsal_yhzp] total=12 pass=12 fail=0
