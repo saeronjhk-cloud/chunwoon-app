@@ -1,6 +1,7 @@
 // ============================================================
 //  v794 P-793-C — 합성 생성기 실사진 앵커 보정 (fixture 생성)
-//  node _v792_work/calib_real_anchor.js  → _v792_work/fixtures/real_anchor_v1.json
+//  node _v792_work/calib_real_anchor.js  → _v792_work/fixtures/real_anchor_v2_js.json
+//  ★v804 P-804-A: 입력 캐시 = 정본(앱 엔진 JS · refine 끔). v1(파이썬 캐시 산출)은 real_anchor_v1.json 으로 보존
 //  ① 평균 얼굴: 평가셋 실사진 23장 랜드마크를 등방화(y×A) → 234↔454 중점 원점 · 152→10 을 세로축으로 회전 ·
 //     234↔454 폭=1 로 스케일 · (10,152) 세로 중점 = 0 → 좌우 대칭화(canonical 로 구한 거울 짝) → 평균
 //  ② 산포: 합성 모집단의 축별 표준편차를 실사진 23장의 강건 표준편차(MAD×1.4826)에 맞춰 REL/ABS 를 3회 반복 보정
@@ -9,7 +10,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'), zlib = require('zlib');
 const ROOT = path.join(__dirname, '..'), EV = path.join(ROOT, '..', 'ChunWoon_IP', 'face', 'eval_hairline');
-const OUT = path.join(__dirname, 'fixtures', 'real_anchor_v1.json');
+const OUT = path.join(__dirname, 'fixtures', 'real_anchor_v2_js.json');
 const LMS = JSON.parse(fs.readFileSync(path.join(EV, 'cache', 'landmarks.json'), 'utf8'));
 const keys = Object.keys(LMS).sort();
 // 거울 짝 (canonical 기하에서)
@@ -46,7 +47,7 @@ const hairRel = keys.map(k => { const d = LMS[k], ai = d.lm.map(a => ({ x: a[0],
 const medOf = a => { const s = [...a].sort((x, y) => x - y); return s.length % 2 ? s[(s.length - 1) >> 1] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2; };
 // ★산포는 표준편차(꼬리 포함) — 강건 MAD 는 양 끝 비율을 과소평가했다(p17 R1·R21 30% 초과)
 const rsd = a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) * (y - m), 0) / (a.length - 1)); };
-fs.writeFileSync(OUT, JSON.stringify({ version: 'REAL-ANCHOR-v1', n: keys.length, meanFace: sym.map(round), hairUp: { mu: +medOf(hairRel).toFixed(4) } }));
+fs.writeFileSync(OUT, JSON.stringify({ version: 'REAL-ANCHOR-v2-JS', n: keys.length, meanFace: sym.map(round), hairUp: { mu: +medOf(hairRel).toFixed(4) } }));
 // 산포 보정
 const PARAM = { whRatio: ['whRatioPhys', 'upperR'], jawRatio: 'trueJawRatio', foreheadRatio: 'fhOverJaw', eyeAspect: 'eyeAspect', eyeSize: 'eyeW', noseWRatio: 'noseWRatio', noseHRatio: 'noseHRatio',
   mouthRatio: 'mouthOverIP', lipThickness: 'lipThick', myungGung: 'myungGungW', jaNyeo: 'underEyeR', jilAek: 'sanGeunW', jeonTaek: 'browEyeGap', browLength: 'browLenR',

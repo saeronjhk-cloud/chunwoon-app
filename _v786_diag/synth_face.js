@@ -62,7 +62,7 @@ const CAN_3D = CV0.map(([x, y, z]) => ({ x: x / W0, y: -(y - CY0) / W0, z: -z / 
 //   평균 얼굴 = 평가셋 실사진 23장의 랜드마크를 (234↔454 폭=1 · 152→10 세로축 정렬 · 좌우 대칭화) 평균한 것.
 //   산포(REL·ABS)도 같은 23장의 실측 표준편차에 맞춰 보정했다(_v792_work/calib_real_anchor.js).
 //   ★여전히 TIER-C — 표본 23장(대부분 스튜디오·보도 사진). 셀카·실사용자 표본(B-5)으로 갱신할 것.
-const CALIB_PATH = path.join(__dirname, '..', '_v792_work', 'fixtures', 'real_anchor_v1.json');
+const CALIB_PATH = path.join(__dirname, '..', '_v792_work', 'fixtures', 'real_anchor_v2_js.json');   // ★v804 P-804-A JS 정본 앵커(v1 = 파이썬 캐시, 보존)
 const CALIB = fs.existsSync(CALIB_PATH) ? JSON.parse(fs.readFileSync(CALIB_PATH, 'utf8')) : null;
 const CAN = CALIB && CALIB.meanFace ? CALIB.meanFace.map(([x, y, z]) => ({ x: x, y: y, z: z })) : CAN_3D;
 const cdx = (a, b) => Math.abs(CAN[a].x - CAN[b].x), cdy = (a, b) => Math.abs(CAN[a].y - CAN[b].y);

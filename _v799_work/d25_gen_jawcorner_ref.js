@@ -14,7 +14,7 @@ const pool=[...labelVotes.map(v=>v[1]),...netVotes.map(v=>v[1])].sort((a,b)=>a-b
 const q=[];for(let i=0;i<=20;i++)q.push(+pool[Math.min(pool.length-1,Math.round(i/20*(pool.length-1)))].toFixed(6));
 // eps: 근접은 현재 앱 보정표(CW_FACE_PERSP.f.jawCorner 가 있으면 그 값) 적용 · 같은 사람 안 표준편차 중앙
 const f=C.CW_FACE_PERSP.f.jawCorner||1;const sds=Object.entries(grp).map(([g])=>{const ps=P.filter(p=>p.grp===g);const v=[];ps.forEach(p=>{p.near.forEach(x=>{if(Math.abs(yaw(x.ai))<0.45)v.push(x.raw.jawCorner/f)});p.far.forEach(x=>{if(Math.abs(yaw(x.ai))<0.45)v.push(x.raw.jawCorner)});});const m=v.reduce((a,b)=>a+b,0)/v.length;return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/(v.length-1));});
-const out={version:'JAWCORNER-REF-v1-20261011',tier:'D-REAL(사람당 1표 · 라벨셋 '+labelVotes.length+'명 원거리 + 인터넷 '+netVotes.length+'명)',n:pool.length,q,k0:q[10],eps:+Lb.med(sds).toFixed(4),perspF:f,votes:{label:labelVotes,net:netVotes.map(v=>[v[0],+v[1].toFixed(4)])}};
+const out={version:'JAWCORNER-REF-v2-JS-20261014',tier:'D-REAL(사람당 1표 · 라벨셋 '+labelVotes.length+'명 원거리 + 인터넷 '+netVotes.length+'명)',n:pool.length,q,k0:q[10],eps:+Lb.med(sds).toFixed(4),perspF:f,votes:{label:labelVotes,net:netVotes.map(v=>[v[0],+v[1].toFixed(4)])}};
 fs.writeFileSync(path.join(__dirname,'fixtures','jawcorner_ref.json'),JSON.stringify(out,null,1));
 console.log(out.version,'·',out.tier,'· n',out.n,'· k0',out.k0,'· eps',out.eps,'(보정계수',f,') · 사람별 표준편차',sds.map(v=>v.toFixed(3)).join(' '));
 console.log('라벨셋 표:',labelVotes.map(v=>v[0]+' '+v[1].toFixed(3)).join(' · '));

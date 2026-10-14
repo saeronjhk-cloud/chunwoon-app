@@ -46,7 +46,7 @@ const ANG = new Set(['eyeTilt', 'browAngle']), PCT = new Set(['upperThirdPct', '
 const can = C._cwFaceMeasure(toImage(V, 1.25), 1.25);
 // ★v794 P-793-C — 참조표 중심은 ★실사진 평균 얼굴(fixture)이다. 3D 표준 얼굴(can)은 실사진 검출 배치와 달라 중심 기준에서 뺐다.
 //   (can 은 B 계측 정의 검사와 E 방향 검사에만 쓴다)
-const RA = JSON.parse(fs.readFileSync(path.join(ROOT, '_v792_work', 'fixtures', 'real_anchor_v1.json'), 'utf8'));
+const RA = JSON.parse(fs.readFileSync(SY.CALIB_PATH, 'utf8'));   // ★v804 앵커 경로는 synth_face.js 한 곳에서만 정한다
 const mf = C._cwFaceMeasure(RA.meanFace.map(([x, y, z]) => ({ x: 0.5 + x, y: 0.5 + y / 1.25, z: z })), 1.25);
 
 // ── A. 참조표 앵커 ──
