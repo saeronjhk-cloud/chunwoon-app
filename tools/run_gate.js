@@ -70,7 +70,7 @@ const GATE_PINS_FILE = path.join(EVAL_DIR, '_gate_pins.json');
 //   + eval_engine_binding.js sha256 (패키지 engine/ 해석 경로 추가) + eval_gate_asset_commit.js sha256 (REQUIRED 2건 추가) · P-786-D. checks_min 불변.
 // ★v788(2026-09-21) 갱신 — sources: api/fortune.js sha256 (P-786-C: daily_message 가 전용 키 `variance` 를 읽는다 · bytes_min 불변)
 //   + eval_dream_daily_guard.js sha256 (PROMPT_KEYS_KNOWN 에 `variance` 등재 · checks_min 48 불변). regen_gate_pins.js 미실행.
-const GATE_PINS_SHA256 = '615452d602c6eb941e81427aa2029c180973c7a0a976c21a6d7737ace20fe154';
+const GATE_PINS_SHA256 = '488d96c84da41269ed236185b8397f136bbe58e732ff5157f088d646926cb4bf';
 
 function readPins() {
   if (!fs.existsSync(GATE_PINS_FILE)) return { err: '외부 pin 파일 부재: eval/_gate_pins.json — 판정 불가(통과 아님)' };
