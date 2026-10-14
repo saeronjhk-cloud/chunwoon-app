@@ -1,0 +1,9 @@
+  ok   V1 앱 CW_FACE_PERSP = 생성기 산출(PERSP-v2) — PERSP-v2-20261009 · 12축
+  기록 V2(사전 기준 · 미통과 보존) 후보 12축 랭크 오차 v2 < v1 · ≤0.12 — 미통과 · 무보정 0.309 · v1 0.161 → v2 0.138 (사람 10)
+  ok   V2b [사후 보조 기준] 12축 오차 v2 < v1 · 바꾼 축 각각 ≤0.12 — v1 0.161 → v2 0.138 · 바꾼 축 chin 0.080 · jawRatio 0.079 · cheonJiWidth 0.044
+  FAIL V3 축별 악화 ≤0.05 — 악화 jilAek · whRatio:0.13→0.13 foreheadRatio:0.08→0.08 eyeSize:0.10→0.10 noseWRatio:0.24→0.24 mouthRatio:0.17→0.17 myungGung:0.16→0.16 jilAek:0.33→0.39 browLength:0.26→0.10 chin:0.24→0.08 midOverLow:0.13→0.15 jawRatio:0.15→0.08 cheonJiWidth:0.22→0.04 jawCorner:0.14→0.14
+  ok   V4 얼굴형 근접 다수결 = 원거리 다수결: v2 ≥ v1+2 — v1 6/10 → v2 9/10
+  ok   V5 근접 역삼각 오판 사진: v2 < v1 — v1 4 → v2 0
+  ok   V6 파일 경로(src≠'live') 무보정 — true
+  ok   V7 되돌리기 스위치 CW_FACE_PERSP_ACTIVE('v2'↔'v1') — v1 전환 → PERSP-v1-20261004 · 기본 PERSP-v2-20261009
+[p28_persp_v2] total=7 pass=6 fail=1 · FAIL V3

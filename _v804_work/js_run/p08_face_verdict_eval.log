@@ -1,0 +1,73 @@
+==============================================================================
+P-08  관상 원문 판정 엔진 (facever) 게이트
+==============================================================================
+PASS A-1  ★배포 산출물에 원문이 없다 (한자 연속 10자 구간 0건)  — 한자 29자 · 최장연속 3자 · 연속10자↑ 구간 0건(합 0자)
+PASS A-2  ★원문 필드명이 산출물에 아예 없다 (text_original·predicate_original·operational·notes·organ)  — 전건 제거
+PASS B-1  ★규칙 수 보존 — IP 113건이 컴파일 후에도 113건  — IP 113건 → 산출물 113건
+PASS B-2  ★rule_id 가 IP 와 완전히 일치한다 (누락·유령 0)  — 113건 일치
+PASS B-3  ★등급 필드가 IP 와 동일하다 (컴파일러가 등급을 조작하지 않는다)  — 113건 동일
+
+[C] ★업그레이드 경로 실측 — refTier 만 바꾼다. 코드는 건드리지 않는다.
+  refTier=C-SYNTHETIC  VERDICT 4 · REFERENCE 41 · WITHHELD 68
+  refTier=B            VERDICT 8 · REFERENCE 35 · WITHHELD 70
+  ⟹ VERDICT 4건 → 8건 (증감 4)
+PASS C-1  ★코드 경로 — coverage=FULL + POPULATION 규칙이 tier C 에선 REFERENCE, tier B 에선 VERDICT  — C: V0/R1 → B: V1/R0
+PASS C-2  ★★실규칙 113건 — refTier C-SYNTHETIC→B 로 VERDICT 가 실제로 늘어난다  — 4건 → 8건 (+4) · 늘어난 규칙 FACE_OGWAN_R030,FACE_XLHZ_R046,FACE_XLHZ_R049,FACE_XLHZ_R051 · 승격 대상 FULL∩POPULATION 8건(그중 노출 가능·조건식 보유 4건)
+PASS C-3  ★tier 를 올려도 WITHHELD 총량은 줄지 않는다 (봉인이 풀리지 않는다)  — 봉인 사유 WITHHELD 50 → 50
+
+PASS D-1  ★WITHHELD 는 tier C 에서 노출되지 않는다  — 봉인대상 50건 전부 미노출
+PASS D-2  ★WITHHELD 는 tier B 에서도 노출되지 않는다  — 봉인대상 50건 전부 미노출
+PASS D-3  ★A~C 전 tier 에서 봉인 유지 (A·B·C·미상 4종)  — 4 tier 전부 봉인 유지
+PASS D-4  ★「醜惡者㐫」 계열 4건이 새어나가지 않는다  — FACE_OGWAN_R006,FACE_OGWAN_R009,FACE_OGWAN_R011,FACE_XLHZ_R054 전 tier 미노출
+PASS D-5  ★WITHHELD 레코드에 본문(gloss·verdict)이 담기지 않는다  — rule_id·reason 뿐
+PASS D-6  ★프롬프트 블록이 VERDICT 와 REFERENCE 를 명확히 구분한다  — 블록 47줄 · 판정머리=true 참고머리=true
+
+PASS E-1  ★귀 규칙 8건은 어떤 tier 에서도 VERDICT 가 되지 않는다  — 귀 규칙 8건 전 tier VERDICT 0
+PASS E-2  ★귀 규칙은 산출물에서도 조건식을 갖지 않는다  — 귀 규칙 8건 전부 expr=null
+
+PASS F-1  ★fail-closed — measures 없음/축 결손 시 판정하지 않는다  — measures 없음 → V0/R0 · 축 1개만 → V0
+PASS F-2  ★조건식이 없는 MEASURABLE 규칙은 판정되지 않고 떨어진다 (컷오프 날조 금지)  — expr 없는 MEASURABLE 3건 (FACE_OGWAN_R016,FACE_XLHZ_R059,FACE_XLHZ_R060) → VERDICT 0건 · 사유기재 true
+PASS F-3  ★원시값 비교식은 TEXT·MEASURABLE 에만, 랭크 비교식은 FULL·POPULATION 에만 붙어 있다  — 조건식 8건 전부 정합
+PASS F-4  ★applyFaceVerdicts 가 LLM 의 봉인 규칙 주장을 버린다  — 덮어쓴 뒤 4건(엔진 4건) · 버린 LLM 항목 2 (봉인 주장 2) · 유출 0
+
+PASS H-0  ★규칙 113건 전부 condition_coverage 와 coverage_note 를 갖는다  — {"PARTIAL":52,"NONE":44,"FULL":17}
+PASS H-1  ★FULL 인데 uncovered 가 비어 있지 않으면 FAIL (자기모순 차단)  — FULL 17건 전부 uncovered=0
+PASS H-2  ★귀·청수·기·요함·거동·몸통·추악 계열은 FULL 이 아니다 (금지 목록)  — 금지 7계열 중 FULL 0건
+PASS H-3  ★★PARTIAL·NONE 은 어떤 tier 에서도 VERDICT 가 되지 않는다  — VERDICT 전건 coverage=FULL (전 tier)
+PASS H-4  ★coverage_note 에 한자가 없다 (배포 한자 게이트 유지)  — 산출물 113건 coverage_note 한자 0자
+PASS H-5  ★조건식은 MEASURABLE 이거나 FULL+POPULATION 인 규칙에만 붙어 있다  — 조건식 8건 전부 정합
+
+[G] ★변이 시험 — 일부러 망가뜨린 뒤 위 검사들이 실제로 잡는지 본다
+  검출 O  [A] 산출물에 원문(citation.text_original) 재삽입
+  검출 O  [B] 규칙 1건 누락
+  검출 O  [D] 醜惡 규칙(UNMEASURABLE)을 MEASURABLE+TEXT 로 승격 + 조건식 부착
+  검출 O  [D] user_exposure=BLOCKED 해제
+  검출 O  [E] 귀 규칙을 MEASURABLE+TEXT 로 승격 + 조건식 부착
+  검출 O  [F] fail-open 변종 — measures 결손을 0 으로 채워 판정
+  검출 O  [C-1] 업그레이드 경로 차단 — condition_coverage 삭제(fail-closed 로 PARTIAL 처리)
+  검출 O  [A-2] 원문 필드(operational) 재삽입
+  검출 O  [H-1] PARTIAL 을 FULL 로 위조 (uncovered 남긴 채)
+  검출 O  [H-2] 금지 계열(귀)을 FULL 로 위조하고 uncovered 를 비움
+  검출 O  [H-3] PARTIAL 규칙을 조건식과 함께 승격시켜 VERDICT 로 만든다
+  ⟹ 변이 11건 중 11건 검출
+PASS G-1  ★변이 시험 전건 검출 (검사가 실제로 작동한다)  — 11/11 검출
+
+[현황 집계 · refTier=C-SYNTHETIC]
+  VERDICT   4건  (성립 3 · 불성립 1)
+  REFERENCE 41건
+  WITHHELD  68건  {"UNMEASURABLE":34,"MEASURE_AXIS_NULL":15,"USER_EXPOSURE_BLOCKED":16,"CONDITION_NOT_EVALUABLE":3}
+  VERDICT 규칙: FACE_OGWAN_R020, FACE_OGWAN_R021, FACE_XLHZ_R014, FACE_XLHZ_R015
+
+[★결속 시 확인] doctrines.user_output_enabled = FACE_OGWAN:false · FACE_XLHZ:false  — false 면 사용자 노출 판정 근거로 쓸 수 없다(영인 미확보).
+
+==============================================================================
+PASS I-1  ★fortune.js 가 facever 를 적재한다  — import 경로 + 로더 호출
+PASS I-2  ★fortune.js 가 evaluateFace 를 실제로 호출한다 (선언만 하고 안 쓰는 것 차단)  — evaluateFace 호출부 존재
+PASS I-3  ★판정 블록이 userPrompt 에 실제로 실린다  — cwFaceBlock 보간 3곳 (face 3종)
+PASS I-4  ★★user_output_enabled 게이트가 있다 (교리 미승인 시 VERDICT 미노출)  — 플래그 검사 + VERDICT 비우기
+PASS I-5  ★응답 덮어쓰기 applyFaceVerdicts 가 호출된다  — bind.js applyEngineFacts 와 같은 성질
+PASS I-6  ★현재 교리는 미승인 상태다 (승인은 ADR 결재 사항)  — 교리 2건 · 사용자 판정 활성 0건 (참고층만 노출 중)
+PASS I-7  ★센서 채널 fail-closed — 접두사 위반은 거부, 랜드마크 축과 충돌하면 센서 전체 폐기, 센서 단독이면 판정 없음  — 접두사거부 1 · 충돌폐기 true · 센서단독 V0/R0
+PASS I-8  ★★운영 조건(센서 축 ranks 없음)에서는 센서 축 규칙이 어떤 tier 에서도 VERDICT 가 되지 않는다 — 참고층 상한  — 센서 축 규칙 17건 · VERDICT 0건 · REFERENCE 누적 42건(4 tier)
+PASS I-9  ★센서 모집단이 생기면(ranks 보유 가정) FULL∩POPULATION 센서 규칙이 tier B 에서 코드 수정 없이 VERDICT 로 오른다  — 후보 FACE_XLHZ_R046,FACE_XLHZ_R049,FACE_XLHZ_R051 · tier C VERDICT 0 · tier B VERDICT 3
+[p08_face_verdict] total=36 pass=36 fail=0

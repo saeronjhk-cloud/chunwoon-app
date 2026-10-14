@@ -1,0 +1,11 @@
+PASS S1 — 계수·built
+PASS S2 — n 187 · 최대 |Δ| 1.9539925233402755e-14
+PASS S3 — classify.smile
+PASS S4 — 위치 pose 2749 < smile 3499 < classify 4213
+PASS S5 — 설정 true · 초기화 true · 안내 true · llm 3/3
+PASS S6 — 축 true · 백분위 제외 1 · 실측 제외 true · 촬영 조건 true
+PASS S7 — 반환 true · 루프 true · 상한 true
+FAIL S8 — 명확 미소 경고 이상 10/11 · 무표정 보류 0 · 무표정 경고 1/103
+PASS S9 — 조화도 식 · 고개 보류 카드
+PASS S10 — 스크립트 4개 · 오류 0
+total=10 pass=9 fail=1 · FAIL S8

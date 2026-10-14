@@ -1,0 +1,8 @@
+  ok   S1 _cwFaceShapeDesc · CW_FACE_SHAPE_BAND {rank:0.05, cjw:0.02} — {"rank":0.05,"cjw":0.02}
+  ok   S2 평가 사진 전부 desc.primary = shapeOpt.v — n 127 · 불일치 0 · 인접형 표기 44장
+  ok   S3 경계 대칭(3변수×양쪽: band/2 → 인접형 · band×2 → 없음) — 111111
+  ok   S4 근거 문구 4형 · 「계열」 · 평가성 금지어 없음 — long:1 square:1 inv:1 round:1
+  ok   S5 앱 표시(미배당 제거·4형 문구·title/basis·측정 세부 접기·안내·단정 제거) — {"noMibae":true,"invNew":true,"common":true,"title":true,"details":true,"notice":true,"noDanjeong":true}
+  ok   S6 AI 요청 3곳 shape.type·basis — 3곳
+  ok   S7 서버 프롬프트(규칙 교체 · 「계열」·평가 금지 · userPrompt 3곳 윤곽 줄) — {"noMibae":true,"rule":true,"lines":true}
+[p29_face_shape_display] total=7 pass=7 fail=0

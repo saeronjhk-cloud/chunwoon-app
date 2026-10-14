@@ -1,0 +1,149 @@
+==============================================================================
+P-04  관상 doctrine 평가 — doctrine 2건
+==============================================================================
+[1] FACE_OGWAN  저본 CANDIDATE / license_review=UNREVIEWED
+    太淸神鑑(四庫全書本) — ★영인 미확보 전자 전사. 출시 판정 근거 불가.
+    코드 결속 : BOUND(v787 · P-786-I)
+[2] FACE_XLHZ   저본 SELECTED / license_review=UNREVIEWED
+    相理衡眞(淸 道光13년[1833] 刻本) — ★영인 직독 완료. scan_file_sha256 은 미수령이라 null.
+    코드 결속 : BOUND(v787 · P-786-I)
+
+==============================================================================
+【1】 FACE_OGWAN — 太淸神鑑(SRC_TQSJ_A) → rules/face/ogwan.json
+==============================================================================
+------------------------------------------------------------------------------
+A) 인용 검증 — text_original ⊂ citation_corpus   [FACE_OGWAN]
+------------------------------------------------------------------------------
+  규칙 42건 중 인용 불량 0건
+
+------------------------------------------------------------------------------
+B) 집계·참조 무결성   [FACE_OGWAN]
+------------------------------------------------------------------------------
+  threshold_origin : TEXT=7  POPULATION=29  NONE=6
+  measurability    : MEASURABLE=3  PARTIAL=33  UNMEASURABLE=6
+  measure_axis=null: 9   사용자 노출 차단: 14
+  ★MEASURABLE + 축 배당: 3 / 42  (7.1%)
+
+------------------------------------------------------------------------------
+C) 원문 명례 GT — 조건 → 규칙 → 판정   [FACE_OGWAN]
+------------------------------------------------------------------------------
+  ok   GT01  VERDICT      FACE_OGWAN_R016      삼정(상·중·하)이 서로 고르다
+  ok   GT02  VERDICT      FACE_OGWAN_R020      눈썹이 눈보다 길다
+  ok   GT03  VERDICT      FACE_OGWAN_R021      눈썹이 짧아 눈을 덮지 못한다
+  ok   GT04  VERDICT      FACE_OGWAN_R015      오악이 서로 마주 향한다(상조)
+  ok   GT05  VERDICT      FACE_OGWAN_R032      부위가 작아도 서로 걸맞고 단정하다
+  ok   GT06  VERDICT      FACE_OGWAN_R033      부위가 커도 서로 걸맞지 않다
+  ok   GT07  AXIS_MISSING FACE_OGWAN_R039      천정(이마)과 지각(턱)이 상하로 응한다
+  ok   GT08  DEFERRED     FACE_OGWAN_R001      눈이 맑고 빼어나며 도톰하고 솟았다
+  ok   GT09  DEFERRED     FACE_OGWAN_R012      코가 높고 가파르다
+  ok   GT10  DEFERRED     FACE_OGWAN_R031      입이 작다
+  ok   GT11  DEFERRED     FACE_OGWAN_R028      눈이 작다
+  ok   GT12  DEFERRED     FACE_OGWAN_R008      육부가 평평하고 그득하며 빛난다
+  ok   GT13  DEFERRED     FACE_OGWAN_R023      눈썹이 굵고 짙고 어지럽고 짧다
+  ok   GT14  DEFERRED     FACE_OGWAN_R042      이마가 크고 얼굴이 모나다
+  ok   GT15  DEFERRED     FACE_OGWAN_R040      코가 굽고 낮게 꺼졌다
+  ok   GT16  UNMEASURABLE FACE_OGWAN_R003      귀가 맑고 빼어나며 도톰하고 솟았다
+  ok   GT17  UNMEASURABLE FACE_OGWAN_R029      귀가 작다
+  ok   GT18  DEFERRED     FACE_OGWAN_R027      흰자는 옥 같고 검은자는 옻 같다
+  ok   GT19  DEFERRED     FACE_OGWAN_R025      눈썹 위에 세로결/가로결이 있다
+  ok   GT20  UNMEASURABLE FACE_OGWAN_R006      오관 중 하나가 결함이 있거나 추악하다
+  ok   NEG01  NO_RULE                           눈 밑 그늘(다크서클)이 짙으면 이혼한다
+  ok   NEG02  NO_RULE                           이마 폭 비율이 0.87 이상이면 대길
+  ok   NEG03  NO_RULE                           눈꼬리가 3도 이상 올라가면 승진한다
+  ok   NEG04  NO_RULE                           입술 두께가 상위 20%면 애정운이 좋다
+  ok   NEG05  NO_RULE                           광대가 돌출하면 2027년에 이직한다
+  ok   NEG06  NO_RULE                           좌우 대칭도 95% 이상이면 결혼운 최상
+
+  · TEXT_VERDICT                 6/6
+  · TEXT_VERDICT_AXIS_MISSING    1/1
+  · POPULATION_DEFERRED          10/10
+  · UNMEASURABLE                 3/3
+  · NEGATIVE_CONTROL             6/6
+
+  ★fail-closed : 원문에 없는 조건 6건 중 6건 판정 거부
+
+==============================================================================
+【2】 FACE_XLHZ — 相理衡眞(SRC_XLHZ_A) → rules/face/xlhz.json
+==============================================================================
+------------------------------------------------------------------------------
+A) 인용 검증 — text_original ⊂ citation_corpus   [FACE_XLHZ]
+------------------------------------------------------------------------------
+  규칙 71건 중 인용 불량 0건
+
+------------------------------------------------------------------------------
+B) 집계·참조 무결성   [FACE_XLHZ]
+------------------------------------------------------------------------------
+  threshold_origin : TEXT=15  POPULATION=28  NONE=28
+  measurability    : MEASURABLE=4  PARTIAL=39  UNMEASURABLE=28
+  measure_axis=null: 40   사용자 노출 차단: 8
+  ★MEASURABLE + 축 배당: 4 / 71  (5.6%)
+
+------------------------------------------------------------------------------
+C) 원문 명례 GT — 조건 → 규칙 → 판정   [FACE_XLHZ]
+------------------------------------------------------------------------------
+  ok   XGT01  VERDICT      FACE_XLHZ_R014       화형은 위가 뾰족하고 아래가 풍만하다(其形銳而下豐)
+  ok   XGT02  VERDICT      FACE_XLHZ_R015       화형은 위가 뾰족한 것이 불꽃 같다(上尖如火之炎)
+  ok   XGT03  AXIS_MISSING FACE_XLHZ_R029       금과 목은 함께할 수 없고 수와 화는 나란할 수 없다
+  ok   XGT04  AXIS_MISSING FACE_XLHZ_R030       형을 논할 때는 가장 많이 부합하는 쪽을 주로 삼는다
+  ok   XGT05  AXIS_MISSING FACE_XLHZ_R031       금은 모남을, 목은 마름을, 화는 뾰족함을 꺼리지 않는다
+  ok   XGT06  AXIS_MISSING FACE_XLHZ_R032       금방·목수·수원·화첨·토후이며 체모는 상생해야 한다
+  ok   XGT07  AXIS_MISSING FACE_XLHZ_R033       오행이 순일하고 섞이지 않으면 합격이다
+  ok   XGT08  AXIS_MISSING FACE_XLHZ_R056       면도의 좌우는 좌양우음으로 정했으며 보기 편하기 위함이다
+  ok   XGT09  AXIS_MISSING FACE_XLHZ_R057       선천도·태극도를 상법에 쓸 수 없다
+  ok   XGT10  AXIS_MISSING FACE_XLHZ_R058       각 책이 만든 면도로는 화복을 알 수 없다
+  ok   XGT11  AXIS_MISSING FACE_XLHZ_R041       한 官이 이루어지면 10년의 귀현
+  ok   XGT12  AXIS_MISSING FACE_XLHZ_R045       오관이 조화의 이치에 부합하면 부귀장수가 반드시 있다
+  ok   XGT13  DEFERRED     FACE_XLHZ_R001       금형은 형이 모나고 반듯하며 희다
+  ok   XGT14  DEFERRED     FACE_XLHZ_R006       목형은 곧고 살이 적으며 마르고 길다
+  ok   XGT15  DEFERRED     FACE_XLHZ_R010       수형은 둥글고 무거우며 두텁고 실하다
+  ok   XGT16  DEFERRED     FACE_XLHZ_R021       토형은 살짐을 주로 하며 다섯 살진 기운을 얻는다
+  ok   XGT17  DEFERRED     FACE_XLHZ_R043       눈썹은 곧고 빼어나고 무성해야 한다
+  ok   XGT18  DEFERRED     FACE_XLHZ_R052       산근이 평평하고 그득하면 복과 수를 누린다
+  ok   XGT19  UNMEASURABLE FACE_XLHZ_R022       토형은 돈후하고 속되며 팔·등이 드러나고 허리가 드러난다
+  ok   XGT20  UNMEASURABLE FACE_XLHZ_R023       토형은 살이 가볍고 뼈가 무겁다
+  ok   XGT21  DEFERRED     FACE_XLHZ_R024       토형은 색이 누렇다
+  ok   XGT22  UNMEASURABLE FACE_XLHZ_R018       한 군데라도 드러나면 火, 얼굴이 깊으면 土
+  ok   XGT23  DEFERRED     FACE_XLHZ_R046       명궁은 밝고 윤택해야 수명이 길다
+  ok   XGT24  UNMEASURABLE FACE_XLHZ_R053       명궁이 우묵하게 꺼졌다
+  ok   XGT25  VERDICT      FACE_XLHZ_R050       명궁에 「川」자 주름이 있으면 재상이 된다
+  ok   XGT26  UNMEASURABLE FACE_XLHZ_R005       금형은 거동에 규모가 있고 오래 앉아도 무겁다
+  ok   XGT27  UNMEASURABLE FACE_XLHZ_R040       오행이 체를 이루고 오음이 합격하며 음덕으로 사람을 구제하면 부귀에 어긋남이 없다
+  ok   XGT28  UNMEASURABLE FACE_XLHZ_R012       수형은 살이 무겁고 뼈가 가볍다
+  ok   XNEG01  NO_RULE                           이마가 넓고 턱이 좁은 역삼각형이면 火形이다
+  ok   XNEG02  NO_RULE                           턱 폭 비율이 0.70 이상이면 土形이다
+  ok   XNEG03  NO_RULE                           십이궁의 열두 번째는 상모궁(相貌宮)이다
+  ok   XNEG04  NO_RULE                           火는 열정·민첩·추진력을 상징한다
+  ok   XNEG05  NO_RULE                           명궁 폭이 하위 20%면 명궁이 꺼진 것이다
+  ok   XNEG06  NO_RULE                           정면 사진 한 장으로 오형을 확정한다
+  ok   XNEG07  NO_RULE                           간문(奸門) 폭으로 처첩궁을 판정한다
+  ok   XGT29  VERDICT      FACE_XLHZ_R059       눈썹이 눈보다 길면 부귀하다(長過目富貴)
+  ok   XGT30  VERDICT      FACE_XLHZ_R060       눈썹이 눈에 못 미치면 재물이 모자란다(短不及目乏財)
+  ok   XGT31  DEFERRED     FACE_XLHZ_R061       눈썹 머리가 높고 꼬리가 낮다(頭高尾低者懦弱)
+  ok   XGT32  DEFERRED     FACE_XLHZ_R062       눈썹 머리가 낮고 꼬리가 높다(頭低尾高者性剛)
+  ok   XGT33  DEFERRED     FACE_XLHZ_R063       눈썹이 높다(眉高者大貴)
+  ok   XGT34  DEFERRED     FACE_XLHZ_R064       눈썹 머리가 서로 맞닿았다(眉頭相交者貧薄)
+  ok   XGT35  DEFERRED     FACE_XLHZ_R065       눈썹이 짙고 눈을 누른다(濃而壓眼者早年辛苦)
+  ok   XGT36  UNMEASURABLE FACE_XLHZ_R066       눈썹 속에 검은 점이 있다(眉中黑子者聰明而賢)
+  ok   XGT37  DEFERRED     FACE_XLHZ_R067       눈 아래 와잠이 있다(眼下卧蠶者主生貴子)
+  ok   XGT38  DEFERRED     FACE_XLHZ_R068       얼굴이 크고 코가 작다(面大鼻小者終必離祖破敗)
+  ok   XGT39  DEFERRED     FACE_XLHZ_R069       입이 주먹을 넣을 만하다(口能容拳者出將入相)
+  ok   XGT40  AXIS_MISSING FACE_XLHZ_R070       윗입술과 아랫입술이 서로 걸맞다(上下兩相稱者言語正直)
+  ok   XGT41  AXIS_MISSING FACE_XLHZ_R071       입꼬리가 위로 휘었다(口角向上彎終身不怕難)
+
+  · TEXT_VERDICT                 5/5
+  · TEXT_AXIS_MISSING            9/9
+  · POPULATION_AXIS_MISSING      3/3
+  · POPULATION_DEFERRED          16/16
+  · UNMEASURABLE                 8/8
+  · NEGATIVE_CONTROL             7/7
+
+  ★fail-closed : 원문에 없는 조건 7건 중 7건 판정 거부
+
+------------------------------------------------------------------------------
+D) doctrine 간 교차 무결성
+------------------------------------------------------------------------------
+  FACE_XLHZ priority=1 · FACE_OGWAN priority=3
+  SRC_XLHZ_A status=SELECTED · scan_file_sha256=[object Object] · commons_sha1=5033b4c898d5f82d0162c945f4d4b36c75a83ddb
+
+==============================================================================
+[p04_face_doctrine] total=217 pass=217 fail=0

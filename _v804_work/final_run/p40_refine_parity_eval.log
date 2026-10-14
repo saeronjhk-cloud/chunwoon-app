@@ -1,0 +1,4 @@
+PASS R1 — false 1 · true 0
+PASS R2 — 일치 얼굴형 90% · 눈 87% · 코 88% · 입 86% · 최대 |편향| 3.7 (축 29) · 사후 기준
+PASS R3 — 수리 전 비교 보존
+total=3 pass=3 fail=0

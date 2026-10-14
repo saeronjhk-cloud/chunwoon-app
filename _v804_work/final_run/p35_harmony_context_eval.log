@@ -1,0 +1,7 @@
+PASS H1 — 점수 뒤 맥락 문구 위치 Δ141
+PASS H2 — aiScores 있을 때만 표시
+PASS H3 — index {"lo":88,"hi":95} · fortune {"lo":88,"hi":95}
+PASS H4 — 범위 안 122/122 = 100.0%
+PASS H5 — 규칙 문장
+PASS H6 — 코어 diff 없음 · built 1회 포함 true
+total=6 pass=6 fail=0

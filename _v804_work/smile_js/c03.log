@@ -1,0 +1,48 @@
+{
+ "n": 599,
+ "neutral": 324,
+ "smile": 275,
+ "warnT": 0.3006508194003394,
+ "holdT": 1.1387207517843208,
+ "py3x": {
+  "neu_warn%": 4.32,
+  "neu_hold%": 2.16,
+  "smile_warn%": 85.45,
+  "smile_hold%": 77.82
+ },
+ "py640": {
+  "neu_warn%": 4.32,
+  "neu_hold%": 1.54,
+  "smile_warn%": 85.82,
+  "smile_hold%": 78.55
+ },
+ "js640": {
+  "neu_warn%": 4.32,
+  "neu_hold%": 1.85,
+  "smile_warn%": 83.27,
+  "smile_hold%": 77.09
+ },
+ "js640_vs_py3x": {
+  "|dlogit|_med": 0.167,
+  "|dlogit|_p95": 0.655,
+  "mean_dlogit": -0.021,
+  "warn_agree%": 97.33,
+  "hold_agree%": 98.83
+ },
+ "js640_vs_py640": {
+  "|dlogit|_med": 0.168,
+  "|dlogit|_p95": 0.63,
+  "mean_dlogit": -0.006,
+  "warn_agree%": 97.16,
+  "hold_agree%": 99.17
+ },
+ "py640_vs_py3x": {
+  "|dlogit|_med": 0.037,
+  "|dlogit|_p95": 0.154,
+  "mean_dlogit": -0.015,
+  "warn_agree%": 99.83,
+  "hold_agree%": 99.33
+ },
+ "rule_neutral_warn_diff_pp(js640-py3x)": 0.0,
+ "rule_triggered(>1.5pp)": false
+}

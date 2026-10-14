@@ -1,0 +1,7 @@
+PASS G1 — 실측 줄 길이 691
+PASS G2 — index(코어 밖) 0 · fortune.js 0
+PASS G3 — ○○○○○○
+PASS G4 — 코어 불변 · built 1회
+PASS G5 — 조화도 식
+PASS G6 — 스크립트 4개 · 오류 0
+total=6 pass=6 fail=0

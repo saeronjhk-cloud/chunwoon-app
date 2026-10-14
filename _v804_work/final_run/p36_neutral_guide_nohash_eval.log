@@ -1,0 +1,7 @@
+PASS N1 — 업로드 안내
+PASS N2 — 정렬 중 「✓ 정렬 중... (${_faceCountdownState.alignedFrames}/${」 · 완료 「✓ 정렬 완료 — 입을 다물고 무표정으로'」
+PASS N3 — 분기 길이 1002
+PASS N4 — 카드·return·스캔 해제·버튼 복구
+PASS N5 — 계측 분기 외에는 return
+PASS N6 — 코어 불변·보류 카드 유지
+total=6 pass=6 fail=0

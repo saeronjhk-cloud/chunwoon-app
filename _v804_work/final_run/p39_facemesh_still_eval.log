@@ -1,0 +1,5 @@
+PASS B1 — 블록 1723자
+PASS B2 — still 호출 4/4 · 라이브 추적 유지 true
+PASS B3 — 블록 sha 4747848e6cb84b95 · 로그 4747848e6cb84b95 · total=5 pass=5 fail=0
+PASS B4 — 스크립트 4개 · 오류 0
+total=4 pass=4 fail=0
