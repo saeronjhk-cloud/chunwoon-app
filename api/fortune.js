@@ -1698,7 +1698,7 @@ export default async function handler(req, res) {
     }
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
-    // ★v804 P-805-C — 신살 4종(淵海子平 卷一 검증 · bind.sinsalFacts). 사주 3종에만. 블록은 아래 단일 지점에서 붙고,
+    // ★v804 P-805-C — 신살 4종(고전 명리서 卷一 검증 · bind.sinsalFacts). 사주 3종에만. 블록은 아래 단일 지점에서 붙고,
     //   응답 sinsal 은 applyEngineFacts 뒤에 엔진 값으로 덮는다(LLM 신살 무효화).
     let cwSinsal = null;
     if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.sinsalFacts === 'function') { try { cwSinsal = cwEng.sinsalFacts(context); } catch (e) { cwSinsal = null; } }

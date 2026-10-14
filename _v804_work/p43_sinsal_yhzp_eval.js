@@ -9,7 +9,7 @@
 //                         論華蓋: 寅午戌見戌 巳酉丑見丑 申子辰見辰 亥卯未見未
 //    PDF p50(卷一 三二面) 論羊刃: 甲卯 乙辰 丙午 丁未 戊午 己未 庚酉 辛戌 壬子 癸丑 (각 「○生人 羊刃在○」)
 //    卷一 목차(PDF p6·p7)에 咸池(도화) 장 없음 — 도화는 이 원전으로 검증 불가 ⟹ 노출하지 않는다.
-//    기록 정본: D:\ChunWoon_IP\saju\원문직독_신살_연해자평_2026-10-14.md (원문 이미지 크롭 포함 · git 밖)
+//    기록 정본: D:\ChunWoon_IP\saju\원문직독_신살4종_2026-10-14.md (원문 이미지 크롭 포함 · git 밖)
 //  ★아래 YH 표는 위 직독에서 **엔진과 독립적으로** 옮긴 것이다(엔진 표를 복사하지 않는다).
 //  ★기준 지지는 원문에 명시가 없어 앱이 정한다: 천을귀인·양인 = 일간 기준 · 역마·화개 = 연지 기준(연지 자신은 제외).
 //
@@ -48,7 +48,7 @@ const R = has ? BI.SINSAL_RULES : null;
 { const B = rd('api/_engine/bind.js'); const keys = has ? Object.keys(R).sort().join(',') : '';
   check('N5', '미검증 신살(도화·공망 등) 엔진 출력 없음', has && keys === 'gwiin,hwagae,yangin,yeokma' && !/도화|桃花|咸池|공망|空亡/.test((B.match(/function sinsalFacts[\s\S]*?\n}\n/) || [''])[0]), keys); }
 { const AU = require(path.join(ROOT, 'api', '_engine', 'authority.js')); const ok1 = AU.userSurfaceable('sinsal') === true;
-  const rec = path.join(ROOT, '..', 'ChunWoon_IP', 'saju', '원문직독_신살_연해자평_2026-10-14.md'); const ok2 = fs.existsSync(rec) || process.env.P43_SKIP_IP === '1';
+  const rec = path.join(ROOT, '..', 'ChunWoon_IP', 'saju', '원문직독_신살4종_2026-10-14.md'); const ok2 = fs.existsSync(rec) || process.env.P43_SKIP_IP === '1';
   check('N6', 'authority sinsal VERIFIED·노출 · 원문 직독 기록(IP) 존재', ok1 && ok2, `sinsal ${ok1} · 기록 ${fs.existsSync(rec)}`); }
 { let bad = 0, n = 0, first = '', lab = true;
   if (has) for (let dp = 0; dp < 60; dp++) for (const y of BR) for (const h of BR) {

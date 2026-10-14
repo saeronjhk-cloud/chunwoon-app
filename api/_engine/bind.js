@@ -397,8 +397,8 @@ function iljinFactsBlock(f) {
 
 // ════════════════════════════════════════════════════════════════════════
 // ★v804 P-805-C — 신살(神煞) 4종 (트랙 C · 원칙 41 단계 승격 ②)
-//   【원전】 『評註淵海子平』 卷一 — 論起玉堂天乙貴人(22면) · 論驛馬·論華蓋(26면) · 論羊刃(32면).
-//     원문 직독 기록(배포 금지 · git 밖): D:\ChunWoon_IP\saju\원문직독_신살_연해자평_2026-10-14.md
+//   【원전】 고전 명리서 卷一 — 論起玉堂天乙貴人(22면) · 論驛馬·論華蓋(26면) · 論羊刃(32면) (서명은 IP 기록에만 · 서버 파일 문헌명 0건 규약).
+//     원문 직독 기록(배포 금지 · git 밖): D:\ChunWoon_IP\saju\원문직독_신살4종_2026-10-14.md
 //     ★여기 표는 원문 문장이 아니라 원문이 정한 **규칙(간지 대응)** 이다.
 //   【검증】 _v804_work/p43_sinsal_yhzp_eval.js — 직독 표를 엔진과 독립 기술해 10×12·12×12 전수 대조 + 4기둥 표본 전수.
 //   【범위】 卷一 신살 장에 있는 4종만. 도화(咸池)·공망 등은 이 원전으로 검증 불가 ⟹ 내지 않는다.
@@ -413,7 +413,7 @@ const SINSAL_RULES = Object.freeze({
   hwagae: Object.freeze({ 寅午戌: '戌', 巳酉丑: '丑', 申子辰: '辰', 亥卯未: '未' })
 });
 const SINSAL_SOURCE = Object.freeze({
-  천을귀인: '淵海子平 卷一 論起玉堂天乙貴人', 양인: '淵海子平 卷一 論羊刃', 역마: '淵海子平 卷一 論驛馬', 화개: '淵海子平 卷一 論華蓋'
+  천을귀인: '고전 명리서 卷一 論起玉堂天乙貴人', 양인: '고전 명리서 卷一 論羊刃', 역마: '고전 명리서 卷一 論驛馬', 화개: '고전 명리서 卷一 論華蓋'
 });
 // 짧은 정의(전통 해석 경향 · 길흉 단정 없음) — 화면·프롬프트 공통
 const SINSAL_DESC = Object.freeze({
@@ -442,7 +442,7 @@ function sinsalFacts(ctx) {
 /** 신살 사실 → 프롬프트 블록. LLM 은 이 목록 밖 신살을 만들지 못한다(응답은 호출부가 엔진 값으로 덮는다). */
 function sinsalBlock(f) {
   if (!f) return '';
-  const L = ['[신살(神煞) — 서버 엔진 확정값 · 淵海子平 卷一 대조 · 바꾸지 말 것]'];
+  const L = ['[신살(神煞) — 서버 엔진 확정값 · 고전 명리서 卷一 규칙 · 바꾸지 말 것]'];
   if (!f.list.length) L.push('· 검증된 4종(천을귀인·양인·역마·화개) 중 해당 없음');
   for (const x of f.list) L.push('· ' + x.name + ' — ' + x.position + ' ' + x.branch + ' (' + x.basis + ')');
   L.push('· 이 목록 밖의 신살(도화·공망 등)은 언급하지 말 것 — 검증되지 않았다.');
@@ -472,7 +472,7 @@ module.exports = {
   daewoonList: daewoonList,
   computeFacts: computeFacts,
   factsBlock: factsBlock,
-  // ★v804 P-805-C — 신살 4종(淵海子平 卷一)
+  // ★v804 P-805-C — 신살 4종(고전 명리서 卷一)
   sinsalFacts: sinsalFacts,
   sinsalBlock: sinsalBlock,
   SINSAL_RULES: SINSAL_RULES,

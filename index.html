@@ -2820,13 +2820,13 @@ async function analyzeSaju(){
   }
 }
 
-// ★v804 P-805-C(트랙 C) — 신살은 서버 엔진(api/_engine/bind.js sinsalFacts · 淵海子平 卷一 대조) 값만 그린다.
+// ★v804 P-805-C(트랙 C) — 신살은 서버 엔진(api/_engine/bind.js sinsalFacts · 고전 명리서 卷一 규칙) 값만 그린다.
 //   검증된 4종(천을귀인·양인·역마·화개)만 오며, 각 항목에 판정 기준(일간/연지)과 출처를 표기한다.
 //   mode: 'card'(화면) | 'pdf'(인쇄). 목록이 비면 「검증된 4종 중 해당 없음」을 정직하게 쓴다.
 function _cwSinsalHTML(list,mode){
   const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const L=Array.isArray(list)?list:[];
-  const note='판정 기준 — 천을귀인·양인: 일간 · 역마·화개: 연지(연지 자신 제외). 원전: 淵海子平 卷一. 그 밖의 신살은 원전 대조 전이라 표시하지 않아요.';
+  const note='판정 기준 — 천을귀인·양인: 일간 · 역마·화개: 연지(연지 자신 제외). 규칙: 고전 명리서 卷一. 그 밖의 신살은 원전 확인 전이라 표시하지 않아요.';
   if(mode==='pdf'){
     let b=L.length?'':'<div class="enemy-card">검증된 4종(천을귀인·양인·역마·화개) 중 해당하는 신살이 없어요.</div>';
     L.forEach(x=>{b+=`<div class="enemy-card"><strong style="color:#8a2218">${esc(x.name)}</strong> <span class="dim">[${esc(x.position)} ${esc(x.branch)} · ${esc(x.basis)}]</span><br>${esc(x.effect)}</div>`;});
