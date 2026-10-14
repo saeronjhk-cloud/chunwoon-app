@@ -16,7 +16,8 @@ const rd = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 // ── 원문 판정(독립 구현) ──
 const CJK = /[一-鿿]/g, CLS = /[一-鿿][一-鿿、。，；：？！…]*/g, GANJI = /^[甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥木火土金水]+$/;
-function wonmunRuns(s) { const r = []; for (const m of String(s).matchAll(CLS)) { const h = (m[0].match(CJK) || []).join(''); if (h.length >= 10 && !GANJI.test(h)) r.push(m[0]); } return r; }
+// ★사후(2026-10-15 · D2 적발 반영): 구두점이 든 구간은 전체 길이 10 이상이면 원문(한자 9자+。 인용 누출). 기준 강화이지 완화 아님.
+function wonmunRuns(s) { const r = []; for (const m of String(s).matchAll(CLS)) { const h = (m[0].match(CJK) || []).join(''); if (GANJI.test(h)) continue; if (h.length >= 10 || (m[0].length >= 10 && /[、。，；：？！…]/.test(m[0]))) r.push(m[0]); } return r; }
 let TITLE_RX = null;
 try {
   const wl = JSON.parse(fs.readFileSync(path.join(PKG, 'IP', 'policy', 'claim_whitelist.json'), 'utf8')).source_classes;
@@ -99,7 +100,8 @@ const toCtx = x => ({ yearPillar: x.p[0].s + x.p[0].b, monthPillar: x.p[1].s + x
 // D9
 { let bad = 0, first = '', ok = !!(SH && SH.run), maxB = 0;
   if (ok) for (const x of SAMPLES) { const c = toCtx(x); const r = SH.run(c); const s = JSON.stringify(r && r.summary || null); maxB = Math.max(maxB, Buffer.byteLength(s));
-    const leak = [c.yearPillar, c.monthPillar, c.dayPillar, c.hourPillar].some(p => s.includes(p)) || /19[5-9]\d|20[01]\d/.test(s) || wonmunRuns(s).length > 0 || (TITLE_RX && TITLE_RX.test(s)) || !/"v":"shadow-/.test(s) || Buffer.byteLength(s) > 700;
+    const sNoIh = JSON.stringify(Object.assign({}, r && r.summary, { ih: undefined }));   // ★사후(판정기 결함 정정): 입력 해시 ih 의 숫자가 연도 패턴에 오탐 — ih 를 빼고 본다
+    const leak = [c.yearPillar, c.monthPillar, c.dayPillar, c.hourPillar].some(p => s.includes(p)) || /19[5-9]\d|20[01]\d/.test(sNoIh) || wonmunRuns(s).length > 0 || (TITLE_RX && TITLE_RX.test(s)) || !/"v":"shadow-/.test(s) || Buffer.byteLength(s) > 700;
     if (leak) { bad++; if (!first) first = s.slice(0, 120); } }
   check('D9', '로그 요약: 입력 간지·생년·원문·문헌명 없음 · ≤700B · 버전 표기', ok && bad === 0, ok ? `위반 ${bad} · 최대 ${maxB}B${first ? ' · ' + first : ''}` : '번들 run 없음'); }
 // D10

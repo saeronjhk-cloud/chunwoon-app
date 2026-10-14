@@ -1703,6 +1703,17 @@ export default async function handler(req, res) {
     let cwSinsal = null;
     if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.sinsalFacts === 'function') { try { cwSinsal = cwEng.sinsalFacts(context); } catch (e) { cwSinsal = null; } }
     const cwSinsalBlock = cwSinsal ? cwEng.sinsalBlock(cwSinsal) : '';
+    // ★P-805-D shadow 시작 — 사주 엔진(용신·격국·조후 등 DENY 축) 서버 계산. 결과는 Vercel 로그 한 줄에만 남긴다.
+    //   화면·LLM 프롬프트·응답 JSON 에 쓰지 않는다(평가 p44 D4). 실패해도 서비스는 그대로(로그만).
+    if (CW_ENGINE_TYPES.indexOf(type) !== -1) {
+      try {
+        const cwShadowMod = await import('./_engine/shadow/index.js');
+        const cwShadowLib = (cwShadowMod && cwShadowMod.default) ? cwShadowMod.default : cwShadowMod;
+        const cwShadowRes = (cwShadowLib && typeof cwShadowLib.run === 'function') ? cwShadowLib.run(context) : null;
+        if (cwShadowRes && cwShadowRes.summary) console.log('[shadow]', JSON.stringify(Object.assign({ type }, cwShadowRes.summary)));
+      } catch (e) { console.log('[shadow]', JSON.stringify({ type, skip: 'import_error' })); }
+    }
+    // ★P-805-D shadow 끝
     let cwDailyFacts = null, cwDailyFactsBlock = '';   // ★v804 P-805-B — daily_message 전용(아래 분기에서 채움)
 
     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
