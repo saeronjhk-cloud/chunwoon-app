@@ -6,7 +6,7 @@ POC 사주 엔진(v7.70 — `D:\ChunWoon_IP\gate_pkg\engine\saju_resolver.comput
 authority DENY 축(yongsin·gisin·gyeok·sangsin·johu·verdict·daewoon_start_age)은 그대로 DENY.
 
 ## 배포판 생성 규칙(고정)
-- 생성기: `D:\ChunWoon_IP\gate_pkg\tools\build_shadow_dist.js` (IP 쪽) — 입력 = gate_pkg `engine/` 의 resolver 의존 폐포(실행 추적으로 결정) + 그것이 읽는 `IP/rules/saju/*.json`. 출력 = repo `api/_engine/shadow/{engine,IP/rules/saju}/`(상대경로 구조 보존 → 엔진 코드 경로 수정 0) + IP 쪽 대응표 `gate_pkg/dist/shadow_citation_map.json`(배포 금지).
+- 생성기: `D:\ChunWoon_IP\gate_pkg\tools\build_shadow_dist.js` (IP 쪽) — 입력 = gate_pkg `engine/` 의 resolver 의존 폐포(실행 추적으로 결정) + 그것이 읽는 `IP/rules/saju/*.json`. 출력 = repo `api/_engine/shadow/{engine,IP/rules/saju}/`(상대경로 구조 보존 → 엔진 코드 경로 수정 0) + IP 쪽 대응표 `gate_pkg/_internal_only/shadow_citation_map.json`(격리 구역 · 배포 금지).
 - **원문 문자열** 정의: 문자열(JS 문자열 리터럴·JSON 값·JSON 키) 안에 한자 연속 구간(한자와 、。，；：？！… 로 이어진 구간, 한자 10자 이상 — pre-commit 「원문 검사」와 같은 정의)이 있고, 그 구간이 간지·오행 글자(甲~癸·子~亥·木火土金水)만으로 된 조회표가 아닌 것. 또는 문헌명 어휘(claim_whitelist 등재 4종·인용 제외 2종·미등재 10종의 한글명·한자명 + 변형 眞詮/真詮/闡微/評註)를 포함하는 것.
 - 원문 문자열은 통째로 `cite:` + sha256(원 문자열 UTF-8) 앞 12자로 바꾼다(내용 주소 → 같은 원문은 같은 식별자, 엔진 비교 동작 보존). 대응표는 IP에만.
 - JS 주석은 전부 제거한다. `${}` 가 있는 템플릿 리터럴이 원문 문자열이면 생성기 실패(fail-closed).
@@ -33,3 +33,4 @@ p44 10/10 · 기존 28종·p41~p43 · run_gate · 패키지 run_eval · 슬라�
 1. **원문 정의 강화**: D2(10자 창 가드)가 첫 생성본에서 root_system.json·root_engine.js 의 짧은 인용(「長生祿刃。根之重者也」 = 한자 9자 + 구두점)을 적발. 생성기와 p44 판정 함수 모두 「구두점이 든 구간은 전체 길이 10 이상이면 원문」을 추가(cite 431 → 447). D2 는 그대로.
 2. **D9 판정기 결함 정정**: 입력 해시 `ih`(16진 8자)의 숫자가 연도 정규식(19[5-9]\d)에 오탐 → 연도 검사에서 `ih` 만 빼고 본다. 나머지 검사(입력 간지·원문·문헌명·크기·버전) 그대로.
 - 결과: 구현 전 1/10 → 10/10 (`_v805_work/p44_prefix.log` → `p44.log`).
+3. **대응표 위치 정정**: 첫 위치 `gate_pkg/dist/` 를 패키지 분배 가드(eval_distribution_guard C7·C9)가 원문 보유 파일로 적발 → 격리 구역 `gate_pkg/_internal_only/shadow_citation_map.json` 으로 이동(생성기·p44 D3 경로 동시 수정).

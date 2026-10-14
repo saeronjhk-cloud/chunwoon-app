@@ -65,7 +65,7 @@ const toCtx = x => ({ yearPillar: x.p[0].s + x.p[0].b, monthPillar: x.p[1].s + x
   for (const f of walk(path.join(ROOT, 'api'))) { const t = fs.readFileSync(f, 'utf8'); for (const m of t.matchAll(CLS)) { const r = m[0]; for (let i = 0; i + 10 <= r.length; i++) if (win.has(r.slice(i, i + 10))) { hits.push(path.relative(ROOT, f)); break; } } }
   check('D2', 'POC 원문 구간(10자 창)이 api/ 전체에 0건', closure.length >= 10 && win.size > 1000 && hits.length === 0, `폐포 ${closure.length}파일 · 원문 ${srcChars}자 · 창 ${win.size} · 적중 ${[...new Set(hits)].join(',')}`); }
 // D3
-{ let map = null; try { map = JSON.parse(fs.readFileSync(path.join(PKG, 'dist', 'shadow_citation_map.json'), 'utf8')); } catch (e) {}
+{ let map = null; try { map = JSON.parse(fs.readFileSync(path.join(PKG, '_internal_only', 'shadow_citation_map.json'), 'utf8')); } catch (e) {}
   const ids = new Set(), per = {}; for (const f of walk(BUNDLE)) { const m = fs.readFileSync(f, 'utf8').match(/cite:[0-9a-f]{12}/g) || []; m.forEach(x => ids.add(x)); per[path.basename(f)] = m.length; }
   const unres = [...ids].filter(id => !map || !map[id] || cite(map[id].text) !== id);
   check('D3', 'cite 식별자 전부 IP 대응표로 복원 · chung_conditional·root_system 각 ≥1', ids.size > 0 && unres.length === 0 && (per['chung_conditional.js'] || 0) >= 1 && (per['root_system.json'] || 0) >= 1, `id ${ids.size} · 미복원 ${unres.length} · chung ${per['chung_conditional.js'] || 0} · root ${per['root_system.json'] || 0}${map ? '' : ' · 대응표 없음'}`); }
