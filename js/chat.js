@@ -372,18 +372,16 @@ function _gatherChatContext(){
 // ============================================================
 //  메시지 렌더링 (간단한 카드 누적)
 // ============================================================
-function _addDailyCard(text, category, persona, luck){
+function _addDailyCard(text, category, persona){
   const c = document.getElementById('chatMessages');
   if(!c) return;
   const cat = DAILY_CATEGORIES.find(function(x){return x.k === category;}) || {n:'전반',e:'✨'};
-  const luckHTML = luck ? _renderLuckCard(luck) : '';
   const d = document.createElement('div');
   d.className = 'chat-msg bot';
   d.innerHTML = '<div class="chat-avatar">' + persona.e + '</div>' +
     '<div class="chat-bubble">' +
     '<div style="font-size:10.5px;color:var(--gold);margin-bottom:6px">' + cat.e + ' ' + cat.n + ' · ' + persona.n + '의 한 마디</div>' +
     '<div>' + text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>') + '</div>' +
-    luckHTML +
     '</div>';
   c.appendChild(d);
   // 새 카드 상단 정렬
@@ -391,19 +389,6 @@ function _addDailyCard(text, category, persona, luck){
     const off = d.offsetTop - c.offsetTop - 8;
     c.scrollTop = Math.max(0, off);
   }, 80);
-}
-
-function _renderLuckCard(luck){
-  // luck = "색:빨강|숫자:7|방위:동쪽|음식:따뜻한 차" 형식
-  const items = String(luck).split('|').map(function(s){return s.trim();}).filter(Boolean);
-  if(!items.length) return '';
-  const cells = items.map(function(it){
-    const parts = it.split(':').map(function(s){return s.trim();});
-    const k = parts[0], v = parts[1];
-    if(!v) return '';
-    return '<div style="flex:1;min-width:70px;padding:5px 8px;background:rgba(0,0,0,.2);border-radius:6px;text-align:center"><div style="font-size:9px;color:var(--text2)">' + k + '</div><div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:1px">' + v + '</div></div>';
-  }).join('');
-  return '<div style="margin-top:8px;padding:8px;background:rgba(201,165,78,.06);border:1px solid rgba(201,165,78,.18);border-radius:8px"><div style="font-size:10px;color:var(--gold);margin-bottom:5px;text-align:center">🍀 오늘의 행운</div><div style="display:flex;gap:5px;flex-wrap:wrap">' + cells + '</div></div>';
 }
 
 function _addBotInfo(text){
@@ -465,12 +450,10 @@ async function fetchDailyMessage(category){
     _removeLoading();
     if(!data.success || !data.result) throw new Error(cwErrMsg(data) || 'API 응답 오류');
     let answer = data.result.text || data.result.raw || '메시지를 받지 못했어요.';
-    // 행운 정보 파싱
-    let luck = null;
-    const luckMatch = answer.match(/★LUCK★([^★]+)★/);
-    if(luckMatch){ luck = luckMatch[1]; answer = answer.replace(luckMatch[0], '').trim(); }
+    // ★P41(원칙 40) — 행운 토큰은 표시하지 않는다. 구 서버(캐시)가 아직 붙여 보내면 본문에서 지우기만 한다.
+    answer = String(answer).replace(/★LUCK★[^★]*★/g, '').trim();
     _incDailyCount();
-    _addDailyCard(answer, category, persona, luck);
+    _addDailyCard(answer, category, persona);
     // 잔여 안내
     const remaining = limit - _getDailyCount();
     if(remaining === 0){

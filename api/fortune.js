@@ -336,7 +336,7 @@ function scrubViaProbe(base, re, fn){
 }
 
 // ★R4-2 구분자 — 토큰 사이에 삽입되는 공백·중점·괄호 등을 최대 2자까지 허용한다.
-//   ★ | : 는 절대 넣지 않는다(js/chat.js:220 의 ★LUCK★색:파랑|숫자:7★ 토큰 파싱 보존).
+//   ★ | : 는 절대 넣지 않는다(js/chat.js:220 의 ★LUCK★ 구조 토큰(키:값|키:값★) 파싱 보존).
 //   ★구두점류는 2자까지만 허용한다(더 열면 「마의 좋은 상법」류 오탐이 생긴다).
 //   반면 **공백만으로 벌린 형태**는 자연스러운 한국어 문장이 될 수 없으므로 6자까지 허용한다.
 // ★R6-6b — 조건부 불가시문자(ZWNJ·ZWJ·변이선택자)도 구분자로 흡수한다.
@@ -344,7 +344,7 @@ function scrubViaProbe(base, re, fn){
 //   그 ZWJ 가 구분자 문자류에도 없어 T2 매칭까지 함께 무너졌다.
 // ★2026-07-31 v7.65 R10-P1 — 구분자 클래스 확대(우회 37종). ASCII 구두점 + CJK 괄호 소수만 담아
 //   전각 구두점·유니코드 대시/따옴표/말줄임·라틴 보충 구두점·ASCII 미등재(! # % @ ; ?)가 전건 통과했다.
-//   ★ | : ★(U+2605) 는 반드시 제외한다 — ★LUCK★색:파랑|숫자:7★ 구조 토큰 파싱 불변식 유지.
+//   ★ | : ★(U+2605) 는 반드시 제외한다 — ★LUCK★ 구조 토큰(키:값|키:값★) 파싱 불변식 유지.
 const SCRUB_SEP_PUNCT =
   '(?![|:\\u2605])[\\s!-/:-@\\[-`{-~\\u00A1-\\u00BF\\u02B0-\\u02FF\\u2010-\\u205E\\u2E00-\\u2E7F' +
   '\\u3001-\\u303F\\u30FB\\uFE10-\\uFE6F\\uFF01-\\uFF20\\uFF3B-\\uFF40\\uFF5B-\\uFF65\\uFFE0-\\uFFEE]';
@@ -1261,9 +1261,9 @@ export default async function handler(req, res) {
       excess:         { max: 64,  re: /^[가-힣()\u3400-\u9FFF, ]{0,64}$/ },
       // name1·name2 는 위 `cwNormName` 이 이미 이름 형상으로 닫았다(E-6).
     };
-    // ★자동 산출 점수의 정의역 — index.html `compareCompatibility` 의 clamp(55~99).
+    // ★자동 산출 점수의 정의역 — index.html `compareCompatibility` 의 로지스틱 사상(40~98) · 엔진 ctxguard COMPAT_SCORE_MIN/MAX 와 동일.
     //   숫자 2개는 어휘가 아니라 **정의역**이며, 아래 drift 검사가 엔진 상수와 대조한다.
-    const CW_COMPAT_SCORE_MIN = 55, CW_COMPAT_SCORE_MAX = 99;
+    const CW_COMPAT_SCORE_MIN = 40, CW_COMPAT_SCORE_MAX = 98;
     // ★함수 이름 `cwCompatFlatten` 을 바꾸지 말 것 — `eval_compat_guard.js` 와
     //   뮤턴트 `M19`·`ME1` 이 이 식별자를 앵커로 쓴다(계약 §6 금지사항 3).
     // ★v7.79 파 ⓑ — `opt.noLenCap` 추가. **인젝션 방어의 본체는 개행·제어문자 제거**이고
@@ -1927,18 +1927,18 @@ export default async function handler(req, res) {
       const m = features.measurements;
       const mb = m ? `실측: ${cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','mouthRatio','symmetry','thirds'], features.glasses, features.smile)}` : '';
 
-      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''} ${features.shape?.score||''}점), 눈:${features.eyes?.label||''}(${features.eyes?.score||''}점), 코:${features.nose?.label||''}(${features.nose?.score||''}점), 입:${features.mouth?.label||''}(${features.mouth?.score||''}점), 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
+      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}), 눈:${features.eyes?.label||''}, 코:${features.nose?.label||''}, 입:${features.mouth?.label||''}, 종합:${features.overallScore||''}점. ${mb}${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'face_premium_1') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기. 수치 인용.
 반드시 아래 정확한 JSON 구조로만 응답:
-{"analysisProcess":{"features":[{"part":"string","measured":"string","standard":"string","classification":"string","confidence":number,"reasoning":"string 80자+","citation_ref":{"source_id":"등재ID|NONE"}}]},"fortuneGraph":{"decades":[{"age":"string","wealth":number,"love":number,"health":number,"keyword":"string"}],"analysis":"string 100자+","peakAge":"string","citation_ref":{"source_id":"등재ID|NONE"}}}
-features 배열에 얼굴형,눈,코,입 4개 항목. decades 배열에 10대,20대,30대,40대,50대,60대,70대+ 7개 항목.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
+{"analysisProcess":{"features":[{"part":"string","measured":"string","standard":"string","classification":"string","reasoning":"string 80자+","citation_ref":{"source_id":"등재ID|NONE"}}]}}
+features 배열에 얼굴형,눈,코,입 4개 항목. 부위별 점수·확신도·연령대별 운세 수치는 만들지 말 것.` + CW_FACE_AXIS_RULE + CITATION_RULE + JSON_FORCE;
 
       const m = features.measurements;
       const mStr = m ? (cwFaceMeasureStr(m, ['whRatio','jawRatio','eyeAspect','noseWRatio','noseHRatio','symmetry','thirds'], features.glasses, features.smile) || 'N/A') : 'N/A';
 
-      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}${features.shape?.score||''}점),눈:${features.eyes?.label||''}(${features.eyes?.score||''}점),코:${features.nose?.label||''}(${features.nose?.score||''}점),입:${features.mouth?.label||''}(${features.mouth?.score||''}점),종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
+      userPrompt = `${features.shape?.type?`윤곽:${features.shape?.type}(${features.shape?.basis||''}) `:''}얼굴형:${features.shape?.label||''}(${features.shape?.fiveElement||''}),눈:${features.eyes?.label||''},코:${features.nose?.label||''},입:${features.mouth?.label||''},종합:${features.overallScore||''}점.[${mStr}]${cwFaceAxisBlock(features)}${cwFaceBlock ? '\n' + cwFaceBlock : ''}`;
 
     } else if (type === 'face_premium_2') {
       systemPrompt = `관상학 해석 AI 어시스턴트. 전통 관상학의 일반적 관점을 참고. 한국어 해요체. 고전 인용은 서지 ID로만 표기.
@@ -2046,14 +2046,14 @@ namingProcess 6단계 (제품 분석→타겟 분석→키워드 추출→어감
       systemPrompt = `당신은 네이밍·브랜드 전략 AI 어시스턴트입니다. 한국·미국 상표 관행에 대한 일반 지식을 활용합니다.
 한국어 해요체.
 - 추천 제품명 10개 (한자/한글/외래어/합성어/조어 다양하게)
-- 각 이름의 마케팅 적합성·SEO 점수·SNS 해시태그 친화성
+- 각 이름의 마케팅 적합성·검색 노출 관점·SNS 해시태그 친화성 (서술로만, 점수 매기지 말 것)
 - 타겟 페르소나에게 주는 어필 포인트
 - 슬로건 후보 1~2개 함께
-- **상표 등록 가능성** — 검토 범위(국내/미국/글로벌)에 따라 KIPRIS·USPTO TESS·EUIPO 충돌 가능성 평가 + 등록 가능성 점수 (0~100)
+- **상표 등록 가능성** — 검토 범위(국내/미국/글로벌)에 따라 KIPRIS·USPTO TESS·EUIPO 충돌 가능성 서술 평가 (점수·확률 수치 금지, 최종 판단은 KIPRIS·USPTO 검색·변리사 확인)
 - 비슷한 기존 제품·서비스와 차별화
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"strategicAnalysis":"제품·타겟·상표 등록 범위 분석 + 네이밍 전략 250자 내외","candidates":[{"name":"한글","english":"영문","style":"한자/한글/외래어/합성어/조어","meaning":"의미·유래 100자 내외","categoryFit":"카테고리 적합 80자 내외","targetAppeal":"타겟 어필 80자 내외","memorability":"기억성·발음 점수 (1-10) + 설명","seoScore":number(0-100),"hashtagFriendly":"해시태그 친화성 한 줄","trademarkability":"상표 등록 가능성 — 검토 범위별 충돌 우려 + 추천 액션 100자 내외","trademarkScore":number(0-100),"slogan":"태그라인 한 줄","differentiation":"차별화 80자 내외","strengths":"장점 60자 내외","concerns":"주의점 60자 내외"}],"trademarkNote":"상표 등록 종합 안내 + KIPRIS·USPTO 검색·변리사 자문 권고 100자 내외"}
+{"strategicAnalysis":"제품·타겟·상표 등록 범위 분석 + 네이밍 전략 250자 내외","candidates":[{"name":"한글","english":"영문","style":"한자/한글/외래어/합성어/조어","meaning":"의미·유래 100자 내외","categoryFit":"카테고리 적합 80자 내외","targetAppeal":"타겟 어필 80자 내외","memorability":"기억성·발음 설명 60자 내외","hashtagFriendly":"해시태그 친화성 한 줄","trademarkability":"상표 등록 가능성 — 검토 범위별 충돌 우려 + 추천 액션 100자 내외","slogan":"태그라인 한 줄","differentiation":"차별화 80자 내외","strengths":"장점 60자 내외","concerns":"주의점 60자 내외"}],"trademarkNote":"상표 등록 종합 안내 + KIPRIS·USPTO 검색·변리사 자문 권고 100자 내외"}
 candidates 정확히 10개.` + JSON_FORCE;
       const c = context || {};
       userPrompt = `제품명 프리미엄 1단계
@@ -2114,7 +2114,7 @@ ${c.ilgan?`본인 사주 일간: ${c.ilgan}(${c.ilganElement||''}) / 부족 오�
 5. **항렬자가 지정된 경우, 모든 추천 이름의 지정 위치에 그 정확한 한자를 반드시 포함**. 예: 항렬자 "俊" 첫 글자 → 모든 후보 hanja는 "俊◯" 형태. 다른 한자(浚·峻 등)로 바꾸면 안 됨.
 
 반드시 아래 JSON 구조로만 응답:
-{"namingProcess":[{"step":"1단계: 사주 분석","detail":"60자 내외"},{"step":"2단계: 부족한 오행 발견","detail":"60자 내외"},{"step":"3단계: 보완 한자 후보 추출","detail":"60자 내외"},{"step":"4단계: 수리 81수 관점 고려","detail":"60자 내외"},{"step":"5단계: 발음 오행 상생 고려","detail":"60자 내외"},{"step":"6단계: 음양 배치 고려","detail":"60자 내외"},{"step":"7단계: 의미·어감 종합 판정","detail":"60자 내외"}],"summary":"사주 분석 요약 + 작명 방향 200자 내외","sajuLack":"부족한 오행 + 보완 방향 100자 내외","candidates":[{"hangul":"이름만 한글 예: 진우","hanja":"이름만 한자 예: 鎭宇","strokes":[성씨획,이름1획,이름2획],"hanjaDetail":[{"char":"이름 한자 1글자","meaning":"부수+의미 예: 흙 토(土) 부수, 6획, 존재할 재","soundFeel":"음운 어감 예: 단단함·기반"}],"summary":"이 이름의 종합 의미 80자 내외","yinyang":"양양음 또는 음음양 등","gyeokGrade":"종합 사격 등급 (대길/길/반길/평/흉)","soundEl":"발음 오행 예: 토금토","sajuMatch":"사주 보완 효과 한 줄"}],"advice":"종합 조언 + 작명 의식의 의미 120자 내외"}
+{"namingProcess":[{"step":"1단계: 사주 분석","detail":"60자 내외"},{"step":"2단계: 부족한 오행 발견","detail":"60자 내외"},{"step":"3단계: 보완 한자 후보 추출","detail":"60자 내외"},{"step":"4단계: 한자 의미·자원 검토","detail":"60자 내외"},{"step":"5단계: 발음 오행 상생 고려","detail":"60자 내외"},{"step":"6단계: 음양 배치 고려","detail":"60자 내외"},{"step":"7단계: 의미·어감 종합 판정","detail":"60자 내외"}],"summary":"사주 분석 요약 + 작명 방향 200자 내외","sajuLack":"부족한 오행 + 보완 방향 100자 내외","candidates":[{"hangul":"이름만 한글 예: 진우","hanja":"이름만 한자 예: 鎭宇","strokes":[성씨획,이름1획,이름2획],"hanjaDetail":[{"char":"이름 한자 1글자","meaning":"부수+의미 예: 흙 토(土) 부수, 6획, 존재할 재","soundFeel":"음운 어감 예: 단단함·기반"}],"summary":"이 이름의 종합 의미 80자 내외","yinyang":"양양음 또는 음음양 등","soundEl":"발음 오행 예: 토금토","sajuMatch":"사주 보완 효과 한 줄"}],"advice":"종합 조언 + 작명 의식의 의미 120자 내외"}
 candidates 5개. 각 candidates의 hanjaDetail은 이름 글자 수만큼 (2~3개, 성씨 제외). namingProcess 7단계 모두 포함.` + JSON_FORCE;
 
       const c = context || {};
@@ -2133,24 +2133,23 @@ ${c.hangryeolHanja?`⚠️ 항렬자(行列字): ${c.hangryeolHanja} — 위치:
 이 사주에 맞는 좋은 이름 5개를 추천해주세요.`;
 
     } else if (type === 'naming_premium_1') {
-      // 1단계: 사주 정밀 + 추천 10개 + 각 글자별 정밀 풀이 + 사격 풀이
+      // 1단계: 사주 정밀 + 추천 10개 + 각 글자별 정밀 풀이 (★P41 원칙 40 — 사격·81수 등급·획수는 엔진(한자 획수 DB) 전까지 요구하지 않는다)
       systemPrompt = `당신은 한국 전통 성명학 해석 AI 어시스턴트입니다. 전통 명리 이론 참고. 전통 성명학 관점.
 한국어 해요체. 친절하고 자세하게. 부모가 한 글자 한 글자 납득하도록 풀이.
 - 추천 이름 10개: [전통한자 4 / 현대한자 3 / 한글전용 3]
-- 각 이름은 hanjaDetail로 글자별 정밀 (부수·획수·의미·음운 어감)
-- 사격(천·인·지·외·총) 5개 관점을 고려해 풀이
+- 각 이름은 hanjaDetail로 글자별 정밀 (부수·의미·음운 어감) — 획수·사격·81수 등급은 쓰지 말 것
 - 사주 보완 효과 + 같은 발음의 다른 한자와 비교 (왜 이 한자인지)
 
 ⚠️ 절대 규칙 — 위반 금지:
 1. 사용자 요청 이름 글자 수 정확히 지킬 것. "4자"=성씨1+이름3 → hangul은 3글자. 한국 관습이 3자여도 사용자 요청 우선.
 2. hangul과 hanja는 '이름만' (성씨 제외). 예: hangul:"진우", hanja:"鎭宇".
 3. hanjaDetail은 이름 한자만, 글자 수는 이름 글자 수와 정확히 일치.
-4. **candidates 배열은 sajuMatchScore 내림차순 정렬** — 가장 잘 맞는 이름이 [0]번, 가장 약한 게 [9]번.
+4. 이름별 매칭 점수·순위 수치를 만들지 말 것 — 사주와의 관계는 sajuMatchReason 서술로만.
 5. **항렬자(行列字)가 지정된 경우, 모든 candidates의 지정 위치에 그 정확한 한자를 반드시 포함**. 예: 항렬자 "俊" 첫 글자 → 모든 hanja는 "俊◯" 형태. 다른 한자(浚·峻 등)로 바꾸면 안 됨. hanjaDetail에도 이 한자 그대로.
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"sajuAnalysis":"사주 정밀 분석 + 작명 방향 250자 내외","candidates":[{"hangul":"이름만 한글","hanja":"이름만 한자","style":"전통/현대/한글","strokes":[성씨획,이름획...],"hanjaDetail":[{"char":"이름 한자","meaning":"부수+획수+의미 예: 在 — 흙 토(土) 부수, 6획, '존재할 재', 안정과 기반의 의미","soundFeel":"음운 어감 50자 내외 예: 단단하고 기반 다지는 어감"}],"alternativeHanja":"같은 발음 다른 한자와 비교 80자 내외 예: 在(존재) vs 載(실을 재) — 在가 더 안정적","gyeokGrade":"종합 등급 (대길/길/반길/평/흉)","fiveGyeokDetail":{"cheon":"천격 풀이 40자","in":"인격 풀이 40자","ji":"지격 풀이 40자","oe":"외격 풀이 40자","chong":"총격 풀이 40자"},"yinyangPattern":"음양 예: 양양음","soundElPattern":"발음 오행 예: 토금토","sajuMatchScore":number(0-100),"sajuMatchReason":"사주 매칭 이유 80자 내외","strengths":"장점 80자 내외","concerns":"고려사항 60자 내외 (없으면 빈 문자열)"}]}
-candidates 정확히 10개, sajuMatchScore 내림차순 정렬. 한글전용은 hanjaDetail 빈 배열.` + JSON_FORCE;
+{"sajuAnalysis":"사주 정밀 분석 + 작명 방향 250자 내외","candidates":[{"hangul":"이름만 한글","hanja":"이름만 한자","style":"전통/현대/한글","strokes":[성씨획,이름획...],"hanjaDetail":[{"char":"이름 한자","meaning":"부수+의미 예: 在 — 흙 토(土) 부수, '존재할 재', 안정과 기반의 의미","soundFeel":"음운 어감 50자 내외 예: 단단하고 기반 다지는 어감"}],"alternativeHanja":"같은 발음 다른 한자와 비교 80자 내외 예: 在(존재) vs 載(실을 재) — 在가 더 안정적","yinyangPattern":"음양 예: 양양음","soundElPattern":"발음 오행 예: 토금토","sajuMatchReason":"사주 매칭 이유 80자 내외","strengths":"장점 80자 내외","concerns":"고려사항 60자 내외 (없으면 빈 문자열)"}]}
+candidates 정확히 10개. 한글전용은 hanjaDetail 빈 배열.` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `작명 프리미엄 1단계 (10개 후보)
@@ -2180,7 +2179,7 @@ ${c.hangryeolHanja?`⚠️ 항렬자(行列字): ${c.hangryeolHanja} — 위치:
 ⚠️ 절대 규칙:
 1. 사용자 요청 이름 글자 수 정확히 지킬 것 (예: "4자"=성씨1+이름3, hangul 3글자).
 2. hangul과 hanja는 '이름만' (성씨 제외).
-3. **bestThree는 1단계에서 추천한 candidates 중 sajuMatchScore 상위 3개**를 골라야 함. 글자 수도 1단계와 정확히 일치. 새 이름 만들지 말 것.
+3. **bestThree는 1단계에서 추천한 candidates 중 3개**를 골라야 함. 글자 수도 1단계와 정확히 일치. 새 이름 만들지 말 것.
 4. **항렬자가 지정된 경우, bestThree 모두 그 정확한 한자를 지정 위치에 반드시 포함**. 1단계 candidates에서 그대로 가져올 것.
 
 반드시 아래 정확한 JSON 구조로만 응답:
@@ -2201,13 +2200,13 @@ ${c.hangryeolHanja?`⚠️ 항렬자: ${c.hangryeolHanja} (${c.hangryeolPos==='f
       // 꿈해몽 무료 — 한국 전통 + 융 심리학 통합 (사주 연계는 프리미엄)
       systemPrompt = `당신은 꿈 해석 AI 어시스턴트입니다. 한국 전통 해몽 관점 + 융(C.G. Jung) 심리학을 통합하여 풀이합니다.
 한국어 해요체. 꿈의 줄거리·시점·정서·모티브를 직접 인용하며 풀이.
-- 한국 전통: 14대 분류 매핑 + 길흉 판정
+- 한국 전통: 14대 분류 매핑 — 길흉 단정 금지(전통적 해석 경향만 서술)
 - 융 심리학: archetype(페르소나·그림자·자기 등) 관점에서 무의식의 메시지
 - 핵심 상징 3개 추출 (꿈에서 가장 중요한 것)
 - 따뜻하지만 통찰력 있는 톤
 
 반드시 아래 JSON 구조로만 응답:
-{"summary":"종합 풀이 250자 내외 (전통+융 통합 톤)","traditionalReading":"한국 전통 해석 150자 내외 (전통 해몽 분류 + 길흉 판정)","jungianReading":"융 심리학 해석 150자 내외 (archetype + 무의식 메시지)","fortuneType":"길몽 / 흉몽 / 계시몽 / 평몽 중 하나","fortuneScore":number(0-100),"keySymbols":[{"symbol":"상징명","meaning":"의미 한 줄"}],"luckyNumbers":[number,number,number,number],"luckyColor":"행운의 색","emotionalState":"꿈이 비추는 감정 상태 80자 내외","advice":"실생활 조언 100자 내외"}
+{"summary":"종합 풀이 250자 내외 (전통+융 통합 톤)","traditionalReading":"한국 전통 해석 150자 내외 (전통 해몽 분류 — 길흉 단정 금지)","jungianReading":"융 심리학 해석 150자 내외 (archetype + 무의식 메시지)","keySymbols":[{"symbol":"상징명","meaning":"의미 한 줄"}],"emotionalState":"꿈이 비추는 감정 상태 80자 내외","advice":"실생활 조언 100자 내외"}
 keySymbols 배열에 꿈의 핵심 상징 3개.` + JSON_FORCE;
 
       const c = context || {};
@@ -2224,7 +2223,7 @@ ${c.sajuLinked?(c.ilgan?`사주 연계 정보 — 일간: ${c.ilgan}(${c.ilganEl
       // 1단계: 한국 전통 심층 + 융 심층 + 사주 연계 풀이
       systemPrompt = `당신은 꿈 해석 AI 어시스턴트입니다. 한국 민속 해몽 관점 · 융 분석심리학 · 프로이트 정신분석 통합.
 한국어 해요체. 고전 인용은 서지 ID로만 표기.
-- 한국 전통 심층: 전통 해몽 카테고리별 길흉 + 한국 민속 해몽 (예: 돼지꿈=재물)
+- 한국 전통 심층: 전통 해몽 카테고리별 해석 경향 + 한국 민속 해몽 (예: 돼지꿈=재물) — 길흉 단정 금지
 - 융 심층: 집단 무의식·archetype·그림자·아니마/아니무스·자기(self) 통합 관점
 - 사주 연계 (있을 시): 사용자 일간·강한 오행과 꿈의 오행/모티브 상관관계 — 같은 꿈도 일간 火/水에 따라 다른 의미
 - 무의식 진단: 꿈이 비추는 현재 감정·욕구·갈등
@@ -2250,21 +2249,21 @@ ${c.sajuLinked?(c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''}), 일�
 - 상징별 정밀: 꿈의 핵심 상징 4~5개 각각 상세 분석 (전통+심리)
 - 화몽법(化夢法): 길몽 강화·흉몽 해소 의식·실천법 (한국 민속 + 현대 적용)
 - 시기별 영향: 꿈이 향후 1주·1개월·3개월·1년에 미칠 영향
-- 행운 정보: 색·숫자·방위·길일
+- 색·숫자·방위·날짜 같은 행운 항목은 만들지 말 것
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"symbolsDetail":[{"symbol":"상징명","traditional":"전통 의미 70자 내외","psychological":"심리 의미 70자 내외","action":"이 상징이 주는 메시지 60자 내외"}],"hwamongbup":{"strengthen":"길몽 강화법 100자 내외 (해당 시)","dissolve":"흉몽 해소법 100자 내외 (해당 시)","ritual":"민속 의식 한 줄 (예: 동쪽으로 돌아 절하기)"},"timelineImpact":{"week1":"1주 50자 내외","month1":"1개월 50자 내외","month3":"3개월 50자 내외","year1":"1년 50자 내외"},"luckyDetail":{"colors":["색1","색2"],"numbers":[0,0,0,0],"directions":["방위1","방위2"],"luckyDay":"길일 한 줄"}}
+{"symbolsDetail":[{"symbol":"상징명","traditional":"전통 의미 70자 내외","psychological":"심리 의미 70자 내외","action":"이 상징이 주는 메시지 60자 내외"}],"hwamongbup":{"strengthen":"길몽 강화법 100자 내외 (해당 시)","dissolve":"흉몽 해소법 100자 내외 (해당 시)","ritual":"민속 의식 한 줄 (예: 동쪽으로 돌아 절하기)"},"timelineImpact":{"week1":"1주 50자 내외","month1":"1개월 50자 내외","month3":"3개월 50자 내외","year1":"1년 50자 내외"}}
 symbolsDetail 4~5개.` + JSON_FORCE;
 
       const c = context || {};
-      userPrompt = `꿈해몽 프리미엄 2단계 (상징·화몽법·시기·행운)
+      userPrompt = `꿈해몽 프리미엄 2단계 (상징·화몽법·시기)
 시점: ${c.time||''}
 모티브: ${c.categories||''}
 정서: ${c.emotion||''}
 줄거리: ${c.story||''}
 ${c.sajuLinked?(c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''})`:'사주 일간: 미입력'):'사주 연계: 없음'}
 
-핵심 상징 4~5개 정밀 분석, 화몽법, 시기별 영향, 행운 정보를 풀이해주세요.`;
+핵심 상징 4~5개 정밀 분석, 화몽법, 시기별 영향을 풀이해주세요.`;
 
     } else if (type === 'compat') {
       // 궁합 무료 분석
@@ -2274,8 +2273,8 @@ ${c.sajuLinked?(c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''})`:'사�
 - 일지(日支)는 배우자궁(연인궁/동반자궁)이라 가장 중요
 - 합·충·해 관계로 끌림과 갈등 진단
 - 두 사주의 오행 보완성 평가
-- 정직하고 현실적인 톤 — 좋은 점과 주의할 점을 균형 있게. 타당한 이유 없이 긍정으로 왜곡 금지(상성이 낮으면 낮은 점수·솔직한 등급 제시)
-- autoScore는 자동 산출값. LLM은 명리적 판단으로 보정한 score 제시.
+- 정직하고 현실적인 톤 — 좋은 점과 주의할 점을 균형 있게. 타당한 이유 없이 긍정으로 왜곡 금지(상성이 낮으면 낮은 대로 솔직하게 서술)
+- autoScore는 엔진이 산출한 최종 점수이며 총점·등급은 엔진이 확정한다. 다른 숫자로 바꾸거나 별도 점수·등급·영역별 점수를 새로 제시하지 말 것.
 
 ★ 중요: 관계 유형(relType)에 따라 풀이 관점·예시·조언 톤을 정확히 조정하세요.
 - "예비부부·결혼": 백년해로 관점 — 결혼 후 동거·자녀·재물 합·갈등 패턴. 결혼 적합성 진단.
@@ -2286,15 +2285,9 @@ ${c.sajuLinked?(c.ilgan?`사주 일간: ${c.ilgan}(${c.ilganElement||''})`:'사�
 - "가족": 가족 인연 — 세대 간 호흡·갈등 패턴·정서적 거리·돌봄.
 - "그냥 궁금": 두 사람 사이의 인연 종합 — 어떤 관계가 가장 어울리는지도.
 
-scores 4영역은 관계 유형별로 가중치 조정:
-- "예비부부·결혼": personality/romance/wealth/life
-- "연인"/"썸·짝사랑": personality/romance + life (wealth는 부수)
-- "친구": personality/life + romance(친밀도)/wealth(같이 노는 비용 호흡)
-- "동료·업무": personality/wealth(일/협업)/life(업무 흐름) + romance(친화력)
-- "가족": personality/life + romance(애정)/wealth(생활 호흡)
 
 반드시 아래 JSON 구조로만 응답:
-{"summary":"관계 유형에 맞춘 두 사주 종합 궁합 풀이 250자 내외","ilganChemistry":"일간 케미 풀이 150자 내외","habChungAnalysis":"합·충·해 풀이 100자 내외","elementBalance":"오행 보완성 100자 내외","score":number(0-100),"grade":"등급 (관계 유형·실제 상성에 맞춰 정직하게: 천생연분/좋은인연/노력이필요한인연/평범한인연/주의가필요한인연/도전적인연 등 — 좋은 결과로 왜곡 금지)","scores":{"personality":number(0-100),"romance":number(0-100),"wealth":number(0-100),"life":number(0-100)},"luckyInfo":{"color":"공통 행운의 색","direction":"공통 행운의 방위","activity":"좋은 함께 활동 (관계 유형에 맞게)"},"caution":"주의사항 80자 내외","advice":"관계 유형에 맞춘 종합 조언 100자 내외"}` + JSON_FORCE;
+{"summary":"관계 유형에 맞춘 두 사주 종합 궁합 풀이 250자 내외","ilganChemistry":"일간 케미 풀이 150자 내외","habChungAnalysis":"합·충·해 풀이 100자 내외","elementBalance":"오행 보완성 100자 내외","caution":"주의사항 80자 내외","advice":"관계 유형에 맞춘 종합 조언 100자 내외"}` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `궁합 분석 의뢰
@@ -2354,30 +2347,30 @@ ${c.pillar2?`${c.name2||'B'}님: ${c.pillar2} / 일간 ${c.ilgan2||''}`:`${c.nam
 이 두 사람의 정밀 매치·합충·오행·5영역을 "${c.relType||'연인'}" 관점에서 풀이해주세요.`;
 
     } else if (type === 'compat_premium_2') {
-      // 2단계: 대운 동행 + 갈등 시나리오 + 길흉일 + 개운법
+      // 2단계: 대운 동행 + 갈등 시나리오 + 시기 조언 + 개운법
       systemPrompt = `당신은 명리 궁합 해석 AI 어시스턴트입니다.
 한국어 해요체. 1단계 해석과 일관성 유지. 간결하게 핵심만.
 - 대운 동행: 두 사람 8단계 대운(0~80세)을 비교, 함께 좋은 시기·도전 시기
 - 갈등 시나리오: 합충 관계로 발생할 수 있는 구체 상황 + 처방 3~4개
-- weddingDays는 관계 유형에 맞춰 "중요 시기/길월" 의미로 사용
+- weddingDays.advice는 관계 유형에 맞춘 시기 조언 서술 — 특정 월·날짜를 지정하지 말 것
 - 개운법: 두 사람이 함께 실천할 보강법
 
 ★ 관계 유형(relType)별 weddingDays·gaeunbup 의미 조정:
-- "예비부부·결혼": 결혼 길흉일 + 백년해로 개운법 (전통)
-- "연인": 함께 좋은 달·만남 적기 + 장기 연애 개운법
-- "썸·짝사랑": 고백·발전 적기 달 + 마음 잡는 개운법
-- "친구": 만남·여행·중대 결정 적기 + 우정 강화 개운법
-- "동료·업무": 협업·중요 미팅 적기 + 시너지 강화 개운법
-- "가족": 화합·여행·중대 결정 적기 + 가족 화목 개운법
-- "그냥 궁금": 일반적 좋은 달·주의 달 + 인연 강화 개운법
-이에 맞춰 "luckyMonths/cautionMonths/advice" 표현을 자연스럽게 조정 (꼭 "결혼"이라고 적지 말 것).
+- "예비부부·결혼": 결혼 준비 시기 조언 + 백년해로 개운법 (전통)
+- "연인": 관계 발전 흐름 조언 + 장기 연애 개운법
+- "썸·짝사랑": 고백·발전 흐름 조언 + 마음 잡는 개운법
+- "친구": 만남·중대 결정 흐름 조언 + 우정 강화 개운법
+- "동료·업무": 협업 흐름 조언 + 시너지 강화 개운법
+- "가족": 화합 흐름 조언 + 가족 화목 개운법
+- "그냥 궁금": 일반적 흐름 조언 + 인연 강화 개운법
+이에 맞춰 weddingDays.advice 표현을 자연스럽게 조정 (꼭 "결혼"이라고 적지 말 것).
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"daewoonAlignment":[{"period":"0~9세","fortune":"50자 내외"},{"period":"10~19세","fortune":""},{"period":"20~29세","fortune":""},{"period":"30~39세","fortune":""},{"period":"40~49세","fortune":""},{"period":"50~59세","fortune":""},{"period":"60~69세","fortune":""},{"period":"70~79세","fortune":""}],"scenarios":[{"situation":"갈등 상황 한 줄","trigger":"발생 원인 한 줄 (사주상의 이유)","solution":"화합 처방 80자 내외"}],"weddingDays":{"luckyMonths":"길월","cautionMonths":"피할 달","advice":"관계 유형 맞춤 조언 80자 내외"},"gaeunbup":"관계 유형 맞춤 개운법 200자 내외"}
+{"daewoonAlignment":[{"period":"0~9세","fortune":"50자 내외"},{"period":"10~19세","fortune":""},{"period":"20~29세","fortune":""},{"period":"30~39세","fortune":""},{"period":"40~49세","fortune":""},{"period":"50~59세","fortune":""},{"period":"60~69세","fortune":""},{"period":"70~79세","fortune":""}],"scenarios":[{"situation":"갈등 상황 한 줄","trigger":"발생 원인 한 줄 (사주상의 이유)","solution":"화합 처방 80자 내외"}],"weddingDays":{"advice":"관계 유형 맞춤 조언 80자 내외"},"gaeunbup":"관계 유형 맞춤 개운법 200자 내외"}
 daewoonAlignment 8단계 모두, scenarios 3~4개.` + JSON_FORCE;
 
       const c = context || {};
-      userPrompt = `궁합 프리미엄 2단계 (대운 동행·시나리오·길흉일·개운)
+      userPrompt = `궁합 프리미엄 2단계 (대운 동행·시나리오·시기 조언·개운)
 ★ 관계 유형: ${c.relType||'연인'} (이 관점에서 풀이 — 결혼 표현 일률 적용 X)
 
 ${c.pillar1?`${c.name1||'A'}님(${c.gender1||''}): ${c.pillar1}`:`${c.name1||'A'}님(${c.gender1||''}): 사주 미입력`}
@@ -2385,7 +2378,7 @@ ${c.pillar2?`${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2}`:`${c.name2||'B'
 일간/일지 관계: ${c.ilganRelation||''} / ${c.iljiRelation||''}
 합충 요약: 합 ${c.hsHabs||''} ${c.ebHabs||''} / 충 ${c.hsChungs||''} ${c.ebChungs||''} / 해 ${c.ebHaes||''}
 
-두 사람 8단계 대운 동행, 갈등 시나리오 3~4개, 관계 유형별 길흉일, 개운법을 풀이해주세요.`;
+두 사람 8단계 대운 동행, 갈등 시나리오 3~4개, 관계 유형별 시기 조언(특정 월·날짜 지정 없이), 개운법을 풀이해주세요.`;
 
     } else if (type === 'saju') {
       // 사주 무료 분석
@@ -2397,7 +2390,7 @@ ${c.pillar2?`${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2}`:`${c.name2||'B'
 - 따뜻하고 희망적이지만 현실적인 톤
 
 반드시 아래 JSON 구조로만 응답:
-{"summary":"사주 8글자 종합 풀이 250자+","ilganReading":"일간 강약 + 본질 풀이 150자+","sipsungAnalysis":"십성 분포로 본 재물·관·인복 분석 120자+","yearFortune":"올해 세운 풀이 150자+","scores":{"overall":number(0-100),"wealth":number(0-100),"health":number(0-100),"love":number(0-100),"career":number(0-100)},"luckyInfo":{"color":"행운의 색","number":"행운의 숫자","direction":"행운의 방위"},"caution":"주의사항 80자+","advice":"종합 조언 120자+"}` + JSON_FORCE;
+{"summary":"사주 8글자 종합 풀이 250자+","ilganReading":"일간 강약 + 본질 풀이 150자+","sipsungAnalysis":"십성 분포로 본 재물·관·인복 분석 120자+","yearFortune":"올해 세운 풀이 150자+","caution":"주의사항 80자+","advice":"종합 조언 120자+"}` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `사주 분석 의뢰
@@ -2437,13 +2430,13 @@ sipsungDetail 배열에 4기둥 각 천간의 십성 4개 포함.` + CITATION_RU
       // 2단계: 대운 + 합충 + 신살 + 12개월 세운 + 개운법
       systemPrompt = `당신은 사주명리 해석 AI 어시스턴트입니다. 전통 명리 이론(격국·억부) 참고.
 한국어 해요체. 1단계 해석과 일관성 유지. 간결하게 핵심만.
-- 대운(大運): 10년 단위 8단계 (출생부터 80세까지)로 인생 흐름 (월주 천간지지 기준 순/역행, 양남음녀 순행·음남양녀 역행)
+- 대운(大運): 10년 단위 8단계(1운~8운 — 대운 시작 나이는 산출하지 않으므로 특정 나이·연령대를 쓰지 말 것)로 인생 흐름 (월주 천간지지 기준 순/역행, 양남음녀 순행·음남양녀 역행)
 - 합·충·형·해: 4기둥 지지 간 관계 (寅卯辰 회국, 子午沖, 寅巳申 三刑 등)
 - 신살(神煞): 천을귀인·도화살·역마살·공망 등 핵심 4~6개
 - 12개월 세운: 올해 매달 운세 흐름
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"daewoon":[{"age":"0~9세","ganji":"천간지지","fortune":"50자 내외"},{"age":"10~19세","ganji":"","fortune":""},{"age":"20~29세","ganji":"","fortune":""},{"age":"30~39세","ganji":"","fortune":""},{"age":"40~49세","ganji":"","fortune":""},{"age":"50~59세","ganji":"","fortune":""},{"age":"60~69세","ganji":"","fortune":""},{"age":"70~79세","ganji":"","fortune":""}],"habChung":[{"type":"합/충/형/해","between":"위치-위치 예: 일지-월지","effect":"영향 한 줄"}],"sinsal":[{"name":"신살명","position":"위치","effect":"의미 한 줄"}],"monthlyFortune":[{"month":1,"fortune":"한 줄","wealth":"한 줄","health":"한 줄","love":"한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":""},{"month":3,"fortune":"","wealth":"","health":"","love":""},{"month":4,"fortune":"","wealth":"","health":"","love":""},{"month":5,"fortune":"","wealth":"","health":"","love":""},{"month":6,"fortune":"","wealth":"","health":"","love":""},{"month":7,"fortune":"","wealth":"","health":"","love":""},{"month":8,"fortune":"","wealth":"","health":"","love":""},{"month":9,"fortune":"","wealth":"","health":"","love":""},{"month":10,"fortune":"","wealth":"","health":"","love":""},{"month":11,"fortune":"","wealth":"","health":"","love":""},{"month":12,"fortune":"","wealth":"","health":"","love":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
+{"daewoon":[{"age":"1운","ganji":"천간지지","fortune":"50자 내외"},{"age":"2운","ganji":"","fortune":""},{"age":"3운","ganji":"","fortune":""},{"age":"4운","ganji":"","fortune":""},{"age":"5운","ganji":"","fortune":""},{"age":"6운","ganji":"","fortune":""},{"age":"7운","ganji":"","fortune":""},{"age":"8운","ganji":"","fortune":""}],"habChung":[{"type":"합/충/형/해","between":"위치-위치 예: 일지-월지","effect":"영향 한 줄"}],"sinsal":[{"name":"신살명","position":"위치","effect":"의미 한 줄"}],"monthlyFortune":[{"month":1,"fortune":"한 줄","wealth":"한 줄","health":"한 줄","love":"한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":""},{"month":3,"fortune":"","wealth":"","health":"","love":""},{"month":4,"fortune":"","wealth":"","health":"","love":""},{"month":5,"fortune":"","wealth":"","health":"","love":""},{"month":6,"fortune":"","wealth":"","health":"","love":""},{"month":7,"fortune":"","wealth":"","health":"","love":""},{"month":8,"fortune":"","wealth":"","health":"","love":""},{"month":9,"fortune":"","wealth":"","health":"","love":""},{"month":10,"fortune":"","wealth":"","health":"","love":""},{"month":11,"fortune":"","wealth":"","health":"","love":""},{"month":12,"fortune":"","wealth":"","health":"","love":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
 daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, sinsal 4~6개, remedies 2~3개.` + JSON_FORCE;
 
       const c = context || {};
@@ -2467,8 +2460,8 @@ daewoon 8단계 모두, monthlyFortune 12개월 모두, habChung 2~4개, sinsal 
 - 띠와 괘 조합의 상호작용도 고려
 
 반드시 아래 JSON 구조로만 응답:
-{"yearReading":"올해 총운 요약 250자+","trigram":{"name":"괘 조합 이름","hanja":"한자 표기","meaning":"괘 해석 150자+"},"scores":{"overall":number(0-100),"wealth":number(0-100),"health":number(0-100),"love":number(0-100),"career":number(0-100)},"monthlyBrief":["1월 요약 40자+","2월 요약 40자+","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],"monthlyScores":[number,number,number,number,number,number,number,number,number,number,number,number],"luckyInfo":{"color":"행운의 색","number":"행운의 숫자","direction":"행운의 방위"},"caution":"주의사항 100자+","advice":"종합 조언 150자+"}
-monthlyScores는 1~12월 각 달의 종합 점수(0-100)로, 12개 정수 배열. monthlyBrief 분위기와 일관성 유지.` + JSON_FORCE;
+{"yearReading":"올해 총운 요약 250자+","trigram":{"name":"괘 조합 이름","hanja":"한자 표기","meaning":"괘 해석 150자+"},"monthlyBrief":["1월 요약 40자+","2월 요약 40자+","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],"caution":"주의사항 100자+","advice":"종합 조언 150자+"}
+monthlyBrief는 1~12월 각 달의 서술 요약. 점수·행운 색·숫자·방위 같은 수치·행운 항목은 만들지 말 것.` + JSON_FORCE;
 
       const c = context || {};
       userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 해석 요청
@@ -2501,26 +2494,26 @@ ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
 이 괘 조합을 기준으로 한 해 총운, 괘 심층 풀이, 재물·직업·건강·연애 4영역 심층 분석을 해주세요.`;
 
     } else if (type === 'tojeong_premium_2') {
-      // 2단계: 12개월 상세 + 개운법 + 행운 정보
+      // 2단계: 12개월 상세 + 개운법
       systemPrompt = `당신은 토정비결(土亭秘訣) 해석 AI 어시스턴트입니다. 토정비결 형식을 참고한 AI 해석입니다.
 한국어 해요체. 1단계 해석과 일관성 있게.
 간결하게: monthlyDetail의 fortune은 50자 내외, wealth/health/love/advice는 각 25자 이내 한 줄. 풀이를 늘리지 말고 핵심만.
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"monthlyDetail":[{"month":1,"fortune":"이번 달 흐름 50자 내외","wealth":"재물 한 줄","health":"건강 한 줄","love":"연애 한 줄","advice":"조언 한 줄","luckyDay":"길일 예: 5일·12일"},{"month":2,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":3,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":4,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":5,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":6,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":7,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":8,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":9,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":10,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":11,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""},{"month":12,"fortune":"","wealth":"","health":"","love":"","advice":"","luckyDay":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}],"luckyInfo":{"colors":["색1","색2"],"numbers":[0,0,0],"directions":["방위1","방위2"],"bestMonths":"가장 좋은 달 예: 3월·9월","cautionMonths":"주의할 달 예: 7월"}}
-monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. 불필요한 수식어 없이 짧게.` + JSON_FORCE;
+{"monthlyDetail":[{"month":1,"fortune":"이번 달 흐름 50자 내외","wealth":"재물 한 줄","health":"건강 한 줄","love":"연애 한 줄","advice":"조언 한 줄"},{"month":2,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":3,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":4,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":5,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":6,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":7,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":8,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":9,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":10,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":11,"fortune":"","wealth":"","health":"","love":"","advice":""},{"month":12,"fortune":"","wealth":"","health":"","love":"","advice":""}],"remedies":[{"area":"영역","problem":"문제 한 줄","solution":"개운법 한 줄"}]}
+monthlyDetail 배열에 반드시 12개월 모두 포함. remedies는 2~3개. 길일·행운 색·숫자·방위는 만들지 말 것. 불필요한 수식어 없이 짧게.` + JSON_FORCE;
 
       const c = context || {};
-      userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 2단계 (12개월+개운법+행운)
+      userPrompt = `${c.targetYear||new Date().getFullYear()}년 토정비결 프리미엄 2단계 (12개월+개운법)
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
 ${c.lunarYear?`음력 생년월일: ${c.lunarYear}년 ${c.lunarMonth||''}월 ${c.lunarDay||''}일`:'음력 생년월일: 미입력'}
 ${c.zodiac?`띠: ${c.zodiac}, 천간지지: ${c.ganjiYear||''}`:'띠: 미입력, 천간지지: 미입력'}
 ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
-1년 12개월 각 달의 흐름과 길일·주의일, 영역별 한 줄 풀이, 그리고 개운법 2~3개와 행운 정보를 알려주세요.`;
+1년 12개월 각 달의 흐름, 영역별 한 줄 풀이, 그리고 개운법 2~3개를 알려주세요.`;
 
     // P1-R1: chat 타입 분기 삭제 (프런트 호출부 0건 · 사용자 입력 원문을 무필터로 프롬프트에 삽입하던 경로)
     } else if (type === 'daily_message') {
-      // 데일리 한 마디 — 카테고리·페르소나·사주 컨텍스트 + 행운 정보
+      // 데일리 한 마디 — 카테고리·페르소나·사주 컨텍스트
       const c = context || {};
       const personaTone = c.personaTone || '따뜻하고 친근한 운세 해설자. 신비로운 해요체';
       const personaName = c.personaName || '선녀';
@@ -2536,10 +2529,9 @@ ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
 - 사주 컨텍스트가 있으면 일간·시·생년월일을 정확히 인용 (임의 추정 금지)
 - 사주 없으면 따뜻한 일반 메시지 + "생년월일을 알려주시면 더 정확..." 권유 한 줄
 - 카테고리(사랑·일·돈·건강·전반)에 맞게 톤 조정
-- 답 마지막에 행운 정보 토큰 포함 (필수):
-  ★LUCK★색:[행운의 색]|숫자:[1~9]|방위:[동/서/남/북/중앙]|시간:[오전/오후 N시]★
+- 색·숫자·방위·시간 같은 행운 항목이나 ★ 기호 토큰은 만들지 말 것 (근거 없는 수치 금지)
 
-응답 형식: 자연어 + 행운 토큰. JSON 아님.`;
+응답 형식: 자연어만. JSON 아님.`;
 
       let ctxLines = [];
       if(c.ilgan){
@@ -2556,10 +2548,10 @@ ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
       if(c.faceSummary) ctxLines.push(`관상 요약: ${c.faceSummary}`);
       const ctxBlock = ctxLines.length ? `사용자 정보:\n${ctxLines.join('\n')}\n\n` : '';
 
-      userPrompt = `${ctxBlock}오늘 날짜: ${new Date().toLocaleDateString('ko-KR')}
+      userPrompt = `${ctxBlock}오늘 날짜: ${new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})}
 분야: ${c.category||'전반'}
 
-${personaName} 톤으로 오늘의 한 마디를 전해주세요. 150~250자 + ★LUCK★ 행운 정보 토큰 필수.`;
+${personaName} 톤으로 오늘의 한 마디를 전해주세요. 150~250자 자연어로.`;
 
     } else if (type === 'tarot') {
       systemPrompt = `당신은 한국어 타로 해석 AI 어시스턴트입니다. 라이더-웨이트 덱을 사용하며, 한국 정서에 맞는 친근한 해요체.
@@ -2569,7 +2561,7 @@ ${personaName} 톤으로 오늘의 한 마디를 전해주세요. 150~250자 + �
 - 긍정·도전 균형, 운명론보다 실천 지향
 
 반드시 아래 JSON 구조로만 응답:
-{"summary":"3장 종합 메시지 200자 내외 (질문에 직접 답)","reading":[{"position":"과거","cardName":"카드 이름","reversed":boolean,"meaning":"이 위치+카드+정/역방향이 사용자 질문에 주는 의미 120자 내외","advice":"이 카드의 조언 60자 내외"},{"position":"현재","cardName":"","reversed":boolean,"meaning":"","advice":""},{"position":"미래","cardName":"","reversed":boolean,"meaning":"","advice":""}],"keyMessage":"핵심 메시지 80자 내외","actionTip":"실천 조언 80자 내외","sajuLink":"사주 연계 풀이 120자 내외 (사주 없으면 빈 문자열)","fortuneScore":number(0-100),"luckyKeyword":"행운 키워드 한 단어"}
+{"summary":"3장 종합 메시지 200자 내외 (질문에 직접 답)","reading":[{"position":"과거","cardName":"카드 이름","reversed":boolean,"meaning":"이 위치+카드+정/역방향이 사용자 질문에 주는 의미 120자 내외","advice":"이 카드의 조언 60자 내외"},{"position":"현재","cardName":"","reversed":boolean,"meaning":"","advice":""},{"position":"미래","cardName":"","reversed":boolean,"meaning":"","advice":""}],"keyMessage":"핵심 메시지 80자 내외","actionTip":"실천 조언 80자 내외","sajuLink":"사주 연계 풀이 120자 내외 (사주 없으면 빈 문자열)"}
 reading 배열에 반드시 3장 모두 포함. cardName과 reversed는 입력으로 제공된 카드와 정확히 일치.` + JSON_FORCE;
       const c = context || {};
       const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
@@ -2616,17 +2608,16 @@ ${cardsDesc}
 - 사주 연계 풀이 (사주 있을 때만)
 - 시점별 조언: 1주·1개월·3개월 후 흐름
 - 실천 계획 (구체 행동)
-- 행운 정보 (색·숫자·방위·요일)
 - 격려 메시지
 
 반드시 아래 JSON 구조로만 응답:
-{"readings":[{"position":"가까운 미래","positionDesc":"곧 다가올 흐름","cardName":"","kind":"","suit":"","reversed":boolean,"meaning":"150자 내외","advice":"80자 내외"}],"sajuLink":"사주 일간·오행 연계 풀이 150자 내외 (사주 없으면 빈 문자열)","timeline":{"oneWeek":"1주 후 흐름 100자 내외","oneMonth":"1개월 후 100자 내외","threeMonths":"3개월 후 120자 내외"},"actionPlan":"실천 계획 150자 내외","luckyInfo":{"color":"행운의 색","number":number,"direction":"행운의 방위","day":"행운의 요일"},"blessing":"격려 메시지 100자 내외"}
+{"readings":[{"position":"가까운 미래","positionDesc":"곧 다가올 흐름","cardName":"","kind":"","suit":"","reversed":boolean,"meaning":"150자 내외","advice":"80자 내외"}],"sajuLink":"사주 일간·오행 연계 풀이 150자 내외 (사주 없으면 빈 문자열)","timeline":{"oneWeek":"1주 후 흐름 100자 내외","oneMonth":"1개월 후 100자 내외","threeMonths":"3개월 후 120자 내외"},"actionPlan":"실천 계획 150자 내외","blessing":"격려 메시지 100자 내외"}
 readings 배열에 6~10번 5장 모두 포함.` + JSON_FORCE;
       const c = context || {};
       const catName = {love:'사랑·연애',work:'일·커리어',money:'재물·돈',health:'건강',general:'전반적 운',free:'자유 질문'}[c.category]||'전반적 운';
       const posNames = ['가까운 미래','자신','환경','희망과 두려움','최종 결과'];
       const cardsDesc = (c.cards||[]).slice(5,10).map((card,i)=>`[${posNames[i]}] ${card.name}${card.reversed?'(역방향)':'(정방향)'} — 유형: ${card.kind||'major'}${card.suit?` / 수트: ${card.suitName||card.suit}`:''}${card.court?` / 코트: ${card.court}`:''} — 키워드: ${card.reversed?(card.rev||card.theme):(card.up||card.theme)}`).join('\n');
-      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~10번 + 사주·시점·행운)
+      userPrompt = `타로 프리미엄 2단계 (켈틱크로스 6~10번 + 사주·시점)
 카테고리: ${catName}
 ${c.question?`질문: "${c.question}"`:''}
 ${c.ilgan?`사주: 일간 ${c.ilgan}(${c.ilganElement||''}) / 강함 ${c.dominant||''} / 부족 ${c.lacking||''}`:'사주: 미입력'}
@@ -2634,7 +2625,7 @@ ${c.ilgan?`사주: 일간 ${c.ilgan}(${c.ilganElement||''}) / 강함 ${c.dominan
 뽑힌 카드 (6~10번):
 ${cardsDesc}
 
-각 위치 풀이 + 사주 연계 + 시점별 조언 + 실천 계획 + 행운 정보를 알려주세요.`;
+각 위치 풀이 + 사주 연계 + 시점별 조언 + 실천 계획을 알려주세요.`;
 
     } else {
       return res.status(400).json({ error: 'Invalid type' });

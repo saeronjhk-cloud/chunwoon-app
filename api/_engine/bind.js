@@ -250,7 +250,10 @@ function factsBlock(facts) {
 // 【버리는 것】 LLM 이 만든 합충 중 **엔진에 없는 관계는 버린다.** 그것이 이 작업의 목적이다.
 // 【남기는 것】 서술(meaning · fortune · effect)은 LLM 이 계속 담당한다.
 
-const AGE_BUCKETS = ['0~9세', '10~19세', '20~29세', '30~39세', '40~49세', '50~59세', '60~69세', '70~79세'];
+// ★p41(원칙 40) — 종전 10년 단위 나이 구간 라벨은 대운수(시작 나이)를 계산하지 않은 채 붙인
+//   고정 라벨이라 사실과 다를 수 있었다. 나이를 주장하지 않는 **순서 라벨**만 쓴다.
+//   (상수 이름 AGE_BUCKETS 는 외부 참조 호환을 위해 유지한다.)
+const AGE_BUCKETS = ['1운', '2운', '3운', '4운', '5운', '6운', '7운', '8운'];
 
 function pickString(v) { return typeof v === 'string' ? v : ''; }
 
@@ -281,7 +284,7 @@ function applyEngineFacts(type, parsed, facts) {
     applied.push('sipsungDetail');
   }
 
-  // ② 대운 — 간지를 엔진 값으로 덮어쓴다. 나이 버킷은 10년 고정(대운수는 미승격 · 노출 안 함).
+  // ② 대운 — 간지를 엔진 값으로 덮어쓴다. age 는 순서 라벨(1운~8운) 고정(대운수는 미승격 · 노출 안 함).
   if (facts.daewoon && Object.prototype.hasOwnProperty.call(parsed, 'daewoon')) {
     const llm = Array.isArray(parsed.daewoon) ? parsed.daewoon : [];
     parsed.daewoon = facts.daewoon.list.map((e, i) => {
@@ -292,8 +295,8 @@ function applyEngineFacts(type, parsed, facts) {
       //   종전에는 LLM 의 age 를 그대로 썼는데, 그 자리는 대운수(시작 나이)를 담는 자리다.
       //   `daewoon_start_age` 는 APPROX_FIXED_TERM 이라 surface_policy=DENY 인데,
       //   LLM 이 "3세~12세" 라고 쓰면 **봉인된 정보가 무방비로 사용자에게 나갔다.**
-      //   ⟹ 10년 고정 버킷만 쓴다. 대운수는 정밀 절입 만세력 도입 후 별도 승격 대상.
-      return { age: AGE_BUCKETS[i], ganji: e.ganji, fortune: pickString(src.fortune) };
+      //   ⟹ 순서 라벨(1운~8운)만 쓴다. 대운수는 정밀 절입 만세력 도입 후 별도 승격 대상.
+      return { age: AGE_BUCKETS[i] || ((i + 1) + '운'), ganji: e.ganji, fortune: pickString(src.fortune) };
     });
     applied.push('daewoon');
   }

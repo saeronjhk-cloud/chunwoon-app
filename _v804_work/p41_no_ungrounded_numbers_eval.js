@@ -51,6 +51,10 @@ check('N6', '사주 대운 「0~9세」 고정 구간 없음(bind.js)', !/0~9세
 { const b = fnBody(H, '_cwDreamEngineBlock') || ''; const h = hits(b, /\.num\b|numbers|행운 숫자/); check('U6', '꿈: 엔진 행운 숫자 없음 · LLM 길흉 배지 없음', h.length === 0 && !/result\.fortuneType/.test(H), h.join(' · ')); }
 { const b = fnBody(T, 'retryTarotPremiumAPI') || ''; check('U7', '타로 프리미엄 재시도가 카드를 다시 뽑지 않음', !!b && !/unlockTarotPremium\s*\(/.test(b), b ? '' : '함수 없음'); }
 { const h = hits(H, /totalLabel|'총 '\+totalEval|\$\{gradeLabel\}|사주 매칭 점수|nc-score/); check('U8', '작명: 81수 획수·등급 수치 숨김 · 매칭·SEO·상표 점수 없음', h.length === 0, h.join(' · ')); }
+// ★사후 추가(2026-10-14 리뷰 · 수리 후 발견): 작명 프리미엄의 LLM 81수 등급·사격 풀이·획수 요구 — 기준을 완화하지 않고 범위만 넓힘
+{ const h = hits(F + '\n' + CL, /gyeokGrade|fiveGyeokDetail|81수 풀이|부수\+획수|사격\(천·인·지·외·총\) 조합 확인|수리 81수 관점 고려/); check('U8b', '(사후) 작명: LLM 81수 등급·사격 풀이·획수 서술 요구 없음', h.length === 0, h.join(' · ')); }
+// ★사후 주석: U1은 LLM 응답의 .fortuneType 을 막는다. 꿈 엔진 요약(js/dream_engine.js summarize)의 fortuneType 은 엔진 값이라 허용 —
+//   index.html 은 구조분해(const {fortuneType:engFt}=…summarize(hits))로 읽는다. U6이 result.fortuneType(LLM)을 따로 막는다.
 { const h = hits(CL, /행운의 색·숫자|행운 정보|SEO 점수|기억성·발음 점수|결혼 길흉일|대운 그래프|수리 81수 길수 매핑|행운 정보 정리|🍀 행운 안내|🍀 오늘의 행운|행운 키워드/); check('U9', '페이월·로딩·렌더 문구가 제거 항목을 약속·표시하지 않음', h.length === 0, h.join(' · ')); }
 // ── 문법 ──
 { const tmp = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'p41-')); const bad = [];

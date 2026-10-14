@@ -231,6 +231,7 @@ async function analyzeTarot(){
   tarotSt.category = category;
   tarotSt.question = question;
   tarotSt.saju = saju;
+  tarotSt.premCards = null;               // ★P41 — 새 무료 풀이면 이전 프리미엄 카드(재시도용)를 비운다
   // 카드 UI 갱신
   cards.forEach((c, i) => {
     const el = document.getElementById(`tc-${i}`);
@@ -331,8 +332,7 @@ function renderTarotResult(result){
   const r = document.getElementById('tarotReading');
   const cards = tarotSt.cards || [];
   const reading = result.reading || [];
-  const score = result.fortuneScore || 0;
-  const scoreColor = score>=75?'#1a7a4a':score>=50?'#b8860b':'#c9443a';
+  // ★P41(원칙 40) — LLM 운세 점수·행운 단어는 엔진 근거가 없어 표시하지 않는다.
 
   let cardsHTML = '';
   reading.forEach((rd, i) => {
@@ -355,10 +355,6 @@ function renderTarotResult(result){
 
   r.innerHTML = `<div class="card pulse-card">
     <div class="card-title">✧ 타로 해석</div>
-    <div style="text-align:center;margin-bottom:14px;padding:10px;background:rgba(201,165,78,.05);border-radius:8px">
-      <div style="font-size:24px;color:${scoreColor};font-weight:900;font-family:'Noto Serif KR',serif">${score}<span style="font-size:13px;color:var(--text2)">점</span></div>
-      ${result.luckyKeyword?`<div style="font-size:11px;color:var(--text2);margin-top:2px">행운 키워드: <strong style="color:var(--gold)">${result.luckyKeyword}</strong></div>`:''}
-    </div>
     ${result.summary?`<div class="reading" style="margin-bottom:14px">${result.summary}</div>`:''}
     <div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:10px">🎴 3장 카드 풀이</div>
     ${cardsHTML}
@@ -407,7 +403,7 @@ function _renderTarotPaywall(){
         <p>✦ 코트 카드(시종·기사·여왕·왕) 인물 상징</p>
         <p>✦ 사주 일간·오행 연계 깊이 있는 통찰</p>
         <p>✦ 시점별 흐름 — 1주·1개월·3개월 후</p>
-        <p>✦ 구체적 실천 계획 + 행운 정보 (색·숫자·방위·요일)</p>
+        <p>✦ 구체적 실천 계획 + 축원 메시지</p>
         <p>✦ A4 PDF 영구 보관</p>
       </div>
     </div>
@@ -448,6 +444,19 @@ async function unlockTarotPremium(){
   });
   if(!premPicked) return;                 // 방어 — cancelable:false 이므로 도달하지 않는다
 
+  // ★v7.84 — 사용자가 고른 10장. 정/역방향은 **뽑는 순간** 무작위(45%)로 정해진다.
+  //   ★장수 10 은 그대로다 — 서버 상한(`tarot_premium_1/2:10`)·켈틱 크로스 10 포지션·
+  //     게이트 `T-0` 이 그 숫자에 묶여 있다.
+  // ★P41 — 뽑은 10장(방향 포함)을 tarotSt·info 에 보관한다. 재시도는 이 카드로 API 만 다시 부른다(다시 뽑지 않는다).
+  const cards = premPicked.map(c => _tarotCardForApi(c, {reversed: Math.random() < CW_TAROT_REVERSED_P}));
+  info.premCards = cards;
+  if(typeof tarotSt === 'object' && tarotSt) tarotSt.premCards = cards;
+  return _tarotRunPremium(info, cards);
+}
+
+/** ★P41 — 프리미엄 API 실행(로딩 → 1·2단계 호출 → 렌더). 결제·카드 뽑기는 하지 않는다.
+ *  unlockTarotPremium(최초) 과 retryTarotPremiumAPI(재시도) 가 같은 카드로 이 함수를 부른다. */
+async function _tarotRunPremium(info, cards){
   const pw = document.getElementById('tarotPaywall');
   let loadTimer = null;
   if(pw){
@@ -458,7 +467,7 @@ async function unlockTarotPremium(){
       <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">10장 카드 위치별 풀이 + 사주 연계 약 30~40초</div>
     </div>`;
     pw.style.position='relative';pw.style.overflow='visible';
-    const loadSteps=['78장 풀덱 셔플 중...','켈틱 크로스 10장 위치 매핑 중...','메이저·마이너 의미 분석 중...','정/역방향 통합 풀이 중...','수트·코트 카드 상징 분석 중...','사주 일간·오행 연계 중...','시점별 흐름(1주·1달·3달) 매핑 중...','실천 계획·행운 정보 정리 중...','최종 메시지 다듬는 중...'];
+    const loadSteps=['78장 풀덱 셔플 중...','켈틱 크로스 10장 위치 매핑 중...','메이저·마이너 의미 분석 중...','정/역방향 통합 풀이 중...','수트·코트 카드 상징 분석 중...','사주 일간·오행 연계 중...','시점별 흐름(1주·1달·3달) 매핑 중...','실천 계획 정리 중...','최종 메시지 다듬는 중...'];
     let loadStep=0;
     loadTimer=setInterval(()=>{
       loadStep++;
@@ -469,12 +478,6 @@ async function unlockTarotPremium(){
       if(loadStep>=loadSteps.length)clearInterval(loadTimer);
     },2400);
   }
-
-  // ★v7.84 — 사용자가 고른 10장. 정/역방향은 **뽑는 순간** 무작위(45%)로 정해진다.
-  //   ★장수 10 은 그대로다 — 서버 상한(`tarot_premium_1/2:10`)·켈틱 크로스 10 포지션·
-  //     게이트 `T-0` 이 그 숫자에 묶여 있다.
-  const cards = premPicked.map(c => _tarotCardForApi(c, {reversed: Math.random() < CW_TAROT_REVERSED_P}));
-  info.premCards = cards;
 
   const ctx = {
     category: info.category || 'general',
@@ -516,7 +519,7 @@ async function unlockTarotPremium(){
       const r2Readings = r2.readings || [];
       if(merged.readings) merged.readings = [...(merged.readings||[]), ...r2Readings];
       else merged.readings = r2Readings;
-      Object.assign(merged, {sajuLink:r2.sajuLink, timeline:r2.timeline, actionPlan:r2.actionPlan, luckyInfo:r2.luckyInfo, blessing:r2.blessing});
+      Object.assign(merged, {sajuLink:r2.sajuLink, timeline:r2.timeline, actionPlan:r2.actionPlan, blessing:r2.blessing}); // ★P41 — 행운 필드 병합 제거
     }catch(e){apiError = (apiError?apiError+' | ':'') + '2단계: ' + e.message; console.error('Tarot Premium 2:', e)}
 
     if(loadTimer) clearInterval(loadTimer);
@@ -549,9 +552,13 @@ async function unlockTarotPremium(){
 }
 
 async function retryTarotPremiumAPI(){
+  // ★P41 — 재시도는 **이미 뽑은 10장**으로 API 만 다시 보낸다. 결제·카드 뽑기를 다시 하지 않는다
+  //   (종전에는 최초 흐름 전체를 다시 불러 10장을 새로 뽑게 했다 — 같은 질문에 다른 카드가 나왔다).
   const info = window._tarotResultData;
   if(!info) return;
-  return unlockTarotPremium();
+  const cards = info.premCards || (typeof tarotSt === 'object' && tarotSt ? tarotSt.premCards : null);
+  if(!cards || !cards.length){ showToast('뽑은 카드 정보를 찾지 못했습니다. 프리미엄을 다시 열어 주세요.'); return; }
+  return _tarotRunPremium(info, cards);
 }
 
 function renderTarotPremium(prem, info, cards){
@@ -593,15 +600,6 @@ function renderTarotPremium(prem, info, cards){
       ${prem.timeline.threeMonths?`<div style="padding:8px 10px;background:rgba(0,0,0,.15);border-radius:6px;font-size:12px;line-height:1.7"><strong style="color:#a78bfa">3개월 후:</strong> ${prem.timeline.threeMonths}</div>`:''}
     </div>`:''}
     ${prem.actionPlan?`<div style="margin:14px 0;padding:14px;background:rgba(201,165,78,.06);border-radius:10px;font-size:12.5px;line-height:1.85"><strong style="color:var(--gold)">✦ 실천 계획:</strong> ${prem.actionPlan}</div>`:''}
-    ${prem.luckyInfo?`<div style="margin:14px 0;padding:14px;background:rgba(232,90,79,.06);border:1px solid rgba(232,90,79,.2);border-radius:10px">
-      <div style="font-size:13px;color:#e85a4f;font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px;text-align:center">🍀 행운 정보</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-        ${prem.luckyInfo.color?`<div style="flex:1;min-width:80px;padding:8px;background:rgba(0,0,0,.15);border-radius:6px;text-align:center;font-size:11px"><div style="color:var(--text2);font-size:9px">색</div><div style="color:var(--text1);font-weight:600;margin-top:2px">${prem.luckyInfo.color}</div></div>`:''}
-        ${prem.luckyInfo.number!=null?`<div style="flex:1;min-width:80px;padding:8px;background:rgba(0,0,0,.15);border-radius:6px;text-align:center;font-size:11px"><div style="color:var(--text2);font-size:9px">숫자</div><div style="color:var(--text1);font-weight:600;margin-top:2px">${prem.luckyInfo.number}</div></div>`:''}
-        ${prem.luckyInfo.direction?`<div style="flex:1;min-width:80px;padding:8px;background:rgba(0,0,0,.15);border-radius:6px;text-align:center;font-size:11px"><div style="color:var(--text2);font-size:9px">방위</div><div style="color:var(--text1);font-weight:600;margin-top:2px">${prem.luckyInfo.direction}</div></div>`:''}
-        ${prem.luckyInfo.day?`<div style="flex:1;min-width:80px;padding:8px;background:rgba(0,0,0,.15);border-radius:6px;text-align:center;font-size:11px"><div style="color:var(--text2);font-size:9px">요일</div><div style="color:var(--text1);font-weight:600;margin-top:2px">${prem.luckyInfo.day}</div></div>`:''}
-      </div>
-    </div>`:''}
     ${prem.blessing?`<div style="margin:14px 0;padding:18px;background:linear-gradient(180deg,rgba(201,165,78,.08) 0%,rgba(201,165,78,.03) 100%);border-radius:12px;border:1.5px solid rgba(201,165,78,.3);text-align:center">
       <div style="font-size:13.5px;line-height:1.95;font-family:'Noto Serif KR',serif;color:var(--text1);font-style:italic">"${prem.blessing}"</div>
     </div>`:''}
