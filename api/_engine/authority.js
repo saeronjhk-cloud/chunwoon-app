@@ -41,7 +41,14 @@ const SCOPE = {
 // 산출물 → 세 축(직교). verification_status·surface_policy가 authority enum 밖의 독립 개념.
 const OUTPUT = {
   pillars:      { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
-  iljin_ganzi:  { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+  // ★v804 P-805-B 승격 (제이 결정 2026-10-14 원칙 41 「단계 승격 — 일진 데일리 먼저」) — PENDING → VERIFIED.
+  //   【근거】_v804_work/p42_daily_iljin_engine_eval.js I1~I3 (승격 전에 통과 확인):
+  //     · manse.js(날짜 차 · 1990-01-01=丙寅) 와 recompute.js(율리우스일) — 서로 다른 산식 — 가
+  //       1900-01-01~2050-12-31 55,152일 전부 일치 · 클라 js/chat.js 산식도 전 일 일치
+  //     · 외부 기준점 5건 일치(위키독스 『남두성의 음양 만세력』 2000-01-01 戊午 · 01-15 壬申 · 01-31 戊子 · 1919-01-01 癸丑 · 01-31 癸未)
+  //   【왜 정당한가】일진은 60갑자 연속 산술이라 정답이 닫혀 있다(대운·십성과 같은 성질).
+  //   ★verdict(POC 가중치 판정)는 그대로 DENY — 자작 가중치라 근거가 없다(원칙 32·40).
+  iljin_ganzi:  { basis: BASIS.CALENDAR, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   solar_term:   { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   timezone:     { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   // ★v7.70 승격 (제이 승인 2026-08-01) — PENDING → VERIFIED.

@@ -1,0 +1,5 @@
+  ok   B1 홈 띠별 운세 12띠 모두 렌더(오류 없음 · 일진·관계 문구)
+  ok   B2 홈 운세에 점수·행운·길흉 단정 없음
+  ok   B3 데일리 근거 카드 렌더 — <div style="margin-top:8px;padding:8px 10px;background:rgba(201,165,78,.05);bord
+  ok   B4 페이지 오류 0
+[p42b_browser_smoke] total=4 pass=4 fail=0

@@ -372,7 +372,7 @@ function _gatherChatContext(){
 // ============================================================
 //  메시지 렌더링 (간단한 카드 누적)
 // ============================================================
-function _addDailyCard(text, category, persona){
+function _addDailyCard(text, category, persona, facts){
   const c = document.getElementById('chatMessages');
   if(!c) return;
   const cat = DAILY_CATEGORIES.find(function(x){return x.k === category;}) || {n:'전반',e:'✨'};
@@ -382,6 +382,7 @@ function _addDailyCard(text, category, persona){
     '<div class="chat-bubble">' +
     '<div style="font-size:10.5px;color:var(--gold);margin-bottom:6px">' + cat.e + ' ' + cat.n + ' · ' + persona.n + '의 한 마디</div>' +
     '<div>' + text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>') + '</div>' +
+    _cwIljinFactsCard(facts) +
     '</div>';
   c.appendChild(d);
   // 새 카드 상단 정렬
@@ -389,6 +390,27 @@ function _addDailyCard(text, category, persona){
     const off = d.offsetTop - c.offsetTop - 8;
     c.scrollTop = Math.max(0, off);
   }, 80);
+}
+
+/**
+ * ★v804 P-805-B(트랙 B) — 서버 엔진이 확정한 오늘 일진 사실을 근거 카드로 그린다(관상 「AI 실측 데이터」와 같은 역할).
+ *   값은 서버 응답 `result.facts`(api/_engine/bind.js todayIljinFacts)만 쓴다 — 여기서 계산하지 않는다.
+ *   ★판정(좋은 날/주의할 날)·점수·행운은 그리지 않는다(원칙 32·40 · POC verdict DENY).
+ */
+const CW_REL_NAME_KO = { '沖': '충(沖)', '六合': '육합(六合)', '三合': '삼합(三合)', '六害': '해(害)', '刑': '형(刑)' };
+function _cwEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]; }); }
+function _cwIljinFactsCard(facts){
+  if (!facts || typeof facts !== 'object' || !facts.todayGanzi) return '';
+  const rows = [];
+  rows.push('오늘 일진 <strong style="color:var(--gold)">' + _cwEsc(facts.todayGanzi) + '(' + _cwEsc(facts.todayGanziKo || '') + ')일</strong>');
+  if (facts.sipsin && facts.ilgan) rows.push('내 일간 ' + _cwEsc(facts.ilgan) + ' 기준 오늘 천간 = ' + _cwEsc(facts.sipsin.name) + '(' + _cwEsc(facts.sipsin.group) + ')');
+  (Array.isArray(facts.relations) ? facts.relations : []).forEach(function(r){
+    const tg = Array.isArray(r.tags) && r.tags.length ? r.tags.map(function(t){ return CW_REL_NAME_KO[t] || t; }).join('·') : '합·충·형·해 없음';
+    rows.push('오늘 지지 × 내 ' + _cwEsc(r.with) + ' ' + _cwEsc(r.branch) + ': ' + _cwEsc(tg));
+  });
+  return '<div style="margin-top:8px;padding:8px 10px;background:rgba(201,165,78,.05);border:1px solid rgba(201,165,78,.15);border-radius:8px;font-size:10.5px;line-height:1.8;color:var(--text2)">' +
+    '<div style="color:var(--gold);font-weight:600;margin-bottom:2px">📐 오늘의 일진 근거 <span style="font-weight:400;opacity:.75">(엔진 계산 · ' + _cwEsc(facts.date || '') + ' 한국 시간)</span></div>' +
+    rows.map(function(x){ return '<div>· ' + x + '</div>'; }).join('') + '</div>';
 }
 
 function _addBotInfo(text){
@@ -453,7 +475,7 @@ async function fetchDailyMessage(category){
     // ★P41(원칙 40) — 행운 토큰은 표시하지 않는다. 구 서버(캐시)가 아직 붙여 보내면 본문에서 지우기만 한다.
     answer = String(answer).replace(/★LUCK★[^★]*★/g, '').trim();
     _incDailyCount();
-    _addDailyCard(answer, category, persona);
+    _addDailyCard(answer, category, persona, (data.result && data.result.facts) || null);
     // 잔여 안내
     const remaining = limit - _getDailyCount();
     if(remaining === 0){

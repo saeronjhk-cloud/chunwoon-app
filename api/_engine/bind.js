@@ -330,6 +330,71 @@ function applyEngineFacts(type, parsed, facts) {
 // ── 5. context 재계산 게이트 (v7.71 · 결정 78) ───────────────────────────────
 // ★재노출만 한다. 판정 로직은 ctxguard.js 안에 있고 그 파일도 pin 봉인 대상이다.
 //   여기에 로직을 두면 결정 80 의 「어댑터가 실질 권한을 쥔다」가 재발한다.
+// ════════════════════════════════════════════════════════════════════════
+// ★v804 P-805-B — 오늘 일진 사실 (트랙 B · 원칙 41 「단계 승격 ① 일진 데일리 먼저」)
+//   【무엇】 오늘(KST) 일진 간지 · 사용자 일간 기준 오늘 천간의 십신 · 오늘 지지 × 사용자 일지·시지 관계.
+//   【무엇을 하지 않는가】 POC iljin_engine 의 차원별 가중치 판정(verdict: 좋음/무난/주의)은 내지 않는다 —
+//     가중치가 자작이라 근거가 없다(authority verdict DENY · 원칙 32·40). 점수·행운도 없다.
+//   【봉인】 세 사실은 각각 authority 승격 축(iljin_ganzi · sipsin · branch_relation)을 매 호출 확인한다.
+//     하나라도 내려가면 그 사실은 즉시 빠진다(computeFacts 와 같은 규약). 평가: _v804_work/p42 I5·I6.
+//   ★computeFacts(FACT_KEYS 봉인 · eval_engine_binding SELF-3)와 분리된 함수다 — 사주 3종 확정값 블록을 넓히지 않는다.
+// ════════════════════════════════════════════════════════════════════════
+const manse = require('./manse');
+const ILJIN_FACT_AUTHORITY = Object.freeze({ todayGanzi: 'iljin_ganzi', sipsin: 'sipsin', relations: 'branch_relation' });
+function kstYmd(nowMs) {
+  const t = (typeof nowMs === 'number' && isFinite(nowMs)) ? nowMs : Date.now();
+  const d = new Date(t + 9 * 3600000);              // KST = UTC+9 (서버 로컬 TZ 무관)
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
+}
+function stemIdxOf(v) {
+  if (typeof v !== 'string' || !v.trim()) return -1;
+  const c = [...v.trim()][0];
+  const i = STEMS.indexOf(c);
+  return i !== -1 ? i : STEMS_KO.indexOf(c);
+}
+function branchIdxOfLabel(v) {          // '자시 (23:00~00:59)' · '子' · '자' → 0
+  if (typeof v !== 'string' || !v.trim()) return -1;
+  const c = [...v.trim()][0];
+  const i = BRANCHES.indexOf(c);
+  return i !== -1 ? i : BRANCHES_KO.indexOf(c);
+}
+function todayIljinFacts(ctx, nowMs) {
+  if (!authority.userSurfaceable('iljin_ganzi')) return null;
+  const k = kstYmd(nowMs);
+  const t = manse.dayGanzi(k.y, k.m, k.d);
+  const out = {
+    engine_version: 'iljin/1.0.0',
+    date: k.y + '-' + String(k.m).padStart(2, '0') + '-' + String(k.d).padStart(2, '0'),
+    todayGanzi: t.ganji,
+    todayGanziKo: STEMS_KO[t.stemIdx] + BRANCHES_KO[t.branchIdx],
+    sipsin: null,
+    relations: []
+  };
+  const c = (ctx && typeof ctx === 'object' && !Array.isArray(ctx)) ? ctx : {};
+  const dp = splitPillar(c.dayPillar);
+  const ds = dp ? STEMS.indexOf(dp.s) : stemIdxOf(c.ilgan);
+  if (ds !== -1 && authority.userSurfaceable('sipsin')) {
+    const sp = M.sipsin(ds, t.stemIdx);
+    out.ilgan = STEMS[ds];
+    out.sipsin = { name: sp.name, group: sp.group };
+  }
+  if (authority.userSurfaceable('branch_relation')) {
+    if (dp) out.relations.push({ with: '일지', branch: dp.b, tags: M.branchRelations(t.branchIdx, BRANCHES.indexOf(dp.b)) });
+    const hb = branchIdxOfLabel(c.hourBranch);
+    if (hb !== -1) out.relations.push({ with: '시지', branch: BRANCHES[hb], tags: M.branchRelations(t.branchIdx, hb) });
+  }
+  return out;
+}
+const REL_NAME = { '沖': '충(沖)', '六合': '육합(六合)', '三合': '삼합(三合)', '六害': '해(害)', '刑': '형(刑)' };
+/** 오늘 일진 사실 → 프롬프트 블록(한국어). LLM 은 이 사실을 바꾸거나 길흉 판정·점수로 바꾸지 못한다. */
+function iljinFactsBlock(f) {
+  if (!f) return '';
+  const L = ['[오늘 일진 — 서버 엔진 확정값 · 바꾸지 말 것]', '· 오늘(' + f.date + ' KST) 일진: ' + f.todayGanzi + '(' + f.todayGanziKo + ')일'];
+  if (f.sipsin) L.push('· 사용자 일간 ' + f.ilgan + ' 기준 오늘 천간 = ' + f.sipsin.name + '(' + f.sipsin.group + ')');
+  for (const r of f.relations || []) L.push('· 오늘 지지 ' + [...f.todayGanzi][1] + ' × 사용자 ' + r.with + ' ' + r.branch + ': ' + (r.tags.length ? r.tags.map((x) => REL_NAME[x] || x).join('·') : '특별한 합·충·형·해 없음'));
+  return L.join('\n');
+}
+
 const ctxguard = require('./ctxguard');
 
 module.exports = {
@@ -353,5 +418,9 @@ module.exports = {
   daewoonList: daewoonList,
   computeFacts: computeFacts,
   factsBlock: factsBlock,
+  // ★v804 P-805-B — 오늘 일진 사실(데일리)
+  todayIljinFacts: todayIljinFacts,
+  iljinFactsBlock: iljinFactsBlock,
+  ILJIN_FACT_AUTHORITY: ILJIN_FACT_AUTHORITY,
   STEMS: STEMS, BRANCHES: BRANCHES, POS: POS
 };

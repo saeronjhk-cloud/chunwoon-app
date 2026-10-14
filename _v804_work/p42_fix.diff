@@ -1,0 +1,299 @@
+diff --git a/api/_engine/authority.js b/api/_engine/authority.js
+index 9f11c3e..9a58aa5 100644
+--- a/api/_engine/authority.js
++++ b/api/_engine/authority.js
+@@ -41,7 +41,14 @@ const SCOPE = {
+ // 산출물 → 세 축(직교). verification_status·surface_policy가 authority enum 밖의 독립 개념.
+ const OUTPUT = {
+   pillars:      { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+-  iljin_ganzi:  { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
++  // ★v804 P-805-B 승격 (제이 결정 2026-10-14 원칙 41 「단계 승격 — 일진 데일리 먼저」) — PENDING → VERIFIED.
++  //   【근거】_v804_work/p42_daily_iljin_engine_eval.js I1~I3 (승격 전에 통과 확인):
++  //     · manse.js(날짜 차 · 1990-01-01=丙寅) 와 recompute.js(율리우스일) — 서로 다른 산식 — 가
++  //       1900-01-01~2050-12-31 55,152일 전부 일치 · 클라 js/chat.js 산식도 전 일 일치
++  //     · 외부 기준점 5건 일치(위키독스 『남두성의 음양 만세력』 2000-01-01 戊午 · 01-15 壬申 · 01-31 戊子 · 1919-01-01 癸丑 · 01-31 癸未)
++  //   【왜 정당한가】일진은 60갑자 연속 산술이라 정답이 닫혀 있다(대운·십성과 같은 성질).
++  //   ★verdict(POC 가중치 판정)는 그대로 DENY — 자작 가중치라 근거가 없다(원칙 32·40).
++  iljin_ganzi:  { basis: BASIS.CALENDAR, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+   solar_term:   { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+   timezone:     { basis: BASIS.CALENDAR, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+   // ★v7.70 승격 (제이 승인 2026-08-01) — PENDING → VERIFIED.
+diff --git a/api/_engine/bind.js b/api/_engine/bind.js
+index 30d85c9..833dfe1 100644
+--- a/api/_engine/bind.js
++++ b/api/_engine/bind.js
+@@ -330,6 +330,71 @@ function applyEngineFacts(type, parsed, facts) {
+ // ── 5. context 재계산 게이트 (v7.71 · 결정 78) ───────────────────────────────
+ // ★재노출만 한다. 판정 로직은 ctxguard.js 안에 있고 그 파일도 pin 봉인 대상이다.
+ //   여기에 로직을 두면 결정 80 의 「어댑터가 실질 권한을 쥔다」가 재발한다.
++// ════════════════════════════════════════════════════════════════════════
++// ★v804 P-805-B — 오늘 일진 사실 (트랙 B · 원칙 41 「단계 승격 ① 일진 데일리 먼저」)
++//   【무엇】 오늘(KST) 일진 간지 · 사용자 일간 기준 오늘 천간의 십신 · 오늘 지지 × 사용자 일지·시지 관계.
++//   【무엇을 하지 않는가】 POC iljin_engine 의 차원별 가중치 판정(verdict: 좋음/무난/주의)은 내지 않는다 —
++//     가중치가 자작이라 근거가 없다(authority verdict DENY · 원칙 32·40). 점수·행운도 없다.
++//   【봉인】 세 사실은 각각 authority 승격 축(iljin_ganzi · sipsin · branch_relation)을 매 호출 확인한다.
++//     하나라도 내려가면 그 사실은 즉시 빠진다(computeFacts 와 같은 규약). 평가: _v804_work/p42 I5·I6.
++//   ★computeFacts(FACT_KEYS 봉인 · eval_engine_binding SELF-3)와 분리된 함수다 — 사주 3종 확정값 블록을 넓히지 않는다.
++// ════════════════════════════════════════════════════════════════════════
++const manse = require('./manse');
++const ILJIN_FACT_AUTHORITY = Object.freeze({ todayGanzi: 'iljin_ganzi', sipsin: 'sipsin', relations: 'branch_relation' });
++function kstYmd(nowMs) {
++  const t = (typeof nowMs === 'number' && isFinite(nowMs)) ? nowMs : Date.now();
++  const d = new Date(t + 9 * 3600000);              // KST = UTC+9 (서버 로컬 TZ 무관)
++  return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() };
++}
++function stemIdxOf(v) {
++  if (typeof v !== 'string' || !v.trim()) return -1;
++  const c = [...v.trim()][0];
++  const i = STEMS.indexOf(c);
++  return i !== -1 ? i : STEMS_KO.indexOf(c);
++}
++function branchIdxOfLabel(v) {          // '자시 (23:00~00:59)' · '子' · '자' → 0
++  if (typeof v !== 'string' || !v.trim()) return -1;
++  const c = [...v.trim()][0];
++  const i = BRANCHES.indexOf(c);
++  return i !== -1 ? i : BRANCHES_KO.indexOf(c);
++}
++function todayIljinFacts(ctx, nowMs) {
++  if (!authority.userSurfaceable('iljin_ganzi')) return null;
++  const k = kstYmd(nowMs);
++  const t = manse.dayGanzi(k.y, k.m, k.d);
++  const out = {
++    engine_version: 'iljin/1.0.0',
++    date: k.y + '-' + String(k.m).padStart(2, '0') + '-' + String(k.d).padStart(2, '0'),
++    todayGanzi: t.ganji,
++    todayGanziKo: STEMS_KO[t.stemIdx] + BRANCHES_KO[t.branchIdx],
++    sipsin: null,
++    relations: []
++  };
++  const c = (ctx && typeof ctx === 'object' && !Array.isArray(ctx)) ? ctx : {};
++  const dp = splitPillar(c.dayPillar);
++  const ds = dp ? STEMS.indexOf(dp.s) : stemIdxOf(c.ilgan);
++  if (ds !== -1 && authority.userSurfaceable('sipsin')) {
++    const sp = M.sipsin(ds, t.stemIdx);
++    out.ilgan = STEMS[ds];
++    out.sipsin = { name: sp.name, group: sp.group };
++  }
++  if (authority.userSurfaceable('branch_relation')) {
++    if (dp) out.relations.push({ with: '일지', branch: dp.b, tags: M.branchRelations(t.branchIdx, BRANCHES.indexOf(dp.b)) });
++    const hb = branchIdxOfLabel(c.hourBranch);
++    if (hb !== -1) out.relations.push({ with: '시지', branch: BRANCHES[hb], tags: M.branchRelations(t.branchIdx, hb) });
++  }
++  return out;
++}
++const REL_NAME = { '沖': '충(沖)', '六合': '육합(六合)', '三合': '삼합(三合)', '六害': '해(害)', '刑': '형(刑)' };
++/** 오늘 일진 사실 → 프롬프트 블록(한국어). LLM 은 이 사실을 바꾸거나 길흉 판정·점수로 바꾸지 못한다. */
++function iljinFactsBlock(f) {
++  if (!f) return '';
++  const L = ['[오늘 일진 — 서버 엔진 확정값 · 바꾸지 말 것]', '· 오늘(' + f.date + ' KST) 일진: ' + f.todayGanzi + '(' + f.todayGanziKo + ')일'];
++  if (f.sipsin) L.push('· 사용자 일간 ' + f.ilgan + ' 기준 오늘 천간 = ' + f.sipsin.name + '(' + f.sipsin.group + ')');
++  for (const r of f.relations || []) L.push('· 오늘 지지 ' + [...f.todayGanzi][1] + ' × 사용자 ' + r.with + ' ' + r.branch + ': ' + (r.tags.length ? r.tags.map((x) => REL_NAME[x] || x).join('·') : '특별한 합·충·형·해 없음'));
++  return L.join('\n');
++}
++
+ const ctxguard = require('./ctxguard');
+ 
+ module.exports = {
+@@ -353,5 +418,9 @@ module.exports = {
+   daewoonList: daewoonList,
+   computeFacts: computeFacts,
+   factsBlock: factsBlock,
++  // ★v804 P-805-B — 오늘 일진 사실(데일리)
++  todayIljinFacts: todayIljinFacts,
++  iljinFactsBlock: iljinFactsBlock,
++  ILJIN_FACT_AUTHORITY: ILJIN_FACT_AUTHORITY,
+   STEMS: STEMS, BRANCHES: BRANCHES, POS: POS
+ };
+diff --git a/api/fortune.js b/api/fortune.js
+index a850961..3f2ddd4 100644
+--- a/api/fortune.js
++++ b/api/fortune.js
+@@ -1698,6 +1698,7 @@ export default async function handler(req, res) {
+     }
+     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
+     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
++    let cwDailyFacts = null, cwDailyFactsBlock = '';   // ★v804 P-805-B — daily_message 전용(아래 분기에서 채움)
+ 
+     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
+     const JSON_FORCE = '\n\n중요: 반드시 순수 JSON만 출력하세요. 마크다운 코드블록(```)이나 설명 텍스트 없이 { 로 시작하여 } 로 끝나는 JSON만 응답하세요.';
+@@ -2548,7 +2549,18 @@ ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
+       if(c.faceSummary) ctxLines.push(`관상 요약: ${c.faceSummary}`);
+       const ctxBlock = ctxLines.length ? `사용자 정보:\n${ctxLines.join('\n')}\n\n` : '';
+ 
+-      userPrompt = `${ctxBlock}오늘 날짜: ${new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})}
++      // ★v804 P-805-B(트랙 B · 원칙 41 단계 승격 ①) — 오늘 일진·십신·일지/시지 관계를 서버 엔진이 확정한다.
++      //   클라 variance 의 「오늘 일진」은 변주 씨앗일 뿐이고, 사실은 이 블록이 정본이다(KST · 서버 계산).
++      //   ★엔진 적재 실패 시 블록이 빠지고 종전 경로로 동작한다(서비스 중단 사유 아님).
++      try { const be = await cwEngine(); cwDailyFacts = (be && typeof be.todayIljinFacts === 'function') ? be.todayIljinFacts(c, Date.now()) : null; cwDailyFactsBlock = cwDailyFacts ? be.iljinFactsBlock(cwDailyFacts) : ''; } catch (e) { cwDailyFacts = null; cwDailyFactsBlock = ''; }
++      if (cwDailyFactsBlock) systemPrompt += `
++
++${cwDailyFactsBlock}
++- 위 「엔진 확정」 사실(일진·십신·지지 관계)은 그대로 인용하고 바꾸지 말 것. 다른 간지·관계를 지어내지 말 것.
++- 이 사실의 전통적 의미(예: 정관=질서·책임, 충=부딪힘·변동)를 바탕으로 풀이하되, 길흉 단정·점수·「좋은 날/나쁜 날」 판정은 하지 말 것.
++- 사주 정보가 없으면 일진만 쓰고, 사용자의 일간·일지를 지어내지 말 것.`;
++
++      userPrompt = `${ctxBlock}오늘 날짜: ${cwDailyFacts ? cwDailyFacts.date : new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})}
+ 분야: ${c.category||'전반'}
+ 
+ ${personaName} 톤으로 오늘의 한 마디를 전해주세요. 150~250자 자연어로.`;
+@@ -2726,7 +2738,11 @@ ${cardsDesc}
+ 
+     // daily_message는 자연어 응답 — JSON 파싱 안 함
+     if (type === 'daily_message') {
+-      return res.status(200).json({ success: true, result: { text: scrubText(text.trim()) } });
++      // ★v804 P-805-B — 엔진 사실(cwDailyFacts)을 동봉한다. 화면 근거 카드(js/chat.js _cwIljinFactsCard)가 그린다.
++      //   엔진 리터럴이지만 다른 출구와 같이 scrubDeep 을 통과시킨다.
++      const dr = { text: scrubText(text.trim()) };
++      if (cwDailyFacts) { try { dr.facts = scrubDeep(JSON.parse(JSON.stringify(cwDailyFacts))); } catch (e) { /* 사실 동봉 실패 시 본문만 */ } }
++      return res.status(200).json({ success: true, result: dr });
+     }
+     const parsed = extractJSON(text);
+     if (parsed) {
+diff --git a/index.html b/index.html
+index ff05fed..99e50ff 100644
+--- a/index.html
++++ b/index.html
+@@ -973,20 +973,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
+ // ============================================================
+ const ZOD=[{n:'쥐',e:'🐭'},{n:'소',e:'🐮'},{n:'호랑이',e:'🐯'},{n:'토끼',e:'🐰'},{n:'용',e:'🐲'},{n:'뱀',e:'🐍'},{n:'말',e:'🐴'},{n:'양',e:'🐑'},{n:'원숭이',e:'🐵'},{n:'닭',e:'🐔'},{n:'개',e:'🐶'},{n:'돼지',e:'🐷'}];
+ 
+-const MSGS=[
+-"오늘은 새로운 시작의 기운이 감돕니다. 작은 변화가 큰 행운을 불러올 수 있으니, 평소와 다른 길을 걸어보세요.",
+-"내면의 목소리에 귀 기울이세요. 직감이 올바른 방향을 가리키고 있습니다.",
+-"금전적으로 좋은 흐름이 이어집니다. 다만 큰 지출은 신중하게 판단하세요.",
+-"인간관계에서 따뜻한 기운이 감돕니다. 오래된 친구에게 연락해 보세요.",
+-"건강에 주의가 필요합니다. 충분한 휴식을 취하고, 마음의 평화를 찾으세요.",
+-"학업이나 업무에서 큰 성과를 거둘 수 있습니다. 집중력이 높아지는 시기입니다.",
+-"예상치 못한 행운이 찾아옵니다. 열린 마음으로 하루를 보내세요.",
+-"창의력이 빛나는 하루입니다. 새로운 아이디어를 실행에 옮기세요.",
+-"가족과의 유대가 깊어지는 날입니다. 가정의 평화가 모든 운의 근원입니다.",
+-"도전적인 상황이 와도 침착하게 대처하면 전화위복의 기회가 됩니다.",
+-"재물운이 상승합니다. 감사하는 마음이 더 큰 복을 부릅니다.",
+-"사랑의 기운이 강합니다. 소중한 사람에게 진심을 전하세요."
+-];
++// ★v804 P-805-B — MSGS(이름 해시로 고르던 홈 운세 문구) 제거 · selectZodiac 은 엔진 관계 정의만 쓴다
+ 
+ 
+ // ── 타로 카테고리 (질문 유형) ──
+@@ -2621,21 +2608,54 @@ function renderZodiac(){const g=document.getElementById('zodiacGrid');ZOD.forEac
+ function selectZodiac(idx){
+   document.querySelectorAll('#zodiacGrid .sel-item').forEach((el,i)=>el.classList.toggle('selected',i===idx));
+   const z=ZOD[idx],name=document.getElementById('userName').value.trim()||'당신';
+-  const seed=todaySeed()*(idx+1)+nameHash(name);
+-  const r=sRng(seed);
+   document.getElementById('dailyTitle').textContent=`${z.e} ${name}님의 오늘 운세`;
+-
+-  // ★P41(원칙 40) — 난수 별점·행운(색·숫자·방향)은 엔진 근거가 없어 내린다. 메시지만 남긴다.
+-  // Personalized message
+-  let msg=MSGS[Math.floor(r()*MSGS.length)];
+-  if(name!=='당신')msg=`${name}님, `+msg.charAt(0).toLowerCase()+msg.slice(1);
+-  document.getElementById('dailyMsg').textContent=msg;
+-
++  // ★v804 P-805-B(트랙 B · 원칙 40·41) — 이름 해시·난수로 고르던 문구를 내리고, 엔진 사실만 쓴다:
++  //   오늘 일진(js/chat.js _cwTodayIljin · p42 I1~I3 검증) 의 지지 × 띠 지지(ZOD 순서 = 子丑寅…) 관계.
++  //   관계 판정은 _cwBranchRelTags(= api/_engine/myeongli.branchRelations 와 144쌍 일치 · p42 I9).
++  //   문구는 관계의 정의만 말한다 — 길흉 단정·점수·행운 없음.
++  const EBH=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];   // ★지역 표 — EB_CH 는 다른 스크립트 범위(p42b 실측으로 적발)
++  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
++  const iljin=(typeof _cwTodayIljin==='function')?_cwTodayIljin():'';
++  const tb=iljin?EB.indexOf([...iljin][1]):-1;
++  let html='';
++  if(tb>=0){
++    const tags=_cwBranchRelTags(tb,idx);
++    const lead=`오늘은 <strong style="color:var(--gold)">${esc(iljin)}일</strong>이에요. 오늘 일진의 지지 <strong>${EB[tb]}(${EBH[tb]})</strong>와 ${esc(z.n)}띠의 지지 <strong>${EB[idx]}(${EBH[idx]})</strong>의 관계를 봤어요.`;
++    const body=tags.length?tags.map(t=>CW_ZOD_REL_DEF[t]||'').filter(Boolean).join('<br>'):(tb===idx?CW_ZOD_REL_DEF.SAME:CW_ZOD_REL_DEF.NONE);
++    html=`${name!=='당신'?esc(name)+'님, ':''}${lead}<br><br>${body}<div style="font-size:10px;color:var(--text2);opacity:.75;margin-top:10px">📐 엔진 계산(오늘 일진 × 띠 지지 관계) · 띠만으로 보는 일반 풀이예요. 생년월일을 넣으면 「한 마디」에서 내 사주 기준으로 볼 수 있어요.</div>`;
++  } else {
++    html='오늘 일진을 계산하지 못했어요. 잠시 후 다시 시도해 주세요.';
++  }
++  document.getElementById('dailyMsg').innerHTML=html;
+ 
+   document.getElementById('dailyResult').classList.add('show');
+   burstConfetti();
+   document.getElementById('dailyResult').scrollIntoView({behavior:'smooth',block:'start'});
+ }
++// ★v804 P-805-B — 지지 관계 판정(클라). 표는 궁합 엔진 표(EB_CHUNG·EB_HAB·EB_SAMHAB·EB_HAE·EB_SAMHYUNG·EB_HYUNG_BI)를 그대로 쓴다.
++//   태그 규칙은 api/_engine/myeongli.js branchRelations 와 같다(沖·六合·三合·六害·刑 · 삼합·삼형은 같은 무리의 서로 다른 지지).
++function _cwBranchRelTags(a,b){
++  const pr=(L)=>L.some(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a));
++  const g3=(G)=>G.some(g=>g.slice(0,3).indexOf(a)!==-1&&g.slice(0,3).indexOf(b)!==-1&&a!==b);
++  const t=[];
++  if(pr(EB_CHUNG))t.push('沖');
++  if(pr(EB_HAB))t.push('六合');
++  if(g3(EB_SAMHAB))t.push('三合');
++  if(pr(EB_HAE))t.push('六害');
++  if(g3(EB_SAMHYUNG))t.push('刑');
++  if(pr(EB_HYUNG_BI))t.push('刑');
++  return t;
++}
++// 관계의 정의(전통 명리 용어 풀이) — 길흉 단정을 하지 않는다.
++const CW_ZOD_REL_DEF={
++  '沖':'두 지지는 <strong>충(沖)</strong> 관계예요. 정반대 자리에서 마주 부딪치는 관계로, 전통 명리에서는 움직임·변동이 생기기 쉬운 자리로 봐요.',
++  '六合':'두 지지는 <strong>육합(六合)</strong> 관계예요. 서로 끌어당겨 묶이는 짝으로, 전통 명리에서는 화합·연결의 관계로 봐요.',
++  '三合':'두 지지는 <strong>삼합(三合)</strong>의 같은 무리예요. 같은 기운으로 모이는 관계로, 전통 명리에서는 뜻이 맞아 힘을 보태는 관계로 봐요.',
++  '六害':'두 지지는 <strong>해(害)</strong> 관계예요. 합을 방해하는 자리로, 전통 명리에서는 서로 어긋나기 쉬운 관계로 봐요.',
++  '刑':'두 지지는 <strong>형(刑)</strong> 관계예요. 서로 깎고 다듬는 관계로, 전통 명리에서는 마찰과 조정이 따르는 관계로 봐요.',
++  SAME:'오늘 일진의 지지가 띠의 지지와 <strong>같아요</strong>. 같은 기운이 겹치는 날로 봐요.',
++  NONE:'두 지지 사이에는 <strong>특별한 합·충·형·해 관계가 없어요</strong>. 띠만으로는 두드러진 작용이 없는 날로 봐요.'
++};
+ function resetDaily(){document.getElementById('dailyResult').classList.remove('show');document.querySelectorAll('#zodiacGrid .sel-item').forEach(el=>el.classList.remove('selected'))}
+ 
+ // ============================================================
+diff --git a/js/chat.js b/js/chat.js
+index 42ecf59..8fe7ed1 100644
+--- a/js/chat.js
++++ b/js/chat.js
+@@ -372,7 +372,7 @@ function _gatherChatContext(){
+ // ============================================================
+ //  메시지 렌더링 (간단한 카드 누적)
+ // ============================================================
+-function _addDailyCard(text, category, persona){
++function _addDailyCard(text, category, persona, facts){
+   const c = document.getElementById('chatMessages');
+   if(!c) return;
+   const cat = DAILY_CATEGORIES.find(function(x){return x.k === category;}) || {n:'전반',e:'✨'};
+@@ -382,6 +382,7 @@ function _addDailyCard(text, category, persona){
+     '<div class="chat-bubble">' +
+     '<div style="font-size:10.5px;color:var(--gold);margin-bottom:6px">' + cat.e + ' ' + cat.n + ' · ' + persona.n + '의 한 마디</div>' +
+     '<div>' + text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>') + '</div>' +
++    _cwIljinFactsCard(facts) +
+     '</div>';
+   c.appendChild(d);
+   // 새 카드 상단 정렬
+@@ -391,6 +392,27 @@ function _addDailyCard(text, category, persona){
+   }, 80);
+ }
+ 
++/**
++ * ★v804 P-805-B(트랙 B) — 서버 엔진이 확정한 오늘 일진 사실을 근거 카드로 그린다(관상 「AI 실측 데이터」와 같은 역할).
++ *   값은 서버 응답 `result.facts`(api/_engine/bind.js todayIljinFacts)만 쓴다 — 여기서 계산하지 않는다.
++ *   ★판정(좋은 날/주의할 날)·점수·행운은 그리지 않는다(원칙 32·40 · POC verdict DENY).
++ */
++const CW_REL_NAME_KO = { '沖': '충(沖)', '六合': '육합(六合)', '三合': '삼합(三合)', '六害': '해(害)', '刑': '형(刑)' };
++function _cwEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]; }); }
++function _cwIljinFactsCard(facts){
++  if (!facts || typeof facts !== 'object' || !facts.todayGanzi) return '';
++  const rows = [];
++  rows.push('오늘 일진 <strong style="color:var(--gold)">' + _cwEsc(facts.todayGanzi) + '(' + _cwEsc(facts.todayGanziKo || '') + ')일</strong>');
++  if (facts.sipsin && facts.ilgan) rows.push('내 일간 ' + _cwEsc(facts.ilgan) + ' 기준 오늘 천간 = ' + _cwEsc(facts.sipsin.name) + '(' + _cwEsc(facts.sipsin.group) + ')');
++  (Array.isArray(facts.relations) ? facts.relations : []).forEach(function(r){
++    const tg = Array.isArray(r.tags) && r.tags.length ? r.tags.map(function(t){ return CW_REL_NAME_KO[t] || t; }).join('·') : '합·충·형·해 없음';
++    rows.push('오늘 지지 × 내 ' + _cwEsc(r.with) + ' ' + _cwEsc(r.branch) + ': ' + _cwEsc(tg));
++  });
++  return '<div style="margin-top:8px;padding:8px 10px;background:rgba(201,165,78,.05);border:1px solid rgba(201,165,78,.15);border-radius:8px;font-size:10.5px;line-height:1.8;color:var(--text2)">' +
++    '<div style="color:var(--gold);font-weight:600;margin-bottom:2px">📐 오늘의 일진 근거 <span style="font-weight:400;opacity:.75">(엔진 계산 · ' + _cwEsc(facts.date || '') + ' 한국 시간)</span></div>' +
++    rows.map(function(x){ return '<div>· ' + x + '</div>'; }).join('') + '</div>';
++}
++
+ function _addBotInfo(text){
+   const c = document.getElementById('chatMessages');
+   if(!c) return;
+@@ -453,7 +475,7 @@ async function fetchDailyMessage(category){
+     // ★P41(원칙 40) — 행운 토큰은 표시하지 않는다. 구 서버(캐시)가 아직 붙여 보내면 본문에서 지우기만 한다.
+     answer = String(answer).replace(/★LUCK★[^★]*★/g, '').trim();
+     _incDailyCount();
+-    _addDailyCard(answer, category, persona);
++    _addDailyCard(answer, category, persona, (data.result && data.result.facts) || null);
+     // 잔여 안내
+     const remaining = limit - _getDailyCount();
+     if(remaining === 0){

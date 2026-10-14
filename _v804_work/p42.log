@@ -1,0 +1,11 @@
+  ok   I1 일진 두 독립 구현 일치(55152일)
+  ok   I2 클라 _cwTodayIljin 산식 = manse.js
+  ok   I3 외부 기준점 5건 일치(위키독스 남두성의 음양 만세력)
+  ok   I4 authority: iljin_ganzi 노출 허용(VERIFIED) · verdict DENY 유지 — iljin_ganzi true · verdict 차단 true
+  ok   I5 todayIljinFacts 60 일주 × 60 일진 전수(십신·일지·시지 관계) — n 3600
+  ok   I6 KST 날짜 경계 · 판정·점수 키 없음 · 사주 없으면 일진만 — 2026-10-14/2026-10-13 · 사주 없음 sipsin 없음
+  ok   I7 서버 daily: 엔진 블록 주입 · 길흉 단정·점수 금지 · 응답에 facts — 사용 true · 규칙 true · 응답 true
+  ok   I8 데일리 근거 카드(_cwIljinFactsCard · result.facts · 판정 단어 없음)
+  ok   I9 홈 띠별 운세: 난수·해시 문구 없음 · 일진×띠 관계 · 클라 관계 = myeongli 144쌍 — 난수 없음 true · 엔진 사용 true · 144쌍 불일치 0
+  ok   I10 문법
+[p42_daily_iljin_engine] total=10 pass=10 fail=0

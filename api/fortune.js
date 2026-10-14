@@ -1698,6 +1698,7 @@ export default async function handler(req, res) {
     }
     if (cwEng) { try { cwFacts = cwEng.computeFacts(context); } catch (e) { cwFacts = null; } }
     const cwFactsBlock = cwFacts ? cwEng.factsBlock(cwFacts) : '';
+    let cwDailyFacts = null, cwDailyFactsBlock = '';   // ★v804 P-805-B — daily_message 전용(아래 분기에서 채움)
 
     // 모든 프롬프트 끝에 추가할 JSON 강제 지시
     const JSON_FORCE = '\n\n중요: 반드시 순수 JSON만 출력하세요. 마크다운 코드블록(```)이나 설명 텍스트 없이 { 로 시작하여 } 로 끝나는 JSON만 응답하세요.';
@@ -2548,7 +2549,18 @@ ${c.guaCombination?`괘 조합: ${c.guaCombination}`:'괘 조합: 미입력'}
       if(c.faceSummary) ctxLines.push(`관상 요약: ${c.faceSummary}`);
       const ctxBlock = ctxLines.length ? `사용자 정보:\n${ctxLines.join('\n')}\n\n` : '';
 
-      userPrompt = `${ctxBlock}오늘 날짜: ${new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})}
+      // ★v804 P-805-B(트랙 B · 원칙 41 단계 승격 ①) — 오늘 일진·십신·일지/시지 관계를 서버 엔진이 확정한다.
+      //   클라 variance 의 「오늘 일진」은 변주 씨앗일 뿐이고, 사실은 이 블록이 정본이다(KST · 서버 계산).
+      //   ★엔진 적재 실패 시 블록이 빠지고 종전 경로로 동작한다(서비스 중단 사유 아님).
+      try { const be = await cwEngine(); cwDailyFacts = (be && typeof be.todayIljinFacts === 'function') ? be.todayIljinFacts(c, Date.now()) : null; cwDailyFactsBlock = cwDailyFacts ? be.iljinFactsBlock(cwDailyFacts) : ''; } catch (e) { cwDailyFacts = null; cwDailyFactsBlock = ''; }
+      if (cwDailyFactsBlock) systemPrompt += `
+
+${cwDailyFactsBlock}
+- 위 「엔진 확정」 사실(일진·십신·지지 관계)은 그대로 인용하고 바꾸지 말 것. 다른 간지·관계를 지어내지 말 것.
+- 이 사실의 전통적 의미(예: 정관=질서·책임, 충=부딪힘·변동)를 바탕으로 풀이하되, 길흉 단정·점수·「좋은 날/나쁜 날」 판정은 하지 말 것.
+- 사주 정보가 없으면 일진만 쓰고, 사용자의 일간·일지를 지어내지 말 것.`;
+
+      userPrompt = `${ctxBlock}오늘 날짜: ${cwDailyFacts ? cwDailyFacts.date : new Date().toLocaleDateString('ko-KR',{timeZone:'Asia/Seoul'})}
 분야: ${c.category||'전반'}
 
 ${personaName} 톤으로 오늘의 한 마디를 전해주세요. 150~250자 자연어로.`;
@@ -2726,7 +2738,11 @@ ${cardsDesc}
 
     // daily_message는 자연어 응답 — JSON 파싱 안 함
     if (type === 'daily_message') {
-      return res.status(200).json({ success: true, result: { text: scrubText(text.trim()) } });
+      // ★v804 P-805-B — 엔진 사실(cwDailyFacts)을 동봉한다. 화면 근거 카드(js/chat.js _cwIljinFactsCard)가 그린다.
+      //   엔진 리터럴이지만 다른 출구와 같이 scrubDeep 을 통과시킨다.
+      const dr = { text: scrubText(text.trim()) };
+      if (cwDailyFacts) { try { dr.facts = scrubDeep(JSON.parse(JSON.stringify(cwDailyFacts))); } catch (e) { /* 사실 동봉 실패 시 본문만 */ } }
+      return res.status(200).json({ success: true, result: dr });
     }
     const parsed = extractJSON(text);
     if (parsed) {

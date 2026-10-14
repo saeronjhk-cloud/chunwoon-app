@@ -973,20 +973,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 // ============================================================
 const ZOD=[{n:'쥐',e:'🐭'},{n:'소',e:'🐮'},{n:'호랑이',e:'🐯'},{n:'토끼',e:'🐰'},{n:'용',e:'🐲'},{n:'뱀',e:'🐍'},{n:'말',e:'🐴'},{n:'양',e:'🐑'},{n:'원숭이',e:'🐵'},{n:'닭',e:'🐔'},{n:'개',e:'🐶'},{n:'돼지',e:'🐷'}];
 
-const MSGS=[
-"오늘은 새로운 시작의 기운이 감돕니다. 작은 변화가 큰 행운을 불러올 수 있으니, 평소와 다른 길을 걸어보세요.",
-"내면의 목소리에 귀 기울이세요. 직감이 올바른 방향을 가리키고 있습니다.",
-"금전적으로 좋은 흐름이 이어집니다. 다만 큰 지출은 신중하게 판단하세요.",
-"인간관계에서 따뜻한 기운이 감돕니다. 오래된 친구에게 연락해 보세요.",
-"건강에 주의가 필요합니다. 충분한 휴식을 취하고, 마음의 평화를 찾으세요.",
-"학업이나 업무에서 큰 성과를 거둘 수 있습니다. 집중력이 높아지는 시기입니다.",
-"예상치 못한 행운이 찾아옵니다. 열린 마음으로 하루를 보내세요.",
-"창의력이 빛나는 하루입니다. 새로운 아이디어를 실행에 옮기세요.",
-"가족과의 유대가 깊어지는 날입니다. 가정의 평화가 모든 운의 근원입니다.",
-"도전적인 상황이 와도 침착하게 대처하면 전화위복의 기회가 됩니다.",
-"재물운이 상승합니다. 감사하는 마음이 더 큰 복을 부릅니다.",
-"사랑의 기운이 강합니다. 소중한 사람에게 진심을 전하세요."
-];
+// ★v804 P-805-B — MSGS(이름 해시로 고르던 홈 운세 문구) 제거 · selectZodiac 은 엔진 관계 정의만 쓴다
 
 
 // ── 타로 카테고리 (질문 유형) ──
@@ -2621,21 +2608,54 @@ function renderZodiac(){const g=document.getElementById('zodiacGrid');ZOD.forEac
 function selectZodiac(idx){
   document.querySelectorAll('#zodiacGrid .sel-item').forEach((el,i)=>el.classList.toggle('selected',i===idx));
   const z=ZOD[idx],name=document.getElementById('userName').value.trim()||'당신';
-  const seed=todaySeed()*(idx+1)+nameHash(name);
-  const r=sRng(seed);
   document.getElementById('dailyTitle').textContent=`${z.e} ${name}님의 오늘 운세`;
-
-  // ★P41(원칙 40) — 난수 별점·행운(색·숫자·방향)은 엔진 근거가 없어 내린다. 메시지만 남긴다.
-  // Personalized message
-  let msg=MSGS[Math.floor(r()*MSGS.length)];
-  if(name!=='당신')msg=`${name}님, `+msg.charAt(0).toLowerCase()+msg.slice(1);
-  document.getElementById('dailyMsg').textContent=msg;
-
+  // ★v804 P-805-B(트랙 B · 원칙 40·41) — 이름 해시·난수로 고르던 문구를 내리고, 엔진 사실만 쓴다:
+  //   오늘 일진(js/chat.js _cwTodayIljin · p42 I1~I3 검증) 의 지지 × 띠 지지(ZOD 순서 = 子丑寅…) 관계.
+  //   관계 판정은 _cwBranchRelTags(= api/_engine/myeongli.branchRelations 와 144쌍 일치 · p42 I9).
+  //   문구는 관계의 정의만 말한다 — 길흉 단정·점수·행운 없음.
+  const EBH=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];   // ★지역 표 — EB_CH 는 다른 스크립트 범위(p42b 실측으로 적발)
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const iljin=(typeof _cwTodayIljin==='function')?_cwTodayIljin():'';
+  const tb=iljin?EB.indexOf([...iljin][1]):-1;
+  let html='';
+  if(tb>=0){
+    const tags=_cwBranchRelTags(tb,idx);
+    const lead=`오늘은 <strong style="color:var(--gold)">${esc(iljin)}일</strong>이에요. 오늘 일진의 지지 <strong>${EB[tb]}(${EBH[tb]})</strong>와 ${esc(z.n)}띠의 지지 <strong>${EB[idx]}(${EBH[idx]})</strong>의 관계를 봤어요.`;
+    const body=tags.length?tags.map(t=>CW_ZOD_REL_DEF[t]||'').filter(Boolean).join('<br>'):(tb===idx?CW_ZOD_REL_DEF.SAME:CW_ZOD_REL_DEF.NONE);
+    html=`${name!=='당신'?esc(name)+'님, ':''}${lead}<br><br>${body}<div style="font-size:10px;color:var(--text2);opacity:.75;margin-top:10px">📐 엔진 계산(오늘 일진 × 띠 지지 관계) · 띠만으로 보는 일반 풀이예요. 생년월일을 넣으면 「한 마디」에서 내 사주 기준으로 볼 수 있어요.</div>`;
+  } else {
+    html='오늘 일진을 계산하지 못했어요. 잠시 후 다시 시도해 주세요.';
+  }
+  document.getElementById('dailyMsg').innerHTML=html;
 
   document.getElementById('dailyResult').classList.add('show');
   burstConfetti();
   document.getElementById('dailyResult').scrollIntoView({behavior:'smooth',block:'start'});
 }
+// ★v804 P-805-B — 지지 관계 판정(클라). 표는 궁합 엔진 표(EB_CHUNG·EB_HAB·EB_SAMHAB·EB_HAE·EB_SAMHYUNG·EB_HYUNG_BI)를 그대로 쓴다.
+//   태그 규칙은 api/_engine/myeongli.js branchRelations 와 같다(沖·六合·三合·六害·刑 · 삼합·삼형은 같은 무리의 서로 다른 지지).
+function _cwBranchRelTags(a,b){
+  const pr=(L)=>L.some(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a));
+  const g3=(G)=>G.some(g=>g.slice(0,3).indexOf(a)!==-1&&g.slice(0,3).indexOf(b)!==-1&&a!==b);
+  const t=[];
+  if(pr(EB_CHUNG))t.push('沖');
+  if(pr(EB_HAB))t.push('六合');
+  if(g3(EB_SAMHAB))t.push('三合');
+  if(pr(EB_HAE))t.push('六害');
+  if(g3(EB_SAMHYUNG))t.push('刑');
+  if(pr(EB_HYUNG_BI))t.push('刑');
+  return t;
+}
+// 관계의 정의(전통 명리 용어 풀이) — 길흉 단정을 하지 않는다.
+const CW_ZOD_REL_DEF={
+  '沖':'두 지지는 <strong>충(沖)</strong> 관계예요. 정반대 자리에서 마주 부딪치는 관계로, 전통 명리에서는 움직임·변동이 생기기 쉬운 자리로 봐요.',
+  '六合':'두 지지는 <strong>육합(六合)</strong> 관계예요. 서로 끌어당겨 묶이는 짝으로, 전통 명리에서는 화합·연결의 관계로 봐요.',
+  '三合':'두 지지는 <strong>삼합(三合)</strong>의 같은 무리예요. 같은 기운으로 모이는 관계로, 전통 명리에서는 뜻이 맞아 힘을 보태는 관계로 봐요.',
+  '六害':'두 지지는 <strong>해(害)</strong> 관계예요. 합을 방해하는 자리로, 전통 명리에서는 서로 어긋나기 쉬운 관계로 봐요.',
+  '刑':'두 지지는 <strong>형(刑)</strong> 관계예요. 서로 깎고 다듬는 관계로, 전통 명리에서는 마찰과 조정이 따르는 관계로 봐요.',
+  SAME:'오늘 일진의 지지가 띠의 지지와 <strong>같아요</strong>. 같은 기운이 겹치는 날로 봐요.',
+  NONE:'두 지지 사이에는 <strong>특별한 합·충·형·해 관계가 없어요</strong>. 띠만으로는 두드러진 작용이 없는 날로 봐요.'
+};
 function resetDaily(){document.getElementById('dailyResult').classList.remove('show');document.querySelectorAll('#zodiacGrid .sel-item').forEach(el=>el.classList.remove('selected'))}
 
 // ============================================================
