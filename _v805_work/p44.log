@@ -3,9 +3,10 @@
   ok   D3 cite 식별자 전부 IP 대응표로 복원 · chung_conditional·root_system 각 ≥1 — id 447 · 미복원 0 · chung 43 · root 322
   ok   D4 fortune.js: 사주 3종 shadow 호출 · 결과는 [shadow] 로그에만 — 블록 밖 참조 0
   ok   D5 결정성: 표본 600 번들 = POC(cite 정규화) · 2회 동일 — 불일치 0
-  ok   D6 shadow 실패 = 로그만(잘못된 입력 무예외) · 중앙 < 20ms —  중앙 0.09ms
+  ok   D6 shadow 실패 = 로그만(잘못된 입력 무예외) · 중앙 < 20ms —  중앙 0.10ms
   ok   D7 DENY 7축 불변 · CW_PROMOTED 불변 · 번들 authority = 운영 authority — DENY true · PROMOTED true · authority 동일 true
   ok   D8 vercel includeFiles api/_engine/shadow/** · .vercelignore api/ 허용 — includeFiles api/_engine/shadow/** · ignore true
   ok   D9 로그 요약: 입력 간지·생년·원문·문헌명 없음 · ≤700B · 버전 표기 — 위반 0 · 최대 307B
   ok   D10 문법(번들 js · fortune.js) — 번들 js 11
-[p44_shadow_engine] total=10 pass=10 fail=0
+  ok   D11 (사후) ctxguard 실경로: 한글 기둥 처리 · 해석 불가도 skip 로그 — 한글=한자 결과 불일치 0/120 · ctxguard(시간 모름) → {"v":"shadow-poc-v7.70/1.0.1","ih":"0729982a","skip":"no_hour"} · ctxguard(오시) → 결과 있음(건록격)
+[p44_shadow_engine] total=11 pass=11 fail=0

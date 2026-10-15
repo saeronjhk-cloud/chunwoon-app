@@ -109,5 +109,27 @@ const toCtx = x => ({ yearPillar: x.p[0].s + x.p[0].b, monthPillar: x.p[1].s + x
   const js = walk(BUNDLE).filter(f => f.endsWith('.js')); for (const f of js) { try { cp.execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' }); } catch (e) { bad.push(path.basename(f)); } }
   { const f = path.join(tmp, 'f.mjs'); fs.writeFileSync(f, rd('api/fortune.js')); try { cp.execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' }); } catch (e) { bad.push('fortune'); } }
   check('D10', '문법(번들 js · fortune.js)', js.length >= 10 && bad.length === 0, `번들 js ${js.length}${bad.length ? ' · ' + bad.join(',') : ''}`); }
+// D11 ★사후(2026-10-15 운영 로그 확인 중 발견 · 기준 추가이지 완화 아님): 서버 실경로 = ctxguard 재계산 뒤 context.
+//   ctxguard 는 기둥을 **한글**(「갑자」)로 넣는다. 한자만 받던 run() 이 null → 로그 0건이었다(운영 09:03 요청).
+//   ① 한글 기둥 · ctxguard 통과 context 에서 요약이 나온다(시주 있으면 결과, 없으면 skip:no_hour)  ② 해석 불가 입력도 null 이 아니라 skip 요약(관측 가능)
+{ let ok = !!(SH && SH.run), d = '';
+  if (ok) {
+    const KS = '갑을병정무기경신임계', KB = '자축인묘진사오미신유술해';
+    const ko = x => KS[ST.indexOf(x.s)] + KB[BR.indexOf(x.b)];
+    let badKo = 0; for (const x of SAMPLES.slice(0, 120)) { const c = { yearPillar: ko(x.p[0]), monthPillar: ko(x.p[1]), dayPillar: ko(x.p[2]), hourPillar: ko(x.p[3]), gender: x.gender };
+      const r = SH.run(c), h = SH.run(toCtx(x)); if (!r || !r.summary || r.summary.skip || JSON.stringify(Object.assign({}, r.summary, { ih: 0, ms: 0 })) !== JSON.stringify(Object.assign({}, h.summary, { ih: 0, ms: 0 }))) badKo++; }
+    d += `한글=한자 결과 불일치 ${badKo}/120`; if (badKo) ok = false;
+    let cg = null; try { const B = require(path.join(ROOT, 'api', '_engine', 'bind.js')); cg = B.guardContext; } catch (e) {}
+    if (typeof cg !== 'function') { ok = false; d += ' · guardContext 없음'; }
+    else {
+      const base = { name: '검증', gender: 'male', calType: 'solar', inputYear: 1984, inputMonth: 2, inputDay: 10, isLeapMonth: false, hourLabel: '시간 모름', yearPillar: '甲子', monthPillar: '丙寅', dayPillar: '甲午', hourPillar: '' };
+      const g = cg(base); const c = (g && g.applied) ? g.context : base; const r = SH.run(c);
+      const okNoHour = !!(r && r.summary && r.summary.skip === 'no_hour'); if (!okNoHour) { ok = false; } d += ` · ctxguard(시간 모름) → ${JSON.stringify(r && r.summary).slice(0, 80)}`;
+      { const g2 = cg(Object.assign({}, base, { hourLabel: '오시' })); const c2 = (g2 && g2.applied) ? g2.context : base; const r2 = SH.run(c2);
+        const okFull = !!(r2 && r2.summary && !r2.summary.skip && r2.summary.gy && r2.summary.gy.g); if (!okFull) ok = false; d += ` · ctxguard(오시) → ${okFull ? '결과 있음(' + r2.summary.gy.g + ')' : JSON.stringify(r2 && r2.summary).slice(0, 60)}`; }
+    }
+    for (const c of [null, {}, { yearPillar: '??' }, 42]) { const r = SH.run(c); if (!(r && r.summary && r.summary.skip)) { ok = false; d += ' · 해석불가 입력이 skip 요약 아님'; break; } }
+  }
+  check('D11', '(사후) ctxguard 실경로: 한글 기둥 처리 · 해석 불가도 skip 로그', ok, d || '번들 run 없음'); }
 console.log(`[p44_shadow_engine] total=${total} pass=${pass} fail=${total - pass}${fails.length ? ' · FAIL ' + fails.join(',') : ''}`);
 process.exitCode = fails.length ? 1 : 0;
