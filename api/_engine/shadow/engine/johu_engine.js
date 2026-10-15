@@ -113,6 +113,8 @@ function computeJohu(pillars) {
     present,
     table_status: JT.table_status,
     review_flag: FLAGGED.has(cellKey),
+
+    cell_status: ((JT.cell_status_v3 || {})[dayStem] || {})[mB] || null,
     citation_ids: [JT.citation_span_id],
 
     schema_v2_available: !!detailV2,

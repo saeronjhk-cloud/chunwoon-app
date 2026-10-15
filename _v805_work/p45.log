@@ -1,0 +1,9 @@
+  ok   J1 판독 A·B 120칸 전부 기록(pages·structure·quote · FLAT 은 order)
+  ok   J2 블라인드: 지시문에 표 값 없음 · meta blind · A·B 판독자 분리 — prompt 97548c19904e894a
+  ok   J3 판정 재현(VERIFIED_FLAT = A·B FLAT ∧ order 일치 ∧ 사후: 둘 다 high) — VERIFIED_FLAT 80/120
+  ok   J4 새 표: VERIFIED_FLAT 칸 순서 = 판독 order · 칸별 상태 표기(cell_status_v3)
+  ok   J5 엔진이 VERIFIED_FLAT 칸에서 판독 순서·상태를 그대로 냄 — 대상 80
+  ok   J6 authority johu DENY · CW_PROMOTED 불변
+  ok   J7 shadow 배포판 재생성(cell_status_v3 포함) · p44 전부 통과 — total=11 pass=11 fail=0 · 배포판 상태표 true
+  ok   J8 차이표(기존 대비 바뀐 칸·사유) — 바뀐 칸 18 · {"verified":80,"unresolved":40,"changed":18,"primary_changed":0,"agree_but_downg
+[p45_johu_reread] total=8 pass=8 fail=0

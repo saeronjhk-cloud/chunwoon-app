@@ -31,12 +31,14 @@ const okOrder = o => Array.isArray(o) && o.length >= 1 && o.every(x => STEMS.has
   check('J2', '블라인드: 지시문에 표 값 없음 · meta blind · A·B 판독자 분리', ok, d || 'prompt ' + sha); }
 // 판정 규칙(독립 재계산)
 const verdict = {}; if (A && B && A.cells && B.cells) for (const c of CELLS) { const a = A.cells[c] || {}, b = B.cells[c] || {};
-  verdict[c] = (a.structure === 'FLAT' && b.structure === 'FLAT' && okOrder(a.order) && JSON.stringify(a.order) === JSON.stringify(b.order)) ? 'VERIFIED_FLAT' : 'CONDITION_UNRESOLVED'; }
+  // ★사후 강화(2026-10-15 · 완화 아님): 판독자 메모에 「先後 명시 없음·서열은 해석」이 적힌 칸이 일치 집합에 섞여 있어(辛巳·乙申 등),
+  //   두 판독 모두 confidence=high 인 칸만 VERIFIED_FLAT 로 한다(106 → 80). 주용신이 기존과 다른 칸(乙申·丁寅)은 이 규칙으로 모두 강등됨.
+  verdict[c] = (a.structure === 'FLAT' && b.structure === 'FLAT' && okOrder(a.order) && JSON.stringify(a.order) === JSON.stringify(b.order) && a.confidence === 'high' && b.confidence === 'high') ? 'VERIFIED_FLAT' : 'CONDITION_UNRESOLVED'; }
 const RES = J(path.join(RD, 'johu_reread_result.json'));
 // J3
 { let bad = []; if (!RES || !RES.verdict) bad.push('결과 파일 없음'); else for (const c of CELLS) if (RES.verdict[c] !== verdict[c]) bad.push(c);
   const nv = Object.values(verdict).filter(v => v === 'VERIFIED_FLAT').length;
-  check('J3', '판정 재현(VERIFIED_FLAT = A·B FLAT ∧ order 일치)', bad.length === 0 && Object.keys(verdict).length === 120, `VERIFIED_FLAT ${nv}/120${bad.length ? ' · 불일치 ' + bad.slice(0, 6).join(' ') : ''}`); }
+  check('J3', '판정 재현(VERIFIED_FLAT = A·B FLAT ∧ order 일치 ∧ 사후: 둘 다 high)', bad.length === 0 && Object.keys(verdict).length === 120, `VERIFIED_FLAT ${nv}/120${bad.length ? ' · 불일치 ' + bad.slice(0, 6).join(' ') : ''}`); }
 // J4
 const T = PKG ? J(path.join(PKG, 'IP', 'rules', 'saju', 'johu_table.json')) : null;
 { const bad = []; if (!T || !T.table || !T.cell_status_v3) bad.push('표 cell_status_v3 없음');
