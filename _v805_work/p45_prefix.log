@@ -1,0 +1,9 @@
+  FAIL J1 판독 A·B 120칸 전부 기록(pages·structure·quote · FLAT 은 order) — 누락/형식 2 · A 없음 B 없음
+  FAIL J2 블라인드: 지시문에 표 값 없음 · meta blind · A·B 판독자 분리 — 판독 지시문 없음 · A meta(blind/prompt_sha) 불일치 · B meta(blind/prompt_sha) 불일치
+  FAIL J3 판정 재현(VERIFIED_FLAT = A·B FLAT ∧ order 일치) — VERIFIED_FLAT 0/120 · 불일치 결과 파일 없음
+  FAIL J4 새 표: VERIFIED_FLAT 칸 순서 = 판독 order · 칸별 상태 표기(cell_status_v3) — 표 cell_status_v3 없음
+  FAIL J5 엔진이 VERIFIED_FLAT 칸에서 판독 순서·상태를 그대로 냄 — 대상 0
+  ok   J6 authority johu DENY · CW_PROMOTED 불변
+  FAIL J7 shadow 배포판 재생성(cell_status_v3 포함) · p44 전부 통과 — total=11 pass=11 fail=0 · 배포판 상태표 false
+  FAIL J8 차이표(기존 대비 바뀐 칸·사유) — 없음
+[p45_johu_reread] total=8 pass=1 fail=7 · FAIL J1,J2,J3,J4,J5,J7,J8
