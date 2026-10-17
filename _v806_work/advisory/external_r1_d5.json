@@ -1,0 +1,51 @@
+{
+ "id": "P-806-F1e",
+ "round": 1,
+ "round_cap": 1,
+ "date": "2026-10-17",
+ "packet": "외부자문_P-806-F1e_토정30일생작은달_2026-10-17.pdf",
+ "packet_sha16": "44337f5cec770a73",
+ "question": "D5 — 30일생 · 보는 해 같은 음력 달이 작은달일 때 하괘",
+ "answers": {
+  "Gemini": {
+   "Q1": {
+    "stated": "없음"
+   },
+   "Q2": {
+    "sources": [],
+    "unverified_practices": [
+     "C 또는 A (29일로 갈음 / 30 유지+29일 일진)",
+     "D (다음 달 초하루 일진)",
+     "B (프로그램 예외 처리로 산출 보류)"
+    ]
+   },
+   "Q3": {
+    "choice": "B",
+    "confidence": "high",
+    "reason_summary": "원문에 보정 규칙 없음 · A·C·D는 괘가 완전히 달라짐 · 임의 규칙은 원문 규칙 표방 프로그램의 정직성 위배"
+   },
+   "Q4": null
+  },
+  "ChatGPT": {
+   "Q1": {
+    "stated": "없음"
+   },
+   "Q2": {
+    "sources": [],
+    "unverified_practices": []
+   },
+   "Q3": {
+    "choice": "B",
+    "confidence": "high",
+    "reason_summary": "대체 규칙 미제시 · A·C·D를 뒷받침할 검증 가능 문헌 없음 · 보류가 가장 재현 가능하고 정직 · 별도 정책 채택 시 서비스 보정 규칙임을 명시해야"
+   },
+   "Q4": null
+  }
+ },
+ "adjudication": {
+  "criterion1_rule_adoption": "해당 없음(두 AI 모두 B · 서지 0)",
+  "criterion2_source_quote": "해당 없음(두 AI 모두 원문 기재 없음 — Claude 직접 판독과 일치)",
+  "criterion3": "채택할 규칙 없음 · 라운드 2 없음 → 제이 결정",
+  "note": "두 AI가 독립적으로 B(보류) high 로 일치 — 현행 운영과 같음"
+ }
+}
