@@ -5,6 +5,7 @@
 //  ★검증기의 기대값은 판독 확정 답만으로 만든다(엔진 코드를 require 하는 것은 대조 대상 산출뿐).
 //    지장간 구성은 판독 대상이 아니라 엔진 jijanggan 표를 쓴다(사전 등록의 한계).
 // ============================================================
+// ★사후(2026-10-17 · E2b 승격 반영): CW_PROMOTED 기대값에 gyeok_name 추가(gyeok 축 전체는 DENY 그대로).
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
@@ -89,7 +90,7 @@ function expected(D, Bm, rev, JJG, others) {   // → {kind:'label',v} | {kind:'
   const okRep = !!R && R.all === all && R.determinate === det && R.mismatch === mism.length;
   check('R5', '검증기 60,000 경우: 결정 가능 경우 불일치 0 · 보고서 수치 일치', !err && all > 0 && det > 0 && mism.length === 0 && okRep, err || `전체 ${all} · 결정 가능 ${det}(${all ? (100 * det / all).toFixed(1) : 0}%) · 불일치 ${mism.length}${mism.length ? ' · ' + mism.slice(0, 3).join(' / ') : ''}${okRep ? '' : ' · 보고서 불일치/없음'}`); }
 // R6
-{ const AU = require(path.join(ROOT, 'api', '_engine', 'authority.js')); let okP = false; try { const R = fs.readFileSync(path.join(PKG, 'eval', 'run_eval.js'), 'utf8'); const m = R.match(/CW_PROMOTED\s*=\s*CW_PROMOTED_V770\.concat\(\[([^\]]*)\]\)/); okP = !!m && m[1].replace(/[\s'"]/g, '') === 'iljin_ganzi,sinsal,johu_cell'; } catch (e) {}
+{ const AU = require(path.join(ROOT, 'api', '_engine', 'authority.js')); let okP = false; try { const R = fs.readFileSync(path.join(PKG, 'eval', 'run_eval.js'), 'utf8'); const m = R.match(/CW_PROMOTED\s*=\s*CW_PROMOTED_V770\.concat\(\[([^\]]*)\]\)/); okP = !!m && m[1].replace(/[\s'"]/g, '') === 'iljin_ganzi,sinsal,johu_cell,gyeok_name'; } catch (e) {}
   check('R6', 'authority gyeok DENY · CW_PROMOTED 불변', AU.userSurfaceable('gyeok') === false && okP, ''); }
 // R7
 { const R = J(path.join(RD, 'gyeok_verify_report.json')); const ok = !!R && Array.isArray(R.confirmed_items) && Array.isArray(R.unconfirmed_items) && typeof R.coverage_pct === 'number' && typeof R.mismatch_handling === 'string';

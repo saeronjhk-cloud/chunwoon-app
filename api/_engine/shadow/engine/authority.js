@@ -79,6 +79,9 @@ const OUTPUT = {
   //   【근거】 _v805_work/p45_johu_reread_eval.js(판독·판정 재현) · p46_johu_surface_eval.js(배포 데이터 = IP 확정 칸 전수 대조).
   //   ★미확정 40칸은 bind.johuFacts 가 HOLD(판정 보류)만 낸다.
   johu_cell:    { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+  // ★v805 P-805-E2b 승격(원칙 41 단계 승격 ④ · 제이 「진행」 2026-10-17) — 격국 **명칭만**, 원문 확정 규칙으로 결정되는 명식만.
+  //   gyeok(상신·성패 포함 축 전체)은 DENY 그대로. 근거: _v805_work/p47(판독·외부 자문·검증기 60,000) · p48(bind.gyeokFacts 전수 대조).
+  gyeok_name:   { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   daewoon_start_age: { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.DENY },
   yongsin:      { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },
   gisin:        { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },

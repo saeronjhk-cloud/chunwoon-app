@@ -2860,6 +2860,22 @@ function _cwJohuHTML(j,mode){
     <div style="font-size:10px;color:var(--text2);opacity:.75;line-height:1.6">📐 ${esc(note)}</div>`;
 }
 
+// ★v805 P-805-E2b(트랙 E) — 격국 이름은 서버 엔진(api/_engine/bind.js gyeokFacts) 값만 그린다.
+//   원문 확정 규칙으로 결정되는 명식만 이름과 기준을 보이고, 나머지는 「판정을 보류」를 정직하게 쓴다. 상신·성패·용신·길흉은 붙이지 않는다.
+function _cwGyeokHTML(g,mode){
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  if(!g||typeof g!=='object')return '';
+  if(g.status!=='VERIFIED'||!g.name){
+    const hold='이 명식은 원문 기준으로 격국 이름이 확정되지 않아 판정을 보류합니다.';
+    return mode==='pdf'?`<div class="enemy-card">${esc(hold)} <span class="dim">[${esc(g.basis)}]</span></div>`
+      :`<div style="font-size:12px;color:var(--text2);padding:6px 0">${esc(hold)} <span style="font-size:11px">[${esc(g.basis)}]</span></div>`;
+  }
+  const note='엔진 판정 · 기준: '+(g.basis||'')+' · '+(g.source||'');
+  if(mode==='pdf')return `<div class="enemy-card"><strong style="color:#8a2218">${esc(g.name)}</strong></div><p class="dim" style="font-size:10px">${esc(note)}</p>`;
+  return `<div style="font-size:16px;color:var(--gold);font-weight:700;padding:2px 0 6px">${esc(g.name)}</div>
+    <div style="font-size:10px;color:var(--text2);opacity:.75;line-height:1.6">📐 ${esc(note)}</div>`;
+}
+
 function renderSajuResult(result,info){
   const {name,gender,calType,inputYear,inputMonth,inputDay,hi,lunarInfo,pillars,els,sipsung}=info;
   const dStem=pillars.day.stem;
@@ -2899,6 +2915,7 @@ function renderSajuResult(result,info){
     <!-- ★v804 P-805-C 신살(엔진) -->
     ${Array.isArray(result.sinsal)?`<div style="padding:14px;background:rgba(255,200,150,.04);border-radius:8px;border:1px solid rgba(255,200,150,.12);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⚡ 신살(神煞)</div>${_cwSinsalHTML(result.sinsal,'card')}</div>`:''}
     ${result.johu?`<div style="padding:14px;background:rgba(255,200,150,.04);border-radius:8px;border:1px solid rgba(255,200,150,.12);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">🌡 조후(調候)</div>${_cwJohuHTML(result.johu,'card')}</div>`:''}
+    ${result.gyeok?`<div style="padding:14px;background:rgba(201,165,78,.05);border-radius:8px;border:1px solid rgba(201,165,78,.15);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">📜 격국(格局)</div>${_cwGyeokHTML(result.gyeok,'card')}</div>`:''}
 
     <!-- 십성 분석 -->
     ${result.sipsungAnalysis?`<div style="padding:14px;background:rgba(173,216,230,.05);border-radius:8px;border:1px solid rgba(173,216,230,.1);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⭐ 십성 분포 분석</div><div style="font-size:13px;line-height:1.8">${result.sipsungAnalysis}</div></div>`:''}
@@ -2977,7 +2994,7 @@ function _renderSajuPaywall(){
     <div style="filter:blur(5px);pointer-events:none;opacity:.5">
       <div class="card-title">🔮 프리미엄 심층 분석</div>
       <div style="font-size:13px;line-height:1.8">
-        <p>✦ 격국(格局) 정밀 판정 + 용신(用神) 추천</p>
+        <p>✦ 격국(格局) — 원문 확정 규칙으로 판정되는 명식만 표시 · 조후(調候)</p>
         <p>✦ 십성 위치별 의미 (조부·부모·배우자·자식)</p>
         <p>✦ 재물·직업·건강·연애 4영역 심층 풀이</p>
         <p>✦ 대운(大運) 8단계 — 출생부터 80세까지 10년 흐름</p>
@@ -3018,7 +3035,7 @@ async function unlockSajuPremium(){
       <div style="font-size:9px;color:var(--text2);opacity:.5;margin-top:8px">명리 이론 대조 + 대운 매핑에 약 20~30초 소요</div>
     </div>`;
     pw.style.position='relative';pw.style.overflow='visible';
-    const loadSteps=['사주 8글자 정밀 분석 중...','일간 강약 판정 중...','격국(格局) 분류 중...','용신(用神) 산출 중...','십성 위치별 의미 매핑 중...','대운(大運) 8단계 산출 중...','합·충·형·해 + 신살 분석 중...','12개월 세운 풀이 중...','개운법 처방 + 종합 정리 중...'];
+    const loadSteps=['사주 8글자 정밀 분석 중...','일간 강약 판정 중...','격국(格局) 원문 규칙 대조 중...','조후(調候) 확인 중...','십성 위치별 의미 매핑 중...','대운(大運) 8단계 산출 중...','합·충·형·해 + 신살 분석 중...','12개월 세운 풀이 중...','개운법 처방 + 종합 정리 중...'];
     let loadStep=0;
     loadTimer=setInterval(()=>{
       loadStep++;
@@ -3043,7 +3060,7 @@ async function unlockSajuPremium(){
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
       if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
-      if(d.result.raw&&!d.result.gyeokguk&&!d.result.daewoon)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
+      if(d.result.raw&&!d.result.sipsungDetail&&!d.result.daewoon)throw new Error('AI 응답 파싱 실패 (max_tokens 추정)');
       return d.result;
     };
 
@@ -3068,7 +3085,7 @@ async function unlockSajuPremium(){
     }catch(e2){apiError=(apiError?apiError+' | ':'')+'2단계: '+e2.message;console.error('Saju Premium API 2:',e2)}
 
     if(loadTimer)clearInterval(loadTimer);
-    const hasData=!!(merged.gyeokguk||merged.yongsin||merged.daewoon||merged.monthlyFortune);
+    const hasData=!!(merged.sipsungDetail||merged.gyeok||merged.daewoon||merged.monthlyFortune);
     console.log('Saju Premium API:',hasData?'OK':'FAIL',Object.keys(merged));
     if(!hasData)throw new Error(apiError||'데이터 없음');
 
@@ -3113,13 +3130,13 @@ async function retrySajuPremiumAPI(){
       if(!resp.ok)throw new Error(`HTTP ${resp.status}: ${txt.substring(0,150)}`);
       const d=JSON.parse(txt);
       if(!d.success||!d.result)throw new Error(cwErrMsg(d)||'응답 형식 오류');
-      if(d.result.raw&&!d.result.gyeokguk&&!d.result.daewoon)throw new Error('AI 응답 파싱 실패');
+      if(d.result.raw&&!d.result.sipsungDetail&&!d.result.daewoon)throw new Error('AI 응답 파싱 실패');
       return d.result;
     };
     let merged={};let apiError=null;
     try{const r1=await doFetch('saju_premium_1');if(r1&&typeof r1==='object')delete r1.sinsal;Object.assign(merged,r1)}catch(e){apiError='1단계: '+e.message;console.error('Saju Retry 1:',e)}
     try{Object.assign(merged,await doFetch('saju_premium_2'))}catch(e){apiError=(apiError?apiError+' | ':'')+'2단계: '+e.message;console.error('Saju Retry 2:',e)}
-    const hasData=!!(merged.gyeokguk||merged.daewoon||merged.monthlyFortune);
+    const hasData=!!(merged.sipsungDetail||merged.gyeok||merged.daewoon||merged.monthlyFortune);
     if(!hasData)throw new Error(apiError||'데이터 없음');
     window._sajuPremiumData={...info,prem:merged};
     renderSajuPremium(merged,info);
@@ -3159,8 +3176,7 @@ function _buildSajuContext(info){
 
 function renderSajuPremium(prem,info){
   const pw=document.getElementById('sajuPaywall');if(!pw)return;
-  const gy=prem.gyeokguk||{};
-  const ys=prem.yongsin||{};
+  const gyeokHTML=prem.gyeok?_cwGyeokHTML(prem.gyeok,'card'):'';   // ★v805 P-805-E2b 엔진 값(LLM 격국·용신은 원칙 41 로 내림)
 
   let sipsungHTML='';
   (prem.sipsungDetail||[]).forEach(s=>{
@@ -3218,17 +3234,9 @@ function renderSajuPremium(prem,info){
   pw.innerHTML=`
     <div class="card-title">🔮 프리미엄 심층 분석</div>
 
-    <!-- 격국 -->
-    ${gy.name?`<div style="margin-bottom:16px;padding:14px;background:rgba(201,165,78,.05);border-radius:10px;border:1px solid rgba(201,165,78,.15)">
-      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">📜 격국(格局): ${gy.name} <span style="font-size:11px;font-weight:400;color:var(--text2)">${gy.type?'· '+gy.type:''}</span></div>
-      <div style="font-size:13px;line-height:1.85">${gy.description||''}</div>
-    </div>`:''}
-
-    <!-- 용신 -->
-    ${ys.element?`<div style="margin-bottom:16px;padding:14px;background:rgba(26,122,74,.04);border-radius:10px;border:1px solid rgba(26,122,74,.1)">
-      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">⭐ 용신(用神): ${ys.element}</div>
-      <div style="font-size:12.5px;line-height:1.85;color:var(--text1);margin-bottom:6px"><strong>선정 이유:</strong> ${ys.reasoning||''}</div>
-      <div style="font-size:12.5px;line-height:1.85;color:var(--text1)"><strong>보강법:</strong> ${ys.method||''}</div>
+    <!-- 격국(★v805 P-805-E2b 엔진) -->
+    ${gyeokHTML?`<div style="margin-bottom:16px;padding:14px;background:rgba(201,165,78,.05);border-radius:10px;border:1px solid rgba(201,165,78,.15)">
+      <div style="font-size:14px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:700;margin-bottom:8px">📜 격국(格局)</div>${gyeokHTML}
     </div>`:''}
 
     <!-- 십성 위치별 -->
@@ -9726,18 +9734,9 @@ function savePremiumSajuPDF(){
   };
 
   let body='';
-  const gy=prem.gyeokguk||{};
-  const ys=prem.yongsin||{};
-
-  // ① 격국 + 용신
-  if(gy.name||ys.element){
-    body+=`<div class="section"><h2>📜 격국(格局) · 용신(用神)</h2><p class="section-desc">사주의 핵심 구조와 보강해야 할 오행을 판정합니다.</p>`;
-    if(gy.name){
-      body+=`<div class="domain-card domain-career"><div class="dc-head">📜 격국: ${esc(gy.name)} ${gy.type?`<span style="font-size:13px;color:#666;font-weight:500">(${esc(gy.type)})</span>`:''}</div><p>${esc(gy.description||'')}</p></div>`;
-    }
-    if(ys.element){
-      body+=`<div class="domain-card domain-health"><div class="dc-head">⭐ 용신: ${esc(ys.element)}</div><p><strong>선정 이유:</strong> ${esc(ys.reasoning||'')}</p><p style="margin-top:8px"><strong>보강법:</strong> ${esc(ys.method||'')}</p></div>`;
-    }
+  // ① 격국(★v805 P-805-E2b — 엔진 값만 · LLM 격국·용신은 원칙 41 로 내림)
+  if(prem.gyeok){
+    body+=`<div class="section"><h2>📜 격국(格局)</h2>`+_cwGyeokHTML(prem.gyeok,'pdf');
     if(prem.citation)body+=citBlock(prem.citation);
     body+='</div>';
   }

@@ -1707,6 +1707,10 @@ export default async function handler(req, res) {
     let cwJohu = null;
     if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.johuFacts === 'function') { try { cwJohu = cwEng.johuFacts(context); } catch (e) { cwJohu = null; } }
     const cwJohuBlock = cwJohu ? cwEng.johuBlock(cwJohu) : '';
+    // ★v805 P-805-E2b — 격국 명칭(원문 확정 규칙으로 결정되는 명식만 · 나머지 HOLD). 사주 3종에만.
+    let cwGyeok = null;
+    if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.gyeokFacts === 'function') { try { cwGyeok = cwEng.gyeokFacts(context); } catch (e) { cwGyeok = null; } }
+    const cwGyeokBlock = cwGyeok ? cwEng.gyeokBlock(cwGyeok) : '';
     // ★P-805-D shadow 시작 — 사주 엔진(용신·격국·조후 등 DENY 축) 서버 계산. 결과는 Vercel 로그 한 줄에만 남긴다.
     //   화면·LLM 프롬프트·응답 JSON 에 쓰지 않는다(평가 p44 D4). 실패해도 서비스는 그대로(로그만).
     if (CW_ENGINE_TYPES.indexOf(type) !== -1) {
@@ -2425,21 +2429,22 @@ ${c.pillar2?`${c.name2||'B'}님(${c.gender2||''}): ${c.pillar2}`:`${c.name2||'B'
 이 사주를 분석해 주세요.`;
 
     } else if (type === 'saju_premium_1') {
-      // 1단계: 격국 + 용신 + 십성 심층 + 4영역 심층
+      // 1단계: 십성 심층 + 4영역 심층
+      // ★v805 P-805-E2b — 격국은 서버 엔진(gyeokFacts · 원문 확정 규칙) 값만. LLM 이 격국·용신을 만들지 않게 스키마에서 뺐다(원칙 41).
       systemPrompt = `당신은 사주명리 해석 AI 어시스턴트입니다. 전통 명리 이론(격국·억부·조후) 참고.
 한국어 해요체. 고전 인용은 서지 ID로만 표기. 사주 8글자와 십성 수치를 직접 인용.
-- 격국(格局) 판정: 정격(정관·재격·인수·식신 등) 또는 외격(종격·화격) 자동 분류
-- 용신(用神) 추천: 일간 강약 + 월령 + 오행 균형 종합
+- 격국(格局): 아래 서버 엔진 블록의 값만 쓴다(판정 보류면 격국을 언급하지 않는다). 새 격 이름을 만들지 말 것
+- 용신(用神): 다루지 않는다(서버가 검증하지 않은 판정이다)
 - 십성 위치별 의미 (연주=조부·초년, 월주=부모·청년, 일지=배우자, 시주=자식·말년)
 - 재물·직업·건강·연애 4영역 심층 풀이
-간결하게: 4영역 deep 분석은 각 130~150자 내외, 격국 description은 150자 내외. 핵심만.
+간결하게: 4영역 deep 분석은 각 130~150자 내외. 핵심만.
 
 반드시 아래 정확한 JSON 구조로만 응답:
-{"gyeokguk":{"name":"격국명 예: 정관격","type":"정격 또는 외격","description":"격국 풀이 150자 내외"},"yongsin":{"element":"용신 오행 예: 금","reasoning":"선택 이유 80자 내외","method":"보강법 60자 내외"},"sipsungDetail":[{"name":"십성명","position":"연/월/일/시","meaning":"역할 풀이 60자 내외"}],"wealthDeep":"재물운 심층 130자 내외","careerDeep":"직업운 심층 130자 내외","healthDeep":"건강운 심층 130자 내외","loveDeep":"연애·인간관계 심층 130자 내외","citation_ref":{"source_id":"등재ID|NONE"}}
+{"sipsungDetail":[{"name":"십성명","position":"연/월/일/시","meaning":"역할 풀이 60자 내외"}],"wealthDeep":"재물운 심층 130자 내외","careerDeep":"직업운 심층 130자 내외","healthDeep":"건강운 심층 130자 내외","loveDeep":"연애·인간관계 심층 130자 내외","citation_ref":{"source_id":"등재ID|NONE"}}
 sipsungDetail 배열에 4기둥 각 천간의 십성 4개 포함.` + CITATION_RULE + JSON_FORCE;
 
       const c = context || {};
-      userPrompt = `사주 프리미엄 1단계 (격국·용신·심층)
+      userPrompt = `사주 프리미엄 1단계 (십성·심층)
 이름: ${c.name||'사용자'}, 성별: ${c.gender==='male'?'남성':'여성'}
 4기둥: ${c.yearPillar||''} ${c.monthPillar||''} ${c.dayPillar||''} ${c.hourPillar||'-'}
 일간: ${c.ilgan||''} (${c.ilganYinyang||''}${c.ilganElement||''})
@@ -2703,6 +2708,7 @@ ${cardsDesc}
     if (cwFactsBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwFactsBlock;
     if (cwSinsalBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwSinsalBlock;   // ★v804 P-805-C
     if (cwJohuBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwJohuBlock;   // ★v805 P-805-E1b
+    if (cwGyeokBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwGyeokBlock;   // ★v805 P-805-E2b
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -2803,6 +2809,11 @@ ${cardsDesc}
           : { status: 'HOLD', basis: cwJohu.basis };
       } else if (Object.prototype.hasOwnProperty.call(parsed, 'johu')) { delete parsed.johu; }
       if (type === 'saju_premium_1') { delete parsed.johu; }
+      // ★v805 P-805-E2b — LLM 격국·용신은 사주 3종 모두에서 버린다(원칙 41). 격국 이름은 엔진 값(saju·saju_premium_1)만.
+      if (CW_ENGINE_TYPES.indexOf(type) !== -1) { delete parsed.gyeokguk; delete parsed.yongsin; }
+      if (cwGyeok && (type === 'saju' || type === 'saju_premium_1')) {
+        parsed.gyeok = cwGyeok.status === 'VERIFIED' ? { status: 'VERIFIED', name: cwGyeok.name, basis: cwGyeok.basis, source: cwGyeok.source } : { status: 'HOLD', basis: cwGyeok.basis };
+      } else if (Object.prototype.hasOwnProperty.call(parsed, 'gyeok')) { delete parsed.gyeok; }
       // ★v7.71 — 재계산 메트릭은 **서버 로그로만** 낸다. 응답에 실으면
       //   ⑴ 클라이언트 값이 그대로 되비쳐 나가 스크럽 대상이 늘고
       //   ⑵ 프런트 렌더링 계약(M14 출구 화이트리스트)을 건드린다.

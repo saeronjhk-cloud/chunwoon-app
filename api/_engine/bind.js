@@ -477,6 +477,54 @@ function johuBlock(f) {
     '· 이 천간 순서 밖의 조후용신을 만들지 말고, 길흉·점수·부족 판정으로 바꾸지 말 것.'].join('\n');
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// ★v805 P-805-E2b — 격국(格局) 명칭 노출 (트랙 E · 원칙 41 단계 승격 ④)
+//   【규칙】 고전 명리서 원문을 블라인드 2판독 + 외부 자문으로 확정한 것만 쓴다(서명은 IP 기록에만):
+//     월령에서 구한다 · 월지 장간 중 투출한 천간으로 정한다(본기가 아니어도) · 건록(월지 = 일간의 祿)은 별도 격 ·
+//     월겁은 건록과 같은 격(월지 = 겁재 천간의 祿이고 본기가 겁재) · 양인은 양간만.
+//   【보류(HOLD)】 원문으로 확정되지 않은 경우는 판정하지 않는다: 양인월 · 辰戌丑未 월 · 투출 없음 · 장간 둘 이상 투출 ·
+//     비겁 투출 · 월지와 같은 삼합 무리 지지가 있음(원문은 會支도 격을 바꾼다고 하나 범위 미확정).
+//   【범위】 격 이름과 기준만. 상신·성패·용신·길흉은 내지 않는다(DENY).
+// ════════════════════════════════════════════════════════════════════════
+const GYEOK_JJG = Object.freeze({"子": ["壬", "癸"], "丑": ["癸", "辛", "己"], "寅": ["戊", "丙", "甲"], "卯": ["甲", "乙"], "辰": ["乙", "癸", "戊"], "巳": ["戊", "庚", "丙"], "午": ["丙", "己", "丁"], "未": ["丁", "乙", "己"], "申": ["戊", "壬", "庚"], "酉": ["庚", "辛"], "戌": ["辛", "丁", "戊"], "亥": ["戊", "甲", "壬"]});
+const GYEOK_ROK = Object.freeze({ 甲: '寅', 乙: '卯', 丙: '巳', 丁: '午', 戊: '巳', 己: '午', 庚: '申', 辛: '酉', 壬: '亥', 癸: '子' });
+const GYEOK_YANGIN = Object.freeze({ 甲: '卯', 丙: '午', 戊: '午', 庚: '酉', 壬: '子' });
+const GYEOK_NAME = Object.freeze({ 정관: '정관격', 편관: '칠살격', 정재: '정재격', 편재: '편재격', 정인: '정인격', 편인: '편인격', 식신: '식신격', 상관: '상관격' });
+const GYEOK_SOURCE = '고전 명리서 참고';
+const GYEOK_TRIAD = (b) => ['申子辰', '寅午戌', '巳酉丑', '亥卯未'].find((g) => g.indexOf(b) !== -1);
+const GYEOK_POS = ['연간', '월간', '일간', '시간'];
+const _el = (s) => Math.floor(STEMS.indexOf(s) / 2);
+function gyeokFacts(ctx) {
+  if (!authority.userSurfaceable('gyeok_name')) return null;
+  const P = toPillars(ctx);
+  if (!P) return null;
+  const D = P[2].s, Bm = P[1].b, hold = (why) => ({ engine_version: 'gyeok-name/1.0.0', status: 'HOLD', basis: '일간 ' + D + ' · 월지 ' + Bm, hold_reason: why });
+  const ok = (name, basis) => ({ engine_version: 'gyeok-name/1.0.0', status: 'VERIFIED', name, basis, source: GYEOK_SOURCE });
+  if (GYEOK_YANGIN[D] === Bm) return hold('양인월');
+  if (GYEOK_ROK[D] === Bm) return ok('건록격', '월지 ' + Bm + ' = 일간 ' + D + '의 祿');
+  const hid = GYEOK_JJG[Bm] || [], bg = hid[hid.length - 1];
+  if (_el(bg) === _el(D) && bg !== D) return GYEOK_ROK[bg] === Bm ? ok('월겁격', '월지 ' + Bm + ' = 겁재 ' + bg + '의 祿') : hold('겁재 본기');
+  const others = [P[0].b, P[2].b].concat(P[3] ? [P[3].b] : []);
+  if (others.some((b) => b !== Bm && GYEOK_TRIAD(b) === GYEOK_TRIAD(Bm))) return hold('삼합');
+  if ('辰戌丑未'.indexOf(Bm) !== -1) return hold('잡기');
+  const idx = [0, 1, 3].filter((i) => P[i]);
+  const shown = hid.filter((h) => idx.some((i) => P[i].s === h));
+  if (shown.length !== 1) return hold(shown.length ? '겸투' : '무투출');
+  const x = shown[0];
+  if (_el(x) === _el(D)) return hold('비겁 투출');
+  const sp = M.sipsin(D, x); const name = sp && GYEOK_NAME[sp.name];
+  if (!name) return hold('명칭 없음');
+  const where = idx.filter((i) => P[i].s === x).map((i) => GYEOK_POS[i]).join('·');
+  return ok(name, '월지 ' + Bm + '에서 투출한 ' + x + '(' + where + ')');
+}
+/** 격국 사실 → 프롬프트 블록. 이름 외 상신·성패·용신 판정을 만들지 못하게 한다. */
+function gyeokBlock(f) {
+  if (!f) return '';
+  const tail = '· 용신(用神)·상신·성패·격의 고하를 단정하지 말 것 — 서버가 검증하지 않았다.';
+  if (f.status !== 'VERIFIED') return ['[격국(格局) — 서버 엔진: 이 명식은 판정 보류]', '· 격국 이름을 만들거나 언급하지 말 것.', tail].join('\n');
+  return ['[격국(格局) 명칭 — 서버 엔진 확정값 · 바꾸지 말 것]', '· ' + f.name + ' (' + f.basis + ')', '· 다른 격 이름을 만들지 말 것.', tail].join('\n');
+}
+
 const ctxguard = require('./ctxguard');
 
 module.exports = {
@@ -501,6 +549,10 @@ module.exports = {
   computeFacts: computeFacts,
   factsBlock: factsBlock,
   // ★v804 P-805-C — 신살 4종(고전 명리서 卷一)
+  // ★v805 P-805-E2b — 격국 명칭
+  gyeokFacts: gyeokFacts,
+  gyeokBlock: gyeokBlock,
+  GYEOK_JJG: GYEOK_JJG,
   // ★v805 P-805-E1b — 조후 칸 단위
   johuFacts: johuFacts,
   johuBlock: johuBlock,
