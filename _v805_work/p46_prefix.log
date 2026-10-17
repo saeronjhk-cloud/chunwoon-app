@@ -1,0 +1,10 @@
+  FAIL K1 배포 데이터 = IP VERIFIED_FLAT 칸·순서(나머지 null) — VERIFIED 0 · 배포 데이터 없음
+  FAIL K2 배포 데이터 원문·문헌명 0 · 값은 천간만 — 값 0
+  FAIL K3 johuFacts 120칸 전수(한자·한글·3기둥) · VERIFIED/HOLD — johuFacts 없음
+  FAIL K4 authority johu_cell VERIFIED · 나머지 DENY · 두 authority 동일 — DENY true · johu_cell false · SELF true
+  FAIL K5 서버: johuBlock 주입(HOLD=언급 금지) · 응답 johu=엔진 · premium_1 삭제 · 스키마 요구 없음 — 주입 false · 출구 false · 요구없음 true · 보류문구 false
+  FAIL K6 화면: _cwJohuHTML 3곳(무료·프리미엄·PDF) · 기준 · 보류 문구 · 길흉·점수 없음 — 정의 false · 사용 0
+  FAIL K7 조후 코드 영역 문헌명 0
+  FAIL K8 패키지 게이트 CW_PROMOTED+johu_cell · 하드게이트 — 'iljin_ganzi', 'sinsal'
+  ok   K9 문법
+[p46_johu_surface] total=9 pass=1 fail=8 · FAIL K1,K2,K3,K4,K5,K6,K7,K8
