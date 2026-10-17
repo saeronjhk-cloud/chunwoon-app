@@ -1,0 +1,10 @@
+  FAIL Q1 서버 모듈·표 존재 · 표 = IP 바이트 동일 · 서명 0 — 모듈 없음
+  FAIL Q2 서버 tjGua1935 = IP computeGua1935 (3,000건) — 모듈/엔진 없음
+  FAIL Q3 운영 tojeongDerive = 독립 기대(年頭 판독·JDN 일진·IP 표) — 2000건 · HOLD 759 · 불일치 2000 1994-5-5/2024 exp {"u":5,"mi":3,"lo":3,"tae":22,"wol":10,"il":14,"mGz":"戊辰","dGz":"丁卯"} got {"u":"손(巽)☴","m":"태(兌)☱","l":"하(下)","t":6,"w":10,"i":12}
+  FAIL Q4 1976 음8/26생 · 2005 → 20·14·18 · 212 — {"t":12,"w":14,"i":12,"u":"태(兌)☱","m":"진(震)☳","l":"하(下)"}
+  FAIL Q5 index 공유 구간 = 서버(글자 동일) · index 표 = IP 표 — 서버 구간 없음
+  FAIL Q6 HOLD 실경로(guard GUA_HOLD · LLM 호출 0 · TOJEONG_GUA_HOLD) — guard null · fetch 1 · 500 {"error":"Internal server error","message":"LLM 호출 금지"}
+  FAIL Q7 옛 작괘식 제거 — ctxguard tjGanjiNum 작괘 · index tjGanjiNum 작괘 · ctxguard 짝수 주장 · index 짝수 주장
+  FAIL Q8 index HOLD 분기 — 정직 문구 · 서버 호출 전 return — HOLD@-1 return@-1 fetch@2883 문구 false
+
+p50 0/8 · FAIL Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8
