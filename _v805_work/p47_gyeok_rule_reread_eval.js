@@ -53,7 +53,9 @@ function expected(D, Bm, rev, JJG) {   // → {kind:'label',v} | {kind:'stem',v}
   if (ROK[D] === Bm) return c.G7 === 'ROK_PATTERN_USE_OTHER' ? { kind: 'label', v: '건록격' } : null;
   const hid = JJG[Bm].map(x => x[0]), bengi = hid[hid.length - 1];
   if (!YANG(D) && c.G9 !== 'YANG_ONLY') { /* 음간 양인 성립 여부 미확정 → 음간에서 양인 후보 지지는 HOLD */ const YIN_YANGIN = { 乙: '辰', 丁: '未', 己: '未', 辛: '戌', 癸: '丑' }; if (YIN_YANGIN[D] === Bm) return null; }
-  if (EL(bengi) === EL(D) && bengi !== D) return c.G10 === 'SAME_AS_ROK' ? { kind: 'label', v: '월겁격' } : null;
+  // ★사후 강화(2026-10-17 · 완화 아님): 질문지의 月劫 정의(월지 본기 = 겁재)와 「월지 = 겁재 천간의 祿」 정의가 둘 다 맞는 경우만 판정
+  //   (乙寅·丁巳·辛申·癸亥). 두 정의가 갈리는 己辰·己戌·戊丑·戊未 등은 HOLD.
+  if (EL(bengi) === EL(D) && bengi !== D) return (c.G10 === 'SAME_AS_ROK' && ROK[bengi] === Bm) ? { kind: 'label', v: '월겁격' } : null;
   const shown = hid.filter(h => rev.includes(h));
   let pick = null;
   if (ZAQI.has(Bm)) { if (c.G6 === 'REVEALED_ELSE_BENGI' || c.G6 === 'REVEALED_ELSE_UNDETERMINED') { if (!shown.length) { if (c.G6 === 'REVEALED_ELSE_BENGI') pick = bengi; else return null; } } else return null; }

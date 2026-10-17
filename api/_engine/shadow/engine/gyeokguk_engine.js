@@ -37,8 +37,11 @@ function computeGyeokguk(pillars, opts = {}) {
   const ROK = { '甲':'寅','乙':'卯','丙':'巳','丁':'午','戊':'巳','己':'午','庚':'申','辛':'酉','壬':'亥','癸':'子' };
   const isYanginBranch = SINSAL.yangin[day.s] === mB && !!M.STEM_YANG[M.stemIndex(day.s)];
   const isRokBranch = ROK[day.s] === mB;
+
+  const _jeonggiEl = stemEl(jeonggi);
+  const isWolgeopBranch = !isRokBranch && _jeonggiEl === dayEl && jeonggi !== day.s && ROK[jeonggi] === mB;
   const gyeokIsPeer = G.special_when_peer.codes.includes(sip.code);
-  if (isYanginBranch || isRokBranch || gyeokIsPeer) {
+  if (isYanginBranch || isRokBranch || isWolgeopBranch || gyeokIsPeer) {
     const specialLabel = isYanginBranch ? '양인격' : (isRokBranch ? '건록격' : '월겁격');
     const gg = grps(dayEl);
     const revEl = new Set(revealStems.map(stemEl));
