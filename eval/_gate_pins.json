@@ -314,7 +314,7 @@
     },
     "eval_tojeong_guard.js": {
       "checks_min": 21,
-      "sha256": "3f4e51c19af8accbd17df989487e93ef227b7153b123de6933b5f9ded1e42853",
+      "sha256": "92447bc8b438ed5561fa5f879b910c46e68600362426a2bef6479e6484178f1e",
       "bytes_min": 27611
     },
     "_tmp.js": {
@@ -368,7 +368,7 @@
       "bytes_min": 13544
     }
   },
-  "generated_at": "2026-10-17T04:33:50.208Z",
+  "generated_at": "2026-10-17T04:34:21.335Z",
   "front_root": {
     "allow_env": true,
     "_why": "게이트 패키지가 배포 리포 밖에 있는 배치(샌드박스·CI)에서만 CHUNWOON_FRONT_ROOT 를 허용한다. 정규 탐색으로 배포 트리를 찾을 수 있는 배치에서는 환경변수가 탐색 결과와 반드시 일치해야 하며, 어긋나면 S7 이 리다이렉션으로 FAIL 시킨다.",
