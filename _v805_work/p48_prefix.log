@@ -1,0 +1,10 @@
+  FAIL X1 gyeokFacts = 확정 규칙(합성 6,000 + 실제 3,000 · 한글 기둥) — 표본 9000 · 결정 0 · 불일치 1 gyeokFacts/JJG 없음
+  ok   X2 결정 가능 명식 = POC 엔진 격 이름 — 대상 1326
+  FAIL X3 authority gyeok_name VERIFIED · 해석축 DENY · 두 authority 동일
+  FAIL X4 서버: 스키마 gyeokguk·yongsin 없음 · LLM 값 삭제 · 엔진 gyeok · 블록(용신 단정 금지) — 스키마 false · 출구 false · 블록 false
+  FAIL X5 화면: LLM 격국·용신 렌더 0 · _cwGyeokHTML 3곳 · 보류 문구 · 상품 설명 용신 추천 없음 — 사용 0 · LLM 미참조 false · 상품 false
+  FAIL X6 격국 코드 영역 문헌명 0
+  FAIL X7 bind 내장 지장간 = IP jijanggan
+  FAIL X8 패키지 게이트 CW_PROMOTED+gyeok_name · 하드게이트 — 'iljin_ganzi', 'sinsal', 'johu_cell'
+  ok   X9 문법
+[p48_gyeok_surface] total=9 pass=2 fail=7 · FAIL X1,X3,X4,X5,X6,X7,X8
