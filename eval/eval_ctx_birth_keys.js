@@ -254,7 +254,10 @@ const CLOSED_PIN = Object.freeze({
   //            엔진 3키(yearPillar/monthPillar/dayPillar) 적재.
   //   ★근거·실측: _v786_diag/ · 인수인계 v786 §2. 무단 변경이면 여기가 다시 붉어진다.
   compat: '30859a894f8816e1b6c3b9d620942631b41e120347e2a1608b93cb9d652eb3b0',
-  tojeong: 'b119a0ec9d3d9eceb7fbafff9a7215b86742ec8103864a0d437e0aa64500875d',
+  // ★v806 F2(2026-10-17) 갱신 — 작괘식을 1935 판독 확정 규칙(보는 해 기준)으로 교체(p50 8/8) → 괘·태세/월건/일진수 값이
+  //   **의도적으로** 바뀌었다. 종전 핀 b119a0ec… · ★주의: 이 payload 는 targetYear(연도 select = 실행 연도 기준)에 묶여
+  //   있어 해가 바뀌면 다시 붉어질 수 있다(종전에도 같은 성질 — 그때는 사유를 적고 갱신).
+  tojeong: '2e8a421e84011b8d388ca85ccaec8fe6c27d96c31eb791e617e5f8d5ce7292d1',
 });
 const CLOSED_VOLATILE = Object.freeze(['currentYear', 'currentGanji']);
 function stableStr(v) {
@@ -410,7 +413,16 @@ async function scenario(html, kind, withClosed) {
     const rc = await drive(w, 'analyzeCompat()');
     if (rc.err) out.errs.push('analyzeCompat:' + rc.err); else out.closed.compat = rc.bodies[0].context;
     setv(w, 'tjName', '검사'); setv(w, 'tjGender', 'male');
-    setv(w, 'tjBirth', FX_SAJU.bs); setv(w, 'tjTargetYear', '2031');
+    // ★사후(v806 F2 · 2026-10-17) — 작괘식이 1935 판독 확정 규칙으로 바뀌어 일부 해·월·일은 HOLD(서버 미호출 = NOCALL)다.
+    //   종전 '2031' 은 연도 select 에 없는 값이라 실제로는 「올해」로 떨어졌다(2026 은 이 생일의 그해 월건이 미확정 칸 → HOLD).
+    //   채집 목적(payload 형상)은 그대로이므로 **select 에 실제로 있는 해 중 괘가 서는 해**를 클라 함수로 골라 넣는다.
+    setv(w, 'tjBirth', FX_SAJU.bs);
+    { const sel = w.document.getElementById('tjTargetYear'); const opts = sel ? [...sel.options].map((o) => o.value) : [];
+      let pick = opts[0] || '';
+      try { const lun = w.solarToLunar(FX_SAJU.y, FX_SAJU.m, FX_SAJU.d);
+        const ok = opts.find((v) => { const g = w.calcTojeongGua(parseInt(v, 10), lun); return g && g.status === 'OK'; });
+        if (ok) pick = ok; else out.errs.push('analyzeTojeong:NO_NONHOLD_YEAR'); } catch (e) { out.errs.push('analyzeTojeong:PICK_' + e.message); }
+      setv(w, 'tjTargetYear', pick); }
     const rt = await drive(w, 'analyzeTojeong()');
     if (rt.err) out.errs.push('analyzeTojeong:' + rt.err); else out.closed.tojeong = rt.bodies[0].context;
   }
@@ -810,7 +822,7 @@ const MUT_F = { anchor: 'ceoCal:_bkCeoP.cal,ceoY:_bkCeoP.y,ceoM:_bkCeoP.m,ceoD:_
       const ctx = SC.fallback.closed[t];
       if (!ctx) { bad.push(t + ':미채집'); continue; }
       const s = closedSha(ctx);
-      if (s !== CLOSED_PIN[t]) bad.push(t + ' sha ' + s.slice(0, 16) + ' != pin ' + CLOSED_PIN[t].slice(0, 16));
+      if (s !== CLOSED_PIN[t]) bad.push(t + ' sha ' + s + ' != pin ' + CLOSED_PIN[t].slice(0, 16));
       // saju 는 6키를 안 쓴다. compat/tojeong 은 접미사/자기 규약이 따로 있으므로 새 키 유입만 본다.
       if (t === 'saju') { const leak = BIRTH_KEYS.filter((k) => Object.prototype.hasOwnProperty.call(ctx, k)); if (leak.length) bad.push('saju 로 유입: ' + leak.join(',')); }
     }
