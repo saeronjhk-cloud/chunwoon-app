@@ -206,7 +206,14 @@ async function capture(html, fixtures) {
     set('cHour1', f.h); set('cHour2', '5'); set('cGender1', 'male'); set('cGender2', 'female');
     samples.push({ fx: f.bs, want: 'compat', r: await drive('analyzeCompat()') });
 
-    set('tjName', '검사'); set('tjGender', f.g); set('tjBirth', f.bs); set('tjTargetYear', f.ty);
+    // ★사후(v806 F2 · 2026-10-17) — 작괘식이 1935 판독 확정 규칙으로 바뀌어 일부 해·월·일은 HOLD(서버 미호출)다.
+    //   픽스처 연도(f.ty)가 HOLD 이면 select 에 있는 해 중 괘가 서는 해를 클라 함수로 골라 넣는다(채집 목적 불변).
+    let tyPick = f.ty;
+    try { const lun = w.solarToLunar(+f.bs.slice(0, 4), +f.bs.slice(5, 7), +f.bs.slice(8, 10));
+      const okAt = (v) => { const g = w.calcTojeongGua(parseInt(v, 10), lun); return g && g.status === 'OK'; };
+      const sel = w.document.getElementById('tjTargetYear'); const opts = sel ? [...sel.options].map((o) => o.value) : [];
+      if (!(opts.indexOf(String(f.ty)) >= 0 && okAt(f.ty))) { const o = opts.find(okAt); if (o) tyPick = o; } } catch (e) { /* 폴백: 픽스처 연도 */ }
+    set('tjName', '검사'); set('tjGender', f.g); set('tjBirth', f.bs); set('tjTargetYear', tyPick);
     samples.push({ fx: f.bs, want: 'tojeong', r: await drive('analyzeTojeong()') });
 
     // ★작명(사람) — namingBirth 를 **비운다**. I-70 이 사는 경로.

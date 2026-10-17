@@ -848,15 +848,13 @@ const TJ35 = require('./tojeong1935.js');
 const TJ_GUA_MOD = Object.freeze({ UPPER: 8, MIDDLE: 6, LOWER: 3 });
 /** 나머지 0을 제수로 올리는 규약(`1..k`) — 원문 괘 번호 범위 111~863(제이 결정 D4). */
 function tjMod(n, k) { return (((n % k) + k) % k) || k; }
-/** 양력 {y,m,d} → 일진 [천간순번, 지지순번] (서버 recompute 일주 · 한글 간지) */
+/** 양력 {y,m,d} → 일진 [천간순번, 지지순번] — 서버 일진 엔진 `manse.dayGanzi`(iljin_ganzi VERIFIED · 55,152일 독립 검증) */
+const TJ_MANSE = require('./manse');
 function tjDaySB(sol) {
   try {
     const sy = sol.y != null ? sol.y : sol.year, sm = sol.m != null ? sol.m : sol.month, sd = sol.d != null ? sol.d : sol.day;
-    const rp = RC.recompute({ birth: String(sy).padStart(4, '0') + '-' + String(sm).padStart(2, '0') + '-' + String(sd).padStart(2, '0'), calType: 'solar', isLeap: false, hourIdx: null });
-    const dp = rp && rp.ok && rp.pillarStrings ? [...String(rp.pillarStrings.dayPillar)] : null;
-    if (!dp || dp.length !== 2) return null;
-    const s = TJ_CHEONGAN.indexOf(dp[0]), b = TJ_JIJI.indexOf(dp[1]);
-    return s === -1 || b === -1 ? null : [s, b];
+    const t = TJ_MANSE.dayGanzi(sy, sm, sd);
+    return t && Number.isInteger(t.stemIdx) && Number.isInteger(t.branchIdx) ? [t.stemIdx, t.branchIdx] : null;
   } catch (e) { return null; }
 }
 /**

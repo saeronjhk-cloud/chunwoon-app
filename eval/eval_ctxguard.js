@@ -541,7 +541,9 @@ const FIX=JSON.parse(process.env.CW_CT1_FIX);
       if(r.err){out.fp[bs+'|compat|*']=r.err}else{const c=r.body.context;
         out.fp[bs+'|compat|pillar1']=String(c.pillar1);out.fp[bs+'|compat|pillar2']=String(c.pillar2);
         out.fp[bs+'|compat|ilgan1']=String(c.ilgan1);out.fp[bs+'|compat|ilgan2']=String(c.ilgan2)}
-      set('tjName','검사');set('tjGender','male');set('tjBirth',bs);set('tjTargetYear','2026');
+      // ★사후(v806 F2) — 1935 규칙에서 HOLD(서버 미호출)인 해를 피해 2026~2040 중 괘가 서는 첫 해를 고른다(스텁 select 는 값만 읽는다 · TZ 검사 목적 불변).
+      let _ty='2026';try{_ty=vm.runInContext("(function(){var o=[];for(var y=2026;y<=2040;y++)o.push(String(y));var l=solarToLunar(+'"+bs.slice(0,4)+"',+'"+bs.slice(5,7)+"',+'"+bs.slice(8,10)+"');for(var i=0;i<o.length;i++){var g=calcTojeongGua(parseInt(o[i],10),l);if(g&&g.status==='OK')return o[i]}return '2026'})()",ctx)}catch(e){}
+      set('tjName','검사');set('tjGender','male');set('tjBirth',bs);set('tjTargetYear',_ty);
       r=await drive('analyzeTojeong()');
       if(r.err){out.fp[bs+'|tojeong|*']=r.err}else{const c=r.body.context;
         out.fp[bs+'|tojeong|lunarM']=String(c.lunarMonth);out.fp[bs+'|tojeong|lunarD']=String(c.lunarDay);
