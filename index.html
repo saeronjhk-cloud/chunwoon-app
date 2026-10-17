@@ -6856,7 +6856,7 @@ async function analyzeTojeong(){
     // ★v806 F2 — 원문 확정 전 칸·보는 해에 없는 날짜: 괘를 지어내지 않고 서버도 부르지 않는다(유료 진입 없음).
     const rh=document.getElementById('tojeongResult');
     const why=gua&&gua.reason==='NO_TARGET_DAY'?`${targetYear}년 음력 ${lunar.month}월에는 ${lunar.day}일이 없어 그해 같은 날의 일진으로 괘를 세울 수 없습니다.`:'이 생년월일과 해에 필요한 수(數) 일부가 아직 검증 중입니다.';
-    rh.innerHTML=`<div class="card" style="text-align:center;padding:30px 20px"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:10px">${name}님의 ${targetYear}년 괘 산출을 보류합니다</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">검증이 끝나지 않은 값으로는 괘를 세우지 않습니다. ${why}<br>다른 해를 선택하시면 바로 볼 수 있을 수 있어요.</div></div>`;
+    rh.innerHTML=`<div class="card" style="text-align:center;padding:30px 20px"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:10px">${name}님의 ${targetYear}년 괘 산출을 보류합니다</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">검증이 끝나지 않은 값으로는 괘를 세우지 않습니다. ${why}<br>다른 해를 고르면 괘가 설 수도 있습니다.</div></div>`;
     rh.classList.add('show');rh.scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }
