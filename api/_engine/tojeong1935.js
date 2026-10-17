@@ -1,5 +1,5 @@
 // ============================================================
-//  api/_engine/tojeong1935.js — 토정비결 작괘(1935 활자본 원문 확정 규칙) · 트랙 F2
+//  api/_engine/tojeong1935.js — 토정 작괘(1935 활자본 판독 확정 규칙) · 트랙 F2
 //  ★수표·작괘법 정본 = IP gate_pkg/IP/rules/tojeong/tojeong_numtable_1935.json (이 폴더의 같은 이름 파일은 그 복사본)
 //    생성기 IP gate_pkg/tools/build_tojeong_numtable.js · 규칙 _v806_work/사전등록_P-806-F1_…md · 평가 p49·p50
 //  ★「TJ1935-SHARED」 구간은 index.html 에 **글자 그대로 같은 사본**이 있다(p50 Q5 가 대조한다).

@@ -2112,7 +2112,7 @@ function getGanji(year){return CHEONGAN[(year-4)%10]+JIJI_NAMES[(year-4)%12]}
 function getZodiac(year){return ZOD_ANIMALS[(year-4)%12]}
 
 // ════════════════════════════════════════════════════════════════════════════
-//  ★v806 F2 — 토정비결 작괘(作卦) = **1935 활자본 원문 확정 규칙**.
+//  ★v806 F2 — 토정 작괘(作卦) = **1935 활자본 판독으로 확정한 규칙**.
 //    상괘 = (세는나이 + 보는 해 태세수) ÷ 8 · 중괘 = (보는 해 같은 음력 생월의 大小 30/29 + 그 달 월건수) ÷ 6 ·
 //    하괘 = (음력 생일 + 보는 해 같은 음력 생일의 일진수) ÷ 3 · 나머지 0 → 8·6·3 · 수 = 원문 수표(60칸 중 52칸 확정).
 //    ★아래 「TJ1935-SHARED」 구간은 `api/_engine/tojeong1935.js` 와 **글자 그대로 같다**(p50 Q5) — 함께 고칠 것.
@@ -6855,8 +6855,8 @@ async function analyzeTojeong(){
   if(!gua||gua.status==='HOLD'){
     // ★v806 F2 — 원문 확정 전 칸·보는 해에 없는 날짜: 괘를 지어내지 않고 서버도 부르지 않는다(유료 진입 없음).
     const rh=document.getElementById('tojeongResult');
-    const why=gua&&gua.reason==='NO_TARGET_DAY'?`${targetYear}년 음력 ${lunar.month}월에는 ${lunar.day}일이 없어 원문 작괘법(그해 같은 날의 일진)을 적용할 수 없습니다.`:'이 생년월일과 해에 필요한 원문 수표 칸이 아직 확정되지 않았습니다(원문 판독 확인 중).';
-    rh.innerHTML=`<div class="card" style="text-align:center;padding:30px 20px"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:10px">${name}님의 ${targetYear}년 괘 산출을 보류합니다</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">원문 확정 전이라 괘를 세우지 않습니다. ${why}<br>다른 해를 선택하시면 바로 볼 수 있을 수 있어요.</div></div>`;
+    const why=gua&&gua.reason==='NO_TARGET_DAY'?`${targetYear}년 음력 ${lunar.month}월에는 ${lunar.day}일이 없어 그해 같은 날의 일진으로 괘를 세울 수 없습니다.`:'이 생년월일과 해에 필요한 수(數) 일부가 아직 검증 중입니다.';
+    rh.innerHTML=`<div class="card" style="text-align:center;padding:30px 20px"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:10px">${name}님의 ${targetYear}년 괘 산출을 보류합니다</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">검증이 끝나지 않은 값으로는 괘를 세우지 않습니다. ${why}<br>다른 해를 선택하시면 바로 볼 수 있을 수 있어요.</div></div>`;
     rh.classList.add('show');rh.scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }

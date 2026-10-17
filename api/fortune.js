@@ -1413,7 +1413,7 @@ export default async function handler(req, res) {
       //   LLM 을 부르지 않고 정직하게 보류한다(괘 없는 「토정비결」 생성 금지 — 원칙 40).
       if (cwTjM && typeof cwTjM.reason === 'string' && cwTjM.reason.indexOf('GUA_HOLD:') === 0) {
         return res.status(200).json({ success: false, code: 'TOJEONG_GUA_HOLD',
-          error: '이 생년월일·해의 괘는 원문 수표 확정 전이라 산출을 보류합니다.' });
+          error: '괘 산출에 필요한 수(數) 일부가 아직 검증 중이라 이 해의 괘 산출을 보류합니다.' });
       }
     }
 
