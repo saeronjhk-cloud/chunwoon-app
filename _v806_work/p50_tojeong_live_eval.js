@@ -96,8 +96,9 @@ const IDX = T(path.join(ROOT, 'index.html'));
 (async () => {
   { let ok = false, d = '';
     try {
-      // 2026(丙午) 음 3월 = 壬辰月(미확정 칸) → CELL_MONTH
-      const g = CG.guardTojeongContext({ name: 'h', gender: 'male', targetYear: 2026, cal: 'lunar', y: 1990, m: 3, d: 10, leap: false, upperGua: 'x', guaCombination: 'x' });
+      // ★사후(2026-10-17 21시): F1d 로 수표 60/60 확정 → 「미확정 칸」 HOLD 는 더 이상 없다. 남은 HOLD 실경로 = 보는 해에 그 음력 날짜가 없음.
+      //   음력 2023-2-30(대월)생 · 2026 음2월은 작은달 → NO_TARGET_DAY.
+      const g = CG.guardTojeongContext({ name: 'h', gender: 'male', targetYear: 2026, cal: 'lunar', y: 2023, m: 2, d: 30, leap: false, upperGua: 'x', guaCombination: 'x' });
       const okG = g && g.metrics && g.metrics.mode === 'discarded' && /^GUA_HOLD:/.test(g.metrics.reason || '');
       const tmp = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'cw_p50_'));
       fs.writeFileSync(path.join(tmp, 'package.json'), JSON.stringify({ type: 'module' }));
@@ -106,7 +107,7 @@ const IDX = T(path.join(ROOT, 'index.html'));
       let fetchN = 0; const realFetch = globalThis.fetch; globalThis.fetch = async () => { fetchN++; throw new Error('LLM 호출 금지'); };
       const mod = await import('file://' + path.join(tmp, 'api', 'fortune.js').split(path.sep).join('/'));
       const res = { statusCode: 0, headers: {}, body: null }; res.status = c => { res.statusCode = c; return res; }; res.json = o => { res.body = o; return res; }; res.setHeader = () => { }; res.end = () => res;
-      try { await mod.default({ method: 'POST', headers: {}, body: { type: 'tojeong', context: { name: 'h', gender: 'male', targetYear: 2026, cal: 'lunar', y: 1990, m: 3, d: 10, leap: false } } }, res); } catch (e) { }
+      try { await mod.default({ method: 'POST', headers: {}, body: { type: 'tojeong', context: { name: 'h', gender: 'male', targetYear: 2026, cal: 'lunar', y: 2023, m: 2, d: 30, leap: false } } }, res); } catch (e) { }
       globalThis.fetch = realFetch;
       const b = res.body || {};
       ok = okG && fetchN === 0 && b.success === false && b.code === 'TOJEONG_GUA_HOLD';

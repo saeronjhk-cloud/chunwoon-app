@@ -81,9 +81,24 @@
   "consistency_checks": 86,
   "mismatches": []
  },
+ "f1d": {
+  "valid": true,
+  "consistency_checks": 47,
+  "mismatches": [],
+  "added": [
+   5,
+   10,
+   11,
+   28,
+   29,
+   32,
+   58,
+   59
+  ]
+ },
  "counts": {
-  "verified": 52,
-  "unresolved": 8
+  "verified": 60,
+  "unresolved": 0
  },
  "table60": [
   {
@@ -138,13 +153,13 @@
   },
   {
    "i": 5,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 13,
+   "iljin": 16,
    "page": "p004",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 6,
@@ -188,23 +203,23 @@
   },
   {
    "i": 10,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 22,
+   "wolgeon": 14,
+   "iljin": 20,
    "page": "p003",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 11,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 12,
+   "iljin": 17,
    "page": "p003",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 12,
@@ -368,23 +383,23 @@
   },
   {
    "i": 28,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 11,
+   "iljin": 17,
    "page": "p004",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 29,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 14,
+   "wolgeon": 9,
+   "iljin": 12,
    "page": "p004",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 30,
@@ -408,13 +423,13 @@
   },
   {
    "i": 32,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 14,
+   "iljin": 17,
    "page": "p003",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 33,
@@ -668,23 +683,23 @@
   },
   {
    "i": 58,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 11,
+   "iljin": 17,
    "page": "p004",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   },
   {
    "i": 59,
-   "status": "UNRESOLVED",
-   "taese": null,
-   "wolgeon": null,
-   "iljin": null,
+   "status": "VERIFIED",
+   "taese": 16,
+   "wolgeon": 9,
+   "iljin": 14,
    "page": "p004",
-   "basis": null,
-   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+   "basis": "1935본 판독값 = 원본해설(KOL201100130) 판독 2 일치·high",
+   "reason": null
   }
  ]
 }

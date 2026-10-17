@@ -63,7 +63,20 @@ if (MA && MB && A && B) {
   if (F1C.valid) for (const g of GZ60) if (!VER[g]) { const ds = Object.keys(CAT).map(k => der(g, k)); if (ds.some(x => x == null)) continue;
     if ([A.table[g], B.table[g]].some(c => c && c.taese === ds[0] && c.wolgeon === ds[1] && c.iljin === ds[2])) { VER[g] = { taese: ds[0], wolgeon: ds[1], iljin: ds[2] }; F1C.added.push(g); } }
 }
+// ★사후(2026-10-17 21시 · 사전등록 F1d — 판독 전에 고정한 규칙의 독립 구현): 원본해설(KOL201100130 p43) 판독 WB-A·WB-B
+//   칸 VERIFIED(세 수 일치 ∧ 둘 다 high). 그때까지의 VERIFIED 칸과 하나라도 어긋나면 F1d 무효.
+//   정합 통과 시 미확정 칸 = 원본해설 세 수가 1935 판독 A 또는 B 값과 같을 때만 VERIFIED.
+const WA = J(path.join(IPR, 'tojeong', 'read_wb', 'readA.json')), WB = J(path.join(IPR, 'tojeong', 'read_wb', 'readB.json'));
+let F1D = { valid: false, checks: 0, mis: [], added: [] };
+if (WA && WB && A && B) {
+  const K3 = ['taese', 'wolgeon', 'iljin'], WV = {};
+  for (const g of GZ60) { const a = WA.table[g] || {}, b = WB.table[g] || {}; if (K3.every(k => isInt(a[k]) && a[k] === b[k]) && a.confidence === 'high' && b.confidence === 'high') WV[g] = a; }
+  for (const g of GZ60) if (VER[g] && WV[g]) { F1D.checks++; if (K3.some(k => VER[g][k] !== WV[g][k])) F1D.mis.push(g); }
+  F1D.valid = F1D.mis.length === 0 && F1D.checks > 0;
+  if (F1D.valid) for (const g of GZ60) if (!VER[g] && WV[g] && [A.table[g], B.table[g]].some(c => c && K3.every(k => c[k] === WV[g][k]))) { VER[g] = { taese: WV[g].taese, wolgeon: WV[g].wolgeon, iljin: WV[g].iljin }; F1D.added.push(g); }
+}
 check('T3c', `F1c 필사본 정합(1935 VERIFIED 대조 ${F1C.checks}건 · 불일치 ${F1C.mis.length}) · 보강 ${F1C.added.length}칸`, F1C.valid, F1C.added.join(' ') + (F1C.mis.length ? ' · ' + F1C.mis.slice(0, 5).join(' ') : ''));
+check('T3d', `F1d 원본해설 정합(대조 ${F1D.checks}칸 · 불일치 ${F1D.mis.length}) · 보강 ${F1D.added.length}칸`, F1D.valid, F1D.added.join(' ') + (F1D.mis.length ? ' · ' + F1D.mis.join(' ') : ''));
 const nVer = Object.values(VER).filter(Boolean).length;
 const TBL = J(path.join(PKG || '', 'IP', 'rules', 'tojeong', 'tojeong_numtable_1935.json'));
 // ★사후(2026-10-17): IP 표는 순번 배열 table60(0=甲子) — 분배 가드 n-gram 오탐 회피(함정 79). 값 기준 불변.
