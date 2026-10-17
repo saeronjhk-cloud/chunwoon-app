@@ -164,21 +164,18 @@ const mintToken = (pk, amt) => {
 
 /** 정상 tojeong context (실제 index.html 산출 형상) */
 const CLEAN_CTX = () => ({
-  name: '홍길동', gender: 'male', targetYear: 2026,
+  name: '홍길동', gender: 'male', targetYear: 2027,
   lunarYear: 1990, lunarMonth: 4, lunarDay: 21,
-  zodiac: '말띠(午)', ganjiYear: '병오년',
-  // ★이 값들은 **실제 index.html 이 양력 1990-05-15 · targetYear 2026 에서 만드는 값**이다.
-  //   지어내면 T-7b(긍정 대조)가 붉어진다 — 실제로 붉어졌고, 그게 이 검사의 존재 이유다.
-  //   ★v786(2026-09-04) 갱신 — 작괘식을 고쳤으므로 이 픽스처도 새 산출로 바꾼다.
-  //     양력 1990-05-15 → 월건 신사(=14) · 일진 경진(=12), 음력 1990-4-21, targetYear 2026.
-  //     행년(세는나이) 37 · 태세수 10 ⟹ 상 (10+37)%8=7 → 간(艮)☶
-  //                                   중 (47+14+4)%6=5 → 손(巽)☴
-  //                                   하 (65+12+21)%3=2 → 중(中)
-  //     ★독립 재현: node 로 index.html 의 calcTojeongGua 를 꺼내 같은 값을 확인했다.
-  upperGua: '간(艮)☶', taeseNum: 10,
-  middleGua: '손(巽)☴', wolNum: 14,
-  lowerGua: '중(中)', ilNum: 12,
-  guaCombination: '간(艮)☶ · 손(巽)☴ · 중(中)'
+  zodiac: '말띠(午)', ganjiYear: '정미년',
+  // ★사후(v806 F2 · 2026-10-17) — 작괘식을 1935 원문 확정 규칙으로 교체했다(p50). 보는 해 2026 은
+  //   음력 4월 월건 癸巳 가 원문 미확정 칸이라 HOLD(괘 미산출)이므로 픽스처를 2027 로 옮긴다.
+  //   양력 1990-05-15 → 음력 1990-4-21 · 2027(丁未) 태세수 19 · 2027 음4월 월건 乙巳 월건수 12 ·
+  //   2027 음4/21 일진수 15 · 세는나이 38 ⟹ 상 (38+19)%8=1 → 건 · 중 (29또는30+12)%6 → 감 · 하 (21+15)%3=0→3 → 하
+  //   ★값은 서버 tojeongDerive 실산출(p50 Q3 이 독립식으로 검증한 함수)에서 옮겼다.
+  upperGua: '건(乾)☰', taeseNum: 19,
+  middleGua: '감(坎)☵', wolNum: 12,
+  lowerGua: '하(下)', ilNum: 15,
+  guaCombination: '건(乾)☰ · 감(坎)☵ · 하(下)'
 });
 /** 줄 구조를 위조하려는 context — 개행·제어문자·과길이 */
 const EVIL_CTX = () => Object.assign(CLEAN_CTX(), {

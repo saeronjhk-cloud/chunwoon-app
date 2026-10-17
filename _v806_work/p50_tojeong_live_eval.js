@@ -49,6 +49,8 @@ const dayGzOf = (y, m, d) => { const i = ((jdn(y, m, d) + 49) % 60 + 60) % 60; r
 const gzIdx = g => GZ60.indexOf(g); const GZ60 = Array.from({ length: 60 }, (_, i) => STEMS[i % 10] + BR[i % 12]);
 function expectOf(lunar, ty) {
   const age = ty - lunar.year + 1, yGz = GZ60[((ty - 4) % 60 + 60) % 60];
+  // ★사후(2026-10-17): 보는 해가 출생 전(세는나이 < 1)이면 괘 대상이 아니다 — 첫 실행에서 기대 정의 누락 발견(구현은 HOLD 'AGE').
+  if (!(age >= 1)) return { hold: 'AGE' };
   const m = lunar.month; if (!LN.lunarToSolar(ty, m, 1, false)) return { hold: 'NO_TARGET_MONTH' };
   const big = !!LN.lunarToSolar(ty, m, 30, false);
   const head = YEONDU[yGz[0]]; if (!head) return { hold: 'NO_YEONDU' };
@@ -64,7 +66,7 @@ function expectOf(lunar, ty) {
 }
 
 // Q3 운영 재유도 = 독립 기대
-{ let ok = !!(CG && CG.tojeongDerive && RA && IPT), n = 0, mis = 0, hold = 0, ex = '';
+{ let ok = !!(CG && CG.tojeongDerive && RA && IPT), n = 0, mis = 0, hold = 0, ex = ''; const MISC = {};
   if (ok) for (let i = 0; i < 2000; i++) {
     const y = 1930 + rnd(81), mo = 1 + rnd(12), d = 1 + rnd(28), ty = 2000 + rnd(36);
     const lunar = LN.solarToLunar(y, mo, d); if (!lunar) continue;
@@ -72,8 +74,8 @@ function expectOf(lunar, ty) {
     n++; let same;
     if (e.hold) { hold++; same = !!r && r.hold === e.hold; }
     else same = !!r && !r.hold && r.upperGua === PALGUA[e.u - 1] && r.middleGua === YUKGUA[e.mi - 1] && r.lowerGua === HAGUA[e.lo - 1] && r.taeseNum === e.tae && r.wolNum === e.wol && r.ilNum === e.il;
-    if (!same) { mis++; if (!ex) ex = `${y}-${mo}-${d}/${ty} exp ${JSON.stringify(e)} got ${JSON.stringify(r && { h: r.hold, u: r.upperGua, m: r.middleGua, l: r.lowerGua, t: r.taeseNum, w: r.wolNum, i: r.ilNum })}`; } }
-  check('Q3', '운영 tojeongDerive = 독립 기대(年頭 판독·JDN 일진·IP 표)', ok && mis === 0 && n > 1500, ok ? `${n}건 · HOLD ${hold} · 불일치 ${mis} ${ex}` : '모듈 없음'); }
+    if (!same) { mis++; MISC[(e.hold || 'OK') + '→' + (r ? (r.hold || 'OK') : 'null')] = (MISC[(e.hold || 'OK') + '→' + (r ? (r.hold || 'OK') : 'null')] || 0) + 1; if (!ex) ex = `${y}-${mo}-${d}/${ty} exp ${JSON.stringify(e)} got ${JSON.stringify(r && { h: r.hold, u: r.upperGua, m: r.middleGua, l: r.lowerGua, t: r.taeseNum, w: r.wolNum, i: r.ilNum })}`; } }
+  check('Q3', '운영 tojeongDerive = 독립 기대(年頭 판독·JDN 일진·IP 표)', ok && mis === 0 && n > 1500, ok ? `${n}건 · HOLD ${hold} · 불일치 ${mis} ${JSON.stringify(MISC)} ${ex}` : '모듈 없음'); }
 
 // Q4 212
 { let d = '', ok = false;

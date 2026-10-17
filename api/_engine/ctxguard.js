@@ -836,53 +836,35 @@ const TOJEONG_BIRTH_KEYS = ['cal', 'y', 'm', 'd', 'leap'];
 const TOJEONG_YEAR_MIN = 1900, TOJEONG_YEAR_MAX = 2100;
 
 // ════════════════════════════════════════════════════════════════════════════
-// ★★v7.86 ① — 토정비결 작괘(作卦). **index.html `calcTojeongGua` 와 같은 식이다.**
-//   두 벌이 갈리면 화면과 해석이 갈린다(서버가 클라 값을 교체하므로 즉시 드러나지도
-//   않는다) ⟹ 아래 상수·산출식을 고칠 때는 반드시 클라와 **동시에** 고칠 것.
-//
-//   【수정 전 실측 결함 — 1980~2005년생 × 12월 × 28일 = 8,736 전수】
-//     · 상괘가 `(targetYear-4)` 만으로 결정 → 같은 해 신청자 **전원 동일 상괘**(top-1 100%)
-//     · `(y-4)%10` 과 `(y-4)%12` 는 같은 패리티 → 태세수가 항상 짝수 → `%8∈{0,2,4,6}`
-//       ⟹ 건·리·손·간 **4종이 1900~2100 어느 해에도 도달 불가**
-//     · 중괘 `month%6` · 하괘 `day%3` 에 생년이 기여하지 않음
-//     ⟹ 조합 고유 18/144 · top-1 5.79% · H/Hmax 0.581 · 충돌 5.56%
-//   【수정 후】 전통 작괘법(태세수+나이 → +월건수 → +일진수)으로 승격
-//     ⟹ 조합 고유 **144/144** · top-1 1.58% · H/Hmax 0.972 · 충돌 0.87% · 상괘 8/8
-//   ★짝수 편향을 깨는 축은 **나이**뿐이다 — 태세수·월건수·일진수는 60갑자 제약상
-//     모두 짝수라, 「생년 간지수」만 더해도 결함이 그대로 남는다(실측 확인).
+// ★★v806 F2 — 토정비결 작괘(作卦) = **1935 활자본 원문 확정 규칙**(api/_engine/tojeong1935.js).
+//   상괘 = (세는나이 + 보는 해 태세수) ÷ 8 · 중괘 = (보는 해 같은 음력 생월의 大小 30/29 + 그 달 월건수) ÷ 6 ·
+//   하괘 = (음력 생일 + 보는 해 같은 음력 생일의 일진수) ÷ 3 · 나머지 0 → 8·6·3 · 수 = 원문 수표(52/60 확정).
+//   ★v7.86 식(간지수 = 천간순번+지지순번 · 누적합 · 출생 기둥)은 원전과 달라 폐기했다(p50 Q7).
+//   ★필요 칸 미확정 · 보는 해에 그 음력 날짜 없음 ⟹ HOLD(옛 식·추정값으로 메우지 않는다).
+//   ★index.html 에 같은 공유 구간 사본이 있다 — 고칠 때는 두 곳을 함께(p50 Q5).
 // ════════════════════════════════════════════════════════════════════════════
-/** 작괘 나눗셈 상수 — 팔괘 8 · 육괘 6 · 삼괘 3. 코드에 흩뿌리지 않는다. */
+const TJ35 = require('./tojeong1935.js');
+/** 작괘 나눗셈 상수 — 팔괘 8 · 육괘 6 · 삼괘 3 (원문 八八除·六六除·三三除). */
 const TJ_GUA_MOD = Object.freeze({ UPPER: 8, MIDDLE: 6, LOWER: 3 });
-/** 나머지 0을 제수로 올리는 전통 규약(`1..k`). 음수 입력도 안전하다. */
+/** 나머지 0을 제수로 올리는 규약(`1..k`) — 원문 괘 번호 범위 111~863(제이 결정 D4). */
 function tjMod(n, k) { return (((n % k) + k) % k) || k; }
-/** 간지 2자(`'신사'`) → 간지수(천간수+지지수). 판독 불가면 **null**. */
-function tjGanjiNum(ganji) {
-  if (typeof ganji !== 'string') return null;
-  const ch = [...ganji.trim()];
-  if (ch.length !== 2) return null;
-  const s = TJ_CHEONGAN.indexOf(ch[0]), b = TJ_JIJI.indexOf(ch[1]);
-  if (s === -1 || b === -1) return null;
-  return (s + 1) + (b + 1);
+/** 양력 {y,m,d} → 일진 [천간순번, 지지순번] (서버 recompute 일주 · 한글 간지) */
+function tjDaySB(sol) {
+  try {
+    const sy = sol.y != null ? sol.y : sol.year, sm = sol.m != null ? sol.m : sol.month, sd = sol.d != null ? sol.d : sol.day;
+    const rp = RC.recompute({ birth: String(sy).padStart(4, '0') + '-' + String(sm).padStart(2, '0') + '-' + String(sd).padStart(2, '0'), calType: 'solar', isLeap: false, hourIdx: null });
+    const dp = rp && rp.ok && rp.pillarStrings ? [...String(rp.pillarStrings.dayPillar)] : null;
+    if (!dp || dp.length !== 2) return null;
+    const s = TJ_CHEONGAN.indexOf(dp[0]), b = TJ_JIJI.indexOf(dp[1]);
+    return s === -1 || b === -1 ? null : [s, b];
+  } catch (e) { return null; }
 }
 /**
- * 상·중·하괘 인덱스 + 월건수·일진수. **index.html `calcTojeongGua` 와 1:1**.
- * @returns {{upperIdx,middleIdx,lowerIdx,wolNum,ilNum,age}|null}
+ * 상·중·하괘(1935 원문 규칙). @returns {{status:'OK',upper,middle,lower,taese,wolgeon,iljin,gua}|{status:'HOLD',reason}}
  */
-function tojeongGua(targetYear, lunar, monthPillar, dayPillar) {
-  if (!lunar || !(lunar.year > 0)) return null;
-  const wolNum = tjGanjiNum(monthPillar), ilNum = tjGanjiNum(dayPillar);
-  if (wolNum === null || ilNum === null) return null;
-  const taeseNum = (((targetYear - 4) % 10) + 1) + (((targetYear - 4) % 12) + 1);
-  const age = targetYear - lunar.year + 1;               // 세는나이(行年數)
-  const upperNum = taeseNum + age;
-  const middleNum = upperNum + wolNum + lunar.month;
-  const lowerNum = middleNum + ilNum + lunar.day;
-  return {
-    age, wolNum, ilNum,
-    upperIdx: tjMod(upperNum, TJ_GUA_MOD.UPPER),
-    middleIdx: tjMod(middleNum, TJ_GUA_MOD.MIDDLE),
-    lowerIdx: tjMod(lowerNum, TJ_GUA_MOD.LOWER),
-  };
+function tojeongGua(targetYear, lunar) {
+  const x = TJ35.tjTargetInputs(targetYear, lunar, LN.lunarToSolar, tjDaySB);
+  return TJ35.tjGua1935(TJ35.TABLE, x);
 }
 
 /** 5키 판독. `{missing:true}` | `{bad:CODE}` | `{input:{...}}` */
@@ -911,9 +893,7 @@ function tojeongDerive(inp, targetYear) {
     lunar = { year: inp.y, month: inp.m, day: inp.d, isLeap: inp.leap };
   }
   const ci = (ty - 4) % 10, ji = (ty - 4) % 12;
-  const taeseNum = (ci + 1) + (ji + 1);
-  // ★v7.86 ① — 월건·일진이 필요하므로 원국을 재유도한다(시각은 안 쓰므로 3기둥).
-  //   ★클라(index.html `analyzeTojeong`)도 **같은 엔진·같은 입력**으로 뽑는다.
+  // 엔진 3키(bind.js toPillars)는 출생 원국 — 작괘와 별개로 계속 싣는다.
   let rp = null;
   try {
     rp = RC.recompute({
@@ -922,19 +902,21 @@ function tojeongDerive(inp, targetYear) {
     });
   } catch (e) { rp = null; }
   if (!rp || !rp.ok || !rp.pillarStrings) return null;   // 판정 불가는 「클라값 채택」이 아니다
-  const gua = tojeongGua(ty, lunar, rp.pillarStrings.monthPillar, rp.pillarStrings.dayPillar);
-  if (!gua) return null;
-  const upper = TJ_PALGUA[gua.upperIdx - 1];
-  const middle = TJ_YUKGUA[gua.middleIdx - 1];
-  const lower = TJ_HAGUA[gua.lowerIdx - 1];
+  // ★v806 F2 — 1935 원문 규칙(보는 해 기준). HOLD 는 null 이 아니라 사유를 돌려준다(guard 가 GUA_HOLD 로 처리).
+  const gua = tojeongGua(ty, lunar);
+  if (!gua || gua.status !== 'OK') return { hold: (gua && gua.reason) || 'UNKNOWN' };
+  const upper = TJ_PALGUA[gua.upper - 1];
+  const middle = TJ_YUKGUA[gua.middle - 1];
+  const lower = TJ_HAGUA[gua.lower - 1];
+  const taeseNum = gua.taese;
   const z = TJ_ZODIAC[(lunar.year - 4) % 12];
   return {
     lunarYear: lunar.year, lunarMonth: lunar.month, lunarDay: lunar.day,
     zodiac: z.n + '띠(' + z.h + ')',
     ganjiYear: TJ_CHEONGAN[ci] + TJ_JIJI[ji] + '년',
     upperGua: upper, taeseNum,
-    middleGua: middle, wolNum: gua.wolNum,
-    lowerGua: lower, ilNum: gua.ilNum,
+    middleGua: middle, wolNum: gua.wolgeon,
+    lowerGua: lower, ilNum: gua.iljin,
     guaCombination: upper + ' · ' + middle + ' · ' + lower,
     // ★v7.86 ④ — bind.js `toPillars` 계약(간지 2자). 클라가 싣는 3키를 여기서 교체한다.
     yearPillar: rp.pillarStrings.yearPillar,
@@ -1022,6 +1004,14 @@ function guardTojeongContext(ctx) {
   }
 
   const derived = tojeongDerive(got.input, ctx.targetYear);
+  if (derived && derived.hold) {
+    // ★v806 F2 — 원문 확정 전 칸 · 보는 해에 없는 날짜 ⟹ 괘를 세우지 않는다(파생 키 폐기 · fortune 이 LLM 없이 보류 응답).
+    for (const k of TOJEONG_REPLACE_KEYS.concat(ENGINE_PILLAR_KEYS)) {
+      if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
+    }
+    metrics.applied = true; metrics.mode = 'discarded'; metrics.reason = 'GUA_HOLD:' + derived.hold;
+    return { applied: true, context: out, metrics };
+  }
   if (!derived) {
     for (const k of TOJEONG_REPLACE_KEYS.concat(ENGINE_PILLAR_KEYS)) {
       if (Object.prototype.hasOwnProperty.call(out, k)) { out[k] = ''; metrics.discarded++; }
@@ -1522,7 +1512,7 @@ module.exports = {
   guardCompanyContext, ceoBirthInput, COMPANY_CTX_KEYS, CEO_BIRTH_KEYS,
   // ★v7.75 관통 #9 — tojeong 가드
   guardTojeongContext, tojeongBirthInput, tojeongDerive,
-  tojeongGua, tjGanjiNum, tjMod, TJ_GUA_MOD,
+  tojeongGua, tjMod, TJ_GUA_MOD,
   TOJEONG_REPLACE_KEYS, TOJEONG_BIRTH_KEYS,
   TJ_PALGUA, TJ_YUKGUA, TJ_HAGUA,
   CTX_REPLACE_KEYS, CTX_GUARDED_KEYS, CTX_VALUE_OF, HOUR_LABELS,

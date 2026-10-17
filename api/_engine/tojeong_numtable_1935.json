@@ -1,0 +1,690 @@
+{
+ "source": "국립중앙도서관 원문번호 KOL000021688 (1935 활자본 168면) · 책 2~3쪽(p003·p004) · 보강 OAJ000006052 필사본 p063 · 서명은 IP tojeong/manifest.json",
+ "built": "2026-10-17",
+ "rule_doc": "_v806_work/사전등록_P-806-F1_토정작괘법_원문판독.md",
+ "column_map": "칸 안 오른쪽→왼쪽 = 歲·月·日 (판독 A·B · 외부자문 Q0 일치)",
+ "method_status": "VERIFIED",
+ "method": {
+  "upper": {
+   "operands": [
+    "age",
+    "taese"
+   ],
+   "divisor": 8,
+   "zero_to": 8,
+   "cite": "KOL000021688 p002 上卦"
+  },
+  "middle": {
+   "operands": [
+    "month_size",
+    "wolgeon"
+   ],
+   "divisor": 6,
+   "zero_to": 6,
+   "month_size": {
+    "big": 30,
+    "small": 29
+   },
+   "cite": "KOL000021688 p002 中卦"
+  },
+  "lower": {
+   "operands": [
+    "lunar_day",
+    "iljin"
+   ],
+   "divisor": 3,
+   "zero_to": 3,
+   "cite": "KOL000021688 p002 下卦"
+  },
+  "decisions": {
+   "D2": "월 大小·월건·일진 모두 보는 해(當年)의 음력 생월/생일 기준 (제이 2026-10-17)",
+   "D3": "윤달은 같은 숫자 평달로 (원문 미기재 · 제이 2026-10-17)",
+   "D4": "나머지 0 → 8·6·3 (괘 번호 111~863 구조 함의 · 제이 2026-10-17 · F3 재확인)"
+  }
+ },
+ "ms_rule_verified": {
+  "S甲": 10,
+  "S己": 10,
+  "S乙": 9,
+  "S庚": 9,
+  "S丙": 8,
+  "S辛": 8,
+  "S丁": 7,
+  "S壬": 7,
+  "S戊": 6,
+  "S癸": 6,
+  "太歲巳": 8,
+  "太歲午": 8,
+  "太歲亥": 10,
+  "太歲子": 10,
+  "太歲申": 11,
+  "太歲酉": 11,
+  "太歲辰": 12,
+  "太歲戌": 12,
+  "太歲丑": 12,
+  "太歲未": 12,
+  "月建卯": 5,
+  "月建酉": 5,
+  "月建丑": 7,
+  "月建未": 7,
+  "月建子": 8,
+  "月建午": 8,
+  "日辰申": 9,
+  "日辰酉": 9,
+  "日辰辰": 10,
+  "日辰戌": 10,
+  "日辰丑": 10,
+  "日辰未": 10
+ },
+ "f1c": {
+  "valid": true,
+  "consistency_checks": 86,
+  "mismatches": []
+ },
+ "counts": {
+  "verified": 52,
+  "unresolved": 8
+ },
+ "table60": [
+  {
+   "i": 0,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 18,
+   "iljin": 18,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 1,
+   "status": "VERIFIED",
+   "taese": 21,
+   "wolgeon": 16,
+   "iljin": 19,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 2,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 14,
+   "iljin": 15,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 3,
+   "status": "VERIFIED",
+   "taese": 16,
+   "wolgeon": 12,
+   "iljin": 14,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 4,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 10,
+   "iljin": 16,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 5,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p004",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 6,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 17,
+   "iljin": 15,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 7,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 15,
+   "iljin": 18,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 8,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 13,
+   "iljin": 16,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 9,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 11,
+   "iljin": 15,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 10,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p003",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 11,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p003",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 12,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 16,
+   "iljin": 16,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 13,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 14,
+   "iljin": 17,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 14,
+   "status": "VERIFIED",
+   "taese": 15,
+   "wolgeon": 12,
+   "iljin": 13,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 15,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 15,
+   "iljin": 17,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 16,
+   "status": "VERIFIED",
+   "taese": 21,
+   "wolgeon": 13,
+   "iljin": 19,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 17,
+   "status": "VERIFIED",
+   "taese": 16,
+   "wolgeon": 11,
+   "iljin": 14,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 18,
+   "status": "VERIFIED",
+   "taese": 15,
+   "wolgeon": 15,
+   "iljin": 13,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 19,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 13,
+   "iljin": 16,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 20,
+   "status": "VERIFIED",
+   "taese": 21,
+   "wolgeon": 16,
+   "iljin": 19,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 21,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 14,
+   "iljin": 18,
+   "page": "p003",
+   "basis": "1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값",
+   "reason": null
+  },
+  {
+   "i": 22,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 12,
+   "iljin": 18,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 23,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 10,
+   "iljin": 15,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 24,
+   "status": "VERIFIED",
+   "taese": 16,
+   "wolgeon": 14,
+   "iljin": 14,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 25,
+   "status": "VERIFIED",
+   "taese": 22,
+   "wolgeon": 17,
+   "iljin": 20,
+   "page": "p004",
+   "basis": "1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값",
+   "reason": null
+  },
+  {
+   "i": 26,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 15,
+   "iljin": 16,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 27,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 13,
+   "iljin": 15,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 28,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p004",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 29,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p004",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 30,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 18,
+   "iljin": 16,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 31,
+   "status": "VERIFIED",
+   "taese": 21,
+   "wolgeon": 16,
+   "iljin": 19,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 32,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p003",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 33,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 12,
+   "iljin": 16,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 34,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 10,
+   "iljin": 16,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 35,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 13,
+   "iljin": 18,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 36,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 17,
+   "iljin": 17,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 37,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 15,
+   "iljin": 18,
+   "page": "p004",
+   "basis": "1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값",
+   "reason": null
+  },
+  {
+   "i": 38,
+   "status": "VERIFIED",
+   "taese": 16,
+   "wolgeon": 13,
+   "iljin": 14,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 39,
+   "status": "VERIFIED",
+   "taese": 15,
+   "wolgeon": 11,
+   "iljin": 13,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 40,
+   "status": "VERIFIED",
+   "taese": 22,
+   "wolgeon": 14,
+   "iljin": 20,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 41,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 12,
+   "iljin": 15,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 42,
+   "status": "VERIFIED",
+   "taese": 16,
+   "wolgeon": 16,
+   "iljin": 14,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 43,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 14,
+   "iljin": 17,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 44,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 12,
+   "iljin": 15,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 45,
+   "status": "VERIFIED",
+   "taese": 21,
+   "wolgeon": 15,
+   "iljin": 19,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 46,
+   "status": "VERIFIED",
+   "taese": 21,
+   "wolgeon": 13,
+   "iljin": 19,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 47,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 11,
+   "iljin": 16,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 48,
+   "status": "VERIFIED",
+   "taese": 17,
+   "wolgeon": 15,
+   "iljin": 15,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 49,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 13,
+   "iljin": 16,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 50,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 16,
+   "iljin": 17,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 51,
+   "status": "VERIFIED",
+   "taese": 18,
+   "wolgeon": 14,
+   "iljin": 16,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 52,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 12,
+   "iljin": 18,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 53,
+   "status": "VERIFIED",
+   "taese": 15,
+   "wolgeon": 10,
+   "iljin": 13,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 54,
+   "status": "VERIFIED",
+   "taese": 14,
+   "wolgeon": 14,
+   "iljin": 12,
+   "page": "p003",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 55,
+   "status": "VERIFIED",
+   "taese": 22,
+   "wolgeon": 17,
+   "iljin": 20,
+   "page": "p004",
+   "basis": "1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값",
+   "reason": null
+  },
+  {
+   "i": 56,
+   "status": "VERIFIED",
+   "taese": 20,
+   "wolgeon": 15,
+   "iljin": 18,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 57,
+   "status": "VERIFIED",
+   "taese": 19,
+   "wolgeon": 13,
+   "iljin": 17,
+   "page": "p004",
+   "basis": "1935본 판독 A·B 일치·high",
+   "reason": null
+  },
+  {
+   "i": 58,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p004",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  },
+  {
+   "i": 59,
+   "status": "UNRESOLVED",
+   "taese": null,
+   "wolgeon": null,
+   "iljin": null,
+   "page": "p004",
+   "basis": null,
+   "reason": "1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"
+  }
+ ]
+}

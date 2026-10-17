@@ -812,10 +812,11 @@ async function mainVerdict(handler) {
       ilgan1: '庚(양금(金))', ilgan2: '庚(양금(金))', autoScore: 77,
       y1: 1990, m1: 5, d1: 15, cal1: 'solar', h1: 5, leap1: false,
       y2: 1992, m2: 3, d2: 3, cal2: 'solar', h2: 3, leap2: false },
-    tojeong: { name: '홍길동', gender: 'male', targetYear: 2026, cal: 'solar', y: 1990, m: 5, d: 15, leap: false,
-      lunarYear: 1990, lunarMonth: 4, lunarDay: 21, zodiac: '말띠(午)', ganjiYear: '병오년',
-      upperGua: '태(兌)☱', taeseNum: 10, middleGua: '진(震)☳', wolNum: 4,
-      lowerGua: '하(下)', ilNum: 21, guaCombination: '태(兌)☱ · 진(震)☳ · 하(下)' },
+    // ★사후(v806 F2) — 2026 은 이 생일의 음4월 월건이 원문 미확정 칸(HOLD · 프롬프트 미생성)이라 2027 로 옮김 · 값 = 1935 규칙 실산출
+    tojeong: { name: '홍길동', gender: 'male', targetYear: 2027, cal: 'solar', y: 1990, m: 5, d: 15, leap: false,
+      lunarYear: 1990, lunarMonth: 4, lunarDay: 21, zodiac: '말띠(午)', ganjiYear: '정미년',
+      upperGua: '건(乾)☰', taeseNum: 19, middleGua: '감(坎)☵', wolNum: 12,
+      lowerGua: '하(下)', ilNum: 15, guaCombination: '건(乾)☰ · 감(坎)☵ · 하(下)' },
     // ★파 ⓐ 가 닫은 축 — 이 작업이 그것을 건드리면 안 된다.
     naming: { name: '홍길동', gender: '남자', surname: '김', surnameHanja: '金', style: '전통한자',
       length: '3자', preferred: '밝을 명', hangryeolHanja: '', hangryeolPos: 'none',

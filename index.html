@@ -2112,75 +2112,78 @@ function getGanji(year){return CHEONGAN[(year-4)%10]+JIJI_NAMES[(year-4)%12]}
 function getZodiac(year){return ZOD_ANIMALS[(year-4)%12]}
 
 // ════════════════════════════════════════════════════════════════════════════
-//  ★v7.86 ① — 토정비결 작괘(作卦). **산출식은 여기와 `api/_engine/ctxguard.js`
-//    (`tojeongDerive`) 두 곳뿐이며 두 벌은 반드시 같은 식이다.** 서버가 클라 값을
-//    재유도해 교체하므로(관통 #9) 한쪽만 고치면 화면과 해석이 갈린다.
-//
-//  【수정 전의 실측 결함 — 1980~2005년생 × 12월 × 28일 = 8,736 전수】
-//    ⓐ 상괘가 `(targetYear-4)` 만으로 결정돼 **같은 해 신청자 전원 동일 상괘**
-//       (상괘 top-1 점유 100.00% · 도달 1/8종).
-//    ⓑ `(y-4)%10` 과 `(y-4)%12` 는 **항상 같은 패리티**라 태세수가 언제나 짝수 →
-//       `%8 ∈ {0,2,4,6}` → 건·리·손·간 4종이 1900~2100 어느 해에도 도달 불가.
-//    ⓒ 중괘 `lunarMonth%6` · 하괘 `lunarDay%3` 에는 생년이 기여하지 않는다.
-//    ⟹ 조합 고유 18종 / 144 · top-1 5.79% · H/Hmax 0.581 · 두 사용자 충돌 5.56%.
-//
-//  【수정 후 — 전통 작괘법으로 승격 + 개인 축 투입】
-//    · 상괘 = (태세수 + **나이**) mod 8      ← 「當年太歲數 + 行年數」(전통)
-//    · 중괘 = (상괘수 + **월건수** + 생월) mod 6
-//    · 하괘 = (중괘수 + **일진수** + 생일) mod 3
-//    나이는 세는나이(targetYear − 음력 생년 + 1)다. 태세수·월건수·일진수는 모두
-//    「천간수(1~10) + 지지수(1~12)」이며 60갑자 제약상 **항상 짝수**다 —
-//    그래서 짝수 편향을 깨는 축은 **나이**뿐이고, 나이를 넣어야만 8괘 전종에 닿는다
-//    (생년 간지수만 더하면 짝수+짝수=짝수라 ⓑ가 그대로 남는다 — 실측 확인).
-//    ⟹ 같은 표본에서 조합 고유 **144/144** · top-1 1.58% · H/Hmax 0.972 ·
-//       충돌 0.87% · 상괘 **8/8종** 도달(top-1 15.17%).
-//
-//  ★`wolNum`·`ilNum` 의 의미도 바로잡았다. 프롬프트는 「중괘(월건괘) … (월건수 N)」
-//    「하괘(일진괘) … (일진수 N)」로 보간하는데(api/fortune.js:2291·2292) 종전 값은
-//    월건수·일진수가 아니라 **음력 월·일**이었다 — 라벨이 값을 거짓 설명하고 있었다.
+//  ★v806 F2 — 토정비결 작괘(作卦) = **1935 활자본 원문 확정 규칙**.
+//    상괘 = (세는나이 + 보는 해 태세수) ÷ 8 · 중괘 = (보는 해 같은 음력 생월의 大小 30/29 + 그 달 월건수) ÷ 6 ·
+//    하괘 = (음력 생일 + 보는 해 같은 음력 생일의 일진수) ÷ 3 · 나머지 0 → 8·6·3 · 수 = 원문 수표(60칸 중 52칸 확정).
+//    ★아래 「TJ1935-SHARED」 구간은 `api/_engine/tojeong1935.js` 와 **글자 그대로 같다**(p50 Q5) — 함께 고칠 것.
+//    ★표 정본 = IP gate_pkg/IP/rules/tojeong/tojeong_numtable_1935.json (이 상수는 method·table60 사본).
+//    ★필요 칸 미확정 · 보는 해에 그 음력 날짜 없음 ⟹ HOLD — 서버를 부르지 않고 정직하게 보류한다.
 // ════════════════════════════════════════════════════════════════════════════
-/** 작괘 나눗셈 상수 — 팔괘 8 · 육괘 6 · 삼괘 3. 흩뿌리지 않는다. */
-const TJ_GUA_MOD=Object.freeze({UPPER:8,MIDDLE:6,LOWER:3});
-/** 나머지 0을 제수로 올리는 전통 규약(`1..k`). 음수 입력도 안전하다. */
-function tjMod(n,k){return(((n%k)+k)%k)||k}
-/** 간지 2자(`'신사'`) → 간지수(천간수+지지수). 판독 불가면 **null**(값을 지어내지 않는다). */
-function tjGanjiNum(ganji){
-  if(typeof ganji!=='string')return null;
-  const ch=[...ganji.trim()];
-  if(ch.length!==2)return null;
-  const s=CHEONGAN.indexOf(ch[0]),b=JIJI_NAMES.indexOf(ch[1]);
-  if(s===-1||b===-1)return null;
-  return CHEONGAN_NUM[s]+JIJI_NUM[b];
+const TJ1935_TABLE={"method_status":"VERIFIED","method":{"upper":{"operands":["age","taese"],"divisor":8,"zero_to":8,"cite":"KOL000021688 p002 上卦"},"middle":{"operands":["month_size","wolgeon"],"divisor":6,"zero_to":6,"month_size":{"big":30,"small":29},"cite":"KOL000021688 p002 中卦"},"lower":{"operands":["lunar_day","iljin"],"divisor":3,"zero_to":3,"cite":"KOL000021688 p002 下卦"},"decisions":{"D2":"월 大小·월건·일진 모두 보는 해(當年)의 음력 생월/생일 기준 (제이 2026-10-17)","D3":"윤달은 같은 숫자 평달로 (원문 미기재 · 제이 2026-10-17)","D4":"나머지 0 → 8·6·3 (괘 번호 111~863 구조 함의 · 제이 2026-10-17 · F3 재확인)"}},"table60":[{"i":0,"status":"VERIFIED","taese":20,"wolgeon":18,"iljin":18,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":1,"status":"VERIFIED","taese":21,"wolgeon":16,"iljin":19,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":2,"status":"VERIFIED","taese":17,"wolgeon":14,"iljin":15,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":3,"status":"VERIFIED","taese":16,"wolgeon":12,"iljin":14,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":4,"status":"VERIFIED","taese":18,"wolgeon":10,"iljin":16,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":5,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p004","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":6,"status":"VERIFIED","taese":17,"wolgeon":17,"iljin":15,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":7,"status":"VERIFIED","taese":20,"wolgeon":15,"iljin":18,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":8,"status":"VERIFIED","taese":18,"wolgeon":13,"iljin":16,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":9,"status":"VERIFIED","taese":17,"wolgeon":11,"iljin":15,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":10,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p003","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":11,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p003","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":12,"status":"VERIFIED","taese":18,"wolgeon":16,"iljin":16,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":13,"status":"VERIFIED","taese":19,"wolgeon":14,"iljin":17,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":14,"status":"VERIFIED","taese":15,"wolgeon":12,"iljin":13,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":15,"status":"VERIFIED","taese":19,"wolgeon":15,"iljin":17,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":16,"status":"VERIFIED","taese":21,"wolgeon":13,"iljin":19,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":17,"status":"VERIFIED","taese":16,"wolgeon":11,"iljin":14,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":18,"status":"VERIFIED","taese":15,"wolgeon":15,"iljin":13,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":19,"status":"VERIFIED","taese":18,"wolgeon":13,"iljin":16,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":20,"status":"VERIFIED","taese":21,"wolgeon":16,"iljin":19,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":21,"status":"VERIFIED","taese":20,"wolgeon":14,"iljin":18,"page":"p003","basis":"1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값","reason":null},{"i":22,"status":"VERIFIED","taese":20,"wolgeon":12,"iljin":18,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":23,"status":"VERIFIED","taese":17,"wolgeon":10,"iljin":15,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":24,"status":"VERIFIED","taese":16,"wolgeon":14,"iljin":14,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":25,"status":"VERIFIED","taese":22,"wolgeon":17,"iljin":20,"page":"p004","basis":"1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값","reason":null},{"i":26,"status":"VERIFIED","taese":18,"wolgeon":15,"iljin":16,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":27,"status":"VERIFIED","taese":17,"wolgeon":13,"iljin":15,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":28,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p004","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":29,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p004","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":30,"status":"VERIFIED","taese":18,"wolgeon":18,"iljin":16,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":31,"status":"VERIFIED","taese":21,"wolgeon":16,"iljin":19,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":32,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p003","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":33,"status":"VERIFIED","taese":18,"wolgeon":12,"iljin":16,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":34,"status":"VERIFIED","taese":18,"wolgeon":10,"iljin":16,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":35,"status":"VERIFIED","taese":20,"wolgeon":13,"iljin":18,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":36,"status":"VERIFIED","taese":19,"wolgeon":17,"iljin":17,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":37,"status":"VERIFIED","taese":20,"wolgeon":15,"iljin":18,"page":"p004","basis":"1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값","reason":null},{"i":38,"status":"VERIFIED","taese":16,"wolgeon":13,"iljin":14,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":39,"status":"VERIFIED","taese":15,"wolgeon":11,"iljin":13,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":40,"status":"VERIFIED","taese":22,"wolgeon":14,"iljin":20,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":41,"status":"VERIFIED","taese":17,"wolgeon":12,"iljin":15,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":42,"status":"VERIFIED","taese":16,"wolgeon":16,"iljin":14,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":43,"status":"VERIFIED","taese":19,"wolgeon":14,"iljin":17,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":44,"status":"VERIFIED","taese":17,"wolgeon":12,"iljin":15,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":45,"status":"VERIFIED","taese":21,"wolgeon":15,"iljin":19,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":46,"status":"VERIFIED","taese":21,"wolgeon":13,"iljin":19,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":47,"status":"VERIFIED","taese":18,"wolgeon":11,"iljin":16,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":48,"status":"VERIFIED","taese":17,"wolgeon":15,"iljin":15,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":49,"status":"VERIFIED","taese":18,"wolgeon":13,"iljin":16,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":50,"status":"VERIFIED","taese":19,"wolgeon":16,"iljin":17,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":51,"status":"VERIFIED","taese":18,"wolgeon":14,"iljin":16,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":52,"status":"VERIFIED","taese":20,"wolgeon":12,"iljin":18,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":53,"status":"VERIFIED","taese":15,"wolgeon":10,"iljin":13,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":54,"status":"VERIFIED","taese":14,"wolgeon":14,"iljin":12,"page":"p003","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":55,"status":"VERIFIED","taese":22,"wolgeon":17,"iljin":20,"page":"p004","basis":"1935본 판독값 = 필사본(OAJ000006052 p063) 천간수+지지수 파생값","reason":null},{"i":56,"status":"VERIFIED","taese":20,"wolgeon":15,"iljin":18,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":57,"status":"VERIFIED","taese":19,"wolgeon":13,"iljin":17,"page":"p004","basis":"1935본 판독 A·B 일치·high","reason":null},{"i":58,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p004","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"},{"i":59,"status":"UNRESOLVED","taese":null,"wolgeon":null,"iljin":null,"page":"p004","basis":null,"reason":"1935 판독 미확정(mid/불일치) · 필사본 파생 일부 미확정"}]};
+// ===TJ1935-SHARED-BEGIN===
+/** 60갑자 순번(0=甲子). s=천간 순번 0..9 · b=지지 순번 0..11 (같은 음양이어야 실재 간지) */
+function tjGzIndex(s, b) { return ((6 * s - 5 * b) % 60 + 60) % 60; }
+/**
+ * 보는 해(當年) 기준 작괘 입력 — 제이 결정 D2(월 大小·월건·일진 모두 보는 해) · D3(윤달생은 같은 숫자 평달).
+ * @param {number} ty 보는 해 · @param {{year,month,day}} lunar 음력 생년월일
+ * @param {Function} l2s (y,m,d,isLeap) → 양력 {y,m,d}|null · @param {Function} daySB (양력) → [천간순번, 지지순번]|null
+ */
+function tjTargetInputs(ty, lunar, l2s, daySB) {
+  if (!lunar || !(lunar.year > 0) || !(lunar.month >= 1 && lunar.month <= 12) || !(lunar.day >= 1 && lunar.day <= 30)) return { hold: 'BAD_LUNAR' };
+  const age = ty - lunar.year + 1;
+  if (!(age >= 1)) return { hold: 'AGE' };
+  const ys = ((ty - 4) % 10 + 10) % 10, yb = ((ty - 4) % 12 + 12) % 12;
+  const m = lunar.month;
+  if (!l2s(ty, m, 1, false)) return { hold: 'NO_TARGET_MONTH' };
+  const big = !!l2s(ty, m, 30, false);
+  const head = [2, 4, 6, 8, 0][ys % 5];          // 年頭: 甲己→丙寅 · 乙庚→戊寅 · 丙辛→庚寅 · 丁壬→壬寅 · 戊癸→甲寅 (원문 p002)
+  const ms = (head + m - 1) % 10, mb = (2 + m - 1) % 12;
+  const sol = l2s(ty, m, lunar.day, false);
+  if (!sol) return { hold: 'NO_TARGET_DAY' };     // 예: 30일생인데 보는 해 그 달이 작은달
+  const d = daySB(sol);
+  if (!d || d.length !== 2) return { hold: 'DAY_PILLAR' };
+  return { age, yearSB: [ys, yb], monthSize: big ? 30 : 29, monthSB: [ms, mb], lunarDay: lunar.day, daySB: d };
 }
-/** 당해 태세수 = 그 해 간지의 천간수+지지수. */
-function tjTaeseNum(targetYear){
-  return CHEONGAN_NUM[(targetYear-4)%10]+JIJI_NUM[(targetYear-4)%12];
+/** 확정 수표·작괘법으로 상·중·하괘. HOLD 면 {status:'HOLD',reason}. */
+function tjGua1935(T, x) {
+  if (!T || T.method_status !== 'VERIFIED' || !Array.isArray(T.table60) || T.table60.length !== 60) return { status: 'HOLD', reason: 'TABLE' };
+  if (!x || x.hold) return { status: 'HOLD', reason: (x && x.hold) || 'NO_INPUT' };
+  const cy = T.table60[tjGzIndex(x.yearSB[0], x.yearSB[1])];
+  const cm = T.table60[tjGzIndex(x.monthSB[0], x.monthSB[1])];
+  const cd = T.table60[tjGzIndex(x.daySB[0], x.daySB[1])];
+  if (!cy || cy.status !== 'VERIFIED') return { status: 'HOLD', reason: 'CELL_YEAR' };
+  if (!cm || cm.status !== 'VERIFIED') return { status: 'HOLD', reason: 'CELL_MONTH' };
+  if (!cd || cd.status !== 'VERIFIED') return { status: 'HOLD', reason: 'CELL_DAY' };
+  const M = T.method;
+  const v = { age: x.age, taese: cy.taese, month_size: x.monthSize, wolgeon: cm.wolgeon, lunar_day: x.lunarDay, iljin: cd.iljin };
+  const part = (g) => { let s = 0; for (const o of M[g].operands) s += v[o]; return (s % M[g].divisor) || M[g].zero_to; };
+  const u = part('upper'), mi = part('middle'), lo = part('lower');
+  return { status: 'OK', gua: '' + u + mi + lo, upper: u, middle: mi, lower: lo, taese: v.taese, wolgeon: v.wolgeon, iljin: v.iljin };
+}
+// ===TJ1935-SHARED-END===
+/** 양력 {year,month,day} → 일진 [천간순번, 지지순번] (CW_ENGINE 일주) */
+function tjDaySB(sol){
+  try{
+    const sy=sol.year!=null?sol.year:sol.y,sm=sol.month!=null?sol.month:sol.m,sd=sol.day!=null?sol.day:sol.d;
+    const rp=CW_ENGINE.recompute({birth:`${sy}-${String(sm).padStart(2,'0')}-${String(sd).padStart(2,'0')}`,calType:'solar',isLeap:false,hourIdx:null});
+    const dp=rp&&rp.ok&&rp.pillarStrings?[...String(rp.pillarStrings.dayPillar)]:null;
+    if(!dp||dp.length!==2)return null;
+    const st=CHEONGAN.indexOf(dp[0]),br=JIJI_NAMES.indexOf(dp[1]);
+    return st===-1||br===-1?null:[st,br];
+  }catch(e){return null}
 }
 /**
- * 상·중·하괘 일괄 산출. **ctxguard.js `tojeongDerive` 와 같은 입력이면 같은 값**이어야 한다.
- * @param {number} targetYear 신수를 보는 해
- * @param {{year:number,month:number,day:number}} lunar 음력 생년월일
- * @param {string} monthPillar 생월의 월건 간지 2자 (CW_ENGINE 산출)
- * @param {string} dayPillar   생일의 일진 간지 2자 (CW_ENGINE 산출)
- * @returns {object|null} 월건·일진을 못 읽으면 **null** — 임의값으로 때우지 않는다.
+ * 상·중·하괘. **ctxguard.js `tojeongDerive` 와 같은 입력이면 같은 값**.
+ * @returns {{status:'OK',age,gua,upper,middle,lower}|{status:'HOLD',reason}}
  */
-function calcTojeongGua(targetYear,lunar,monthPillar,dayPillar){
-  if(!lunar||!(lunar.year>0))return null;
-  const wolNum=tjGanjiNum(monthPillar),ilNum=tjGanjiNum(dayPillar);
-  if(wolNum===null||ilNum===null)return null;
-  const taeseNum=tjTaeseNum(targetYear);
-  const age=targetYear-lunar.year+1;                      // 세는나이(行年數)
-  const upperNum=taeseNum+age;
-  const middleNum=upperNum+wolNum+lunar.month;
-  const lowerNum=middleNum+ilNum+lunar.day;
-  const ui=tjMod(upperNum,TJ_GUA_MOD.UPPER);
-  const mi=tjMod(middleNum,TJ_GUA_MOD.MIDDLE);
-  const li=tjMod(lowerNum,TJ_GUA_MOD.LOWER);
+function calcTojeongGua(targetYear,lunar){
+  const g=tjGua1935(TJ1935_TABLE,tjTargetInputs(targetYear,lunar,lunarToSolar,tjDaySB));
+  if(g.status!=='OK')return g;
   return{
-    age,
-    upper:{taeseNum,guaIdx:ui,name:PALGUA[ui-1]},
-    middle:{wolNum,guaIdx:mi,name:YUKGUA[mi-1]},
-    lower:{ilNum,guaIdx:li,name:HAGUA[li-1]}
+    status:'OK',age:targetYear-lunar.year+1,gua:g.gua,
+    upper:{taeseNum:g.taese,guaIdx:g.upper,name:PALGUA[g.upper-1]},
+    middle:{wolNum:g.wolgeon,guaIdx:g.middle,name:YUKGUA[g.middle-1]},
+    lower:{ilNum:g.iljin,guaIdx:g.lower,name:HAGUA[g.lower-1]}
   };
 }
 
@@ -6848,8 +6851,15 @@ async function analyzeTojeong(){
     calType:br.calType,isLeap:!!br.leap,hourIdx:null
   });
   if(!_tjp||!_tjp.ok){alert(CW_PILLAR_RANGE_MSG);return}
-  const gua=calcTojeongGua(targetYear,lunar,_tjp.pillarStrings.monthPillar,_tjp.pillarStrings.dayPillar);
-  if(!gua){alert('월건·일진을 산출하지 못해 괘를 세울 수 없습니다. 생년월일을 다시 확인해주세요.');return}
+  const gua=calcTojeongGua(targetYear,lunar);
+  if(!gua||gua.status==='HOLD'){
+    // ★v806 F2 — 원문 확정 전 칸·보는 해에 없는 날짜: 괘를 지어내지 않고 서버도 부르지 않는다(유료 진입 없음).
+    const rh=document.getElementById('tojeongResult');
+    const why=gua&&gua.reason==='NO_TARGET_DAY'?`${targetYear}년 음력 ${lunar.month}월에는 ${lunar.day}일이 없어 원문 작괘법(그해 같은 날의 일진)을 적용할 수 없습니다.`:'이 생년월일과 해에 필요한 원문 수표 칸이 아직 확정되지 않았습니다(원문 판독 확인 중).';
+    rh.innerHTML=`<div class="card" style="text-align:center;padding:30px 20px"><div style="font-size:36px;margin-bottom:10px">📜</div><div style="font-size:15px;color:var(--gold);font-family:'Noto Serif KR',serif;margin-bottom:10px">${name}님의 ${targetYear}년 괘 산출을 보류합니다</div><div style="font-size:13px;line-height:1.8;color:var(--text2)">원문 확정 전이라 괘를 세우지 않습니다. ${why}<br>다른 해를 선택하시면 바로 볼 수 있을 수 있어요.</div></div>`;
+    rh.classList.add('show');rh.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
   const upper=gua.upper,middle=gua.middle,lower=gua.lower;
   const zodiac=getZodiac(lunar.year);
   const ganji=getGanji(targetYear);

@@ -1409,6 +1409,12 @@ export default async function handler(req, res) {
                 replaced: cwTjM.replaced, discarded: cwTjM.discarded, diffs: cwTjM.diffs }
             : { layer1: false, reason: cwTjErr || 'GUARD_MISSING' })));
       } catch (e) { /* 로깅 실패는 응답에 영향 주지 않는다 */ }
+      // ★v806 F2 — 1935 원문 확정 칸이 아니거나 보는 해에 그 음력 날짜가 없으면 괘를 세우지 않는다.
+      //   LLM 을 부르지 않고 정직하게 보류한다(괘 없는 「토정비결」 생성 금지 — 원칙 40).
+      if (cwTjM && typeof cwTjM.reason === 'string' && cwTjM.reason.indexOf('GUA_HOLD:') === 0) {
+        return res.status(200).json({ success: false, code: 'TOJEONG_GUA_HOLD',
+          error: '이 생년월일·해의 괘는 원문 수표 확정 전이라 산출을 보류합니다.' });
+      }
     }
 
     // ══════════════════════════════════════════════════════════════════════

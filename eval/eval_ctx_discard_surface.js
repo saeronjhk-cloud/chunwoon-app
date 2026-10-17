@@ -300,7 +300,8 @@ const FAM = {
   tojeong: {
     types: ['tojeong', 'tojeong_premium_1', 'tojeong_premium_2'],
     birth: PT,
-    base: () => ({ name: '홍길동', gender: 'male', targetYear: 2026,
+    // ★사후(v806 F2) — 보는 해 2026 은 이 생일(음7월)의 월건이 원문 미확정 칸(HOLD · 프롬프트 미생성) → 2027
+    base: () => ({ name: '홍길동', gender: 'male', targetYear: 2027,
       lunarYear: 1969, lunarMonth: 7, lunarDay: 14, zodiac: '닭띠(酉)', ganjiYear: '기유년',
       upperGua: '건(乾)☰', taeseNum: 8, middleGua: '태(兌)☱', wolNum: 7,
       lowerGua: '상(上)', ilNum: 14, guaCombination: '건(乾)☰ · 태(兌)☱ · 상(上)' }),
