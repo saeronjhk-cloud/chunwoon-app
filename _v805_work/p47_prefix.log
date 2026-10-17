@@ -1,0 +1,8 @@
+  FAIL R1 판독 A·B G1~G10 전부(열거값·pages·quote·confidence) — A 없음 B 없음
+  FAIL R2 블라인드(지시문 sha · meta · 판독자 분리 · 엔진 흔적 없음) — 지시문 없음 · A meta 불일치 · B meta 불일치
+  FAIL R3 확정 판정 재현(두 판독 FLAT·같은 답·둘 다 high) — 확정  · 불일치 규칙 파일 없음
+  FAIL R4 규칙 파일 = 확정 답에서 결정론적 생성
+  FAIL R5 검증기 60,000 경우: 결정 가능 경우 불일치 0 · 보고서 수치 일치 — 전체 0 · 결정 가능 0(0%) · 불일치 0 · 보고서 불일치/없음
+  ok   R6 authority gyeok DENY · CW_PROMOTED 불변
+  FAIL R7 보고서(확정/미확정 질문 · 커버리지 · 불일치 처리) — 없음
+[p47_gyeok_rule_reread] total=7 pass=1 fail=6 · FAIL R1,R2,R3,R4,R5,R7
