@@ -449,6 +449,34 @@ function sinsalBlock(f) {
   return L.join('\n');
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// ★v805 P-805-E1b — 조후(調候) 칸 단위 노출 (트랙 E · 원칙 41 단계 승격 ③)
+//   【데이터】 ./johu_verified.json — IP 생성기(gate_pkg/tools/build_johu_verified.js)가 만든 천간 순서표.
+//     원문 블라인드 2판독(두 판독 일치 · 확신도 high)으로 확정된 80칸만 값이 있고, 나머지 40칸은 null(판정 보류).
+//   【권위】 johu_cell(VERIFIED) — johu(축 전체)는 DENY 그대로. 서명은 IP 기록에만(서버 파일 문헌명 0건 규약).
+//   【범위】 순서(천간)만. 길흉·점수·부족 판정은 내지 않는다.
+// ════════════════════════════════════════════════════════════════════════
+const JOHU_V = require('./johu_verified.json');
+const STEM_EL_KO = Object.freeze({ 甲: '목', 乙: '목', 丙: '화', 丁: '화', 戊: '토', 己: '토', 庚: '금', 辛: '금', 壬: '수', 癸: '수' });
+const JOHU_SOURCE = '고전 명리서 조견표 참고';
+function johuFacts(ctx) {
+  if (!authority.userSurfaceable('johu_cell')) return null;
+  const pillars = toPillars(ctx);
+  if (!pillars) return null;
+  const ds = pillars[2].s, mb = pillars[1].b, key = ds + mb;
+  const basis = '일간 ' + ds + ' · 월지 ' + mb + ' 기준';
+  const order = (JOHU_V.cells || {})[key];
+  if (!Array.isArray(order) || !order.length) return { engine_version: JOHU_V.version, status: 'HOLD', basis };
+  return { engine_version: JOHU_V.version, status: 'VERIFIED', order: order.slice(), elements: order.map((x) => STEM_EL_KO[x]), basis, source: JOHU_SOURCE };
+}
+/** 조후 사실 → 프롬프트 블록. HOLD 면 조후 자체를 언급하지 못하게 한다. */
+function johuBlock(f) {
+  if (!f) return '';
+  if (f.status !== 'VERIFIED') return '[조후(調候) — 서버 엔진: 이 일간·계절 조합은 판정 보류]\n· 조후(필요한 계절 기운)는 언급하지 말 것 — 원문 판독이 확정되지 않았다.';
+  return ['[조후(調候) — 서버 엔진 확정값 · 바꾸지 말 것]', '· ' + f.basis + ': ' + f.order.map((x, i) => x + '(' + f.elements[i] + ')').join(' → '),
+    '· 이 천간 순서 밖의 조후용신을 만들지 말고, 길흉·점수·부족 판정으로 바꾸지 말 것.'].join('\n');
+}
+
 const ctxguard = require('./ctxguard');
 
 module.exports = {
@@ -473,6 +501,9 @@ module.exports = {
   computeFacts: computeFacts,
   factsBlock: factsBlock,
   // ★v804 P-805-C — 신살 4종(고전 명리서 卷一)
+  // ★v805 P-805-E1b — 조후 칸 단위
+  johuFacts: johuFacts,
+  johuBlock: johuBlock,
   sinsalFacts: sinsalFacts,
   sinsalBlock: sinsalBlock,
   SINSAL_RULES: SINSAL_RULES,

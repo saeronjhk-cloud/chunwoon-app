@@ -5,6 +5,7 @@
 //    결과를 보고 기준을 바꾸지 않는다(바꾸면 「사후」 표시).
 //  ★원문 판정·cite 치환 규칙은 생성기(IP tools/build_shadow_dist.js)와 **독립 구현**이다(생성기를 require 하지 않는다).
 // ============================================================
+// ★사후(2026-10-17 · E1b 승격 반영): CW_PROMOTED 기대값에 johu_cell 추가(johu 축 전체는 DENY 그대로).
 'use strict';
 const fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
@@ -90,7 +91,7 @@ const toCtx = x => ({ yearPillar: x.p[0].s + x.p[0].b, monthPillar: x.p[1].s + x
 // D7
 { const AU = require(path.join(ROOT, 'api', '_engine', 'authority.js')); const deny = ['yongsin', 'gisin', 'gyeok', 'sangsin', 'johu', 'verdict', 'daewoon_start_age'];
   const okD = deny.every(a => AU.userSurfaceable(a) === false);
-  let okP = false; try { const R = fs.readFileSync(path.join(PKG, 'eval', 'run_eval.js'), 'utf8'); const m = R.match(/CW_PROMOTED\s*=\s*CW_PROMOTED_V770\.concat\(\[([^\]]*)\]\)/); okP = !!m && m[1].replace(/[\s'"]/g, '') === 'iljin_ganzi,sinsal'; } catch (e) {}
+  let okP = false; try { const R = fs.readFileSync(path.join(PKG, 'eval', 'run_eval.js'), 'utf8'); const m = R.match(/CW_PROMOTED\s*=\s*CW_PROMOTED_V770\.concat\(\[([^\]]*)\]\)/); okP = !!m && m[1].replace(/[\s'"]/g, '') === 'iljin_ganzi,sinsal,johu_cell'; } catch (e) {}
   const ba = path.join(BUNDLE, 'engine', 'authority.js'); const okB = fs.existsSync(ba) && fs.readFileSync(ba).equals(fs.readFileSync(path.join(ROOT, 'api', '_engine', 'authority.js')));
   check('D7', 'DENY 7축 불변 · CW_PROMOTED 불변 · 번들 authority = 운영 authority', okD && okP && okB, `DENY ${okD} · PROMOTED ${okP} · authority 동일 ${okB}`); }
 // D8

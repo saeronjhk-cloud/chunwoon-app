@@ -1703,6 +1703,10 @@ export default async function handler(req, res) {
     let cwSinsal = null;
     if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.sinsalFacts === 'function') { try { cwSinsal = cwEng.sinsalFacts(context); } catch (e) { cwSinsal = null; } }
     const cwSinsalBlock = cwSinsal ? cwEng.sinsalBlock(cwSinsal) : '';
+    // ★v805 P-805-E1b — 조후 칸 단위(원문 2판독 확정 80칸만 · 나머지는 HOLD=언급 금지). 사주 3종에만.
+    let cwJohu = null;
+    if (cwEng && CW_ENGINE_TYPES.indexOf(type) !== -1 && typeof cwEng.johuFacts === 'function') { try { cwJohu = cwEng.johuFacts(context); } catch (e) { cwJohu = null; } }
+    const cwJohuBlock = cwJohu ? cwEng.johuBlock(cwJohu) : '';
     // ★P-805-D shadow 시작 — 사주 엔진(용신·격국·조후 등 DENY 축) 서버 계산. 결과는 Vercel 로그 한 줄에만 남긴다.
     //   화면·LLM 프롬프트·응답 JSON 에 쓰지 않는다(평가 p44 D4). 실패해도 서비스는 그대로(로그만).
     if (CW_ENGINE_TYPES.indexOf(type) !== -1) {
@@ -2698,6 +2702,7 @@ ${cardsDesc}
     //   ★이것은 「지시」일 뿐이다. LLM 이 어겨도 §응답 덮어쓰기에서 무효화된다 — 이중 방어.
     if (cwFactsBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwFactsBlock;
     if (cwSinsalBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwSinsalBlock;   // ★v804 P-805-C
+    if (cwJohuBlock) userPrompt = String(userPrompt || '') + '\n\n' + cwJohuBlock;   // ★v805 P-805-E1b
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -2791,6 +2796,13 @@ ${cardsDesc}
       }
       // ★v805 P-805-C2 — 1단계(saju_premium_1)는 신살을 싣지 않는다. 엔진 신살은 2단계 몫이므로 LLM 이 만들어 와도 항상 버린다.
       if (type === 'saju_premium_1') { delete parsed.sinsal; }
+      // ★v805 P-805-E1b — 조후도 엔진 값만(무료 saju·saju_premium_2). LLM 이 만든 johu 키는 버리고 엔진 값으로 덮는다.
+      if (cwJohu && (type === 'saju' || type === 'saju_premium_2')) {
+        parsed.johu = cwJohu.status === 'VERIFIED'
+          ? { status: 'VERIFIED', order: cwJohu.order.slice(), elements: cwJohu.elements.slice(), basis: cwJohu.basis, source: cwJohu.source }
+          : { status: 'HOLD', basis: cwJohu.basis };
+      } else if (Object.prototype.hasOwnProperty.call(parsed, 'johu')) { delete parsed.johu; }
+      if (type === 'saju_premium_1') { delete parsed.johu; }
       // ★v7.71 — 재계산 메트릭은 **서버 로그로만** 낸다. 응답에 실으면
       //   ⑴ 클라이언트 값이 그대로 되비쳐 나가 스크럽 대상이 늘고
       //   ⑵ 프런트 렌더링 계약(M14 출구 화이트리스트)을 건드린다.

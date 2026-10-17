@@ -74,6 +74,11 @@ const OUTPUT = {
   //     _v804_work/p43_sinsal_yhzp_eval.js — 직독 표 독립 기술 · 10×12/12×12 전수 + 4기둥 표본 전수.
   //   ★범위는 bind.js SINSAL_RULES 4종뿐(천을귀인·양인·역마·화개). 도화·공망 등은 원전 미검증이라 코드가 내지 않는다.
   sinsal:       { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
+  // ★v805 P-805-E1b 승격(원칙 41 단계 승격 ③ · 제이 「진행」 2026-10-17) — 조후 **칸 단위**.
+  //   johu(축 전체)는 DENY 그대로. 이 키는 원문 블라인드 2판독으로 확정된 80칸(cell_status_v3 = VERIFIED_FLAT)만 연다.
+  //   【근거】 _v805_work/p45_johu_reread_eval.js(판독·판정 재현) · p46_johu_surface_eval.js(배포 데이터 = IP 확정 칸 전수 대조).
+  //   ★미확정 40칸은 bind.johuFacts 가 HOLD(판정 보류)만 낸다.
+  johu_cell:    { basis: BASIS.DOCTRINE, verification_status: VERIFICATION.VERIFIED, surface_policy: SURFACE_POLICY.VERIFIED_ONLY },
   daewoon_start_age: { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.PENDING, surface_policy: SURFACE_POLICY.DENY },
   yongsin:      { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },
   gisin:        { basis: BASIS.EXPERIMENTAL, verification_status: VERIFICATION.UNVERIFIED, surface_policy: SURFACE_POLICY.DENY },

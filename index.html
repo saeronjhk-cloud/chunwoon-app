@@ -2840,6 +2840,26 @@ function _cwSinsalHTML(list,mode){
   return h+`<div style="font-size:10px;color:var(--text2);opacity:.75;line-height:1.6">📐 엔진 판정 · ${esc(note)}</div>`;
 }
 
+// ★v805 P-805-E1b(트랙 E) — 조후는 서버 엔진(api/_engine/bind.js johuFacts) 값만 그린다.
+//   원문 판독이 확정된 칸만 천간 순서를 보이고, 나머지는 「판정을 보류」를 정직하게 쓴다. 해석·점수는 붙이지 않는다.
+//   mode: 'card'(화면) | 'pdf'(인쇄)
+function _cwJohuHTML(j,mode){
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  if(!j||typeof j!=='object')return '';
+  const head='태어난 계절의 기운을 고르게 하는 데 필요한 기운';
+  if(j.status!=='VERIFIED'||!Array.isArray(j.order)){
+    const hold='이 일간·계절 조합은 원문 판독이 확정되지 않아 판정을 보류합니다.';
+    return mode==='pdf'?`<div class="enemy-card">${esc(hold)} <span class="dim">[${esc(j.basis)}]</span></div>`
+      :`<div style="font-size:12px;color:var(--text2);padding:6px 0">${esc(hold)} <span style="font-size:11px">[${esc(j.basis)}]</span></div>`;
+  }
+  const seq=j.order.map((x,i)=>esc(x)+'('+esc((j.elements||[])[i]||'')+')').join(' → ');
+  const note='엔진 판정 · 기준: '+(j.basis||'')+' · '+(j.source||'');
+  if(mode==='pdf')return `<div class="enemy-card">${esc(head)}<br><strong style="color:#8a2218">${seq}</strong></div><p class="dim" style="font-size:10px">${esc(note)}</p>`;
+  return `<div style="font-size:12px;color:var(--text2);margin-bottom:4px">${esc(head)}</div>
+    <div style="font-size:15px;color:var(--gold);font-weight:600;padding:2px 0 6px">${seq}</div>
+    <div style="font-size:10px;color:var(--text2);opacity:.75;line-height:1.6">📐 ${esc(note)}</div>`;
+}
+
 function renderSajuResult(result,info){
   const {name,gender,calType,inputYear,inputMonth,inputDay,hi,lunarInfo,pillars,els,sipsung}=info;
   const dStem=pillars.day.stem;
@@ -2878,6 +2898,7 @@ function renderSajuResult(result,info){
 
     <!-- ★v804 P-805-C 신살(엔진) -->
     ${Array.isArray(result.sinsal)?`<div style="padding:14px;background:rgba(255,200,150,.04);border-radius:8px;border:1px solid rgba(255,200,150,.12);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⚡ 신살(神煞)</div>${_cwSinsalHTML(result.sinsal,'card')}</div>`:''}
+    ${result.johu?`<div style="padding:14px;background:rgba(255,200,150,.04);border-radius:8px;border:1px solid rgba(255,200,150,.12);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">🌡 조후(調候)</div>${_cwJohuHTML(result.johu,'card')}</div>`:''}
 
     <!-- 십성 분석 -->
     ${result.sipsungAnalysis?`<div style="padding:14px;background:rgba(173,216,230,.05);border-radius:8px;border:1px solid rgba(173,216,230,.1);margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">⭐ 십성 분포 분석</div><div style="font-size:13px;line-height:1.8">${result.sipsungAnalysis}</div></div>`:''}
@@ -3183,6 +3204,7 @@ function renderSajuPremium(prem,info){
 
   // ★v804 P-805-C — 신살은 서버 엔진 값만(LLM 신살 없음)
   const sinsalHTML=Array.isArray(prem.sinsal)?_cwSinsalHTML(prem.sinsal,'card'):'';
+  const johuHTML=prem.johu?_cwJohuHTML(prem.johu,'card'):'';   // ★v805 P-805-E1b 엔진 값
 
   let remediesHTML='';
   (prem.remedies||[]).forEach(rm=>{
@@ -3235,6 +3257,7 @@ function renderSajuPremium(prem,info){
       ${habChungHTML?`<div><div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:8px">🔗 합·충·형·해</div>${habChungHTML}</div>`:''}
       ${sinsalHTML?`<div><div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:8px">⚡ 신살(神煞)</div>${sinsalHTML}</div>`:''}
     </div>`:''}
+    ${johuHTML?`<div style="margin-bottom:16px"><div style="font-size:13px;color:var(--gold);font-family:'Noto Serif KR',serif;font-weight:600;margin-bottom:8px">🌡 조후(調候)</div>${johuHTML}</div>`:''}
 
     <!-- 12개월 세운 -->
     ${monthlyHTML?`<div style="margin-bottom:16px">
@@ -9745,6 +9768,8 @@ function savePremiumSajuPDF(){
     body+='</tbody></table></div>';
   }
 
+  // ⑤-0 조후(★v805 P-805-E1b 엔진 값)
+  if(prem.johu){body+=`<div class="section"><h2>🌡 조후(調候)</h2>`+_cwJohuHTML(prem.johu,'pdf')+'</div>';}
   // ⑤ 합충 + 신살
   if((prem.habChung&&prem.habChung.length)||(prem.sinsal&&prem.sinsal.length)){
     body+=`<div class="section page-break"><h2>🔗 합·충·형·해 + 신살(神煞)</h2><p class="section-desc">사주 내부 지지 간 관계와 특수성 작용입니다.</p>`;

@@ -3,6 +3,7 @@
 //  node _v805_work/p45_johu_reread_eval.js   (IP 필요: ../ChunWoon_IP)
 //  ★판독 전 작성(Eval-First) · 기준 = _v805_work/사전등록_P-805-E1_조후120칸_원문재판독.md
 // ============================================================
+// ★사후(2026-10-17 · E1b 승격 반영): CW_PROMOTED 기대값에 johu_cell 추가(johu 축 전체는 DENY 그대로).
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto'), cp = require('child_process'), os = require('os');
 const ROOT = path.join(__dirname, '..');
@@ -51,7 +52,7 @@ const T = PKG ? J(path.join(PKG, 'IP', 'rules', 'saju', 'johu_table.json')) : nu
       const o = E.computeJohu(P); const got = [o.johu_yongsin].concat(o.aux || []); if (JSON.stringify(got) !== JSON.stringify(ord) || o.cell_status !== 'VERIFIED_FLAT') bad.push(c); } } catch (e) { bad.push('엔진 ' + e.message.slice(0, 60)); }
   check('J5', '엔진이 VERIFIED_FLAT 칸에서 판독 순서·상태를 그대로 냄', n > 0 && bad.length === 0, `대상 ${n}${bad.length ? ' · ' + bad.slice(0, 6).join(' ') : ''}`); }
 // J6
-{ const AU = require(path.join(ROOT, 'api', '_engine', 'authority.js')); let okP = false; try { const R = fs.readFileSync(path.join(PKG, 'eval', 'run_eval.js'), 'utf8'); const m = R.match(/CW_PROMOTED\s*=\s*CW_PROMOTED_V770\.concat\(\[([^\]]*)\]\)/); okP = !!m && m[1].replace(/[\s'"]/g, '') === 'iljin_ganzi,sinsal'; } catch (e) {}
+{ const AU = require(path.join(ROOT, 'api', '_engine', 'authority.js')); let okP = false; try { const R = fs.readFileSync(path.join(PKG, 'eval', 'run_eval.js'), 'utf8'); const m = R.match(/CW_PROMOTED\s*=\s*CW_PROMOTED_V770\.concat\(\[([^\]]*)\]\)/); okP = !!m && m[1].replace(/[\s'"]/g, '') === 'iljin_ganzi,sinsal,johu_cell'; } catch (e) {}
   check('J6', 'authority johu DENY · CW_PROMOTED 불변', AU.userSurfaceable('johu') === false && okP, ''); }
 // J7
 { let out = ''; try { out = cp.execFileSync(process.execPath, [path.join(__dirname, 'p44_shadow_engine_eval.js')], { encoding: 'utf8', env: process.env }); } catch (e) { out = String(e.stdout || ''); }
