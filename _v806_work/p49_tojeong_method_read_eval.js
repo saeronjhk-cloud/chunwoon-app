@@ -66,8 +66,9 @@ if (MA && MB && A && B) {
 check('T3c', `F1c 필사본 정합(1935 VERIFIED 대조 ${F1C.checks}건 · 불일치 ${F1C.mis.length}) · 보강 ${F1C.added.length}칸`, F1C.valid, F1C.added.join(' ') + (F1C.mis.length ? ' · ' + F1C.mis.slice(0, 5).join(' ') : ''));
 const nVer = Object.values(VER).filter(Boolean).length;
 const TBL = J(path.join(PKG || '', 'IP', 'rules', 'tojeong', 'tojeong_numtable_1935.json'));
-{ let ok = !!TBL && !!TBL.table; const bad = [];
-  if (ok) for (const gz of GZ60) { const t = TBL.table[gz], v = VER[gz];
+// ★사후(2026-10-17): IP 표는 순번 배열 table60(0=甲子) — 분배 가드 n-gram 오탐 회피(함정 79). 값 기준 불변.
+{ let ok = !!TBL && Array.isArray(TBL.table60) && TBL.table60.length === 60; const bad = [];
+  if (ok) for (const gz of GZ60) { const t = TBL.table60[GZ60.indexOf(gz)], v = VER[gz];
     if (v) { if (!t || t.status !== 'VERIFIED' || t.taese !== v.taese || t.wolgeon !== v.wolgeon || t.iljin !== v.iljin) bad.push(gz); }
     else if (!t || t.status !== 'UNRESOLVED' || t.taese !== null || t.wolgeon !== null || t.iljin !== null) bad.push(gz); }
   check('T3', `수표 판정 재현(VERIFIED ${nVer}/60 · A=B ∧ 둘 다 high)`, ok && bad.length === 0, ok ? bad.slice(0, 8).join(' ') : '표 파일 없음'); }
