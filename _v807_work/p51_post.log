@@ -1,0 +1,9 @@
+  ok   Z1 판독 A·B 파일 · blind · 144 ID 
+  ok   Z2 adjudicated 144쪽 · status · VERIFIED 값 ⊂ 판독값 (bad 0)
+  ok   Z3 독립 재판정 = adjudicated (불일치 0)
+  ok   Z4 VERIFIED num 범위(상1~8·중1~6·하1~3 · 0 없음) · VERIFIED 136/144
+  ok   Z5 VERIFIED num 중복 없음 · 쪽 순서대로 증가
+  ok   Z7 VERIFIED 136/144 — 전수 아님(D4 재확인 보류 · 실패 아님)
+  ok   Z6 page_map = VERIFIED num → 쪽 1:1 (136)
+  ok   Z8 IP 격리: 저장소에 read_f3 JSON 사본 0
+p51 8/8
