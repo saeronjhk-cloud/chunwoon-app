@@ -143,8 +143,11 @@ if (Object.keys(mine).length) demote(mine);
 })();
 
 // W8 IP 격리
+// ★사후 개정(2026-10-19 · 판독 뒤 · 사전 등록 §9): 검토한 우연 일치 1건만 예외 — 관상 인수인계 문서의 통용 4자 술어(토정 원문 사본 아님).
+//  구절은 저장소에 쓰지 않고 sha256 앞 16자로만 지정한다. 판정 기준(어떤 VERIFIED 구절이든 1개면 FAIL)은 그대로.
+const W8_EXEMPT = [{ file: '천운_인수인계_v790_눈썹계측정정_相理衡眞捷徑직독_2026-09-23.md', sha16: 'd05c1251c5d99f78' }];
 (() => {
-  const hits = []; const phr = new Set();
+  const hits = []; const phr = new Set(); let exempted = 0;
   if (ADJ && ADJ.cells) for (const c of CELLS) { const h = ADJ.cells[c].han; if (h && h.status === 'VERIFIED' && h.value && monthOf(h.value) < 0 && [...h.value].length >= 4) phr.add(h.value); }
   const walk = (d, deep) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     if (['.git', 'node_modules'].includes(e.name) || e.name.startsWith('backup')) continue;
@@ -152,7 +155,12 @@ if (Object.keys(mine).length) demote(mine);
     if (e.isDirectory()) { if (deep) walk(q, deep); continue; }
     if (/^(read[ABC]|adjudicated|SECRET_id_to_cell|segment_report)\.json$/.test(e.name)) hits.push(q);
     else if (phr.size && /\.(js|json|html|md|txt)$/.test(e.name) && fs.statSync(q).size < 3e6) {
-      const t = fs.readFileSync(q, 'utf8'); for (const s of phr) if (t.includes(s)) { hits.push(q + ':' + s.length); break; }
+      const t = fs.readFileSync(q, 'utf8');
+      for (const s of phr) if (t.includes(s)) {
+        const hs = require('crypto').createHash('sha256').update(s, 'utf8').digest('hex').slice(0, 16);
+        if (W8_EXEMPT.some(x => x.file === e.name && x.sha16 === hs)) { exempted++; continue; }
+        hits.push(q + ':' + s.length); break;
+      }
     }
   } };
   try {
@@ -162,7 +170,7 @@ if (Object.keys(mine).length) demote(mine);
     const walkName = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (['.git', 'node_modules'].includes(e.name) || e.name.startsWith('backup')) continue; const q = path.join(d, e.name); if (e.isDirectory()) walkName(q); else if (/^(read[ABC]|adjudicated|SECRET_id_to_cell)\.json$/.test(e.name) && !hits.includes(q)) hits.push(q); } };
     walkName(ROOT);
   } catch (e) {}
-  ok('W8', hits.length === 0, 'IP 격리: 사본·구절 ' + hits.length + (hits.length ? ' ' + hits.slice(0, 3).join(' | ') : ''));
+  ok('W8', hits.length === 0, 'IP 격리: 사본·구절 ' + hits.length + ' · 검토 예외 ' + exempted + (hits.length ? ' ' + hits.slice(0, 3).join(' | ') : ''));
 })();
 
 for (const r of res) console.log((r.pass ? '  ok   ' : '  FAIL ') + r.id + ' ' + r.msg);
