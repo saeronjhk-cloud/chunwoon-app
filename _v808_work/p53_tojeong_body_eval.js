@@ -11,27 +11,35 @@ const RD = path.join(ROOT, '..', 'ChunWoon_IP', 'tojeong', 'read_f3b');
 const res = []; const ok = (id, cond, msg) => res.push({ id, pass: !!cond, msg });
 const J = (f) => { try { return JSON.parse(fs.readFileSync(path.join(RD, f), 'utf8')); } catch (e) { return null; } };
 const PAGES = []; for (let n = 5; n <= 148; n++) PAGES.push('p' + String(n).padStart(3, '0'));
-const SLOTS = []; for (let i = 1; i <= 18; i++) SLOTS.push('U' + String(i).padStart(2, '0'));
-for (let i = 1; i <= 18; i++) SLOTS.push('L' + String(i).padStart(2, '0'));
-SLOTS.push('H');
-const CELLS = []; for (const p of PAGES) for (const s of SLOTS) CELLS.push(p + '_' + s);
+// ★판독 전 개정 1(사전 등록 §8): 칸 목록은 자르기 결과(segment_report.cells)가 정한다 — 기본 U01~U18 · L01~L18 · H.
+const SEG0 = (() => { try { return JSON.parse(fs.readFileSync(path.join(RD, 'segment_report.json'), 'utf8')); } catch (e) { return null; } })();
+const CELLS = (SEG0 && Array.isArray(SEG0.cells)) ? SEG0.cells.slice() : [];
+const SLOTS_OF = (p) => CELLS.filter(c => c.startsWith(p + '_')).map(c => c.slice(5));
+const SORDER = (s) => s === 'H' ? 999 : (s[0] === 'U' ? 0 : 100) + parseInt(s.slice(1), 10);
 const FIELDS = ['han', 'kor'];
 const MONTHS = ['寅卯', '辰巳', '午未', '申酉', '戌亥', '子丑'];
-const ORDER = {}; SLOTS.forEach((s, i) => ORDER[s] = i);
 
-const SEG = J('segment_report.json');
+const SEG = SEG0;
 const SEC = J('SECRET_id_to_cell.json');
 const R = { A: J('readA.json'), B: J('readB.json'), C: J('readC.json') };
 const ADJ = J('adjudicated.json');
 
 // W1 자르기
 (() => {
-  let good = !!SEG && SEG.pages, miss = 0, unhandled = 0;
+  let good = !!SEG && SEG.pages && CELLS.length > 0, miss = 0, unhandled = 0, base = 0, irr = [], dup = CELLS.length - new Set(CELLS).size;
   if (good) {
     for (const c of CELLS) if (!fs.existsSync(path.join(RD, 'cells', c + '.png'))) miss++;
-    for (const p of PAGES) { const s = SEG.pages[p]; if (!s || (s.status !== 'auto' && s.status !== 'fallback' && s.status !== 'manual')) unhandled++; }
+    let extra = 0; try { for (const f of fs.readdirSync(path.join(RD, 'cells'))) if (!CELLS.includes(f.replace(/\.png$/, ''))) extra++; } catch (e) { extra = -1; }
+    if (extra !== 0) good = false;
+    for (const p of PAGES) {
+      const s = SEG.pages[p]; if (!s || !['auto', 'manual', 'irregular'].includes(s.status)) { unhandled++; continue; }
+      const sl = SLOTS_OF(p), u = sl.filter(x => x[0] === 'U').length, l = sl.filter(x => x[0] === 'L').length, h = sl.filter(x => x === 'H').length;
+      if (u === 18 && l === 18 && h === 1) base++; else irr.push(p + ':' + u + '/' + l + '/' + h);
+      if (u < 1 || l < 1 || h !== 1) unhandled++;
+      if (s.status === 'irregular' && !(irr.length && irr[irr.length - 1].startsWith(p))) unhandled++;
+    }
   }
-  ok('W1', good && miss === 0 && unhandled === 0, '자르기 5,328칸 · 없는 칸 ' + miss + ' · 미처리 쪽 ' + unhandled);
+  ok('W1', good && miss === 0 && unhandled === 0 && dup === 0, '자르기 ' + CELLS.length + '칸 · 없는 칸 ' + miss + ' · 미처리 ' + unhandled + ' · 기본 구조 ' + base + '쪽 · 기본 아님 ' + (irr.join(',') || '0'));
 })();
 
 // W2 블라인드 시트
@@ -41,14 +49,14 @@ const ADJ = J('adjudicated.json');
     if (!good) break;
     const m = SEC[k] || {}; const ids = Object.keys(m);
     const cellset = new Set(Object.values(m));
-    if (ids.length !== CELLS.length || cellset.size !== CELLS.length || !CELLS.every(c => cellset.has(c))) { good = false; why = k + ' ' + ids.length; break; }
+    if (!CELLS.length || ids.length !== CELLS.length || cellset.size !== CELLS.length || !CELLS.every(c => cellset.has(c))) { good = false; why = k + ' ' + ids.length; break; }
     if (ids.some(id => /p\d{3}|[UL]\d{2}/.test(id))) { good = false; why = k + ' ID 누설'; break; }
     const order = (SEC.order && SEC.order[k]) || [];
     if (order.length !== ids.length) { good = false; why = k + ' order'; break; }
     let same = 0; for (let i = 1; i < order.length; i++) if (m[order[i]].slice(0, 4) === m[order[i - 1]].slice(0, 4)) same++;
     if (same / order.length >= 0.05) { good = false; why = k + ' 연속 ' + same; }
   }
-  ok('W2', good, '블라인드 시트 A·B 5,328 · 섞음 · ID 무정보 ' + why);
+  ok('W2', good, '블라인드 시트 A·B ' + CELLS.length + ' · 섞음 · ID 무정보 ' + why);
 })();
 
 // W3 판독 파일
@@ -61,7 +69,7 @@ const ADJ = J('adjudicated.json');
     else if (!(Array.isArray(r.meta.shards) && r.meta.shards.length >= 2)) { good = false; why = k + ' shards'; }
     else if (JSON.stringify(ids) !== JSON.stringify(got)) { good = false; why = k + ' ids ' + got.length; }
   }
-  ok('W3', good, '판독 A·B · blind · 묶음 ≥2 · 5,328 ID ' + why);
+  ok('W3', good, '판독 A·B · blind · 묶음 ≥2 · ' + CELLS.length + ' ID ' + why);
 })();
 
 // 독립 판정
@@ -98,7 +106,7 @@ if (SEC && R.A && R.B) for (const c of CELLS) {
 const monthOf = (v) => { if (!v || !/之月$/.test(v)) return -1; return MONTHS.indexOf(v.slice(0, 2)); };
 function demote(tab) {
   for (const p of PAGES) {
-    const marks = SLOTS.map(s => ({ c: p + '_' + s, m: tab[p + '_' + s] && tab[p + '_' + s].han && tab[p + '_' + s].han.status === 'VERIFIED' ? monthOf(tab[p + '_' + s].han.value) : -1 })).filter(x => x.m >= 0);
+    const marks = SLOTS_OF(p).sort((x, y) => SORDER(x) - SORDER(y)).map(s => ({ c: p + '_' + s, m: tab[p + '_' + s] && tab[p + '_' + s].han && tab[p + '_' + s].han.status === 'VERIFIED' ? monthOf(tab[p + '_' + s].han.value) : -1 })).filter(x => x.m >= 0);
     const bad = new Set();
     for (let i = 0; i < marks.length; i++) for (let j = i + 1; j < marks.length; j++) if (!(marks[i].m < marks[j].m)) { bad.add(marks[i].c); bad.add(marks[j].c); }
     for (const c of bad) tab[c].han = { status: 'UNRESOLVED', value: null, why: 'STRUCT_CONFLICT' };
@@ -108,7 +116,7 @@ if (Object.keys(mine).length) demote(mine);
 
 // W4 · W5
 (() => {
-  let good = !!ADJ && ADJ.cells && CELLS.every(c => ADJ.cells[c]), diff = 0, badv = 0;
+  let good = !!ADJ && ADJ.cells && CELLS.length > 0 && CELLS.every(c => ADJ.cells[c]), diff = 0, badv = 0;
   if (good) for (const c of CELLS) for (const f of FIELDS) {
     const a = ADJ.cells[c][f];
     if (!a || !['VERIFIED', 'UNRESOLVED'].includes(a.status)) { good = false; continue; }
@@ -116,7 +124,7 @@ if (Object.keys(mine).length) demote(mine);
     const m = mine[c] && mine[c][f];
     if (!m || m.status !== a.status || (m.status === 'VERIFIED' && m.value !== a.value)) diff++;
   }
-  ok('W4', good && badv === 0, 'adjudicated 5,328칸 · status · VERIFIED ⊂ 판독값 (bad ' + badv + ')');
+  ok('W4', good && badv === 0, 'adjudicated ' + CELLS.length + '칸 · status · VERIFIED ⊂ 판독값 (bad ' + badv + ')');
   ok('W5', good && diff === 0, '독립 재판정(강등 포함) = adjudicated (불일치 ' + diff + ')');
 })();
 
@@ -126,12 +134,12 @@ if (Object.keys(mine).length) demote(mine);
   let viol = 0;
   for (const p of PAGES) {
     let last = -1;
-    for (const s of SLOTS) { const h = ADJ.cells[p + '_' + s] && ADJ.cells[p + '_' + s].han; const m = h && h.status === 'VERIFIED' ? monthOf(h.value) : -1; if (m >= 0) { if (m <= last) viol++; last = m; } }
+    for (const s of SLOTS_OF(p).sort((x, y) => SORDER(x) - SORDER(y))) { const h = ADJ.cells[p + '_' + s] && ADJ.cells[p + '_' + s].han; const m = h && h.status === 'VERIFIED' ? monthOf(h.value) : -1; if (m >= 0) { if (m <= last) viol++; last = m; } }
   }
   ok('W6', viol === 0, 'VERIFIED 월 표지 순서 위반 ' + viol);
   const cnt = { han: 0, kor: 0 }; let not4 = 0;
   for (const c of CELLS) for (const f of FIELDS) if (ADJ.cells[c][f] && ADJ.cells[c][f].status === 'VERIFIED') { cnt[f]++; if (f === 'han' && !c.endsWith('_H') && [...ADJ.cells[c].han.value].length !== 4) not4++; }
-  ok('W7', true, '보고: VERIFIED han ' + cnt.han + ' · kor ' + cnt.kor + ' / 5,328 · 4자 아닌 han ' + not4);
+  ok('W7', true, '보고: VERIFIED han ' + cnt.han + ' · kor ' + cnt.kor + ' / ' + CELLS.length + ' · 4자 아닌 han ' + not4);
 })();
 
 // W8 IP 격리

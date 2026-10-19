@@ -1,0 +1,9 @@
+  ok   W1 자르기 5330칸 · 없는 칸 0 · 미처리 0 · 기본 구조 143쪽 · 기본 아님 p019:18/20/1
+  FAIL W2 블라인드 시트 A·B 5330 · 섞음 · ID 무정보 
+  FAIL W3 판독 A·B · blind · 묶음 ≥2 · 5330 ID 
+  FAIL W4 adjudicated 5330칸 · status · VERIFIED ⊂ 판독값 (bad 0)
+  FAIL W5 독립 재판정(강등 포함) = adjudicated (불일치 0)
+  FAIL W6 adjudicated 없음
+  FAIL W7 adjudicated 없음
+  ok   W8 IP 격리: 사본·구절 0
+p53 2/8
