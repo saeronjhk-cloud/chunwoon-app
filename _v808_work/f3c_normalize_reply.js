@@ -3,8 +3,10 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const HD = process.argv[2];
+// ★사후(10-20): 재요청 병합 모드 — node f3c_normalize_reply.js <HD> --rereq : 같은 규칙(N0~N5)으로 재요청 원본을 정규화해 해당 번호만 덮어쓴다
+const REREQ = process.argv[3] === '--rereq';
 const items = JSON.parse(fs.readFileSync(path.join(HD, 'F3c_items.json'), 'utf8'));
-const raw = fs.readFileSync(path.join(HD, 'F3c_답_제이_원본.txt'), 'utf8').split(/\r?\n/).filter(l => /^\d{3}\s/.test(l));
+const raw = fs.readFileSync(path.join(HD, REREQ ? 'F3c_답_재요청_원본.txt' : 'F3c_답_제이_원본.txt'), 'utf8').split(/\r?\n/).filter(l => /^\d{3}\s/.test(l));
 const G = (s) => [...new Intl.Segmenter('ko', { granularity: 'grapheme' }).segment(s)].length;
 // N0 「ㅅ+초성」 표기 → 합용병서 초성: ㅅㄱ=ᄭ(U+112D) ㅅㄷ=ᄯ(U+112F) ㅅㅂ=ᄲ(U+1132) ㅅㅈ=ᄶ(U+1136). 다른 초성 앞 ㅅ 은 바꾸지 않고 보고.
 const SC = { 0: 'ᄭ', 3: 'ᄯ', 7: 'ᄲ', 12: 'ᄶ' };
@@ -33,6 +35,14 @@ for (const l of raw) {
   else { const v = conv(r);                                                                     // N5 값만 → 후보 최단 길이의 절반 이상이면 =값, 아니면 부분값 → 재요청
     if (G(v) >= 0.5 * minLen(it)) { a = '=' + v; rep.N5full.push(no); } else { a = '?'; rep.N5part.push(no); rep.rereq.push(no); } }
   out.push({ no, a, raw: l });
+}
+if (REREQ) {
+  const cur = fs.readFileSync(path.join(HD, 'F3c_답_제이.txt'), 'utf8').split(/\r?\n/); const by = Object.fromEntries(out.map(x => [x.no, x.a]));
+  const nw = cur.map(l => { const m = l.match(/^(\d{3})\s/); return m && by[+m[1]] !== undefined ? m[1] + ' ' + by[+m[1]] : l; });
+  if (!nw[0].includes('재요청')) nw[0] += ' · 재요청 병합 ' + out.map(x => x.no).join(',');
+  fs.writeFileSync(path.join(HD, 'F3c_답_제이.txt'), nw.join('\n'));
+  fs.writeFileSync(path.join(HD, 'F3c_norm_report_rereq.json'), JSON.stringify({ unconverted_s: unconv, ...Object.fromEntries(Object.entries(rep).map(([k, v]) => [k, { n: v.length, no: v }])) }, null, 1));
+  console.log('rereq lines', out.length, Object.entries(rep).map(([k, v]) => k + ' ' + v.length).join(' · '), '· ㅅ 미변환', unconv); process.exit(0);
 }
 fs.writeFileSync(path.join(HD, 'F3c_답_제이.txt'), '# P-808-F3c 제이 회신(정규화 · 사후 개정 2) — 원본 F3c_답_제이_원본.txt\n' + out.map(x => ('00' + x.no).slice(-3) + ' ' + x.a).join('\n') + '\n');
 fs.writeFileSync(path.join(HD, 'F3c_norm_report.json'), JSON.stringify({ rule: 'P-808-F3c §8', unconverted_s: unconv, ...Object.fromEntries(Object.entries(rep).map(([k, v]) => [k, { n: v.length, no: v }])) }, null, 1));
