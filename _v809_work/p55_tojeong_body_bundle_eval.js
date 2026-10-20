@@ -74,12 +74,14 @@ if (BODY) { const han = new Set(), kor = new Set(); const G = (s) => [...new Int
   const EX = [{ file: '천운_인수인계_v790_눈썹계측정정_相理衡眞捷徑직독_2026-09-23.md', sha16: 'd05c1251c5d99f78' }];
   const keyS = fs.existsSync(KEYP) ? fs.readFileSync(KEYP, 'utf8').trim() : null;
   const hits = []; let exempt = 0;
-  const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (['.git', 'node_modules', '.vercel'].includes(e.name) || e.name.startsWith('backup')) continue; const q = path.join(d, e.name);
-    if (e.isDirectory()) { walk(q); continue; } if (!/\.(js|json|html|md|txt|css)$/.test(e.name) || fs.statSync(q).size > 3e6) continue;
+  /* ★사후 개정 1(10-20): 범위 = git 추적·추적 가능 파일(ls-files -co --exclude-standard) — 배포 트리 = git 트리 */
+  const files = cp.execSync('git ls-files -co --exclude-standard -z', { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 }).split('\0').filter(Boolean).filter(f => !/(^|\/)backup/.test(f));
+  const walk = () => { for (const f of files) { const q = path.join(ROOT, f), e = { name: path.basename(f) }; if (!fs.existsSync(q)) continue;
+    if (!/\.(js|json|html|md|txt|css)$/.test(e.name) || fs.statSync(q).size > 3e6) continue;
     const t = fs.readFileSync(q, 'utf8'); if (keyS && t.includes(keyS)) { hits.push(q + ':KEY'); continue; }
     for (const s of han) if (t.includes(s)) { const hs = crypto.createHash('sha256').update(s, 'utf8').digest('hex').slice(0, 16); if (EX.some(x => x.file === e.name && x.sha16 === hs)) { exempt++; continue; } hits.push(q + ':han'); break; }
     for (const s of kor) if (t.includes(s)) { hits.push(q + ':kor'); break; } } };
-  walk(ROOT);
+  walk();
   b5 = hits.length === 0 && !!keyS; b5m = '평문 구절·키 ' + hits.length + ' · 예외 ' + exempt + ' · 한자구절 ' + han.size + ' · 한글줄 ' + kor.size + (hits.length ? ' ' + hits.slice(0, 3).join(' | ') : '') + (keyS ? '' : ' · 키 파일 없음'); }
 ok('B5', b5, b5m);
 // B6 회귀
