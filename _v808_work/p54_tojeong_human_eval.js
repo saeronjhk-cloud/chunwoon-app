@@ -36,7 +36,7 @@ ok('H3', h3, '확인지 ' + h3m);
 // H4·H5·H6 (회신 후)
 const RP = path.join(HD, 'F3c_답_제이.txt'); let ans = null, bad4 = -1;
 if (fs.existsSync(RP) && ITEMS) { ans = {}; bad4 = 0; const seen = new Set();
-  for (const l of fs.readFileSync(RP, 'utf8').split(/\r?\n/)) { if (!l.trim()) continue; const m = l.match(/^(\d{3})\s+(1|2|3|\?|=.+)\s*$/); if (!m) { bad4++; continue; } const n = +m[1]; if (seen.has(n) || n < 1 || n > ITEMS.length) { bad4++; continue; } seen.add(n); ans[n] = m[2]; }
+  for (const l of fs.readFileSync(RP, 'utf8').split(/\r?\n/)) { if (!l.trim() || l.startsWith('#')) continue; /* ★사후(10-20): 양식 머리말 # 줄은 건너뜀(양식 자체에 있음 · 기준 불변) */ const m = l.match(/^(\d{3})\s+(1|2|3|\?|=.+)\s*$/); if (!m) { bad4++; continue; } const n = +m[1]; if (seen.has(n) || n < 1 || n > ITEMS.length) { bad4++; continue; } seen.add(n); ans[n] = m[2]; }
   if (seen.size !== ITEMS.length) bad4 += ITEMS.length - seen.size;
   for (const [n, a] of Object.entries(ans)) if (/^[123]$/.test(a) && +a > ITEMS[n - 1].cands.length) bad4++; }
 ok('H4', bad4 === 0, '회신 ' + (ans ? Object.keys(ans).length + '줄 · 위반 ' + bad4 : '없음(회신 전 FAIL 정상)'));
