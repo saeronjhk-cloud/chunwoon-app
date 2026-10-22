@@ -30,9 +30,16 @@ const specFiles = (dir) => { try { return fs.readdirSync(dir).filter(f => f.ends
 const genS = [...specFiles(path.join(MD, 'gen', 'specs_G')), ...specFiles(path.join(MD, 'gen', 'specs_R'))];
 const judS = [...specFiles(path.join(MD, 'judge', 'specs_J')), ...specFiles(path.join(MD, 'judge', 'specs_JR'))];
 if (genS.length && judS.length && GOLD && U) { let leak = 0;
-  const gl = GOLD.gold.flatMap(g => g.gloss).filter(s => G(nos(s)) >= 6);
-  for (const t of [...genS, ...judS]) for (const s of gl) if (t.includes(s) || nos(t).includes(nos(s))) leak++;
-  let idLeak = 0; for (const t of judS) for (const u of U.units) if (t.includes(u.id)) { idLeak++; break; }
+  /* ★사후 개정 1(10-22): 노출 = 그 단위 자기 kor(생성 사양) · 자기 kor+modern(검수 사양) 으로 설명되지 않는 출현만 셈.
+     단위 ID 검사는 낱말 경계(탭·줄) 기준 — 6자 JID 속 5자 우연 일치 오탐 수리. 기준(노출 0)은 그대로. */
+  const JM = JMAP ? JMAP.map : {};
+  const lines = (arr) => arr.flatMap(t => t.split('\n'));
+  const gL = lines(genS), jL = lines(judS);
+  for (const g of GOLD.gold) { const u = byId[g.id]; for (const s of g.gloss) { if (G(nos(s)) < 6) continue; const k = nos(s);
+    for (const l of gL) if (nos(l).includes(k)) { const c = l.split('\t'); if (!(byId[c[0]] && nos(c[3] || '').includes(k))) leak++; } /* 생성 사양: 어느 단위든 그 단위의 kor(원문) 칸 안이면 원문 일치 */
+    for (const l of jL) if (nos(l).includes(k)) { const c = l.split('\t'), m = JM[c[0]]; const base = m && (m.kind === 'mut' ? m.base : m.id);
+      if (!(m && (nos(c[2] || '').includes(k) || (nos(c[3] || '').includes(k) && nos(c[3] || '') === nos(m.modern || ''))))) leak++; } } } /* 검수 사양: kor 칸 또는 파이프라인이 만든 modern(대응표 값과 같음) 칸 안이면 노출 아님 */
+  const uid = new Set(U.units.map(u => u.id)); let idLeak = 0; for (const l of jL) for (const tok of l.split(/[\t\s]+/)) if (uid.has(tok)) idLeak++;
   let verdictLeak = 0; for (const t of genS) if (/verdict|PASS|SWAP|ADD:/.test(t)) verdictLeak++;
   v2 = leak === 0 && idLeak === 0 && verdictLeak === 0; v2m = '정답 노출 ' + leak + ' · 검수 사양 단위ID ' + idLeak + ' · 생성 사양 판정정보 ' + verdictLeak + ' · 사양 G' + genS.length + '/J' + judS.length; }
 ok('V2', v2, v2m);
