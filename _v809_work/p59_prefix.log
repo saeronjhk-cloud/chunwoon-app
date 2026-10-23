@@ -1,0 +1,3 @@
+  FAIL R1 tojeong 혼자 ok · 동시 같음 0/4 · saju 혼자 ok · 동시 같음 4/4 · tojeong 동시 프롬프트 불일치(0/4 · 상류 4) | tojeong 가드 1/4
+  FAIL R2 「Tried = true」 3 · Promise 캐시 함수 0/3
+p59 0/2
