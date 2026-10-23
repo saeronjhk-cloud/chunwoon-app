@@ -17,30 +17,20 @@ import { createHmac, createHash, timingSafeEqual } from 'crypto';
 //   ★런타임 성질: 모듈이 없으면 엔진 축만 비활성화되고 서비스는 종전 LLM 경로로 동작한다.
 //     이것은 fail-open 이 아니다 — **엔진 결속의 실재는 eval/eval_engine_binding.js 가
 //     fail-closed 로 못박는다.** 런타임은 안전하게, 게이트는 엄격하게.
-let __cwEngine = null;          // 모듈 캐시(콜드스타트 1회)
-let __cwEngineTried = false;
-async function cwEngine() {
-  if (__cwEngineTried) return __cwEngine;
-  __cwEngineTried = true;
-  try {
-    const m = await import('./_engine/bind.js');
-    __cwEngine = (m && m.default) ? m.default : (m || null);
-  } catch (e) { __cwEngine = null; }
-  return __cwEngine;
+// ★P-809-R1 — Promise 캐시(동시 요청 둘째부터 적재 전 null 을 받던 경합 수리 · 반환 의미 불변: 모듈 또는 null)
+let __cwEngineP = null;
+function cwEngine() {
+  if (!__cwEngineP) __cwEngineP = import('./_engine/bind.js').then((m) => (m && m.default) ? m.default : (m || null)).catch(() => null);
+  return __cwEngineP;
 }
 
 // ★v786 — 관상 판정 엔진(`facever.js`) 적재. `cwEngine` 과 같은 패턴이다.
 //   ★적재 실패는 서비스 중단 사유가 아니다 — 실패하면 종전대로 LLM 이 전담한다(fail-closed).
-let __cwFaceVer = null;
-let __cwFaceVerTried = false;
-async function cwFaceVer() {
-  if (__cwFaceVerTried) return __cwFaceVer;
-  __cwFaceVerTried = true;
-  try {
-    const m = await import('./_engine/facever.js');
-    __cwFaceVer = (m && m.default) ? m.default : (m || null);
-  } catch (e) { __cwFaceVer = null; }
-  return __cwFaceVer;
+// ★P-809-R1 — Promise 캐시(동시 요청 둘째부터 적재 전 null 을 받던 경합 수리 · 반환 의미 불변: 모듈 또는 null)
+let __cwFaceVerP = null;
+function cwFaceVer() {
+  if (!__cwFaceVerP) __cwFaceVerP = import('./_engine/facever.js').then((m) => (m && m.default) ? m.default : (m || null)).catch(() => null);
+  return __cwFaceVerP;
 }
 
 // ★v7.73 관통 #4 — compat 가드는 `ctxguard.js` 를 **직접** 적재한다.
@@ -50,16 +40,11 @@ async function cwFaceVer() {
 //     이 파일에는 「어떤 키를 어떻게 바꿀지」가 없다.
 //   ★적재 실패는 서비스 중단 사유가 아니다 — 아래 `cwCompatFlatten` 이 **엔진과
 //     무관하게 항상** 실행되는 2차 방어선이므로, 인젝션 표면은 그때도 0 이다.
-let __cwCtxg = null;
-let __cwCtxgTried = false;
-async function cwCtxguard() {
-  if (__cwCtxgTried) return __cwCtxg;
-  __cwCtxgTried = true;
-  try {
-    const m = await import('./_engine/ctxguard.js');
-    __cwCtxg = (m && m.default) ? m.default : (m || null);
-  } catch (e) { __cwCtxg = null; }
-  return __cwCtxg;
+// ★P-809-R1 — Promise 캐시(동시 요청 둘째부터 적재 전 null 을 받던 경합 수리 · 반환 의미 불변: 모듈 또는 null)
+let __cwCtxguardP = null;
+function cwCtxguard() {
+  if (!__cwCtxguardP) __cwCtxguardP = import('./_engine/ctxguard.js').then((m) => (m && m.default) ? m.default : (m || null)).catch(() => null);
+  return __cwCtxguardP;
 }
 
 // JSON 추출 헬퍼: 마크다운 코드블록, 순수 JSON 모두 처리
